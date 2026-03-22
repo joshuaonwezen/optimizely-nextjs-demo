@@ -1,26 +1,102 @@
 @import "tailwindcss";
 
+/* ── Design Tokens: The Precision Architect ────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surface hierarchy (light only) */
+  --surface: #f5f7f9;
+  --surface-container-low: #eef1f3;
+  --surface-container: #e4e8eb;
+  --surface-container-high: #dfe3e6;
+  --surface-container-highest: #d9dde0;
+  --surface-container-lowest: #ffffff;
+
+  /* Brand palette */
+  --primary: #004be3;
+  --primary-dim: #0041c8;
+  --primary-container: #819bff;
+  --on-primary: #f2f1ff;
+  --secondary-container: #d3e4fb;
+  --on-secondary-container: #435365;
+  --tertiary: #7a23dc;
+
+  /* Text */
+  --on-surface: #2c2f31;
+  --on-surface-variant: #5f6368;
+  --outline-variant: #abadaf;
+
+  /* Ambient shadow */
+  --shadow-ambient: 0 20px 40px rgba(44, 47, 49, 0.06);
+  --shadow-lift: 0 8px 24px rgba(44, 47, 49, 0.08);
+
+  /* Ghost border */
+  --ghost-border: 1px solid rgba(171, 173, 175, 0.15);
+
+  /* Gradients */
+  --gradient-brand: linear-gradient(135deg, var(--primary), var(--primary-container));
+  --gradient-insight: linear-gradient(180deg, var(--primary), var(--tertiary));
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-surface: var(--surface);
+  --color-surface-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-high: var(--surface-container-high);
+  --color-surface-highest: var(--surface-container-highest);
+  --color-surface-lowest: var(--surface-container-lowest);
+  --color-brand: var(--primary);
+  --color-brand-dim: var(--primary-dim);
+  --color-brand-container: var(--primary-container);
+  --color-on-brand: var(--on-primary);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-tertiary: var(--tertiary);
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility: brand gradient background */
+.bg-gradient-brand {
+  background: var(--gradient-brand);
+}
+
+/* Utility: hover lift effect */
+.hover-lift {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.hover-lift:hover {
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-1px);
+}
+
+/* Utility: ambient hover for cards */
+.hover-ambient {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+.hover-ambient:hover {
+  box-shadow: var(--shadow-ambient);
+  transform: translateY(-2px);
+}
+
+/* Utility: insight rail — signature vertical accent line */
+.insight-rail {
+  position: relative;
+  padding-left: 1.5rem;
+}
+.insight-rail::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  width: 2px;
+  background: var(--gradient-insight);
+  border-radius: 1px;
 }
