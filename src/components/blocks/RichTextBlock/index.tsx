@@ -1,24 +1,29 @@
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
+import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
-interface TextBlockProps {
+interface TextBlockData {
   body?: { json: unknown } | null;
-  inEditMode?: boolean;
+  __context?: any;
 }
 
-export default function TextBlock({
-  body,
-  inEditMode,
-}: TextBlockProps) {
-  if (!body?.json) return null;
+type TextBlockProps = TextBlockData & {
+  content?: TextBlockData;
+};
+
+export default function TextBlock(props: TextBlockProps) {
+  const data = props.content ?? props;
+  const { pa } = getPreviewUtils(data as any);
+
+  if (!data.body?.json) return null;
 
   return (
     <div
-      data-epi-edit={inEditMode ? "body" : undefined}
+      {...pa("body")}
       className="max-w-4xl mx-auto px-8 py-16"
       style={{ color: "var(--on-surface-variant)" }}
     >
       <div className="text-base leading-relaxed space-y-6">
-        <RichText content={body.json as RichTextProps["content"]} />
+        <RichText content={data.body.json as RichTextProps["content"]} />
       </div>
     </div>
   );

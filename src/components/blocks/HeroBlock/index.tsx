@@ -1,6 +1,7 @@
 import Image from "next/image";
+import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
-interface HeroBlockProps {
+interface HeroBlockData {
   headline?: string | null;
   subheadline?: string | null;
   heading?: string | null;
@@ -13,23 +14,20 @@ interface HeroBlockProps {
   } | null;
   ctaText?: string | null;
   ctaLink?: string | null;
-  inEditMode?: boolean;
+  __context?: any;
 }
 
-export default function HeroBlock({
-  headline,
-  subheadline,
-  heading,
-  summary,
-  backgroundImage,
-  background,
-  ctaText,
-  ctaLink,
-  inEditMode,
-}: HeroBlockProps) {
-  const title = headline ?? heading;
-  const subtitle = subheadline ?? summary;
-  const bgUrl = backgroundImage?._metadata?.url?.default ?? background?._metadata?.url?.default;
+type HeroBlockProps = HeroBlockData & {
+  content?: HeroBlockData;
+  inEditMode?: boolean;
+};
+
+export default function HeroBlock(props: HeroBlockProps) {
+  const data = props.content ?? props;
+  const { pa } = getPreviewUtils(data as any);
+  const title = data.headline ?? data.heading;
+  const subtitle = data.subheadline ?? data.summary;
+  const bgUrl = data.backgroundImage?._metadata?.url?.default ?? data.background?._metadata?.url?.default;
 
   return (
     <section
@@ -39,7 +37,7 @@ export default function HeroBlock({
       {bgUrl && (
         <Image
           src={bgUrl}
-          alt={headline ?? ""}
+          alt={data.headline ?? ""}
           fill
           className="object-cover opacity-30"
           priority
@@ -49,7 +47,7 @@ export default function HeroBlock({
         <div className="max-w-3xl">
           {title && (
             <h1
-              data-epi-edit={inEditMode ? "headline" : undefined}
+              {...pa("heading")}
               className="text-5xl md:text-6xl lg:text-[3.5rem] font-extrabold leading-tight mb-8 text-on-brand"
               style={{ fontFamily: "var(--font-display)" }}
             >
@@ -58,20 +56,20 @@ export default function HeroBlock({
           )}
           {subtitle && (
             <p
-              data-epi-edit={inEditMode ? "subheadline" : undefined}
+              {...pa("summary")}
               className="text-xl md:text-2xl mb-12 max-w-2xl leading-relaxed"
               style={{ color: "rgba(242, 241, 255, 0.85)" }}
             >
               {subtitle}
             </p>
           )}
-          {ctaLink && (
+          {data.ctaLink && (
             <a
-              href={ctaLink}
+              href={data.ctaLink}
               className="hover-lift inline-block px-8 py-4 rounded-lg font-semibold text-lg bg-surface-lowest text-brand"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              {ctaText ?? "Learn More"}
+              {data.ctaText ?? "Learn More"}
             </a>
           )}
         </div>

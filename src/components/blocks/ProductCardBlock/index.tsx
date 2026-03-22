@@ -1,3 +1,5 @@
+import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
 const ICON_MAP: Record<string, string> = {
   server: "\u{1F5A5}\uFE0F",
   beaker: "\u{1F9EA}",
@@ -5,25 +7,24 @@ const ICON_MAP: Record<string, string> = {
   chart: "\u{1F4CA}",
 };
 
-interface ProductCardBlockProps {
+interface ProductCardData {
   icon?: string | null;
   title?: string | null;
   description?: string | null;
   linkUrl?: { default?: string | null } | null;
   linkText?: string | null;
-  inEditMode?: boolean;
+  __context?: any;
 }
 
-export default function ProductCardBlock({
-  icon,
-  title,
-  description,
-  linkUrl,
-  linkText,
-  inEditMode,
-}: ProductCardBlockProps) {
-  const href = linkUrl?.default ?? "#";
-  const iconChar = icon ? ICON_MAP[icon] ?? "\u{1F537}" : "\u{1F537}";
+type ProductCardBlockProps = ProductCardData & {
+  content?: ProductCardData;
+};
+
+export default function ProductCardBlock(props: ProductCardBlockProps) {
+  const data = props.content ?? props;
+  const { pa } = getPreviewUtils(data as any);
+  const href = data.linkUrl?.default ?? "#";
+  const iconChar = data.icon ? ICON_MAP[data.icon] ?? "\u{1F537}" : "\u{1F537}";
 
   return (
     <a
@@ -31,28 +32,28 @@ export default function ProductCardBlock({
       className="hover-ambient group flex flex-col h-full rounded-2xl p-8 bg-surface-lowest"
     >
       <div className="text-4xl mb-6">{iconChar}</div>
-      {title && (
+      {data.title && (
         <h3
-          data-epi-edit={inEditMode ? "title" : undefined}
+          {...pa("title")}
           className="text-lg font-bold text-on-surface mb-3"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          {title}
+          {data.title}
         </h3>
       )}
-      {description && (
+      {data.description && (
         <p
-          data-epi-edit={inEditMode ? "description" : undefined}
+          {...pa("description")}
           className="text-sm leading-relaxed text-on-surface-variant mb-6 flex-grow"
         >
-          {description}
+          {data.description}
         </p>
       )}
       <span
-        data-epi-edit={inEditMode ? "linkText" : undefined}
+        {...pa("linkText")}
         className="text-sm font-semibold text-brand mt-auto"
       >
-        {linkText ?? "Learn More \u2192"}
+        {data.linkText ?? "Learn More \u2192"}
       </span>
     </a>
   );

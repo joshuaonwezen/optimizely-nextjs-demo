@@ -1,20 +1,22 @@
-interface ProductHeroBlockProps {
+import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+interface ProductHeroData {
   badge?: string | null;
   title?: string | null;
   description?: string | null;
   ctaText?: string | null;
   ctaUrl?: { default?: string | null } | null;
-  inEditMode?: boolean;
+  __context?: any;
 }
 
-export default function ProductHeroBlock({
-  badge,
-  title,
-  description,
-  ctaText,
-  ctaUrl,
-  inEditMode,
-}: ProductHeroBlockProps) {
+type ProductHeroBlockProps = ProductHeroData & {
+  content?: ProductHeroData;
+};
+
+export default function ProductHeroBlock(props: ProductHeroBlockProps) {
+  const data = props.content ?? props;
+  const { pa } = getPreviewUtils(data as any);
+
   return (
     <section
       className="py-28 md:py-36"
@@ -22,43 +24,43 @@ export default function ProductHeroBlock({
     >
       <div className="max-w-7xl mx-auto px-8">
         <div className="max-w-3xl">
-          {badge && (
+          {data.badge && (
             <span
-              data-epi-edit={inEditMode ? "badge" : undefined}
+              {...pa("badge")}
               className="inline-block text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-8 text-on-brand"
               style={{
                 fontFamily: "var(--font-body)",
                 background: "rgba(242, 241, 255, 0.15)",
               }}
             >
-              {badge}
+              {data.badge}
             </span>
           )}
-          {title && (
+          {data.title && (
             <h1
-              data-epi-edit={inEditMode ? "title" : undefined}
+              {...pa("title")}
               className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold leading-tight mb-8 text-on-brand"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              {title}
+              {data.title}
             </h1>
           )}
-          {description && (
+          {data.description && (
             <p
-              data-epi-edit={inEditMode ? "description" : undefined}
+              {...pa("description")}
               className="text-lg md:text-xl mb-12 max-w-2xl leading-relaxed"
               style={{ color: "rgba(242, 241, 255, 0.80)" }}
             >
-              {description}
+              {data.description}
             </p>
           )}
-          {ctaUrl?.default && (
+          {data.ctaUrl?.default && (
             <a
-              href={ctaUrl.default}
+              href={data.ctaUrl.default}
               className="hover-lift inline-block px-8 py-3.5 rounded-lg font-semibold bg-surface-lowest text-brand"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              {ctaText ?? "Learn More"}
+              {data.ctaText ?? "Learn More"}
             </a>
           )}
         </div>

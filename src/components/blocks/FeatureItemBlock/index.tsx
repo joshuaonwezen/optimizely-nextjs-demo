@@ -1,38 +1,43 @@
-interface FeatureItemBlockProps {
+import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+interface FeatureItemData {
   title?: string | null;
   description?: string | null;
-  inEditMode?: boolean;
+  __context?: any;
 }
 
-export default function FeatureItemBlock({
-  title,
-  description,
-  inEditMode,
-}: FeatureItemBlockProps) {
+type FeatureItemBlockProps = FeatureItemData & {
+  content?: FeatureItemData;
+};
+
+export default function FeatureItemBlock(props: FeatureItemBlockProps) {
+  const data = props.content ?? props;
+  const { pa } = getPreviewUtils(data as any);
+
   return (
     <div
       className="rounded-2xl p-8 h-full"
       style={{ background: "var(--surface-container-lowest)" }}
     >
-      {title && (
+      {data.title && (
         <h3
-          data-epi-edit={inEditMode ? "title" : undefined}
+          {...pa("title")}
           className="text-base font-bold mb-3"
           style={{
             fontFamily: "var(--font-display)",
             color: "var(--on-surface)",
           }}
         >
-          {title}
+          {data.title}
         </h3>
       )}
-      {description && (
+      {data.description && (
         <p
-          data-epi-edit={inEditMode ? "description" : undefined}
+          {...pa("description")}
           className="text-sm leading-relaxed"
           style={{ color: "var(--on-surface-variant)" }}
         >
-          {description}
+          {data.description}
         </p>
       )}
     </div>
