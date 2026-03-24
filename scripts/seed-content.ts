@@ -402,6 +402,68 @@ const pages: PageDef[] = [
       "Explore Analytics"
     ),
   },
+  {
+    key: noHyphens(),
+    displayName: "Contact Us",
+    routeSegment: "contact",
+    nodes: [
+      sectionComponent("SectionHeadingBlock", "Contact Heading", {
+        heading: "Get in Touch",
+        subheading:
+          "Have a question or want to learn more? Fill out the form below and our team will get back to you within 24 hours.",
+      }),
+      sectionComponent("FormContainerBlock", "Contact Form Container", {
+        heading: "Contact Us",
+        description: "We'd love to hear from you. Please fill out the form below.",
+        submitUrl: "/api/form-submit",
+        successMessage: "Thank you for reaching out! We'll be in touch within 24 hours.",
+      }),
+      gridSection("Form Fields Row 1", [
+        elementComponent("FormTextInput", "Name Field", {
+          label: "Full Name",
+          placeholder: "John Doe",
+          fieldName: "name",
+          inputType: "text",
+          required: true,
+        }),
+        elementComponent("FormTextInput", "Email Field", {
+          label: "Email Address",
+          placeholder: "john@company.com",
+          fieldName: "email",
+          inputType: "email",
+          required: true,
+        }),
+      ]),
+      gridSection("Form Fields Row 2", [
+        elementComponent("FormTextInput", "Company Field", {
+          label: "Company",
+          placeholder: "Acme Inc.",
+          fieldName: "company",
+          inputType: "text",
+          required: false,
+        }),
+        elementComponent("FormSelect", "Product Interest", {
+          label: "Product Interest",
+          fieldName: "product",
+          options: "Content Management System,Feature Experimentation,Web Experimentation,Analytics,Full Platform",
+          required: true,
+        }),
+      ]),
+      gridSection("Message Row", [
+        elementComponent("FormTextArea", "Message Field", {
+          label: "Message",
+          placeholder: "Tell us about your project or question...",
+          fieldName: "message",
+          required: true,
+        }),
+      ]),
+      gridSection("Submit Row", [
+        elementComponent("FormSubmitButton", "Submit Button", {
+          label: "Send Message",
+        }),
+      ]),
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------

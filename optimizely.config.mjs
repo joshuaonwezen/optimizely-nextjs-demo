@@ -478,5 +478,5 @@ export const DefaultColumnTemplate = displayTemplate({
 // =============================================================================
 
 export default buildConfig({
-  components: ["./src/components/**/*.tsx"],
+  components: ["./optimizely.config.mjs", "./src/components/**/*.tsx"],
 });

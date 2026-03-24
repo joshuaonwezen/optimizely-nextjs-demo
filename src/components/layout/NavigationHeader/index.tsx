@@ -5,6 +5,7 @@ const NAV_LINKS = [
   { label: "Feature Experimentation", href: "/feature-experimentation" },
   { label: "Web Experimentation", href: "/web-experimentation" },
   { label: "Analytics", href: "/analytics" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export default function NavigationHeader() {
