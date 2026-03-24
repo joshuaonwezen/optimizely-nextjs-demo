@@ -8,25 +8,34 @@ interface FeatureItemData {
 
 type FeatureItemBlockProps = FeatureItemData & {
   content?: FeatureItemData;
+  displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
+};
+
+const VARIANT_CLASSES: Record<string, string> = {
+  card: "rounded-2xl p-8 bg-surface-lowest",
+  flat: "p-8",
+  outlined: "rounded-2xl p-8 border border-ghost-border",
 };
 
 export default function FeatureItemBlock(props: FeatureItemBlockProps) {
   const data = props.content ?? props;
+  const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
 
+  let variant = "card";
+  if (props.displayTemplateKey === "FeatureItemOutlinedTemplate") variant = "outlined";
+  else if (props.displayTemplateKey === "FeatureItemFlatTemplate") variant = "flat";
+  if (ds?.variant) variant = ds.variant as string;
+
+  const vs = VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.card;
+
   return (
-    <div
-      className="rounded-2xl p-8 h-full"
-      style={{ background: "var(--surface-container-lowest)" }}
-    >
+    <div className={`h-full ${vs}`}>
       {data.title && (
         <h3
           {...pa("title")}
-          className="text-base font-bold mb-3"
-          style={{
-            fontFamily: "var(--font-display)",
-            color: "var(--on-surface)",
-          }}
+          className="font-display text-base font-bold mb-3 text-on-surface"
         >
           {data.title}
         </h3>
@@ -34,8 +43,7 @@ export default function FeatureItemBlock(props: FeatureItemBlockProps) {
       {data.description && (
         <p
           {...pa("description")}
-          className="text-sm leading-relaxed"
-          style={{ color: "var(--on-surface-variant)" }}
+          className="text-sm leading-relaxed text-on-surface-variant"
         >
           {data.description}
         </p>

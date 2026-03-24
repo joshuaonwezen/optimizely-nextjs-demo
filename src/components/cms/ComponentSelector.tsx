@@ -1,4 +1,4 @@
-import type { ContentAreaItem } from "@/types/cms";
+import type { ContentAreaItemWithSettings } from "@/types/cms";
 import HeroBlock from "@/components/blocks/HeroBlock";
 import CallToAction from "@/components/blocks/CallToActionBlock";
 import TextBlock from "@/components/blocks/RichTextBlock";
@@ -6,45 +6,53 @@ import ProductCardBlock from "@/components/blocks/ProductCardBlock";
 import ProductHeroBlock from "@/components/blocks/ProductHeroBlock";
 import FeatureItemBlock from "@/components/blocks/FeatureItemBlock";
 import SectionHeadingBlock from "@/components/blocks/SectionHeadingBlock";
+import TestimonialBlock from "@/components/blocks/TestimonialBlock";
+import StatsCounterBlock from "@/components/blocks/StatsCounterBlock";
+import ImageBlock from "@/components/blocks/ImageBlock";
+import FormContainerBlock from "@/components/blocks/FormContainerBlock";
+import FormTextInput from "@/components/blocks/FormTextInput";
+import FormTextArea from "@/components/blocks/FormTextArea";
+import FormSelect from "@/components/blocks/FormSelect";
+import FormSubmitButton from "@/components/blocks/FormSubmitButton";
 
 /**
  * Component registry — maps Optimizely Graph __typename to React components.
- *
- * Keys MUST exactly match the __typename values returned by Optimizely Graph,
- * which are the PascalCase content type names defined in the CMS instance.
- * When you create a new block type, add it here and create its component + fragment.
  */
 const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   HeroBlock,
-  Hero: HeroBlock, // Hero type uses the same component with heading/summary fields
+  Hero: HeroBlock,
   CallToAction,
   TextBlock,
   ProductCardBlock,
   ProductHeroBlock,
   FeatureItemBlock,
   SectionHeadingBlock,
+  TestimonialBlock,
+  StatsCounterBlock,
+  ImageBlock,
+  FormContainerBlock,
+  FormTextInput,
+  FormTextArea,
+  FormSelect,
+  FormSubmitButton,
 };
 
 export interface CompositionRow {
   key: string;
-  items: ContentAreaItem[];
+  items: ContentAreaItemWithSettings[];
+  displaySettings?: Record<string, string | boolean>;
 }
 
 interface ComponentSelectorProps {
-  /** Composition rows from GraphQL response */
   rows: CompositionRow[];
-  /** Whether Visual Builder edit mode is active */
   inEditMode?: boolean;
 }
 
 /**
  * Factory component that dispatches Optimizely content items to React components.
  *
- * For each item, it reads __typename, looks up the registered component, and renders it.
- * The data-epi-block-id attribute on the wrapper div is required by Visual Builder
- * to identify which block is being clicked for on-page editing.
- *
- * Rows with multiple items are rendered in a CSS grid layout.
+ * Each item carries its own displaySettings from the composition node,
+ * which get passed through to the component for style customization.
  */
 export function ComponentSelector({
   rows,
@@ -54,14 +62,13 @@ export function ComponentSelector({
     <>
       {rows.map((row) => {
         const rendered = row.items
-          .map((item, index) => {
+          .map(({ item, displaySettings, displayTemplateKey }, index) => {
             const Component = COMPONENT_REGISTRY[item.__typename];
 
             if (!Component) {
               if (process.env.NODE_ENV !== "production") {
                 console.warn(
-                  `[ComponentSelector] No component registered for __typename: "${item.__typename}". ` +
-                    `Add it to COMPONENT_REGISTRY in ComponentSelector.tsx`
+                  `[ComponentSelector] No component for: "${item.__typename}"`
                 );
               }
               return null;
@@ -74,7 +81,12 @@ export function ComponentSelector({
                 key={key}
                 data-epi-block-id={inEditMode ? key : undefined}
               >
-                <Component {...item} inEditMode={inEditMode} />
+                <Component
+                  {...item}
+                  displaySettings={displaySettings}
+                  displayTemplateKey={displayTemplateKey}
+                  inEditMode={inEditMode}
+                />
               </div>
             );
           })

@@ -18,25 +18,30 @@ interface ProductCardData {
 
 type ProductCardBlockProps = ProductCardData & {
   content?: ProductCardData;
+  displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 };
 
 export default function ProductCardBlock(props: ProductCardBlockProps) {
   const data = props.content ?? props;
+  const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
   const href = data.linkUrl?.default ?? "#";
   const iconChar = data.icon ? ICON_MAP[data.icon] ?? "\u{1F537}" : "\u{1F537}";
 
+  const isFeatured = props.displayTemplateKey === "ProductCardFeaturedTemplate";
+  const showIcon = ds?.showIcon !== false;
+
   return (
     <a
       href={href}
-      className="hover-ambient group flex flex-col h-full rounded-2xl p-8 bg-surface-lowest"
+      className={`hover-ambient group flex flex-col h-full rounded-2xl p-8 bg-surface-lowest ${isFeatured ? "ring-2 ring-brand/20 shadow-ambient" : ""}`}
     >
-      <div className="text-4xl mb-6">{iconChar}</div>
+      {showIcon && <div className="text-4xl mb-6">{iconChar}</div>}
       {data.title && (
         <h3
           {...pa("title")}
-          className="text-lg font-bold text-on-surface mb-3"
-          style={{ fontFamily: "var(--font-display)" }}
+          className="font-display text-lg font-bold text-on-surface mb-3"
         >
           {data.title}
         </h3>

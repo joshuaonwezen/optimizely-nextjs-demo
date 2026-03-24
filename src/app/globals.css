@@ -29,7 +29,7 @@
   --shadow-lift: 0 8px 24px rgba(44, 47, 49, 0.08);
 
   /* Ghost border */
-  --ghost-border: 1px solid rgba(171, 173, 175, 0.15);
+  --ghost-border-color: rgba(171, 173, 175, 0.15);
 
   /* Gradients */
   --gradient-brand: linear-gradient(135deg, var(--primary), var(--primary-container));
@@ -37,6 +37,7 @@
 }
 
 @theme inline {
+  /* Colors */
   --color-surface: var(--surface);
   --color-surface-low: var(--surface-container-low);
   --color-surface-container: var(--surface-container);
@@ -47,19 +48,28 @@
   --color-brand-dim: var(--primary-dim);
   --color-brand-container: var(--primary-container);
   --color-on-brand: var(--on-primary);
+  --color-on-brand-muted: rgba(242, 241, 255, 0.80);
+  --color-on-brand-subtle: rgba(242, 241, 255, 0.85);
   --color-on-surface: var(--on-surface);
   --color-on-surface-variant: var(--on-surface-variant);
   --color-tertiary: var(--tertiary);
+  --color-outline-variant: var(--outline-variant);
+  --color-ghost-border: var(--ghost-border-color);
+  --color-error: #d32f2f;
+  --color-nav-glass: rgba(255, 255, 255, 0.80);
+  --color-badge-bg: rgba(242, 241, 255, 0.15);
+
+  /* Fonts */
   --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
+
+  /* Shadows */
+  --shadow-ambient: var(--shadow-ambient);
+  --shadow-lift: var(--shadow-lift);
 }
 
 body {
-  background: var(--surface);
-  color: var(--on-surface);
-  font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  @apply bg-surface text-on-surface font-body antialiased;
 }
 
 /* Utility: brand gradient background */
@@ -69,34 +79,26 @@ body {
 
 /* Utility: hover lift effect */
 .hover-lift {
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  @apply transition-[box-shadow,transform] duration-200 ease-out;
 }
 .hover-lift:hover {
-  box-shadow: var(--shadow-lift);
-  transform: translateY(-1px);
+  @apply shadow-lift -translate-y-px;
 }
 
 /* Utility: ambient hover for cards */
 .hover-ambient {
-  transition: box-shadow 0.25s ease, transform 0.25s ease;
+  @apply transition-[box-shadow,transform] duration-250 ease-out;
 }
 .hover-ambient:hover {
-  box-shadow: var(--shadow-ambient);
-  transform: translateY(-2px);
+  @apply shadow-ambient -translate-y-0.5;
 }
 
 /* Utility: insight rail — signature vertical accent line */
 .insight-rail {
-  position: relative;
-  padding-left: 1.5rem;
+  @apply relative pl-6;
 }
 .insight-rail::before {
   content: "";
-  position: absolute;
-  left: 0;
-  top: 0.25rem;
-  bottom: 0.25rem;
-  width: 2px;
+  @apply absolute left-0 top-1 bottom-1 w-0.5 rounded-sm;
   background: var(--gradient-insight);
-  border-radius: 1px;
 }

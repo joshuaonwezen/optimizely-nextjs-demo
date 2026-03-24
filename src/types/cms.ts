@@ -39,7 +39,20 @@ export interface CmsLink {
   target?: string | null;
 }
 
+/** Display setting key/value pair from composition node */
+export interface DisplaySetting {
+  key: string;
+  value: string;
+}
+
 /** Content area item — the union type for ComponentSelector */
 export interface ContentAreaItem extends IContent {
   [key: string]: unknown;
+}
+
+/** Content area item with display settings from composition */
+export interface ContentAreaItemWithSettings {
+  item: ContentAreaItem;
+  displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 }

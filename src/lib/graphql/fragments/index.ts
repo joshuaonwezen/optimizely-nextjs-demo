@@ -6,3 +6,7 @@ export { PRODUCT_CARD_FRAGMENT } from "@/components/blocks/ProductCardBlock/frag
 export { PRODUCT_HERO_FRAGMENT } from "@/components/blocks/ProductHeroBlock/fragment";
 
 export { SECTION_HEADING_FRAGMENT } from "@/components/blocks/SectionHeadingBlock/fragment";
+export { TESTIMONIAL_FRAGMENT } from "@/components/blocks/TestimonialBlock/fragment";
+export { STATS_COUNTER_FRAGMENT } from "@/components/blocks/StatsCounterBlock/fragment";
+export { IMAGE_BLOCK_FRAGMENT } from "@/components/blocks/ImageBlock/fragment";
+export { FORM_CONTAINER_FRAGMENT } from "@/components/blocks/FormContainerBlock/fragment";

@@ -8,6 +8,8 @@ interface TextBlockData {
 
 type TextBlockProps = TextBlockData & {
   content?: TextBlockData;
+  displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 };
 
 export default function TextBlock(props: TextBlockProps) {
@@ -16,11 +18,12 @@ export default function TextBlock(props: TextBlockProps) {
 
   if (!data.body?.json) return null;
 
+  const isNarrow = props.displayTemplateKey === "TextBlockNarrowTemplate";
+
   return (
     <div
       {...pa("body")}
-      className="max-w-4xl mx-auto px-8 py-16"
-      style={{ color: "var(--on-surface-variant)" }}
+      className={`${isNarrow ? "max-w-2xl" : "max-w-4xl"} mx-auto px-8 py-16 text-on-surface-variant`}
     >
       <div className="text-base leading-relaxed space-y-6">
         <RichText content={data.body.json as RichTextProps["content"]} />

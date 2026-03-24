@@ -8,7 +8,7 @@ import {
 } from "@/components/cms/ComponentSelector";
 import { GET_PAGE_BY_URL_QUERY } from "@/lib/graphql/queries/GetPageByUrl";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
-import type { ContentAreaItem } from "@/types/cms";
+import type { ContentAreaItem, ContentAreaItemWithSettings, DisplaySetting } from "@/types/cms";
 
 interface PageParams {
   slug?: string[];
@@ -43,25 +43,44 @@ function extractRowsFromComposition(page: any): CompositionRow[] {
   const rows: CompositionRow[] = [];
   let rowIdx = 0;
 
-  /** Resolve a composition component node into a ContentAreaItem.
-   *  For types unknown to Graph (e.g. FeatureItemBlock), the data lives
-   *  in component._json — we merge it and use the node's `type` field. */
-  function resolveComponent(node: any): ContentAreaItem | null {
-    const comp = node?.component;
-    if (!comp) return null;
-    if (comp.__typename && comp.__typename !== "_Component") {
-      return comp as ContentAreaItem;
+  /** Parse displaySettings array into a key/value map */
+  function parseSettings(
+    settings?: DisplaySetting[] | null
+  ): Record<string, string | boolean> | undefined {
+    if (!settings || settings.length === 0) return undefined;
+    const result: Record<string, string | boolean> = {};
+    for (const { key, value } of settings) {
+      result[key] = value === "true" ? true : value === "false" ? false : value;
     }
-    // Fallback: use _json data with the composition node's type as __typename
-    if (comp._json && node.type) {
-      const { _metadata, _itemMetadata, ...props } = comp._json;
-      return { __typename: node.type, ...props } as ContentAreaItem;
-    }
-    return null;
+    return result;
   }
 
-  function collectComponents(node: any): ContentAreaItem[] {
-    const items: ContentAreaItem[] = [];
+  /** Resolve a composition component node into a ContentAreaItemWithSettings.
+   *  For types unknown to Graph (e.g. FeatureItemBlock), the data lives
+   *  in component._json — we merge it and use the node's `type` field. */
+  function resolveComponent(node: any): ContentAreaItemWithSettings | null {
+    const comp = node?.component;
+    if (!comp) return null;
+
+    let item: ContentAreaItem | null = null;
+    if (comp.__typename && comp.__typename !== "_Component") {
+      item = comp as ContentAreaItem;
+    } else if (comp._json && node.type) {
+      const { _metadata, _itemMetadata, ...props } = comp._json;
+      item = { __typename: node.type, ...props } as ContentAreaItem;
+    }
+
+    if (!item) return null;
+
+    return {
+      item,
+      displaySettings: parseSettings(node.displaySettings),
+      displayTemplateKey: node.displayTemplateKey ?? undefined,
+    };
+  }
+
+  function collectComponents(node: any): ContentAreaItemWithSettings[] {
+    const items: ContentAreaItemWithSettings[] = [];
     const resolved = resolveComponent(node);
     if (resolved) {
       items.push(resolved);
@@ -81,6 +100,7 @@ function extractRowsFromComposition(page: any): CompositionRow[] {
       rows.push({
         key: gridNode.key ?? `row-${rowIdx++}`,
         items: [topLevel],
+        displaySettings: parseSettings(gridNode.displaySettings),
       });
       continue;
     }
@@ -92,6 +112,7 @@ function extractRowsFromComposition(page: any): CompositionRow[] {
         rows.push({
           key: gridNode.key ?? `row-${rowIdx++}`,
           items,
+          displaySettings: parseSettings(gridNode.displaySettings),
         });
       }
     }

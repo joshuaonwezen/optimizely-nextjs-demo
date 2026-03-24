@@ -9,15 +9,11 @@ const NAV_LINKS = [
 
 export default function NavigationHeader() {
   return (
-    <header
-      className="sticky top-0 z-50 backdrop-blur-[20px]"
-      style={{ background: "rgba(255, 255, 255, 0.80)" }}
-    >
+    <header className="sticky top-0 z-50 backdrop-blur-[20px] bg-nav-glass">
       <nav className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
         <Link
           href="/"
-          className="text-xl font-extrabold tracking-tight text-on-surface"
-          style={{ fontFamily: "var(--font-display)" }}
+          className="font-display text-xl font-extrabold tracking-tight text-on-surface"
         >
           Optimizely
         </Link>
@@ -26,8 +22,7 @@ export default function NavigationHeader() {
             <Link
               key={href}
               href={href}
-              className="text-sm font-medium text-on-surface-variant hover:text-brand transition-colors"
-              style={{ fontFamily: "var(--font-body)" }}
+              className="font-body text-sm font-medium text-on-surface-variant hover:text-brand transition-colors"
             >
               {label}
             </Link>
