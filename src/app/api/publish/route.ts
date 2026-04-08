@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    console.log("[Optimizely] Content published:", JSON.stringify(body, null, 2));
+    console.log("[Optimizely] Content published:", body);
 
     return NextResponse.json({ received: true, timestamp: Date.now() });
   } catch {

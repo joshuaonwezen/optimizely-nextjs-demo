@@ -64,16 +64,13 @@ if (!response.ok) {
   process.exit(1);
 }
 
-let result;
-try {
-  result = JSON.parse(text);
-} catch {
-  result = text;
-}
-
 console.log("\nWebhook registered successfully!");
-console.log(JSON.stringify(result, null, 2));
+try {
+  console.log(JSON.parse(text));
+} catch {
+  console.log(text);
+}
 console.log(
   "\nTo list all registered webhooks, run:\n" +
-    `  curl -u "${APP_KEY}:<secret>" https://cg.optimizely.com/api/webhooks`
+    "  curl -u '<app-key>:<app-secret>' https://cg.optimizely.com/api/webhooks"
 );
