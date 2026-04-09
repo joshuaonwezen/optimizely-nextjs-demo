@@ -24,6 +24,7 @@ export default function ProductHeroBlock(props: ProductHeroBlockProps) {
 
   return (
     <section
+      {...pa((data as any).__composition)}
       className={`bg-gradient-brand ${isCompact ? "py-16 md:py-20" : "py-28 md:py-36"}`}
     >
       <div className={`max-w-7xl mx-auto px-8 ${isCentered ? "text-center" : ""}`}>

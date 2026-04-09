@@ -20,7 +20,7 @@ export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
   const showAccent = ds?.showAccent === true;
 
   return (
-    <div className={`py-20 max-w-7xl mx-auto px-8 ${isCentered ? "text-center" : ""}`}>
+    <div {...pa((data as any).__composition)} className={`py-20 max-w-7xl mx-auto px-8 ${isCentered ? "text-center" : ""}`}>
       <div className={`${showAccent ? "insight-rail" : ""} ${isCentered ? "max-w-2xl mx-auto" : "max-w-2xl"}`}>
         {data.heading && (
           <h2

@@ -22,6 +22,7 @@ export default function TextBlock(props: TextBlockProps) {
 
   return (
     <div
+      {...pa((data as any).__composition)}
       {...pa("body")}
       className={`${isNarrow ? "max-w-2xl" : "max-w-4xl"} mx-auto px-8 py-16 text-on-surface-variant`}
     >

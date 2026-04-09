@@ -17,7 +17,7 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
   const { pa } = getPreviewUtils(data as any);
 
   return (
-    <div className="text-center p-8">
+    <div {...pa((data as any).__composition)} className="text-center p-8">
       {data.value && (
         <p
           {...pa("value")}

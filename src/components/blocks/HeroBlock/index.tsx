@@ -39,6 +39,7 @@ export default function HeroBlock(props: HeroBlockProps) {
 
   return (
     <section
+      {...pa((data as any).__composition)}
       className={`bg-gradient-brand relative w-full flex items-center overflow-hidden ${isTall ? "min-h-screen" : "min-h-[640px]"}`}
     >
       {bgUrl && (

@@ -28,7 +28,7 @@ export default function ImageBlock(props: ImageBlockProps) {
   const aspectRatio = (ds?.aspectRatio as string) ?? "auto";
 
   return (
-    <figure className="max-w-7xl mx-auto px-8 py-8">
+    <figure {...pa((data as any).__composition)} className="max-w-7xl mx-auto px-8 py-8">
       <div
         className={`relative overflow-hidden ${isRounded ? "rounded-2xl" : ""}`}
         style={aspectRatio !== "auto" ? { aspectRatio } : undefined}

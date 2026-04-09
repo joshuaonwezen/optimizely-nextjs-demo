@@ -19,6 +19,7 @@ export default function FormContainerBlock(props: FormContainerBlockProps) {
 
   return (
     <section
+      {...pa((data as any).__composition)}
       className="py-20 bg-surface-low"
       data-form-submit-url={data.submitUrl?.default ?? "/api/form-submit"}
       data-form-success-message={data.successMessage ?? "Thank you! We'll be in touch soon."}

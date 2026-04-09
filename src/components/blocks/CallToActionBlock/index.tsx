@@ -27,7 +27,7 @@ export default function CallToActionBlock(props: CallToActionProps) {
   const vs = VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.brand;
 
   return (
-    <section className="py-24 bg-surface-low">
+    <section {...pa((data as any).__composition)} className="py-24 bg-surface-low">
       <div className="max-w-7xl mx-auto px-8 text-center">
         {data.link && (
           <a
