@@ -1,5 +1,5 @@
 import { GraphClient, type PreviewParams } from "@optimizely/cms-sdk";
-import { OptimizelyComponent } from "@optimizely/cms-sdk/react/server";
+import { OptimizelyGridSection } from "@optimizely/cms-sdk/react/server";
 import { PreviewComponent } from "@optimizely/cms-sdk/react/client";
 import Script from "next/script";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
@@ -20,6 +20,7 @@ export default async function PreviewPage({ searchParams }: Props) {
   );
 
   const cmsUrl = process.env.OPTIMIZELY_CMS_URL ?? "";
+  const nodes = response?.composition?.nodes ?? [];
 
   return (
     <>
@@ -28,7 +29,7 @@ export default async function PreviewPage({ searchParams }: Props) {
         strategy="afterInteractive"
       />
       <PreviewComponent />
-      <OptimizelyComponent content={response} />
+      <OptimizelyGridSection nodes={nodes} />
     </>
   );
 }
