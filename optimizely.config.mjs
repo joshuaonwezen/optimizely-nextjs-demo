@@ -11,7 +11,7 @@ import {
 export const LandingPageType = contentType({
   key: "LandingPage",
   displayName: "Landing Page",
-  baseType: "_experience",
+  baseType: "_page",
 });
 
 // =============================================================================
@@ -28,9 +28,9 @@ export const HeroBlockType = contentType({
   properties: {
     headline: { type: "string", displayName: "Headline", indexingType: "searchable" },
     subheadline: { type: "string", displayName: "Subheadline", indexingType: "searchable" },
-    backgroundImage: { type: "contentReference", displayName: "Background Image", allowedTypes: ["_image"] },
+    backgroundImage: { type: "contentReference", displayName: "Background Image", allowedTypes: ["_image"], indexingType: "disabled" },
     ctaText: { type: "string", displayName: "CTA Text" },
-    ctaLink: { type: "url", displayName: "CTA Link" },
+    ctaLink: { type: "string", displayName: "CTA Link" },
   },
 });
 
@@ -153,7 +153,7 @@ export const CallToActionType = contentType({
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
     label: { type: "string", displayName: "Label" },
-    link: { type: "url", displayName: "Link" },
+    link: { type: "string", displayName: "Link" },
   },
 });
 
@@ -269,7 +269,7 @@ export const TestimonialBlockType = contentType({
     quote: { type: "string", displayName: "Quote", indexingType: "searchable" },
     authorName: { type: "string", displayName: "Author Name" },
     authorRole: { type: "string", displayName: "Author Role" },
-    authorImage: { type: "contentReference", displayName: "Author Photo", allowedTypes: ["_image"] },
+    authorImage: { type: "contentReference", displayName: "Author Photo", allowedTypes: ["_image"], indexingType: "disabled" },
   },
 });
 
@@ -304,7 +304,7 @@ export const ImageBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    image: { type: "contentReference", displayName: "Image", allowedTypes: ["_image"] },
+    image: { type: "contentReference", displayName: "Image", allowedTypes: ["_image"], indexingType: "disabled" },
     altText: { type: "string", displayName: "Alt Text" },
     caption: { type: "string", displayName: "Caption" },
   },
@@ -323,9 +323,9 @@ export const ImageBlockRoundedTemplate = displayTemplate({
       sortOrder: 0,
       choices: {
         auto: { displayName: "Auto", sortOrder: 0 },
-        "16/9": { displayName: "16:9", sortOrder: 1 },
-        "4/3": { displayName: "4:3", sortOrder: 2 },
-        "1/1": { displayName: "Square", sortOrder: 3 },
+        r16x9: { displayName: "16:9", sortOrder: 1 },
+        r4x3: { displayName: "4:3", sortOrder: 2 },
+        r1x1: { displayName: "Square", sortOrder: 3 },
       },
     },
   },
