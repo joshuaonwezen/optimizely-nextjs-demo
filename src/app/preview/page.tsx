@@ -19,7 +19,7 @@ export default async function PreviewPage({ searchParams }: Props) {
     (await searchParams) as PreviewParams
   );
 
-  const cmsUrl = process.env.OPTIMIZELY_CMS_URL ?? "";
+  const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
   const nodes = response?.composition?.nodes ?? [];
 
   return (

@@ -56,7 +56,7 @@ export default function HeroBlock(props: HeroBlockProps) {
         <div className={isCentered ? "max-w-3xl mx-auto" : "max-w-3xl"}>
           {title && (
             <h1
-              {...pa("heading")}
+              {...pa("headline")}
               className="font-display text-5xl md:text-6xl lg:text-[3.5rem] font-extrabold leading-tight mb-8 text-on-brand"
             >
               {title}
@@ -64,7 +64,7 @@ export default function HeroBlock(props: HeroBlockProps) {
           )}
           {subtitle && (
             <p
-              {...pa("summary")}
+              {...pa("subheadline")}
               className="text-xl md:text-2xl mb-12 max-w-2xl leading-relaxed text-on-brand-subtle"
             >
               {subtitle}
