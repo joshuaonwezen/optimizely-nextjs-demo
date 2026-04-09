@@ -26,6 +26,7 @@ import FormSubmitButton from "@/components/blocks/FormSubmitButton";
 
 // Config
 import {
+  DynamicExperienceType,
   LandingPageType,
   HeroBlockType,
   ProductHeroBlockType,
@@ -66,12 +67,8 @@ export function initComponentRegistry() {
   initContentTypeRegistry([
     BlankExperienceContentType,
     BlankSectionContentType,
+    DynamicExperienceType,
     LandingPageType,
-    contentType({
-      key: "DynamicExperience",
-      baseType: "_experience",
-      displayName: "Dynamic Experience",
-    }),
     HeroBlockType,
     ProductHeroBlockType,
     SectionHeadingBlockType,

@@ -8,6 +8,15 @@ import {
 // Experience Type
 // =============================================================================
 
+export const DynamicExperienceType = contentType({
+  key: "DynamicExperience",
+  displayName: "Dynamic Experience",
+  baseType: "_experience",
+  properties: {
+    lastSync: { type: "dateTime", displayName: "Last Sync" },
+  },
+});
+
 export const LandingPageType = contentType({
   key: "LandingPage",
   displayName: "Landing Page",
