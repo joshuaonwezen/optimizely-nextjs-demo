@@ -31,7 +31,7 @@ export default function CallToActionBlock(props: CallToActionProps) {
       <div className="max-w-7xl mx-auto px-8 text-center">
         {data.link && (
           <a
-            href={data.link}
+            href={data.__context?.edit ? undefined : data.link}
             {...pa("label")}
             className={`hover-lift font-display inline-block rounded-lg font-semibold ${isLarge ? "px-12 py-5 text-lg" : "px-10 py-4 text-base"} ${vs}`}
           >

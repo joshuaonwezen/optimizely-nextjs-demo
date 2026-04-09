@@ -26,7 +26,7 @@ export default function ProductCardBlock(props: ProductCardBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
-  const href = data.linkUrl?.default ?? "#";
+  const href = data.__context?.edit ? undefined : (data.linkUrl?.default ?? "#");
   const iconChar = data.icon ? ICON_MAP[data.icon] ?? "\u{1F537}" : "\u{1F537}";
 
   const isFeatured = props.displayTemplateKey === "ProductCardFeaturedTemplate";
