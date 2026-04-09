@@ -19,7 +19,7 @@ export default function FormSelect(props: FormSelectProps) {
   const optionList = data.options?.split(",").map((o) => o.trim()).filter(Boolean) ?? [];
 
   return (
-    <div {...pa((data as any).__composition)}>
+    <div>
       {data.label && (
         <label
           {...pa("label")}

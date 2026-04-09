@@ -18,7 +18,7 @@ export default function FormTextArea(props: FormTextAreaProps) {
   const name = data.fieldName ?? data.label?.toLowerCase().replace(/\s+/g, "_") ?? "field";
 
   return (
-    <div {...pa((data as any).__composition)}>
+    <div>
       {data.label && (
         <label
           {...pa("label")}

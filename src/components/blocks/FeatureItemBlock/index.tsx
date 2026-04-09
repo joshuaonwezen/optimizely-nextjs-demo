@@ -31,7 +31,7 @@ export default function FeatureItemBlock(props: FeatureItemBlockProps) {
   const vs = VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.card;
 
   return (
-    <div {...pa((data as any).__composition)} className={`h-full ${vs}`}>
+    <div className={`h-full ${vs}`}>
       {data.title && (
         <h3
           {...pa("title")}

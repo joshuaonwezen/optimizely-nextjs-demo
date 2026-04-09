@@ -20,7 +20,7 @@ export default function FormTextInput(props: FormTextInputProps) {
   const type = data.inputType ?? "text";
 
   return (
-    <div {...pa((data as any).__composition)}>
+    <div>
       {data.label && (
         <label
           {...pa("label")}

@@ -26,7 +26,6 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
 
   return (
     <div
-      {...pa((data as any).__composition)}
       className={`${isCard ? "rounded-2xl p-10 bg-surface-lowest" : "py-20 max-w-3xl mx-auto px-8"}`}
     >
       {data.quote && (
