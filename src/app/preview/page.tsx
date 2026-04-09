@@ -29,7 +29,15 @@ export default async function PreviewPage({ searchParams }: Props) {
         strategy="afterInteractive"
       />
       <PreviewComponent />
-      <OptimizelyGridSection nodes={nodes} />
+      {nodes.map((node: any) =>
+        node.nodeType === "section" ? (
+          <div key={node.key} data-epi-block-id={node.key}>
+            <OptimizelyGridSection nodes={node.nodes ?? []} />
+          </div>
+        ) : (
+          <OptimizelyGridSection key={node.key} nodes={[node]} />
+        )
+      )}
     </>
   );
 }
