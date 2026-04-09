@@ -35,7 +35,9 @@ export default async function PreviewPage({ searchParams }: Props) {
             <OptimizelyGridSection nodes={node.nodes ?? []} />
           </div>
         ) : (
-          <OptimizelyGridSection key={node.key} nodes={[node]} />
+          <div key={node.key} data-epi-block-id={node.key}>
+            <OptimizelyGridSection nodes={[node]} />
+          </div>
         )
       )}
     </>
