@@ -418,7 +418,7 @@ const pages: PageDef[] = [
         submitUrl: "/api/form-submit",
         successMessage: "Thank you for reaching out! We'll be in touch within 24 hours.",
       }),
-      gridSection("Form Fields Row 1", [
+      gridSection("Name Field Row", [
         elementComponent("FormTextInput", "Name Field", {
           label: "Full Name",
           placeholder: "John Doe",
@@ -426,6 +426,8 @@ const pages: PageDef[] = [
           inputType: "text",
           required: true,
         }),
+      ]),
+      gridSection("Email Field Row", [
         elementComponent("FormTextInput", "Email Field", {
           label: "Email Address",
           placeholder: "john@company.com",
@@ -434,7 +436,7 @@ const pages: PageDef[] = [
           required: true,
         }),
       ]),
-      gridSection("Form Fields Row 2", [
+      gridSection("Company Field Row", [
         elementComponent("FormTextInput", "Company Field", {
           label: "Company",
           placeholder: "Acme Inc.",
@@ -442,6 +444,8 @@ const pages: PageDef[] = [
           inputType: "text",
           required: false,
         }),
+      ]),
+      gridSection("Product Interest Row", [
         elementComponent("FormSelect", "Product Interest", {
           label: "Product Interest",
           fieldName: "product",

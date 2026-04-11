@@ -4,7 +4,6 @@ interface StatsCounterData {
   value?: string | null;
   label?: string | null;
   suffix?: string | null;
-  __context?: any;
 }
 
 type StatsCounterBlockProps = StatsCounterData & {

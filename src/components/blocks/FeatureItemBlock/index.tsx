@@ -3,7 +3,6 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 interface FeatureItemData {
   title?: string | null;
   description?: string | null;
-  __context?: any;
 }
 
 type FeatureItemBlockProps = FeatureItemData & {

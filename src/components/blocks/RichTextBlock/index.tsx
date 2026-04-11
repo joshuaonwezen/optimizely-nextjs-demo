@@ -3,7 +3,6 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
 interface TextBlockData {
   body?: { json: unknown } | null;
-  __context?: any;
 }
 
 type TextBlockProps = TextBlockData & {

@@ -3,7 +3,6 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 interface SectionHeadingData {
   heading?: string | null;
   subheading?: string | null;
-  __context?: any;
 }
 
 type SectionHeadingBlockProps = SectionHeadingData & {

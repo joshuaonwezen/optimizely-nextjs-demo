@@ -1,4 +1,5 @@
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { fieldName, INPUT_CLASS, FieldLabel } from "@/lib/formField";
 
 interface FormTextInputData {
   label?: string | null;
@@ -6,7 +7,6 @@ interface FormTextInputData {
   fieldName?: string | null;
   inputType?: string | null;
   required?: boolean | null;
-  __context?: any;
 }
 
 type FormTextInputProps = FormTextInputData & {
@@ -16,20 +16,13 @@ type FormTextInputProps = FormTextInputData & {
 export default function FormTextInput(props: FormTextInputProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
-  const name = data.fieldName ?? data.label?.toLowerCase().replace(/\s+/g, "_") ?? "field";
+  const name = fieldName(data.label, data.fieldName);
   const type = data.inputType ?? "text";
 
   return (
-    <div>
+    <div className="max-w-2xl mx-auto px-8 py-3">
       {data.label && (
-        <label
-          {...pa("label")}
-          htmlFor={name}
-          className="block text-sm font-medium mb-2 text-on-surface"
-        >
-          {data.label}
-          {data.required && <span className="text-error"> *</span>}
-        </label>
+        <FieldLabel htmlFor={name} label={data.label} required={data.required} pa={pa("label")} />
       )}
       <input
         id={name}
@@ -37,7 +30,7 @@ export default function FormTextInput(props: FormTextInputProps) {
         type={type}
         placeholder={data.placeholder ?? undefined}
         required={data.required ?? false}
-        className="w-full px-4 py-3 rounded-lg text-sm outline-none transition-shadow focus:ring-2 focus:ring-brand/30 bg-surface-lowest text-on-surface border border-ghost-border"
+        className={INPUT_CLASS}
       />
     </div>
   );

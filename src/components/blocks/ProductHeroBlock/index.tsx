@@ -6,7 +6,6 @@ interface ProductHeroData {
   description?: string | null;
   ctaText?: string | null;
   ctaUrl?: { default?: string | null } | null;
-  __context?: any;
 }
 
 type ProductHeroBlockProps = ProductHeroData & {

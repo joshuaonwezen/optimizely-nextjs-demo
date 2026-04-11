@@ -2,13 +2,10 @@ import { notFound } from "next/navigation";
 import { draftMode } from "next/headers";
 import type { Metadata } from "next";
 import { graphqlFetch } from "@/lib/optimizely/client";
-import {
-  ComponentSelector,
-  type CompositionRow,
-} from "@/components/cms/ComponentSelector";
+import { ComponentSelector } from "@/components/cms/ComponentSelector";
 import { GET_PAGE_BY_URL_QUERY } from "@/lib/graphql/queries/GetPageByUrl";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
-import type { ContentAreaItem, ContentAreaItemWithSettings, DisplaySetting } from "@/types/cms";
+import { extractRowsFromComposition } from "@/lib/optimizely/extractRows";
 
 interface PageParams {
   slug?: string[];
@@ -26,99 +23,6 @@ function buildUrlCandidates(slug?: string[]): string[] {
   }
   const path = slug.join("/");
   return [`/en/${path}/`, `/${path}/`];
-}
-
-/**
- * Recursively collect component items from composition nodes.
- * Returns items grouped into rows for grid rendering.
- *
- * The composition tree has this shape:
- * - Top-level component (sectionEnabled) → single-item row
- * - Section → Row → Column → Component (elementEnabled) → multi-item row
- */
-function extractRowsFromComposition(page: any): CompositionRow[] {
-  const composition = page?.composition;
-  if (!composition?.grids) return [];
-
-  const rows: CompositionRow[] = [];
-  let rowIdx = 0;
-
-  /** Parse displaySettings array into a key/value map */
-  function parseSettings(
-    settings?: DisplaySetting[] | null
-  ): Record<string, string | boolean> | undefined {
-    if (!settings || settings.length === 0) return undefined;
-    const result: Record<string, string | boolean> = {};
-    for (const { key, value } of settings) {
-      result[key] = value === "true" ? true : value === "false" ? false : value;
-    }
-    return result;
-  }
-
-  /** Resolve a composition component node into a ContentAreaItemWithSettings.
-   *  For types unknown to Graph (e.g. FeatureItemBlock), the data lives
-   *  in component._json — we merge it and use the node's `type` field. */
-  function resolveComponent(node: any): ContentAreaItemWithSettings | null {
-    const comp = node?.component;
-    if (!comp) return null;
-
-    let item: ContentAreaItem | null = null;
-    if (comp.__typename && comp.__typename !== "_Component") {
-      item = comp as ContentAreaItem;
-    } else if (comp._json && node.type) {
-      const { _metadata, _itemMetadata, ...props } = comp._json;
-      item = { __typename: node.type, ...props } as ContentAreaItem;
-    }
-
-    if (!item) return null;
-
-    return {
-      item,
-      displaySettings: parseSettings(node.displaySettings),
-      displayTemplateKey: node.displayTemplateKey ?? undefined,
-    };
-  }
-
-  function collectComponents(node: any): ContentAreaItemWithSettings[] {
-    const items: ContentAreaItemWithSettings[] = [];
-    const resolved = resolveComponent(node);
-    if (resolved) {
-      items.push(resolved);
-    }
-    if (node?.nodes) {
-      for (const child of node.nodes) {
-        items.push(...collectComponents(child));
-      }
-    }
-    return items;
-  }
-
-  for (const gridNode of composition.grids) {
-    // Top-level component (sectionEnabled)
-    const topLevel = resolveComponent(gridNode);
-    if (topLevel) {
-      rows.push({
-        key: gridNode.key ?? `row-${rowIdx++}`,
-        items: [topLevel],
-        displaySettings: parseSettings(gridNode.displaySettings),
-      });
-      continue;
-    }
-
-    // Section node — collect all components inside it as one row
-    if (gridNode?.nodes) {
-      const items = collectComponents(gridNode);
-      if (items.length > 0) {
-        rows.push({
-          key: gridNode.key ?? `row-${rowIdx++}`,
-          items,
-          displaySettings: parseSettings(gridNode.displaySettings),
-        });
-      }
-    }
-  }
-
-  return rows;
 }
 
 export default async function CmsPage({

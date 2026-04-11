@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { graphqlFetch } from "@/lib/optimizely/client";
-import {
-  ComponentSelector,
-  type CompositionRow,
-} from "@/components/cms/ComponentSelector";
+import { ComponentSelector } from "@/components/cms/ComponentSelector";
+import { extractRowsFromComposition } from "@/lib/optimizely/extractRows";
 
 const GET_LANDING_PAGE_QUERY = /* GraphQL */ `
   query GetLandingPage($slug: String!) {
@@ -18,6 +16,56 @@ const GET_LANDING_PAGE_QUERY = /* GraphQL */ `
           displayName
           url { default }
           published
+        }
+        composition {
+          grids: nodes {
+            ... on CompositionStructureNode {
+              key
+              type
+              displaySettings { key value }
+              component { __typename ... on _Component { _json } }
+              nodes {
+                ... on CompositionStructureNode {
+                  key
+                  type
+                  displaySettings { key value }
+                  component { __typename ... on _Component { _json } }
+                  nodes {
+                    ... on CompositionElementNode {
+                      key
+                      type
+                      displaySettings { key value }
+                      displayTemplateKey
+                      component {
+                        __typename
+                        ... on _Component { _json }
+                      }
+                    }
+                  }
+                }
+                ... on CompositionElementNode {
+                  key
+                  type
+                  displaySettings { key value }
+                  displayTemplateKey
+                  component {
+                    __typename
+                    ... on _Component { _json }
+                  }
+                }
+              }
+            }
+            ... on CompositionElementNode {
+              key
+              type
+              displaySettings { key value }
+              displayTemplateKey
+              component {
+                __typename
+                ... on _Component { _json }
+              }
+            }
+          }
         }
       }
     }
@@ -41,19 +89,9 @@ export default async function LandingPageRoute({
 
   if (!page) return notFound();
 
-  const rows: CompositionRow[] = [];
+  const rows = extractRowsFromComposition(page);
 
-  return (
-    <div className="max-w-7xl mx-auto px-8 py-24">
-      <h1 className="font-display text-4xl font-extrabold mb-4 text-on-surface">
-        {page._metadata.displayName}
-      </h1>
-      <p className="text-sm text-on-surface-variant">
-        Key: {page._metadata.key}
-      </p>
-      <ComponentSelector rows={rows} inEditMode={false} />
-    </div>
-  );
+  return <ComponentSelector rows={rows} inEditMode={false} />;
 }
 
 export async function generateMetadata({

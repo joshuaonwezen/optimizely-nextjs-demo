@@ -14,7 +14,6 @@ interface HeroBlockData {
   } | null;
   ctaText?: string | null;
   ctaLink?: string | null;
-  __context?: any;
 }
 
 type HeroBlockProps = HeroBlockData & {

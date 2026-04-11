@@ -5,7 +5,6 @@ interface FormContainerData {
   description?: string | null;
   submitUrl?: { default?: string | null } | null;
   successMessage?: string | null;
-  __context?: any;
 }
 
 type FormContainerBlockProps = FormContainerData & {
@@ -16,14 +15,15 @@ type FormContainerBlockProps = FormContainerData & {
 export default function FormContainerBlock(props: FormContainerBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
+  const textAlign = props.displaySettings?.textAlign === "center" ? "text-center" : "text-left";
 
   return (
     <section
-      className="py-20 bg-surface-low"
+      className="py-16"
       data-form-submit-url={data.submitUrl?.default ?? "/api/form-submit"}
       data-form-success-message={data.successMessage ?? "Thank you! We'll be in touch soon."}
     >
-      <div className="max-w-2xl mx-auto px-8">
+      <div className={`max-w-2xl mx-auto px-8 ${textAlign}`}>
         {data.heading && (
           <h2
             {...pa("heading")}
@@ -35,7 +35,7 @@ export default function FormContainerBlock(props: FormContainerBlockProps) {
         {data.description && (
           <p
             {...pa("description")}
-            className="text-base mb-10 text-on-surface-variant"
+            className="text-base mb-2 text-on-surface-variant"
           >
             {data.description}
           </p>

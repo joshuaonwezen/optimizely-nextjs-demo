@@ -7,7 +7,6 @@ interface ImageBlockData {
   } | null;
   altText?: string | null;
   caption?: string | null;
-  __context?: any;
 }
 
 type ImageBlockProps = ImageBlockData & {
