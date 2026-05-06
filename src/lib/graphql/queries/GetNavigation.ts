@@ -57,6 +57,7 @@ interface GetNavigationResult {
 export const GET_NAVIGATION_QUERY = /* GraphQL */ `
   fragment NavItemFields on _IContent {
     ... on NavigationItem {
+      __typename
       _metadata { key }
       label
       href { url { default } }
@@ -81,6 +82,7 @@ export const GET_NAVIGATION_QUERY = /* GraphQL */ `
 const GET_NAVIGATION_BY_KEY_QUERY = /* GraphQL */ `
   fragment NavItemFieldsByKey on _IContent {
     ... on NavigationItem {
+      __typename
       _metadata { key }
       label
       href { url { default } }

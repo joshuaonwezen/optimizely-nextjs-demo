@@ -9,6 +9,7 @@ import { COMPONENT_REGISTRY } from "@/components/cms/ComponentSelector";
 const GET_SHARED_BLOCK_QUERY = /* GraphQL */ `
   fragment NavItemFields on _IContent {
     ... on NavigationItem {
+      __typename
       _metadata { key }
       label
       href { url { default } }
