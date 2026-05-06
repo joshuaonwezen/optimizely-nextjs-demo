@@ -38,8 +38,15 @@ export default async function PreviewPage({ searchParams }: Props) {
     graphUrl: process.env.OPTIMIZELY_GRAPH_GATEWAY,
   });
 
-  const response = await client.getPreviewContent(params as PreviewParams);
-  const nodes = response?.composition?.nodes ?? [];
+  let nodes: any[] = [];
+  try {
+    const response = await client.getPreviewContent(params as PreviewParams);
+    nodes = response?.composition?.nodes ?? [];
+  } catch {
+    // getPreviewContent can fail for shared blocks whose component fields don't
+    // match the SDK's generated query (e.g. ContentReference fields queried as
+    // scalars). Fall through to the manual _Component query below.
+  }
 
   const shell = (children: React.ReactNode) => (
     <>

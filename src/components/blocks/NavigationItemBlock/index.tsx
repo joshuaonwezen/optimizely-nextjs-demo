@@ -6,7 +6,7 @@ export const NavigationItemType = contentType({
   baseType: "_component",
   properties: {
     label: { type: "string", displayName: "Label" },
-    href: { type: "string", displayName: "URL" },
+    href: { type: "contentReference", displayName: "URL" },
     description: { type: "string", displayName: "Description" },
     openInNewTab: { type: "boolean", displayName: "Open in New Tab" },
     // Content area — editors drop child NavigationItems here
