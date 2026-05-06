@@ -15,7 +15,7 @@ const GET_SHARED_BLOCK_QUERY = /* GraphQL */ `
       items {
         __typename
         _metadata { key displayName }
-        _json
+        ... on _Component { _json }
       }
     }
   }

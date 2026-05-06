@@ -69,8 +69,9 @@ export async function graphqlFetch<T = unknown>(
   const response = await fetch(GRAPH_ENDPOINT, fetchOptions);
 
   if (!response.ok) {
+    const body = await response.text().catch(() => "");
     throw new Error(
-      `GraphQL request failed: ${response.status} ${response.statusText}`
+      `GraphQL request failed: ${response.status} ${response.statusText}${body ? ` — ${body}` : ""}`
     );
   }
 
