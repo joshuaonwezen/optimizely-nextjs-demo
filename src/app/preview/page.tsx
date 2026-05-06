@@ -15,10 +15,7 @@ const GET_SHARED_BLOCK_QUERY = /* GraphQL */ `
       items {
         __typename
         _metadata { key displayName }
-        ... on HeroBlock {
-          headline subheadline ctaText ctaLink
-          backgroundImage { _metadata { url { default } } }
-        }
+        ... on HeroBlock { headline subheadline ctaText ctaLink }
         ... on Hero { heading summary theme }
         ... on CallToAction { label link }
         ... on TextBlock { body { json } }
