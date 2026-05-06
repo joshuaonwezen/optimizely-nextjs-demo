@@ -145,17 +145,19 @@ export async function getNavigation(options: {
     const result = await graphqlFetch<GetNavigationResult>(
       key ? GET_NAVIGATION_BY_KEY_QUERY : GET_NAVIGATION_QUERY,
       key ? { key } : {},
-      { previewToken, next: { revalidate: 300, tags: ["navigation"] } }
+      previewToken
+        ? { previewToken, cache: "no-store" }
+        : { next: { revalidate: 300, tags: ["navigation"] } }
     );
 
     const root = result.data?.Navigation?.items?.[0];
-    if (!root) return { tree: DEMO_NAV_DATA, fromCms: false };
+    if (!root) return key ? { tree: [], fromCms: false } : { tree: DEMO_NAV_DATA, fromCms: false };
 
     const items = (root.navItems ?? [])
       .filter((c): c is RawNavItem => (c as RawNavItem).__typename === "NavigationItem")
       .map(toNavNode);
 
-    if (items.length === 0) return { tree: DEMO_NAV_DATA, fromCms: false };
+    if (items.length === 0) return key ? { tree: [], fromCms: true } : { tree: DEMO_NAV_DATA, fromCms: false };
     return { tree: items, fromCms: true };
   } catch {
     return { tree: DEMO_NAV_DATA, fromCms: false };
