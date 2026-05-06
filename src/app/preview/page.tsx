@@ -15,7 +15,30 @@ const GET_SHARED_BLOCK_QUERY = /* GraphQL */ `
       items {
         __typename
         _metadata { key displayName }
-        ... on _Component { _json }
+        ... on HeroBlock {
+          headline subheadline ctaText ctaLink
+          backgroundImage { _metadata { url { default } } }
+        }
+        ... on Hero { heading summary theme }
+        ... on CallToAction { label link }
+        ... on TextBlock { body { json } }
+        ... on ProductCardBlock {
+          icon title description linkText
+          linkUrl { default }
+        }
+        ... on ProductHeroBlock {
+          badge title description ctaText
+          ctaUrl { default }
+        }
+        ... on FeatureItemBlock { title description }
+        ... on SectionHeadingBlock { heading subheading }
+        ... on TestimonialBlock { quote authorName authorRole }
+        ... on StatsCounterBlock { value label suffix }
+        ... on ImageBlock { altText caption }
+        ... on FormContainerBlock {
+          heading description successMessage
+          submitUrl { default }
+        }
       }
     }
   }
@@ -87,7 +110,7 @@ export default async function PreviewPage({ searchParams }: Props) {
       const Component = COMPONENT_REGISTRY[blockItem.__typename];
 
       if (Component) {
-        const { _metadata: _m, _itemMetadata: _im, ...props } = blockItem._json ?? {};
+        const { _metadata: _m, __typename: _t, ...props } = blockItem;
         return shell(
           <div data-epi-block-id={inEditMode ? contentKey : undefined}>
             <Component {...props} _metadata={blockItem._metadata} inEditMode={inEditMode} />
