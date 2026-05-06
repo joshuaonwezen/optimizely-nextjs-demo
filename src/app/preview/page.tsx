@@ -7,6 +7,17 @@ import { graphqlFetch } from "@/lib/optimizely/client";
 import { COMPONENT_REGISTRY } from "@/components/cms/ComponentSelector";
 
 const GET_SHARED_BLOCK_QUERY = /* GraphQL */ `
+  fragment NavItemFields on _IContent {
+    ... on NavigationItem {
+      _metadata { key }
+      label
+      href { url { default } }
+      description
+      openInNewTab
+      children @recursive(depth: 5)
+    }
+  }
+
   query GetSharedBlock($key: String!) {
     _Component(
       where: { _metadata: { key: { eq: $key } } }
@@ -36,7 +47,10 @@ const GET_SHARED_BLOCK_QUERY = /* GraphQL */ `
           heading description successMessage
           submitUrl { default }
         }
-        ... on Navigation { name }
+        ... on Navigation {
+          name
+          navItems { ...NavItemFields }
+        }
       }
     }
   }

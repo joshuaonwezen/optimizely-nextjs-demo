@@ -17,7 +17,7 @@ export interface NavNode {
 // Raw GraphQL response types
 // ---------------------------------------------------------------------------
 
-interface RawNavItem {
+export interface RawNavItem {
   __typename?: string;
   _metadata?: { key?: string | null } | null;
   label?: string | null;
@@ -82,7 +82,7 @@ export const GET_NAVIGATION_QUERY = /* GraphQL */ `
 // Response mapper
 // ---------------------------------------------------------------------------
 
-function toNavNode(raw: RawNavItem): NavNode {
+export function toNavNode(raw: RawNavItem): NavNode {
   return {
     key: raw._metadata?.key ?? "",
     label: raw.label ?? "",

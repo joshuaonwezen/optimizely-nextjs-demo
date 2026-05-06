@@ -14,7 +14,7 @@ import FormTextInput from "@/components/blocks/FormTextInput";
 import FormTextArea from "@/components/blocks/FormTextArea";
 import FormSelect from "@/components/blocks/FormSelect";
 import FormSubmitButton from "@/components/blocks/FormSubmitButton";
-import NavigationHeader from "@/components/layout/NavigationHeader";
+import NavigationBlock from "@/components/blocks/NavigationBlock";
 
 /**
  * Component registry — maps Optimizely Graph __typename to React components.
@@ -36,7 +36,7 @@ export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   FormTextArea,
   FormSelect,
   FormSubmitButton,
-  Navigation: NavigationHeader,
+  Navigation: NavigationBlock,
 };
 
 export interface CompositionRow {
