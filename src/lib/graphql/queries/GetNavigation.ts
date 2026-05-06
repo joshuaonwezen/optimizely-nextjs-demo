@@ -78,6 +78,33 @@ export const GET_NAVIGATION_QUERY = /* GraphQL */ `
   }
 `;
 
+const GET_NAVIGATION_BY_KEY_QUERY = /* GraphQL */ `
+  fragment NavItemFieldsByKey on _IContent {
+    ... on NavigationItem {
+      _metadata { key }
+      label
+      href { url { default } }
+      description
+      openInNewTab
+      children @recursive(depth: 5)
+    }
+  }
+
+  query GetNavigationByKey($key: String!) {
+    Navigation(
+      where: { _metadata: { key: { eq: $key } } }
+      limit: 1
+    ) {
+      items {
+        name
+        navItems {
+          ...NavItemFieldsByKey
+        }
+      }
+    }
+  }
+`;
+
 // ---------------------------------------------------------------------------
 // Response mapper
 // ---------------------------------------------------------------------------
@@ -110,13 +137,14 @@ export function toNavNode(raw: RawNavItem): NavNode {
  */
 export async function getNavigation(options: {
   previewToken?: string;
+  key?: string;
 } = {}): Promise<{ tree: NavNode[]; fromCms: boolean }> {
-  const { previewToken } = options;
+  const { previewToken, key } = options;
 
   try {
     const result = await graphqlFetch<GetNavigationResult>(
-      GET_NAVIGATION_QUERY,
-      {},
+      key ? GET_NAVIGATION_BY_KEY_QUERY : GET_NAVIGATION_QUERY,
+      key ? { key } : {},
       { previewToken, next: { revalidate: 300, tags: ["navigation"] } }
     );
 

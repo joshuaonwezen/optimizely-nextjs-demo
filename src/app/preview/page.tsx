@@ -125,7 +125,7 @@ export default async function PreviewPage({ searchParams }: Props) {
         const { _metadata: _m, __typename: _t, ...props } = blockItem;
         return shell(
           <div data-epi-block-id={inEditMode ? contentKey : undefined}>
-            <Component {...props} _metadata={blockItem._metadata} inEditMode={inEditMode} />
+            <Component {...props} _metadata={blockItem._metadata} inEditMode={inEditMode} previewToken={previewToken} />
           </div>
         );
       }
