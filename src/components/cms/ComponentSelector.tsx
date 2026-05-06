@@ -18,7 +18,7 @@ import FormSubmitButton from "@/components/blocks/FormSubmitButton";
 /**
  * Component registry — maps Optimizely Graph __typename to React components.
  */
-const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
+export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   HeroBlock,
   Hero: HeroBlock,
   CallToAction,

@@ -3,6 +3,23 @@ import { OptimizelyGridSection } from "@optimizely/cms-sdk/react/server";
 import { PreviewComponent } from "@optimizely/cms-sdk/react/client";
 import Script from "next/script";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
+import { graphqlFetch } from "@/lib/optimizely/client";
+import { COMPONENT_REGISTRY } from "@/components/cms/ComponentSelector";
+
+const GET_SHARED_BLOCK_QUERY = /* GraphQL */ `
+  query GetSharedBlock($key: String!) {
+    _Component(
+      where: { _metadata: { key: { eq: $key } } }
+      limit: 1
+    ) {
+      items {
+        __typename
+        _metadata { key displayName }
+        _json
+      }
+    }
+  }
+`;
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -11,25 +28,34 @@ type Props = {
 export default async function PreviewPage({ searchParams }: Props) {
   initComponentRegistry();
 
+  const params = await searchParams;
+  const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
+  const previewToken = typeof params.preview_token === "string" ? params.preview_token : undefined;
+  const contentKey = typeof params.key === "string" ? params.key : undefined;
+  const inEditMode = params.ctx === "edit";
+
   const client = new GraphClient(process.env.OPTIMIZELY_GRAPH_SINGLE_KEY!, {
     graphUrl: process.env.OPTIMIZELY_GRAPH_GATEWAY,
   });
 
-  const response = await client.getPreviewContent(
-    (await searchParams) as PreviewParams
-  );
-
-  const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
+  const response = await client.getPreviewContent(params as PreviewParams);
   const nodes = response?.composition?.nodes ?? [];
 
-  return (
+  const shell = (children: React.ReactNode) => (
     <>
       <Script
         src={`${cmsUrl}/util/javascript/communicationinjector.js`}
         strategy="afterInteractive"
       />
       <PreviewComponent />
-      {nodes.map((node: any) =>
+      {children}
+    </>
+  );
+
+  // Primary path: page / experience with a composition (unchanged)
+  if (nodes.length > 0) {
+    return shell(
+      nodes.map((node: any) =>
         node.nodeType === "section" ? (
           <div key={node.key} data-epi-block-id={node.key}>
             <OptimizelyGridSection nodes={node.nodes ?? []} />
@@ -37,7 +63,48 @@ export default async function PreviewPage({ searchParams }: Props) {
         ) : (
           <OptimizelyGridSection key={node.key} nodes={[node]} />
         )
-      )}
-    </>
-  );
+      )
+    );
+  }
+
+  // Fallback: shared block (no composition) — fetch by content key
+  if (contentKey) {
+    const result = await graphqlFetch<any>(
+      GET_SHARED_BLOCK_QUERY,
+      { key: contentKey },
+      { previewToken, cache: "no-store" }
+    );
+    const blockItem = result.data?._Component?.items?.[0];
+
+    if (blockItem) {
+      const Component = COMPONENT_REGISTRY[blockItem.__typename];
+
+      if (Component) {
+        const { _metadata: _m, _itemMetadata: _im, ...props } = blockItem._json ?? {};
+        return shell(
+          <div data-epi-block-id={inEditMode ? contentKey : undefined}>
+            <Component {...props} _metadata={blockItem._metadata} inEditMode={inEditMode} />
+          </div>
+        );
+      }
+
+      // No registered renderer — show a labelled placeholder so the CMS overlay still works
+      return shell(
+        <div
+          data-epi-block-id={inEditMode ? contentKey : undefined}
+          className="m-8 rounded-xl border border-ghost-border bg-surface-low p-8 text-center"
+        >
+          <p className="text-sm font-mono text-on-surface-variant mb-1">{blockItem.__typename}</p>
+          <p className="text-lg font-semibold text-on-surface">
+            {blockItem._metadata?.displayName ?? contentKey}
+          </p>
+          <p className="mt-2 text-sm text-on-surface-variant">
+            No visual preview available for this block type.
+          </p>
+        </div>
+      );
+    }
+  }
+
+  return shell(null);
 }
