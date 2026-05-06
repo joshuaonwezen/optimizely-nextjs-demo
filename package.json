@@ -10,6 +10,8 @@
     "opti:login": "npx @optimizely/cms-cli@latest login",
     "opti:push": "npx @optimizely/cms-cli@latest config push optimizely.config.mjs",
     "seed": "npx tsx scripts/seed-content.ts",
+    "seed:nav": "npx tsx scripts/seed-nav.ts",
+    "cleanup:types": "npx tsx scripts/cleanup-types.ts",
     "webhook:register": "node scripts/register-webhook.mjs"
   },
   "dependencies": {

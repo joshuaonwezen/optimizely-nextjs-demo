@@ -1,4 +1,38 @@
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+export const ProductHeroBlockType = contentType({
+  key: "ProductHeroBlock",
+  displayName: "Product Hero",
+  baseType: "_component",
+  compositionBehaviors: ["sectionEnabled"],
+  properties: {
+    badge: { type: "string", displayName: "Badge Text" },
+    title: { type: "string", displayName: "Title", indexingType: "searchable" },
+    description: { type: "string", displayName: "Description", indexingType: "searchable" },
+    ctaText: { type: "string", displayName: "CTA Text" },
+    ctaUrl: { type: "url", displayName: "CTA URL" },
+  },
+});
+
+export const ProductHeroCompactTemplate = displayTemplate({
+  key: "ProductHeroCompactTemplate",
+  isDefault: false,
+  displayName: "Compact Product Hero",
+  contentType: "ProductHeroBlock",
+  tag: "Compact",
+  settings: {
+    alignment: {
+      editor: "select",
+      displayName: "Text Alignment",
+      sortOrder: 0,
+      choices: {
+        left: { displayName: "Left", sortOrder: 0 },
+        center: { displayName: "Center", sortOrder: 1 },
+      },
+    },
+  },
+});
 
 interface ProductHeroData {
   badge?: string | null;

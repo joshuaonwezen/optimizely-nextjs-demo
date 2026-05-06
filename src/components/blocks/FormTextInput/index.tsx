@@ -1,5 +1,20 @@
+import { contentType } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { fieldName, INPUT_CLASS, FieldLabel } from "@/lib/formField";
+
+export const FormTextInputType = contentType({
+  key: "FormTextInput",
+  displayName: "Text Input",
+  baseType: "_component",
+  compositionBehaviors: ["elementEnabled"],
+  properties: {
+    label: { type: "string", displayName: "Label" },
+    placeholder: { type: "string", displayName: "Placeholder" },
+    fieldName: { type: "string", displayName: "Field Name" },
+    inputType: { type: "string", displayName: "Input Type (text, email, tel)" },
+    required: { type: "boolean", displayName: "Required" },
+  },
+});
 
 interface FormTextInputData {
   label?: string | null;

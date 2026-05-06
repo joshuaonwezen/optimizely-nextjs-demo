@@ -1,4 +1,32 @@
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+export const SectionHeadingBlockType = contentType({
+  key: "SectionHeadingBlock",
+  displayName: "Section Heading",
+  baseType: "_component",
+  compositionBehaviors: ["sectionEnabled"],
+  properties: {
+    heading: { type: "string", displayName: "Heading", indexingType: "searchable" },
+    subheading: { type: "string", displayName: "Subheading" },
+  },
+});
+
+export const SectionHeadingCenteredTemplate = displayTemplate({
+  key: "SectionHeadingCenteredTemplate",
+  isDefault: false,
+  displayName: "Centered Section Heading",
+  contentType: "SectionHeadingBlock",
+  tag: "Centered",
+  settings: {
+    showAccent: {
+      editor: "checkbox",
+      displayName: "Show Accent Line",
+      sortOrder: 0,
+      choices: {},
+    },
+  },
+});
 
 interface SectionHeadingData {
   heading?: string | null;

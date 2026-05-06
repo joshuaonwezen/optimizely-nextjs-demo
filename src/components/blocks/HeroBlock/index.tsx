@@ -1,5 +1,45 @@
 import Image from "next/image";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+export const HeroBlockType = contentType({
+  key: "HeroBlock",
+  displayName: "Hero Block",
+  baseType: "_component",
+  compositionBehaviors: ["sectionEnabled"],
+  properties: {
+    headline: { type: "string", displayName: "Headline", indexingType: "searchable" },
+    subheadline: { type: "string", displayName: "Subheadline", indexingType: "searchable" },
+    backgroundImage: { type: "contentReference", displayName: "Background Image", allowedTypes: ["_image"], indexingType: "disabled" },
+    ctaText: { type: "string", displayName: "CTA Text" },
+    ctaLink: { type: "string", displayName: "CTA Link" },
+  },
+});
+
+export const HeroCenteredTemplate = displayTemplate({
+  key: "HeroCenteredTemplate",
+  isDefault: false,
+  displayName: "Centered Hero",
+  contentType: "HeroBlock",
+  tag: "Centered",
+  settings: {
+    height: {
+      editor: "select",
+      displayName: "Height",
+      sortOrder: 0,
+      choices: {
+        default: { displayName: "Default", sortOrder: 0 },
+        tall: { displayName: "Full Viewport", sortOrder: 1 },
+      },
+    },
+    overlay: {
+      editor: "checkbox",
+      displayName: "Dark Overlay on Image",
+      sortOrder: 1,
+      choices: {},
+    },
+  },
+});
 
 interface HeroBlockData {
   headline?: string | null;

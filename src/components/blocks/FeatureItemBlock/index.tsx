@@ -1,4 +1,34 @@
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+export const FeatureItemBlockType = contentType({
+  key: "FeatureItemBlock",
+  displayName: "Feature Item",
+  baseType: "_component",
+  compositionBehaviors: ["elementEnabled"],
+  properties: {
+    title: { type: "string", displayName: "Title", indexingType: "searchable" },
+    description: { type: "string", displayName: "Description" },
+  },
+});
+
+export const FeatureItemOutlinedTemplate = displayTemplate({
+  key: "FeatureItemOutlinedTemplate",
+  isDefault: false,
+  displayName: "Outlined Feature Item",
+  contentType: "FeatureItemBlock",
+  tag: "Outlined",
+  settings: {},
+});
+
+export const FeatureItemFlatTemplate = displayTemplate({
+  key: "FeatureItemFlatTemplate",
+  isDefault: false,
+  displayName: "Flat Feature Item",
+  contentType: "FeatureItemBlock",
+  tag: "Flat",
+  settings: {},
+});
 
 interface FeatureItemData {
   title?: string | null;

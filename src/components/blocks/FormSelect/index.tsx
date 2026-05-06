@@ -1,5 +1,19 @@
+import { contentType } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { fieldName, INPUT_CLASS, FieldLabel } from "@/lib/formField";
+
+export const FormSelectType = contentType({
+  key: "FormSelect",
+  displayName: "Select Dropdown",
+  baseType: "_component",
+  compositionBehaviors: ["elementEnabled"],
+  properties: {
+    label: { type: "string", displayName: "Label" },
+    fieldName: { type: "string", displayName: "Field Name" },
+    options: { type: "string", displayName: "Options (comma-separated)" },
+    required: { type: "boolean", displayName: "Required" },
+  },
+});
 
 interface FormSelectData {
   label?: string | null;

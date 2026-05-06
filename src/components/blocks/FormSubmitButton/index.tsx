@@ -1,6 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { contentType } from "@optimizely/cms-sdk";
+
+export const FormSubmitButtonType = contentType({
+  key: "FormSubmitButton",
+  displayName: "Submit Button",
+  baseType: "_component",
+  compositionBehaviors: ["elementEnabled"],
+  properties: {
+    label: { type: "string", displayName: "Button Label" },
+  },
+});
 
 interface FormSubmitButtonData {
   label?: string | null;

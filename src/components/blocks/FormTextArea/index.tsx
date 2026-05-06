@@ -1,5 +1,19 @@
+import { contentType } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { fieldName, INPUT_CLASS, FieldLabel } from "@/lib/formField";
+
+export const FormTextAreaType = contentType({
+  key: "FormTextArea",
+  displayName: "Text Area",
+  baseType: "_component",
+  compositionBehaviors: ["elementEnabled"],
+  properties: {
+    label: { type: "string", displayName: "Label" },
+    placeholder: { type: "string", displayName: "Placeholder" },
+    fieldName: { type: "string", displayName: "Field Name" },
+    required: { type: "boolean", displayName: "Required" },
+  },
+});
 
 interface FormTextAreaData {
   label?: string | null;

@@ -1,4 +1,17 @@
+import { contentType } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+export const StatsCounterBlockType = contentType({
+  key: "StatsCounterBlock",
+  displayName: "Stats Counter",
+  baseType: "_component",
+  compositionBehaviors: ["elementEnabled"],
+  properties: {
+    value: { type: "string", displayName: "Value" },
+    label: { type: "string", displayName: "Label" },
+    suffix: { type: "string", displayName: "Suffix (e.g. %, +, K)" },
+  },
+});
 
 interface StatsCounterData {
   value?: string | null;

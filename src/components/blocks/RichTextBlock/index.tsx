@@ -1,5 +1,25 @@
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+export const TextBlockType = contentType({
+  key: "TextBlock",
+  displayName: "Text Block",
+  baseType: "_component",
+  compositionBehaviors: ["sectionEnabled"],
+  properties: {
+    body: { type: "richText", displayName: "Body" },
+  },
+});
+
+export const TextBlockNarrowTemplate = displayTemplate({
+  key: "TextBlockNarrowTemplate",
+  isDefault: false,
+  displayName: "Narrow Text Block",
+  contentType: "TextBlock",
+  tag: "Narrow",
+  settings: {},
+});
 
 interface TextBlockData {
   body?: { json: unknown } | null;

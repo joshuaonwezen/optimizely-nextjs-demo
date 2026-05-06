@@ -1,4 +1,54 @@
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+export const CallToActionType = contentType({
+  key: "CallToAction",
+  displayName: "Call to Action",
+  baseType: "_component",
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
+  properties: {
+    label: { type: "string", displayName: "Label" },
+    link: { type: "string", displayName: "Link" },
+  },
+});
+
+export const CallToActionOutlineTemplate = displayTemplate({
+  key: "CallToActionOutlineTemplate",
+  isDefault: false,
+  displayName: "Outline CTA",
+  contentType: "CallToAction",
+  tag: "Outline",
+  settings: {
+    size: {
+      editor: "select",
+      displayName: "Size",
+      sortOrder: 0,
+      choices: {
+        default: { displayName: "Default", sortOrder: 0 },
+        large: { displayName: "Large", sortOrder: 1 },
+      },
+    },
+  },
+});
+
+export const CallToActionSurfaceTemplate = displayTemplate({
+  key: "CallToActionSurfaceTemplate",
+  isDefault: false,
+  displayName: "Surface CTA",
+  contentType: "CallToAction",
+  tag: "Surface",
+  settings: {
+    size: {
+      editor: "select",
+      displayName: "Size",
+      sortOrder: 0,
+      choices: {
+        default: { displayName: "Default", sortOrder: 0 },
+        large: { displayName: "Large", sortOrder: 1 },
+      },
+    },
+  },
+});
 
 interface CallToActionData {
   label?: string | null;

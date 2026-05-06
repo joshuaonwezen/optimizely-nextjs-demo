@@ -1,5 +1,28 @@
 import Image from "next/image";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+export const TestimonialBlockType = contentType({
+  key: "TestimonialBlock",
+  displayName: "Testimonial",
+  baseType: "_component",
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
+  properties: {
+    quote: { type: "string", displayName: "Quote", indexingType: "searchable" },
+    authorName: { type: "string", displayName: "Author Name" },
+    authorRole: { type: "string", displayName: "Author Role" },
+    authorImage: { type: "contentReference", displayName: "Author Photo", allowedTypes: ["_image"], indexingType: "disabled" },
+  },
+});
+
+export const TestimonialCardTemplate = displayTemplate({
+  key: "TestimonialCardTemplate",
+  isDefault: false,
+  displayName: "Card Testimonial",
+  contentType: "TestimonialBlock",
+  tag: "Card",
+  settings: {},
+});
 
 interface TestimonialData {
   quote?: string | null;

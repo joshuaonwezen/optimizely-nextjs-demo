@@ -1,5 +1,39 @@
 import Image from "next/image";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+export const ImageBlockType = contentType({
+  key: "ImageBlock",
+  displayName: "Image Block",
+  baseType: "_component",
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
+  properties: {
+    image: { type: "contentReference", displayName: "Image", allowedTypes: ["_image"], indexingType: "disabled" },
+    altText: { type: "string", displayName: "Alt Text" },
+    caption: { type: "string", displayName: "Caption" },
+  },
+});
+
+export const ImageBlockRoundedTemplate = displayTemplate({
+  key: "ImageBlockRoundedTemplate",
+  isDefault: false,
+  displayName: "Rounded Image",
+  contentType: "ImageBlock",
+  tag: "Rounded",
+  settings: {
+    aspectRatio: {
+      editor: "select",
+      displayName: "Aspect Ratio",
+      sortOrder: 0,
+      choices: {
+        auto: { displayName: "Auto", sortOrder: 0 },
+        r16x9: { displayName: "16:9", sortOrder: 1 },
+        r4x3: { displayName: "4:3", sortOrder: 2 },
+        r1x1: { displayName: "Square", sortOrder: 3 },
+      },
+    },
+  },
+});
 
 interface ImageBlockData {
   image?: {

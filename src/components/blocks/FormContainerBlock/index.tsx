@@ -1,4 +1,18 @@
+import { contentType } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+export const FormContainerBlockType = contentType({
+  key: "FormContainerBlock",
+  displayName: "Form Container",
+  baseType: "_component",
+  compositionBehaviors: ["sectionEnabled"],
+  properties: {
+    heading: { type: "string", displayName: "Heading" },
+    description: { type: "string", displayName: "Description" },
+    submitUrl: { type: "url", displayName: "Submit URL" },
+    successMessage: { type: "string", displayName: "Success Message" },
+  },
+});
 
 interface FormContainerData {
   heading?: string | null;

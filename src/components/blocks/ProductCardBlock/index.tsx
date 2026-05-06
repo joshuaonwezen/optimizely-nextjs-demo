@@ -1,4 +1,35 @@
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+
+export const ProductCardBlockType = contentType({
+  key: "ProductCardBlock",
+  displayName: "Product Card",
+  baseType: "_component",
+  compositionBehaviors: ["elementEnabled"],
+  properties: {
+    icon: { type: "string", displayName: "Icon Name" },
+    title: { type: "string", displayName: "Title", indexingType: "searchable" },
+    description: { type: "string", displayName: "Description", indexingType: "searchable" },
+    linkUrl: { type: "url", displayName: "Link URL" },
+    linkText: { type: "string", displayName: "Link Text" },
+  },
+});
+
+export const ProductCardFeaturedTemplate = displayTemplate({
+  key: "ProductCardFeaturedTemplate",
+  isDefault: false,
+  displayName: "Featured Product Card",
+  contentType: "ProductCardBlock",
+  tag: "Featured",
+  settings: {
+    showIcon: {
+      editor: "checkbox",
+      displayName: "Show Icon",
+      sortOrder: 0,
+      choices: {},
+    },
+  },
+});
 
 const ICON_MAP: Record<string, string> = {
   server: "\u{1F5A5}\uFE0F",
