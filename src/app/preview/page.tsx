@@ -36,6 +36,7 @@ const GET_SHARED_BLOCK_QUERY = /* GraphQL */ `
           heading description successMessage
           submitUrl { default }
         }
+        ... on Navigation { name }
       }
     }
   }
