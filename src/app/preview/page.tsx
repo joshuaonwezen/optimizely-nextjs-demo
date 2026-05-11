@@ -3,6 +3,59 @@ import { OptimizelyGridSection } from "@optimizely/cms-sdk/react/server";
 import { PreviewComponent } from "@optimizely/cms-sdk/react/client";
 import Script from "next/script";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
+import { graphqlFetch } from "@/lib/optimizely/client";
+import { COMPONENT_REGISTRY } from "@/components/cms/ComponentSelector";
+
+const GET_SHARED_BLOCK_QUERY = /* GraphQL */ `
+  fragment NavItemFields on _IContent {
+    ... on NavigationItem {
+      __typename
+      _metadata { key }
+      label
+      href { url { default } }
+      description
+      openInNewTab
+      children @recursive(depth: 5)
+    }
+  }
+
+  query GetSharedBlock($key: String!) {
+    _Component(
+      where: { _metadata: { key: { eq: $key } } }
+      limit: 1
+    ) {
+      items {
+        __typename
+        _metadata { key displayName }
+        ... on HeroBlock { headline subheadline ctaText ctaLink }
+        ... on Hero { heading summary theme }
+        ... on CallToAction { label link }
+        ... on TextBlock { body { json } }
+        ... on ProductCardBlock {
+          icon title description linkText
+          linkUrl { default }
+        }
+        ... on ProductHeroBlock {
+          badge title description ctaText
+          ctaUrl { default }
+        }
+        ... on FeatureItemBlock { title description }
+        ... on SectionHeadingBlock { heading subheading }
+        ... on TestimonialBlock { quote authorName authorRole }
+        ... on StatsCounterBlock { value label suffix }
+        ... on ImageBlock { altText caption }
+        ... on FormContainerBlock {
+          heading description successMessage
+          submitUrl { default }
+        }
+        ... on Navigation {
+          name
+          navItems { ...NavItemFields }
+        }
+      }
+    }
+  }
+`;
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -13,6 +66,7 @@ export default async function PreviewPage({ searchParams }: Props) {
 
   const params = await searchParams;
   const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
+  const previewToken = typeof params.preview_token === "string" ? params.preview_token : undefined;
   const contentKey = typeof params.key === "string" ? params.key : undefined;
   const inEditMode = params.ctx === "edit";
 
@@ -56,21 +110,44 @@ export default async function PreviewPage({ searchParams }: Props) {
     );
   }
 
-  // Fallback: shared block — no composition, so render a placeholder.
-  // communicationinjector.js + data-epi-block-id keeps the CMS editing overlay active
-  // so editors can use the properties panel on the right.
-  return shell(
-    contentKey ? (
-      <div
-        data-epi-block-id={inEditMode ? contentKey : undefined}
-        className="m-8 rounded-xl border border-ghost-border bg-surface-low p-8 text-center"
-      >
-        <p className="text-lg font-semibold text-on-surface mb-1">Shared Block</p>
-        <p className="text-sm font-mono text-on-surface-variant">{contentKey}</p>
-        <p className="mt-3 text-sm text-on-surface-variant">
-          Use the properties panel to edit this block.
-        </p>
-      </div>
-    ) : null
-  );
+  // Fallback: shared block (no composition) — fetch by content key
+  if (contentKey) {
+    const result = await graphqlFetch<any>(
+      GET_SHARED_BLOCK_QUERY,
+      { key: contentKey },
+      { previewToken, cache: "no-store" }
+    );
+    const blockItem = result.data?._Component?.items?.[0];
+
+    if (blockItem) {
+      const Component = COMPONENT_REGISTRY[blockItem.__typename];
+
+      if (Component) {
+        const { _metadata: _m, __typename: _t, ...props } = blockItem;
+        return shell(
+          <div data-epi-block-id={inEditMode ? contentKey : undefined}>
+            <Component {...props} _metadata={blockItem._metadata} inEditMode={inEditMode} previewToken={previewToken} />
+          </div>
+        );
+      }
+
+      // No registered renderer — show a labelled placeholder so the CMS overlay still works
+      return shell(
+        <div
+          data-epi-block-id={inEditMode ? contentKey : undefined}
+          className="m-8 rounded-xl border border-ghost-border bg-surface-low p-8 text-center"
+        >
+          <p className="text-sm font-mono text-on-surface-variant mb-1">{blockItem.__typename}</p>
+          <p className="text-lg font-semibold text-on-surface">
+            {blockItem._metadata?.displayName ?? contentKey}
+          </p>
+          <p className="mt-2 text-sm text-on-surface-variant">
+            No visual preview available for this block type.
+          </p>
+        </div>
+      );
+    }
+  }
+
+  return shell(null);
 }
