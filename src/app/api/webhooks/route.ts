@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function GET() {
   return NextResponse.json({ ok: true });
@@ -22,7 +22,8 @@ export async function POST(request: NextRequest) {
 
     console.log("[Optimizely Graph Webhook] Event received:", body);
 
-    revalidatePath("/", "layout");
+    revalidatePath("/en", "layout");
+    revalidateTag("navigation", "max");
 
     return NextResponse.json({ received: true, timestamp: Date.now() });
   } catch {
