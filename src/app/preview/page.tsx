@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { GraphClient, type PreviewParams } from "@optimizely/cms-sdk";
 import { OptimizelyGridSection } from "@optimizely/cms-sdk/react/server";
 import { PreviewComponent } from "@optimizely/cms-sdk/react/client";
@@ -74,14 +76,15 @@ export default async function PreviewPage({ searchParams }: Props) {
     graphUrl: process.env.OPTIMIZELY_GRAPH_GATEWAY,
   });
 
+  let sdkItem: any = null;
   let nodes: any[] = [];
   try {
-    const response = await client.getPreviewContent(params as PreviewParams);
-    nodes = response?.composition?.nodes ?? [];
+    sdkItem = await client.getPreviewContent(params as PreviewParams);
+    nodes = sdkItem?.composition?.nodes ?? [];
   } catch {
     // getPreviewContent can fail for shared blocks whose component fields don't
     // match the SDK's generated query (e.g. ContentReference fields queried as
-    // scalars). Fall through to the manual _Component query below.
+    // scalars). Fall through to the _Component query below.
   }
 
   const shell = (children: React.ReactNode) => (
@@ -110,7 +113,38 @@ export default async function PreviewPage({ searchParams }: Props) {
     );
   }
 
-  // Fallback: shared block (no composition) — fetch by content key
+  // SDK path: shared block — getPreviewContent returns the item directly (no composition)
+  // This uses the preview_token + ver params so it fetches the correct draft version.
+  if (sdkItem?.__typename) {
+    const Component = COMPONENT_REGISTRY[sdkItem.__typename];
+
+    if (Component) {
+      const { __typename: _t, composition: _c, ...props } = sdkItem;
+      return shell(
+        <div data-epi-block-id={inEditMode ? contentKey : undefined}>
+          <Component {...props} inEditMode={inEditMode} previewToken={previewToken} />
+        </div>
+      );
+    }
+
+    // No registered renderer — labelled placeholder so the CMS overlay still works
+    return shell(
+      <div
+        data-epi-block-id={inEditMode ? contentKey : undefined}
+        className="m-8 rounded-xl border border-ghost-border bg-surface-low p-8 text-center"
+      >
+        <p className="text-sm font-mono text-on-surface-variant mb-1">{sdkItem.__typename}</p>
+        <p className="text-lg font-semibold text-on-surface">
+          {sdkItem._metadata?.displayName ?? contentKey}
+        </p>
+        <p className="mt-2 text-sm text-on-surface-variant">
+          No visual preview available for this block type.
+        </p>
+      </div>
+    );
+  }
+
+  // Final fallback: SDK failed entirely — query Graph directly by content key
   if (contentKey) {
     const result = await graphqlFetch<any>(
       GET_SHARED_BLOCK_QUERY,
