@@ -18,6 +18,8 @@ import NavigationBlock from "@/components/blocks/NavigationBlock";
 
 /**
  * Component registry — maps Optimizely Graph __typename to React components.
+ * Aliases (Hero, CallToAction, Navigation) handle typename variations that
+ * can appear depending on how the content type was registered in the CMS.
  */
 export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   HeroBlock,

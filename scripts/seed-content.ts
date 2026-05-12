@@ -10,6 +10,7 @@
 
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
+import { getManagementToken } from "../src/lib/optimizely/auth";
 
 config({ path: ".env.local" });
 
@@ -18,46 +19,8 @@ config({ path: ".env.local" });
 // ---------------------------------------------------------------------------
 
 const API_BASE = "https://api.cms.optimizely.com";
-const TOKEN_ENDPOINT = `${API_BASE}/oauth/token`;
 const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
 const CONTAINER = "43f936c99b234ea397b261c538ad07c9";
-
-const CLIENT_ID = process.env.OPTIMIZELY_CMS_CLIENT_ID!;
-const CLIENT_SECRET = process.env.OPTIMIZELY_CMS_CLIENT_SECRET!;
-
-if (!CLIENT_ID || !CLIENT_SECRET) {
-  console.error("Missing OPTIMIZELY_CMS_CLIENT_ID or OPTIMIZELY_CMS_CLIENT_SECRET");
-  process.exit(1);
-}
-
-// ---------------------------------------------------------------------------
-// Auth
-// ---------------------------------------------------------------------------
-
-let cachedToken: { token: string; expiresAt: number } | null = null;
-
-async function getToken(): Promise<string> {
-  const now = Date.now();
-  if (cachedToken && cachedToken.expiresAt > now + 30_000) {
-    return cachedToken.token;
-  }
-
-  const res = await fetch(TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      grant_type: "client_credentials",
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-    }),
-  });
-
-  if (!res.ok) throw new Error(`Token error: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  cachedToken = { token: data.access_token, expiresAt: now + data.expires_in * 1000 };
-  console.log("  [auth] Token obtained");
-  return cachedToken.token;
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -475,7 +438,7 @@ const pages: PageDef[] = [
 // ---------------------------------------------------------------------------
 
 async function createPage(page: PageDef): Promise<void> {
-  const token = await getToken();
+  const token = await getManagementToken();
 
   const body: Record<string, unknown> = {
     key: page.key,
@@ -516,7 +479,7 @@ async function createPage(page: PageDef): Promise<void> {
 }
 
 async function deleteExisting(): Promise<void> {
-  const token = await getToken();
+  const token = await getManagementToken();
 
   const res = await fetch(`${CONTENT_ENDPOINT}/${CONTAINER}/items`, {
     headers: { Authorization: `Bearer ${token}` },

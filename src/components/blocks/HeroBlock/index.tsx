@@ -59,7 +59,6 @@ interface HeroBlockData {
 type HeroBlockProps = HeroBlockData & {
   content?: HeroBlockData;
   displaySettings?: Record<string, string | boolean>;
-  inEditMode?: boolean;
 };
 
 export default function HeroBlock(props: HeroBlockProps) {

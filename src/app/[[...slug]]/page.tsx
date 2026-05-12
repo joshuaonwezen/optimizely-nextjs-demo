@@ -107,6 +107,21 @@ export async function generateStaticParams(): Promise<PageParams[]> {
     .filter(Boolean);
 }
 
+const GET_PAGE_META_QUERY = /* GraphQL */ `
+  query GetPageMeta($urls: [String]) {
+    _Page(
+      where: { _metadata: { url: { default: { in: $urls } } } }
+      limit: 1
+    ) {
+      items {
+        _metadata {
+          displayName
+        }
+      }
+    }
+  }
+`;
+
 /** Pull page title from CMS for Next.js <head> */
 export async function generateMetadata({
   params,
@@ -116,22 +131,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const urls = buildUrlCandidates(slug);
 
-  const META_QUERY = /* GraphQL */ `
-    query GetPageMeta($urls: [String]) {
-      _Page(
-        where: { _metadata: { url: { default: { in: $urls } } } }
-        limit: 1
-      ) {
-        items {
-          _metadata {
-            displayName
-          }
-        }
-      }
-    }
-  `;
-
-  const result = await graphqlFetch<any>(META_QUERY, { urls }, { next: { revalidate: 300 } });
+  const result = await graphqlFetch<any>(GET_PAGE_META_QUERY, { urls }, { next: { revalidate: 300 } });
   const page = result.data?._Page?.items?.[0];
 
   return {

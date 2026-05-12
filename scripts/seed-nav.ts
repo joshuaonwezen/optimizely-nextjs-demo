@@ -13,6 +13,7 @@
 
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
+import { getManagementToken } from "../src/lib/optimizely/auth";
 
 config({ path: ".env.local" });
 
@@ -21,48 +22,12 @@ config({ path: ".env.local" });
 // ---------------------------------------------------------------------------
 
 const API_BASE = "https://api.cms.optimizely.com";
-const TOKEN_ENDPOINT = `${API_BASE}/oauth/token`;
 const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 const CONTAINER = "43f936c99b234ea397b261c538ad07c9";
 // The Navigation shared block the user created in the CMS (hyphens removed for API)
 const USER_NAV_KEY = "a69d97d416ab475695caecbb83b69e1a";
-
-const CLIENT_ID = process.env.OPTIMIZELY_CMS_CLIENT_ID!;
-const CLIENT_SECRET = process.env.OPTIMIZELY_CMS_CLIENT_SECRET!;
-
-if (!CLIENT_ID || !CLIENT_SECRET) {
-  console.error("Missing OPTIMIZELY_CMS_CLIENT_ID or OPTIMIZELY_CMS_CLIENT_SECRET");
-  process.exit(1);
-}
-
-// ---------------------------------------------------------------------------
-// Auth (Management API)
-// ---------------------------------------------------------------------------
-
-let cachedToken: { token: string; expiresAt: number } | null = null;
-
-async function getToken(): Promise<string> {
-  const now = Date.now();
-  if (cachedToken && cachedToken.expiresAt > now + 30_000) {
-    return cachedToken.token;
-  }
-  const res = await fetch(TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      grant_type: "client_credentials",
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-    }),
-  });
-  if (!res.ok) throw new Error(`Token error: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  cachedToken = { token: data.access_token, expiresAt: now + data.expires_in * 1000 };
-  console.log("  [auth] Token obtained");
-  return cachedToken.token;
-}
 
 function noHyphens(): string {
   return randomUUID().replace(/-/g, "");
@@ -245,7 +210,7 @@ async function buildPageKeyMap(): Promise<Map<string, string>> {
 // ---------------------------------------------------------------------------
 
 async function apiFetch(path: string, options: RequestInit = {}): Promise<{ ok: boolean; status: number; body: unknown }> {
-  const token = await getToken();
+  const token = await getManagementToken();
   const url = path.startsWith("http") ? path : `${CONTENT_ENDPOINT}${path}`;
   const res = await fetch(url, {
     ...options,

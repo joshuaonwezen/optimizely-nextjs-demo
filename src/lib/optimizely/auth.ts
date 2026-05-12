@@ -35,12 +35,12 @@ export async function getManagementToken(): Promise<string> {
     return tokenCache.token;
   }
 
-  const clientId = process.env.OPTIMIZELY_APP_KEY;
-  const clientSecret = process.env.OPTIMIZELY_APP_SECRET;
+  const clientId = process.env.OPTIMIZELY_CMS_CLIENT_ID;
+  const clientSecret = process.env.OPTIMIZELY_CMS_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
     throw new Error(
-      "OPTIMIZELY_APP_KEY and OPTIMIZELY_APP_SECRET must be set for management API calls"
+      "OPTIMIZELY_CMS_CLIENT_ID and OPTIMIZELY_CMS_CLIENT_SECRET must be set for management API calls"
     );
   }
 
