@@ -167,155 +167,94 @@ export async function getNavigation(options: {
 }
 
 // ---------------------------------------------------------------------------
-// Demo data — mirrors what a real NavigationRoot + NavigationItem tree
-// would look like once populated in the CMS
+// Static fallback nav — mirrors the CMS nav seeded by seed-nav.ts.
+// Hrefs match the nested page URLs created by seed-content.ts.
 // ---------------------------------------------------------------------------
 
 export const DEMO_NAV_DATA: NavNode[] = [
   {
-    key: "products",
-    label: "Products",
-    href: "/en/products",
-    description: "Our full product suite",
+    key: 'products',
+    label: 'Products',
+    href: '/en/products',
+    description: 'Our full product suite',
     children: [
       {
-        key: "cms",
-        label: "Content Management",
-        href: "/en/cms",
+        key: 'cms',
+        label: 'Content Management',
+        href: '/cms',
         children: [
-          {
-            key: "visual-builder",
-            label: "Visual Builder",
-            href: "/en/visual-builder",
-            children: [
-              {
-                key: "page-templates",
-                label: "Page Templates",
-                href: "/en/page-templates",
-                children: [
-                  { key: "industry-templates", label: "Industry Templates", href: "/en/industry-templates", children: [] },
-                  { key: "starter-templates", label: "Starter Templates", href: "/en/starter-templates", children: [] },
-                ],
-              },
-              { key: "component-library", label: "Component Library", href: "/en/component-library", children: [] },
-              { key: "preview-mode", label: "Preview Mode", href: "/en/preview-mode", children: [] },
-            ],
-          },
-          {
-            key: "content-modeling",
-            label: "Content Modeling",
-            href: "/en/content-modeling",
-            children: [
-              { key: "custom-types", label: "Custom Content Types", href: "/en/custom-content-types", children: [] },
-              { key: "validation", label: "Validation Rules", href: "/en/validation-rules", children: [] },
-            ],
-          },
-          { key: "localization", label: "Localization", href: "/en/localization", children: [] },
+          { key: 'visual-builder',   label: 'Visual Builder',   href: '/visual-builder',   children: [] },
+          { key: 'content-modeling', label: 'Content Modeling', href: '/content-modeling', children: [] },
+          { key: 'localization',     label: 'Localization',     href: '/localization',     children: [] },
         ],
       },
       {
-        key: "experimentation",
-        label: "Experimentation",
-        href: "/en/experimentation",
+        key: 'feature-experimentation',
+        label: 'Feature Experimentation',
+        href: '/feature-experimentation',
         children: [
-          { key: "ab-testing", label: "A/B Testing", href: "/en/ab-testing", children: [] },
-          { key: "feature-flags", label: "Feature Flags", href: "/en/feature-flags", children: [] },
+          { key: 'feature-flags',        label: 'Feature Flags',        href: '/feature-flags',        children: [] },
+          { key: 'progressive-rollouts', label: 'Progressive Rollouts', href: '/progressive-rollouts', children: [] },
         ],
       },
       {
-        key: "analytics",
-        label: "Analytics",
-        href: "/en/analytics",
+        key: 'web-experimentation',
+        label: 'Web Experimentation',
+        href: '/web-experimentation',
         children: [
-          { key: "reports", label: "Reports", href: "/en/reports", children: [] },
-          { key: "dashboards", label: "Dashboards", href: "/en/dashboards", children: [] },
+          { key: 'visual-editor', label: 'Visual Editor', href: '/visual-editor', children: [] },
+          { key: 'stats-engine',  label: 'Stats Engine',  href: '/stats-engine',  children: [] },
+        ],
+      },
+      {
+        key: 'analytics',
+        label: 'Analytics',
+        href: '/analytics',
+        children: [
+          { key: 'analytics-reports',      label: 'Reports & Dashboards', href: '/reports',      children: [] },
+          { key: 'analytics-integrations', label: 'Integrations',         href: '/integrations', children: [] },
         ],
       },
     ],
   },
   {
-    key: "solutions",
-    label: "Solutions",
-    href: "/en/solutions",
+    key: 'solutions',
+    label: 'Solutions',
+    href: '/en/solutions',
     children: [
-      { key: "ecommerce", label: "E-Commerce", href: "/en/ecommerce", children: [] },
-      { key: "media", label: "Media & Publishing", href: "/en/media-publishing", children: [] },
-      { key: "enterprise", label: "Enterprise", href: "/en/enterprise", children: [] },
+      { key: 'ecommerce',  label: 'E-Commerce',        href: '/en/ecommerce',        children: [] },
+      { key: 'media',      label: 'Media & Publishing', href: '/en/media-publishing', children: [] },
+      { key: 'enterprise', label: 'Enterprise',         href: '/en/enterprise',       children: [] },
     ],
   },
   {
-    key: "resources",
-    label: "Resources",
-    href: "/en/resources",
+    key: 'resources',
+    label: 'Resources',
+    href: '/en/resources',
     children: [
-      {
-        key: "docs",
-        label: "Documentation",
-        href: "/en/docs",
-        children: [
-          {
-            key: "getting-started",
-            label: "Getting Started",
-            href: "/en/getting-started",
-            children: [
-              {
-                key: "quick-start",
-                label: "Quick Start",
-                href: "/en/quick-start",
-                children: [
-                  { key: "installation", label: "Installation", href: "/en/installation", children: [] },
-                  { key: "configuration", label: "Configuration", href: "/en/configuration", children: [] },
-                ],
-              },
-            ],
-          },
-          { key: "api-reference", label: "API Reference", href: "/en/api-reference", children: [] },
-        ],
-      },
-      { key: "blog", label: "Blog", href: "/en/blog", children: [] },
-      { key: "case-studies", label: "Case Studies", href: "/en/case-studies", children: [] },
+      { key: 'docs',         label: 'Documentation', href: '/en/docs',         children: [] },
+      { key: 'blog',         label: 'Blog',          href: '/en/blog',         children: [] },
+      { key: 'case-studies', label: 'Case Studies',  href: '/en/case-studies', children: [] },
     ],
   },
   {
-    key: "developers",
-    label: "Developers",
-    href: "/en/developers",
+    key: 'developers',
+    label: 'Developers',
+    href: '/en/developers',
     children: [
-      {
-        key: "sdk",
-        label: "SDK",
-        href: "/en/sdk",
-        children: [
-          {
-            key: "js-sdk",
-            label: "JavaScript SDK",
-            href: "/en/javascript-sdk",
-            children: [
-              {
-                key: "react",
-                label: "React",
-                href: "/en/react-sdk",
-                children: [
-                  { key: "hooks", label: "Hooks", href: "/en/hooks", children: [] },
-                  { key: "components", label: "Components Reference", href: "/en/components-reference", children: [] },
-                ],
-              },
-              { key: "node", label: "Node.js", href: "/en/nodejs", children: [] },
-            ],
-          },
-          { key: "rest-api", label: "REST API", href: "/en/rest-api", children: [] },
-        ],
-      },
-      { key: "github", label: "GitHub ↗", href: "https://github.com/episerver", openInNewTab: true, children: [] },
+      { key: 'api-reference', label: 'API Reference', href: '/en/api-reference', children: [] },
+      { key: 'sdks',          label: 'SDKs',          href: '/en/sdks',          children: [] },
+      { key: 'github',        label: 'GitHub',        href: 'https://github.com/episerver', openInNewTab: true, children: [] },
     ],
   },
   {
-    key: "company",
-    label: "Company",
-    href: "/en/company",
+    key: 'company',
+    label: 'Company',
+    href: '/en/company',
     children: [
-      { key: "about", label: "About", href: "/en/about", children: [] },
-      { key: "careers", label: "Careers", href: "/en/careers", children: [] },
+      { key: 'about',   label: 'About',   href: '/en/about',   children: [] },
+      { key: 'careers', label: 'Careers', href: '/en/careers', children: [] },
+      { key: 'contact', label: 'Contact', href: '/contact',    children: [] },
     ],
   },
 ];

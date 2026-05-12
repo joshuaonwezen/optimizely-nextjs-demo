@@ -57,50 +57,37 @@ const NAV_TREE: NavDef[] = [
     routeSegment: "products",
     children: [
       {
+        // DynamicExperience pages created by seed-content.ts
         key: noHyphens(), label: "Content Management", href: "/en/cms",
         existing: true,
         children: [
-          {
-            key: noHyphens(), label: "Visual Builder", href: "/en/visual-builder",
-            routeSegment: "visual-builder",
-            children: [
-              {
-                key: noHyphens(), label: "Page Templates", href: "/en/page-templates",
-                routeSegment: "page-templates",
-                children: [
-                  { key: noHyphens(), label: "Industry Templates", href: "/en/industry-templates", routeSegment: "industry-templates", children: [] },
-                  { key: noHyphens(), label: "Starter Templates", href: "/en/starter-templates", routeSegment: "starter-templates", children: [] },
-                ],
-              },
-              { key: noHyphens(), label: "Component Library", href: "/en/component-library", routeSegment: "component-library", children: [] },
-              { key: noHyphens(), label: "Preview Mode", href: "/en/preview-mode", routeSegment: "preview-mode", children: [] },
-            ],
-          },
-          {
-            key: noHyphens(), label: "Content Modeling", href: "/en/content-modeling",
-            routeSegment: "content-modeling",
-            children: [
-              { key: noHyphens(), label: "Custom Content Types", href: "/en/custom-content-types", routeSegment: "custom-content-types", children: [] },
-              { key: noHyphens(), label: "Validation Rules", href: "/en/validation-rules", routeSegment: "validation-rules", children: [] },
-            ],
-          },
-          { key: noHyphens(), label: "Localization", href: "/en/localization", routeSegment: "localization", children: [] },
+          { key: noHyphens(), label: "Visual Builder",   href: "/en/visual-builder",   existing: true, children: [] },
+          { key: noHyphens(), label: "Content Modeling", href: "/en/content-modeling", existing: true, children: [] },
+          { key: noHyphens(), label: "Localization",     href: "/en/localization",     existing: true, children: [] },
         ],
       },
       {
-        key: noHyphens(), label: "Experimentation", href: "/en/experimentation",
-        routeSegment: "experimentation",
+        key: noHyphens(), label: "Feature Experimentation", href: "/en/feature-experimentation",
+        existing: true,
         children: [
-          { key: noHyphens(), label: "A/B Testing", href: "/en/ab-testing", routeSegment: "ab-testing", children: [] },
-          { key: noHyphens(), label: "Feature Flags", href: "/en/feature-flags", routeSegment: "feature-flags", children: [] },
+          { key: noHyphens(), label: "Feature Flags",        href: "/en/feature-flags",        existing: true, children: [] },
+          { key: noHyphens(), label: "Progressive Rollouts", href: "/en/progressive-rollouts", existing: true, children: [] },
+        ],
+      },
+      {
+        key: noHyphens(), label: "Web Experimentation", href: "/en/web-experimentation",
+        existing: true,
+        children: [
+          { key: noHyphens(), label: "Visual Editor", href: "/en/visual-editor", existing: true, children: [] },
+          { key: noHyphens(), label: "Stats Engine",  href: "/en/stats-engine",  existing: true, children: [] },
         ],
       },
       {
         key: noHyphens(), label: "Analytics", href: "/en/analytics",
         existing: true,
         children: [
-          { key: noHyphens(), label: "Reports", href: "/en/reports", routeSegment: "reports", children: [] },
-          { key: noHyphens(), label: "Dashboards", href: "/en/dashboards", routeSegment: "dashboards", children: [] },
+          { key: noHyphens(), label: "Reports & Dashboards", href: "/en/reports",      existing: true, children: [] },
+          { key: noHyphens(), label: "Integrations",         href: "/en/integrations", existing: true, children: [] },
         ],
       },
     ],
@@ -108,66 +95,33 @@ const NAV_TREE: NavDef[] = [
   {
     key: noHyphens(), label: "Solutions", href: "/en/solutions", routeSegment: "solutions",
     children: [
-      { key: noHyphens(), label: "E-Commerce", href: "/en/ecommerce", routeSegment: "ecommerce", children: [] },
+      { key: noHyphens(), label: "E-Commerce",        href: "/en/ecommerce",       routeSegment: "ecommerce",       children: [] },
       { key: noHyphens(), label: "Media & Publishing", href: "/en/media-publishing", routeSegment: "media-publishing", children: [] },
-      { key: noHyphens(), label: "Enterprise", href: "/en/enterprise", routeSegment: "enterprise", children: [] },
+      { key: noHyphens(), label: "Enterprise",         href: "/en/enterprise",       routeSegment: "enterprise",       children: [] },
     ],
   },
   {
     key: noHyphens(), label: "Resources", href: "/en/resources", routeSegment: "resources",
     children: [
-      {
-        key: noHyphens(), label: "Documentation", href: "/en/docs", routeSegment: "docs",
-        children: [
-          {
-            key: noHyphens(), label: "Getting Started", href: "/en/getting-started", routeSegment: "getting-started",
-            children: [
-              {
-                key: noHyphens(), label: "Quick Start", href: "/en/quick-start", routeSegment: "quick-start",
-                children: [
-                  { key: noHyphens(), label: "Installation", href: "/en/installation", routeSegment: "installation", children: [] },
-                  { key: noHyphens(), label: "Configuration", href: "/en/configuration", routeSegment: "configuration", children: [] },
-                ],
-              },
-            ],
-          },
-          { key: noHyphens(), label: "API Reference", href: "/en/api-reference", routeSegment: "api-reference", children: [] },
-        ],
-      },
-      { key: noHyphens(), label: "Blog", href: "/en/blog", routeSegment: "blog", children: [] },
-      { key: noHyphens(), label: "Case Studies", href: "/en/case-studies", routeSegment: "case-studies", children: [] },
+      { key: noHyphens(), label: "Documentation",  href: "/en/docs",         routeSegment: "docs",         children: [] },
+      { key: noHyphens(), label: "Blog",           href: "/en/blog",         routeSegment: "blog",         children: [] },
+      { key: noHyphens(), label: "Case Studies",   href: "/en/case-studies", routeSegment: "case-studies", children: [] },
     ],
   },
   {
     key: noHyphens(), label: "Developers", href: "/en/developers", routeSegment: "developers",
     children: [
-      {
-        key: noHyphens(), label: "SDK", href: "/en/sdk", routeSegment: "sdk",
-        children: [
-          {
-            key: noHyphens(), label: "JavaScript SDK", href: "/en/javascript-sdk", routeSegment: "javascript-sdk",
-            children: [
-              {
-                key: noHyphens(), label: "React", href: "/en/react-sdk", routeSegment: "react-sdk",
-                children: [
-                  { key: noHyphens(), label: "Hooks", href: "/en/hooks", routeSegment: "hooks", children: [] },
-                  { key: noHyphens(), label: "Components Reference", href: "/en/components-reference", routeSegment: "components-reference", children: [] },
-                ],
-              },
-              { key: noHyphens(), label: "Node.js", href: "/en/nodejs", routeSegment: "nodejs", children: [] },
-            ],
-          },
-          { key: noHyphens(), label: "REST API", href: "/en/rest-api", routeSegment: "rest-api", children: [] },
-        ],
-      },
-      { key: noHyphens(), label: "GitHub ↗", href: "https://github.com/episerver", openInNewTab: true, external: true, children: [] },
+      { key: noHyphens(), label: "API Reference",  href: "/en/api-reference",  routeSegment: "api-reference",  children: [] },
+      { key: noHyphens(), label: "SDKs",           href: "/en/sdks",           routeSegment: "sdks",           children: [] },
+      { key: noHyphens(), label: "GitHub ↗",  href: "https://github.com/episerver", openInNewTab: true, external: true, children: [] },
     ],
   },
   {
     key: noHyphens(), label: "Company", href: "/en/company", routeSegment: "company",
     children: [
-      { key: noHyphens(), label: "About", href: "/en/about", routeSegment: "about", children: [] },
+      { key: noHyphens(), label: "About",   href: "/en/about",   routeSegment: "about",   children: [] },
       { key: noHyphens(), label: "Careers", href: "/en/careers", routeSegment: "careers", children: [] },
+      { key: noHyphens(), label: "Contact", href: "/en/contact", existing: true,           children: [] },
     ],
   },
 ];
@@ -354,6 +308,7 @@ async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
   const navItemRefs = topLevelNodes.map((n) => ({ reference: `cms://content/${n.key}` }));
   const { ok, status, body: resp } = await apiFetch(`/${USER_NAV_KEY}`, {
     method: "PATCH",
+    headers: { "Content-Type": "application/merge-patch+json" },
     body: JSON.stringify({
       locale: "en",
       status: "published",

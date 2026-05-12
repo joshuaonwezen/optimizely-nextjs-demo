@@ -249,17 +249,32 @@ interface PageDef {
   key: string;
   displayName: string;
   routeSegment?: string;
+  container?: string; // parent page key for nested pages; defaults to root CONTAINER
   nodes: CompNode[];
 }
 
 // Pre-declare keys so pages can cross-reference each other
 const PAGE_KEYS = {
-  homepage:              noHyphens(),
-  cms:                   noHyphens(),
+  // Top-level pages
+  homepage:               noHyphens(),
+  cms:                    noHyphens(),
   featureExperimentation: noHyphens(),
-  webExperimentation:    noHyphens(),
-  analytics:             noHyphens(),
-  contact:               noHyphens(),
+  webExperimentation:     noHyphens(),
+  analytics:              noHyphens(),
+  contact:                noHyphens(),
+  // CMS subpages
+  visualBuilder:          noHyphens(),
+  contentModeling:        noHyphens(),
+  localization:           noHyphens(),
+  // Feature Experimentation subpages
+  featureFlags:           noHyphens(),
+  progressiveRollouts:    noHyphens(),
+  // Web Experimentation subpages
+  visualEditor:           noHyphens(),
+  statsEngine:            noHyphens(),
+  // Analytics subpages
+  analyticsReports:       noHyphens(),
+  analyticsIntegrations:  noHyphens(),
 };
 
 const pages: PageDef[] = [
@@ -478,6 +493,194 @@ const pages: PageDef[] = [
       ]),
     ],
   },
+
+  // ── CMS subpages ──────────────────────────────────────────────────────────
+  {
+    key: PAGE_KEYS.visualBuilder,
+    displayName: "Visual Builder",
+    routeSegment: "visual-builder",
+    nodes: buildProductPage(
+      "Visual Editing",
+      "Visual Builder",
+      "Create stunning pages without writing code. Drag, drop, and publish — all in real time.",
+      "Try Visual Builder",
+      "https://www.optimizely.com/cms/visual-builder",
+      [
+        { title: "Drag & Drop", description: "Compose pages by dragging blocks into place. Reorder sections with a single click." },
+        { title: "Component Library", description: "Pick from a curated palette of reusable, brand-approved blocks pre-built by your developers." },
+        { title: "Real-Time Preview", description: "See your changes live before publishing. Switch between desktop and mobile instantly." },
+        { title: "Responsive Design", description: "Every page looks great on any device. Preview across breakpoints before you publish." },
+      ],
+      "Optimizely Visual Builder bridges the gap between development and content creation. Developers define the component library once; editors assemble pages freely within those guardrails — no code changes, no deploys, no waiting.",
+      "Get Started with Visual Builder"
+    ),
+  },
+  {
+    key: PAGE_KEYS.contentModeling,
+    displayName: "Content Modeling",
+    routeSegment: "content-modeling",
+    nodes: buildProductPage(
+      "Content Architecture",
+      "Content Modeling",
+      "Design the structure of your content once, reuse it everywhere. Custom types, validation, and rich relationships — built for scale.",
+      "Explore Content Modeling",
+      "https://www.optimizely.com/cms/content-types",
+      [
+        { title: "Custom Content Types", description: "Define exactly the fields your content needs. Strings, numbers, rich text, references, and arrays — all strongly typed." },
+        { title: "Field Validation", description: "Set constraints at the schema level. Required fields, character limits, regex patterns — enforced in the editor and the API." },
+        { title: "Content References", description: "Link content items to other pages, media, or structured data. Build a true content graph." },
+        { title: "Versioning", description: "Full audit trail on every change. Roll back to any published version with one click." },
+      ],
+      "Great content architecture is invisible to editors but felt by everyone. Optimizely's content modeling tools let developers define a schema that guides authors, enforces consistency, and keeps the content graph clean — at any scale.",
+      "Start Modeling"
+    ),
+  },
+  {
+    key: PAGE_KEYS.localization,
+    displayName: "Localization",
+    routeSegment: "localization",
+    nodes: buildProductPage(
+      "Global Publishing",
+      "Localization",
+      "Deliver the right content to the right audience, in their language. Multi-language content management built for global teams.",
+      "Explore Localization",
+      "https://www.optimizely.com/cms/localization",
+      [
+        { title: "Multi-Language Content", description: "Manage translations side-by-side. Publish in one locale without affecting others." },
+        { title: "Translation Workflows", description: "Route content to translators automatically. Track status across all locales from one dashboard." },
+        { title: "Regional Targeting", description: "Serve locale-specific assets, pricing, and calls-to-action based on visitor location." },
+        { title: "Fallback Locales", description: "Configure fallback chains so visitors always see content, even when a translation isn't ready." },
+      ],
+      "Building global digital experiences shouldn't mean doubling your effort. Optimizely Localization gives content teams a single source of truth that branches cleanly into any number of languages and regions — with workflows that keep translation on schedule.",
+      "Go Global"
+    ),
+  },
+
+  // ── Feature Experimentation subpages ──────────────────────────────────────
+  {
+    key: PAGE_KEYS.featureFlags,
+    displayName: "Feature Flags",
+    routeSegment: "feature-flags",
+    nodes: buildProductPage(
+      "Controlled Rollouts",
+      "Feature Flags",
+      "Ship features to production without exposing them to users. Toggle, target, and roll back in seconds — no redeploy required.",
+      "Explore Feature Flags",
+      "https://www.optimizely.com/products/feature-experimentation",
+      [
+        { title: "Instant Toggles", description: "Enable or disable any feature in real time. No code change, no build, no deploy cycle." },
+        { title: "Audience Targeting", description: "Show features to specific users, cohorts, or segments. Target by attribute, location, or custom rule." },
+        { title: "Kill Switch", description: "If something goes wrong, kill the feature immediately. Reduce MTTR from hours to seconds." },
+        { title: "SDK Support", description: "SDKs for JavaScript, Python, Go, Java, Ruby, and more. Works server-side, client-side, or on mobile." },
+      ],
+      "Feature flags decouple deployment from release. Your team ships to production continuously; business stakeholders decide when — and for whom — each feature goes live. Optimizely makes that separation simple and auditable.",
+      "Start Using Feature Flags"
+    ),
+  },
+  {
+    key: PAGE_KEYS.progressiveRollouts,
+    displayName: "Progressive Rollouts",
+    routeSegment: "progressive-rollouts",
+    nodes: buildProductPage(
+      "Risk Reduction",
+      "Progressive Rollouts",
+      "Roll out features to a growing percentage of users. Monitor impact, catch issues early, and roll back instantly if needed.",
+      "Explore Rollouts",
+      "https://www.optimizely.com/products/feature-experimentation",
+      [
+        { title: "Percentage Rollouts", description: "Start at 1%, scale to 100%. Each step is measured before you proceed." },
+        { title: "Canary Releases", description: "Route a small cohort of early adopters to your new version. Battle-test before full launch." },
+        { title: "Auto-Rollback", description: "Set error-rate thresholds. If breached, the rollout pauses and alerts your team automatically." },
+        { title: "Monitoring Integration", description: "Connect to Datadog, New Relic, or your observability stack. See feature impact on your metrics in real time." },
+      ],
+      "Progressive rollouts are the difference between a scary big-bang release and a controlled, confidence-building launch. Optimizely's rollout engine lets you move fast without risking everything.",
+      "Start Rolling Out"
+    ),
+  },
+
+  // ── Web Experimentation subpages ──────────────────────────────────────────
+  {
+    key: PAGE_KEYS.visualEditor,
+    displayName: "Visual Editor",
+    routeSegment: "visual-editor",
+    nodes: buildProductPage(
+      "No-Code Testing",
+      "Visual Editor",
+      "Run A/B tests without writing a line of code. Click any element on your page, change it, and launch an experiment in minutes.",
+      "Try the Visual Editor",
+      "https://www.optimizely.com/products/web-experimentation",
+      [
+        { title: "Point-and-Click", description: "Select any text, image, button, or section. Edit it directly — no developer required." },
+        { title: "WYSIWYG Editing", description: "See exactly what your visitors will see. No staging environment, no lag." },
+        { title: "Responsive Preview", description: "Check how your experiment looks on mobile, tablet, and desktop before launching." },
+        { title: "Change History", description: "Full audit log of every experiment variant. Revert any change in one click." },
+      ],
+      "The Optimizely Visual Editor gives marketers superpowers. Create, test, and optimize page variations at the speed of thought — without filing a dev ticket. Developers stay focused on new features; marketers stay focused on conversion.",
+      "Open the Visual Editor"
+    ),
+  },
+  {
+    key: PAGE_KEYS.statsEngine,
+    displayName: "Stats Engine",
+    routeSegment: "stats-engine",
+    nodes: buildProductPage(
+      "Statistical Rigor",
+      "Stats Engine",
+      "Get to confident results faster. Sequential testing lets you act on data without waiting for arbitrary run times.",
+      "Explore the Stats Engine",
+      "https://www.optimizely.com/products/web-experimentation",
+      [
+        { title: "Bayesian Engine", description: "Understand probability of winning, not just p-values. Make intuitive, business-friendly decisions." },
+        { title: "Sequential Testing", description: "Peek at results at any time without inflating false positives. Stop experiments as soon as you're confident." },
+        { title: "Sample Size Calculator", description: "Enter your baseline and target lift. Get a recommended experiment duration before you even start." },
+        { title: "Significance Monitoring", description: "Get alerted the moment your experiment reaches significance. No more manual result-checking." },
+      ],
+      "Bad statistics cost companies real money — from false positives that ship broken features to long runtimes that slow the whole roadmap. Optimizely's stats engine is built by PhDs and battle-tested across millions of experiments.",
+      "Learn About the Stats Engine"
+    ),
+  },
+
+  // ── Analytics subpages ────────────────────────────────────────────────────
+  {
+    key: PAGE_KEYS.analyticsReports,
+    displayName: "Reports & Dashboards",
+    routeSegment: "reports",
+    nodes: buildProductPage(
+      "Actionable Insights",
+      "Reports & Dashboards",
+      "See everything in one place. Custom dashboards, funnel analysis, and revenue attribution — all connected to your experiments.",
+      "Explore Reports",
+      "https://www.optimizely.com/products/intelligence",
+      [
+        { title: "Custom Dashboards", description: "Pin the metrics that matter. Build dashboards by team, campaign, or product area." },
+        { title: "Funnel Analysis", description: "Visualize the full user journey. Find exactly where visitors drop off and what experiments to run next." },
+        { title: "Revenue Attribution", description: "Connect experiment wins to revenue impact. Show the ROI of your optimization program in dollars." },
+        { title: "Data Exports", description: "Push raw experiment data to your data warehouse. Full control over how you analyze results." },
+      ],
+      "Decisions made without data are guesses. Optimizely Analytics closes the loop between running experiments and understanding outcomes — so every team has the evidence it needs to move confidently.",
+      "See the Reports"
+    ),
+  },
+  {
+    key: PAGE_KEYS.analyticsIntegrations,
+    displayName: "Integrations",
+    routeSegment: "integrations",
+    nodes: buildProductPage(
+      "Connect Everything",
+      "Integrations",
+      "Optimizely works with the tools you already use. Connect your CDP, data warehouse, ad platforms, and analytics stack in minutes.",
+      "Explore Integrations",
+      "https://www.optimizely.com/integrations",
+      [
+        { title: "CDP Sync", description: "Push experiment assignments to Segment, mParticle, or Amplitude. Enrich your customer profiles with experiment data." },
+        { title: "Data Warehouse", description: "Send events to Snowflake, BigQuery, or Redshift. Own your data, run your own analysis." },
+        { title: "Ad Platforms", description: "Sync experiment audiences to Google Ads, Meta, and LinkedIn. Test messaging across paid channels." },
+        { title: "Webhook Events", description: "Subscribe to experiment lifecycle events. Trigger automations in Zapier, Slack, or your own systems." },
+      ],
+      "The modern data stack is composable. Optimizely fits natively into your existing infrastructure — sending and receiving data through a rich set of native integrations and a powerful webhook system.",
+      "Browse All Integrations"
+    ),
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -491,7 +694,7 @@ async function createPage(page: PageDef): Promise<void> {
     key: page.key,
     contentType: "DynamicExperience",
     locale: "en",
-    container: CONTAINER,
+    container: page.container ?? CONTAINER,
     status: "published",
     displayName: page.displayName,
     ...(page.routeSegment ? { routeSegment: page.routeSegment } : {}),
@@ -559,10 +762,11 @@ async function main() {
   console.log("--- Cleaning existing content ---");
   await deleteExisting();
 
-  // Create non-homepage pages first so content references resolve correctly
-  const nonHome = pages.filter((p) => p.key !== PAGE_KEYS.homepage);
-  const home    = pages.filter((p) => p.key === PAGE_KEYS.homepage);
-  const ordered = [...nonHome, ...home];
+  // Creation order matters: parents before children, homepage last (it references other pages)
+  const topLevel = pages.filter((p) => !p.container && p.key !== PAGE_KEYS.homepage);
+  const subPages = pages.filter((p) => !!p.container);
+  const home     = pages.filter((p) => p.key === PAGE_KEYS.homepage);
+  const ordered  = [...topLevel, ...subPages, ...home];
 
   console.log(`\n--- Creating ${ordered.length} experience pages ---`);
   for (const page of ordered) {
