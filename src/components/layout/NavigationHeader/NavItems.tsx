@@ -1,0 +1,95 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import type { NavNode } from "@/lib/graphql/queries/GetNavigation";
+
+interface Props {
+  tree: NavNode[];
+}
+
+export default function NavItems({ tree }: Props) {
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+
+  if (tree.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1">
+      {tree.map((node) => {
+        const hasChildren = node.children.length > 0;
+        const isActive = activeKey === node.key;
+
+        return (
+          <div
+            key={node.key}
+            className="relative"
+            onMouseEnter={() => setActiveKey(node.key)}
+            onMouseLeave={() => setActiveKey(null)}
+          >
+            {hasChildren ? (
+              <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors font-body ${isActive ? "text-brand" : "text-on-surface-variant hover:text-brand"}`}>
+                {node.label}
+                <svg
+                  width="10"
+                  height="6"
+                  viewBox="0 0 10 6"
+                  className={`transition-transform duration-150 ${isActive ? "rotate-180" : ""}`}
+                  fill="none"
+                >
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ) : (
+              <Link
+                href={node.href}
+                target={node.openInNewTab ? "_blank" : undefined}
+                rel={node.openInNewTab ? "noopener noreferrer" : undefined}
+                className="block px-3 py-2 rounded-lg text-sm font-medium font-body text-on-surface-variant hover:text-brand transition-colors"
+              >
+                {node.label}
+              </Link>
+            )}
+
+            {/* Dropdown panel */}
+            {hasChildren && isActive && (
+              <div className="absolute top-full left-0 pt-2 z-50">
+                <div className="bg-surface-lowest border border-ghost-border rounded-xl shadow-lg py-2 min-w-52">
+                  {node.children.map((child) =>
+                    child.children.length > 0 ? (
+                      <div key={child.key}>
+                        <div className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-on-surface-variant opacity-50">
+                          {child.label}
+                        </div>
+                        {child.children.map((grandchild) => (
+                          <Link
+                            key={grandchild.key}
+                            href={grandchild.href}
+                            target={grandchild.openInNewTab ? "_blank" : undefined}
+                            rel={grandchild.openInNewTab ? "noopener noreferrer" : undefined}
+                            className="block px-4 py-1.5 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
+                          >
+                            {grandchild.label}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <Link
+                        key={child.key}
+                        href={child.href}
+                        target={child.openInNewTab ? "_blank" : undefined}
+                        rel={child.openInNewTab ? "noopener noreferrer" : undefined}
+                        className="block px-4 py-1.5 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
+                      >
+                        {child.label}
+                      </Link>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
