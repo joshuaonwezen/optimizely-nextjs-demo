@@ -101,7 +101,7 @@ function elementComponent(
 // Page compositions
 // ---------------------------------------------------------------------------
 
-function buildHomepage(): CompNode[] {
+function buildHomepage(featureExperimentationKey: string): CompNode[] {
   return [
     sectionComponent("Hero", "Home Hero", {
       heading: "Unlock Your Digital Potential",
@@ -148,6 +148,43 @@ function buildHomepage(): CompNode[] {
         linkText: "Explore Analytics \u2192",
       }),
     ]),
+    sectionComponent("LogoGridBlock", "Trusted By", {
+      heading: "Trusted by leading brands",
+      subheading:
+        "Thousands of companies use Optimizely to deliver exceptional digital experiences.",
+      logos: [],
+    }),
+    sectionComponent("FeaturedContentBlock", "Featured Case Study", {
+      label: "Customer Story",
+      featuredPage: `cms://content/${featureExperimentationKey}`,
+      description:
+        "See how leading teams ship faster and safer with feature flags, progressive rollouts, and real-time targeting \u2014 all without a code deploy.",
+      ctaText: "Read the story",
+    }),
+    sectionComponent("SectionHeadingBlock", "FAQ Heading", {
+      heading: "Frequently Asked Questions",
+      subheading: "Everything you need to know about the Optimizely platform.",
+    }),
+    sectionComponent("FaqItemBlock", "FAQ 1", {
+      question: "What is Optimizely?",
+      answer:
+        "Optimizely is a digital experience platform that combines content management, feature experimentation, web experimentation, and analytics into a single composable suite. It helps teams create, test, and optimize digital experiences at scale.",
+    }),
+    sectionComponent("FaqItemBlock", "FAQ 2", {
+      question: "Do I need a developer to use Optimizely CMS?",
+      answer:
+        "No. Optimizely's Visual Builder lets content authors create and edit pages using a drag-and-drop interface without writing code. Developers set up the component library once; editors take it from there.",
+    }),
+    sectionComponent("FaqItemBlock", "FAQ 3", {
+      question: "How does Optimizely Graph work?",
+      answer:
+        "Optimizely Graph is a managed GraphQL API that indexes your CMS content automatically. Whenever you publish or update content, Graph re-indexes in seconds. Your frontend queries Graph for content \u2014 no database setup required.",
+    }),
+    sectionComponent("FaqItemBlock", "FAQ 4", {
+      question: "Can I run A/B tests on CMS content?",
+      answer:
+        "Yes. Optimizely's experimentation products integrate natively with the CMS. You can test entire page variations, individual component swaps, or personalize content for specific audience segments \u2014 all from the same platform.",
+    }),
     sectionComponent("CallToAction", "Home CTA", {
       label: "Start Your Free Trial",
       link: "https://www.optimizely.com",
@@ -215,14 +252,24 @@ interface PageDef {
   nodes: CompNode[];
 }
 
+// Pre-declare keys so pages can cross-reference each other
+const PAGE_KEYS = {
+  homepage:              noHyphens(),
+  cms:                   noHyphens(),
+  featureExperimentation: noHyphens(),
+  webExperimentation:    noHyphens(),
+  analytics:             noHyphens(),
+  contact:               noHyphens(),
+};
+
 const pages: PageDef[] = [
   {
-    key: noHyphens(),
+    key: PAGE_KEYS.homepage,
     displayName: "Homepage",
-    nodes: buildHomepage(),
+    nodes: buildHomepage(PAGE_KEYS.featureExperimentation),
   },
   {
-    key: noHyphens(),
+    key: PAGE_KEYS.cms,
     displayName: "Content Management System",
     routeSegment: "cms",
     nodes: buildProductPage(
@@ -258,7 +305,7 @@ const pages: PageDef[] = [
     ),
   },
   {
-    key: noHyphens(),
+    key: PAGE_KEYS.featureExperimentation,
     displayName: "Feature Experimentation",
     routeSegment: "feature-experimentation",
     nodes: buildProductPage(
@@ -294,7 +341,7 @@ const pages: PageDef[] = [
     ),
   },
   {
-    key: noHyphens(),
+    key: PAGE_KEYS.webExperimentation,
     displayName: "Web Experimentation",
     routeSegment: "web-experimentation",
     nodes: buildProductPage(
@@ -330,7 +377,7 @@ const pages: PageDef[] = [
     ),
   },
   {
-    key: noHyphens(),
+    key: PAGE_KEYS.analytics,
     displayName: "Analytics",
     routeSegment: "analytics",
     nodes: buildProductPage(
@@ -366,7 +413,7 @@ const pages: PageDef[] = [
     ),
   },
   {
-    key: noHyphens(),
+    key: PAGE_KEYS.contact,
     displayName: "Contact Us",
     routeSegment: "contact",
     nodes: [
@@ -512,8 +559,13 @@ async function main() {
   console.log("--- Cleaning existing content ---");
   await deleteExisting();
 
-  console.log(`\n--- Creating ${pages.length} experience pages ---`);
-  for (const page of pages) {
+  // Create non-homepage pages first so content references resolve correctly
+  const nonHome = pages.filter((p) => p.key !== PAGE_KEYS.homepage);
+  const home    = pages.filter((p) => p.key === PAGE_KEYS.homepage);
+  const ordered = [...nonHome, ...home];
+
+  console.log(`\n--- Creating ${ordered.length} experience pages ---`);
+  for (const page of ordered) {
     await createPage(page);
   }
 
