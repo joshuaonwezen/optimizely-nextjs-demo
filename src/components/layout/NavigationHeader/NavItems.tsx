@@ -3,17 +3,21 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { NavNode } from "@/lib/graphql/queries/GetNavigation";
+import SearchOverlay from "@/components/layout/SearchOverlay";
 
 interface Props {
   tree: NavNode[];
 }
 
 export default function NavItems({ tree }: Props) {
-  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [activeKey,    setActiveKey]    = useState<string | null>(null);
+  const [searchOpen,   setSearchOpen]   = useState(false);
 
   if (tree.length === 0) return null;
 
   return (
+    <>
+    {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     <div className="flex items-center gap-1">
       {tree.map((node) => {
         const hasChildren = node.children.length > 0;
@@ -90,6 +94,19 @@ export default function NavItems({ tree }: Props) {
           </div>
         );
       })}
+
+      {/* Search icon */}
+      <button
+        onClick={() => setSearchOpen(true)}
+        aria-label="Search"
+        className="ml-2 p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M12.5 12.5L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
     </div>
+    </>
   );
 }

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Script from "next/script";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import NavigationHeader from "@/components/layout/NavigationHeader";
+import GlobalBanner from "@/components/layout/GlobalBanner";
 import Footer from "@/components/layout/Footer";
 import "./globals.css";
 
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body
         className={`${plusJakarta.variable} ${inter.variable} min-h-screen bg-surface text-on-surface font-body antialiased`}
       >
+        <GlobalBanner />
         <NavigationHeader />
         <main>{children}</main>
         <Footer />
