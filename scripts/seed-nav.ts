@@ -62,12 +62,12 @@ const NAV_TREE: NavDef[] = [
         existing: true,
         children: [
           { key: noHyphens(), label: "Visual Builder",   href: "/en/visual-builder",   existing: true, children: [] },
-          { key: noHyphens(), label: "Content Modeling", href: "/en/content-modeling", existing: true, children: [] },
+          { key: noHyphens(), label: "Content Modeling", href: "/content-modeling", existing: true, children: [] },
           { key: noHyphens(), label: "Localization",     href: "/en/localization",     existing: true, children: [] },
         ],
       },
       {
-        key: noHyphens(), label: "Feature Experimentation", href: "/en/feature-experimentation",
+        key: noHyphens(), label: "Feature Experimentation", href: "/feature-experimentation",
         existing: true,
         children: [
           { key: noHyphens(), label: "Feature Flags",        href: "/en/feature-flags",        existing: true, children: [] },
