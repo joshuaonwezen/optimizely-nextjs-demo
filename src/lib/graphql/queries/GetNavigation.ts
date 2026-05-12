@@ -54,6 +54,11 @@ interface GetNavigationResult {
  *
  * depth: 5 → NavRoot → L1 → L2 → L3 → L4 → L5
  */
+// Sentinel name written by seed-nav.ts — used as the CMS displayName so editors
+// can identify the seeded Navigation block in the CMS UI. Not used for querying
+// (Graph doesn't index the name property for filtering).
+export const SEEDED_NAV_NAME = "Seeded Navigation";
+
 export const GET_NAVIGATION_QUERY = /* GraphQL */ `
   fragment NavItemFields on _IContent {
     ... on NavigationItem {
@@ -129,8 +134,12 @@ export function toNavNode(raw: RawNavItem): NavNode {
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch the "Navigation" shared block by its fixed content ID and map its
- * navItems content area into a typed NavNode tree.
+ * Fetch the Navigation shared block and map its navItems into a typed NavNode
+ * tree.
+ *
+ * By default queries by the sentinel name written by seed-nav.ts ("Seeded
+ * Navigation") so re-seeding with a new CMS key is transparent. Pass `key` to
+ * query a specific Navigation block (e.g. for preview).
  *
  * Cached for 5 minutes with a "navigation" tag — call
  * revalidateTag("navigation") from a publish webhook to bust on demand.
@@ -153,13 +162,13 @@ export async function getNavigation(options: {
     );
 
     const root = result.data?.Navigation?.items?.[0];
-    if (!root) return key ? { tree: [], fromCms: false } : { tree: DEMO_NAV_DATA, fromCms: false };
+    if (!root) return { tree: DEMO_NAV_DATA, fromCms: false };
 
     const items = (root.navItems ?? [])
       .filter((c): c is RawNavItem => (c as RawNavItem).__typename === "NavigationItem")
       .map(toNavNode);
 
-    if (items.length === 0) return key ? { tree: [], fromCms: true } : { tree: DEMO_NAV_DATA, fromCms: false };
+    if (items.length === 0) return { tree: DEMO_NAV_DATA, fromCms: false };
     return { tree: items, fromCms: true };
   } catch {
     return { tree: DEMO_NAV_DATA, fromCms: false };

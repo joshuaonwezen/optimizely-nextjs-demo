@@ -61,9 +61,14 @@ export default function NavItems({ tree }: Props) {
                   {node.children.map((child) =>
                     child.children.length > 0 ? (
                       <div key={child.key}>
-                        <div className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-on-surface-variant opacity-50">
+                        <Link
+                          href={child.href}
+                          target={child.openInNewTab ? "_blank" : undefined}
+                          rel={child.openInNewTab ? "noopener noreferrer" : undefined}
+                          className="block px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-brand transition-colors"
+                        >
                           {child.label}
-                        </div>
+                        </Link>
                         {child.children.map((grandchild) => (
                           <Link
                             key={grandchild.key}

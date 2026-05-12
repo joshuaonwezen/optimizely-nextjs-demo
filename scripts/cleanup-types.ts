@@ -1,34 +1,31 @@
 /**
- * Deletes content types from the CMS that are no longer used by this application.
+ * CMS cleanup script — two jobs:
+ *   1. Delete CMS content types that are no longer used by this app
+ *   2. Delete orphaned NavigationItems left behind from manual CMS editing
  *
  * Run: npx tsx scripts/cleanup-types.ts
  */
 
 import { config } from "dotenv";
+import { getManagementToken } from "../src/lib/optimizely/auth";
 
 config({ path: ".env.local" });
 
 const API_BASE = "https://api.cms.optimizely.com";
-const TOKEN_ENDPOINT = `${API_BASE}/oauth/token`;
 const TYPES_ENDPOINT = `${API_BASE}/v1/contenttypes`;
+const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
 
-const CLIENT_ID = process.env.OPTIMIZELY_CMS_CLIENT_ID!;
-const CLIENT_SECRET = process.env.OPTIMIZELY_CMS_CLIENT_SECRET!;
+// ---------------------------------------------------------------------------
+// Content types actively used by this application — keep all of these.
+// ---------------------------------------------------------------------------
 
-if (!CLIENT_ID || !CLIENT_SECRET) {
-  console.error("Missing OPTIMIZELY_CMS_CLIENT_ID or OPTIMIZELY_CMS_CLIENT_SECRET");
-  process.exit(1);
-}
-
-// Content types actively used by this application — do NOT delete these.
 const KEEP = new Set([
-  // SDK-defined types (in optimizely.config.mjs or block files)
+  // Page / experience types (optimizely.config.mjs)
   "DynamicExperience",
   "LandingPage",
+  // Block types (src/components/blocks/)
   "HeroBlock",
-  "Hero",
   "CallToAction",
-  "CallToActionBlock",
   "TextBlock",
   "ProductCardBlock",
   "ProductHeroBlock",
@@ -42,9 +39,16 @@ const KEEP = new Set([
   "FormTextArea",
   "FormSelect",
   "FormSubmitButton",
+  "FaqContainerBlock",
+  "FaqItemBlock",
+  "FeaturedContentBlock",
+  "LogoGridBlock",
+  // Navigation types (src/components/blocks/NavigationItemBlock/)
   "NavigationItem",
-  "NavigationRoot",
-  // Built-in Optimizely types — never delete these
+  "Navigation",
+  // Layout types (src/components/layout/)
+  "SiteBanner",
+  // Built-in Optimizely system types — never delete these
   "BlankExperience",
   "BlankSection",
   "_Component",
@@ -64,70 +68,141 @@ const KEEP = new Set([
   "Video",
 ]);
 
-async function getToken(): Promise<string> {
-  const res = await fetch(TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      grant_type: "client_credentials",
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-    }),
+// ---------------------------------------------------------------------------
+// Orphaned NavigationItems created manually in the CMS (no longer referenced
+// by any Navigation block). Container: e56f85d0e8334e02976a2d11fe4d598c
+// ---------------------------------------------------------------------------
+
+const ORPHANED_NAV_ITEM_KEYS = [
+  "9c38633f13404395bb7a5ac61e58348c", // 1st Level Navigation - Product
+  "d01e71c3701e44f0a9bcc66a6acb7a9a", // 1st Level Navigation - Resources
+  "ebbd383b35bf47c6b444534988ae7aec", // 2nd Level Navigation - CMS
+  "0e06b87393a64d89ac93df2b011bbf23", // 2nd Level Navigation - Documentation
+  "4f044c56bbde4ca1a8c558c32d73fe26", // 2nd Level Navigation - Experimentation
+];
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+async function deleteItem(token: string, key: string, label: string): Promise<"deleted" | "gone" | "error"> {
+  const res = await fetch(`${CONTENT_ENDPOINT}/${key}?permanent=true`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error(`Token error: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  console.log("  [auth] Token obtained");
-  return data.access_token;
+  if (res.ok) {
+    console.log(`  [deleted] ${label} (${res.status})`);
+    return "deleted";
+  }
+  if (res.status === 404) {
+    console.log(`  [already gone] ${label}`);
+    return "gone";
+  }
+  const body = await res.text();
+  console.warn(`  [error] ${label}: ${res.status} ${body.slice(0, 120)}`);
+  return "error";
 }
 
-async function main() {
-  console.log("=== Content Type Cleanup ===\n");
+// ---------------------------------------------------------------------------
+// Part 1 — Content type cleanup
+// ---------------------------------------------------------------------------
 
-  const token = await getToken();
+async function cleanupContentTypes(token: string): Promise<void> {
+  console.log("--- Part 1: Content type audit ---");
 
-  // Fetch all content types
   const listRes = await fetch(TYPES_ENDPOINT, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!listRes.ok) {
-    throw new Error(`List types failed: ${listRes.status} ${await listRes.text()}`);
+    const text = await listRes.text();
+    if (listRes.status === 404) {
+      console.log("  [skip] v1/contenttypes not available on this CMS instance.");
+      return;
+    }
+    throw new Error(`List types failed: ${listRes.status} ${text.slice(0, 200)}`);
   }
   const listData = await listRes.json();
   const allTypes: Array<{ key: string; displayName?: string }> = listData.items ?? listData ?? [];
-
-  console.log(`Found ${allTypes.length} content types in CMS.\n`);
-
-  // Skip types that start with _ (built-in bases) or contain : (namespaced/system types)
-  const toDelete = allTypes.filter((t) => !KEEP.has(t.key) && !t.key.startsWith("_") && !t.key.includes(":"));
-  const toKeep = allTypes.filter((t) => KEEP.has(t.key) || t.key.startsWith("_") || t.key.includes(":"));
-
-  console.log(`Keeping ${toKeep.length} types, deleting ${toDelete.length} types.\n`);
-
-  if (toDelete.length === 0) {
-    console.log("Nothing to delete.");
+  if (!Array.isArray(allTypes) || allTypes.length === 0) {
+    console.log("  [skip] No content types returned (unexpected response format).");
     return;
   }
 
-  console.log("--- Deleting unused types ---");
-  let deleted = 0;
-  let failed = 0;
+  console.log(`  Found ${allTypes.length} content types in CMS.`);
 
+  const toDelete = allTypes.filter(
+    (t) => !KEEP.has(t.key) && !t.key.startsWith("_") && !t.key.includes(":")
+  );
+
+  if (toDelete.length === 0) {
+    console.log("  All types are in use — nothing to remove.\n");
+    return;
+  }
+
+  console.log(`  Removing ${toDelete.length} unused type(s):`);
+  const needsRecycleBinClear: string[] = [];
   for (const type of toDelete) {
     const res = await fetch(`${TYPES_ENDPOINT}/${type.key}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok || res.status === 404) {
-      console.log(`  [deleted] ${type.key} (${type.displayName ?? ""})`);
-      deleted++;
+      console.log(`    [deleted] ${type.key} (${type.displayName ?? ""})`);
     } else {
       const body = await res.text();
-      console.warn(`  [skip]    ${type.key}: ${res.status} ${body.slice(0, 120)}`);
-      failed++;
+      let parsed: Record<string, unknown> = {};
+      try { parsed = JSON.parse(body); } catch { /* ignore */ }
+      if (res.status === 409) {
+        console.warn(`    [blocked] ${type.key} — content instances exist in the Recycle Bin (must be purged first)`);
+        needsRecycleBinClear.push(type.key);
+      } else {
+        console.warn(`    [skip]    ${type.key}: ${res.status} ${(parsed.detail as string ?? body).slice(0, 120)}`);
+      }
     }
   }
+  if (needsRecycleBinClear.length > 0) {
+    console.log(`
+  ⚠️  ${needsRecycleBinClear.length} type(s) cannot be removed until the Recycle Bin is emptied:
+     ${needsRecycleBinClear.join(", ")}
 
-  console.log(`\n=== Done: ${deleted} deleted, ${failed} skipped ===`);
+  To fix:
+    1. Open the Optimizely CMS admin UI
+    2. Go to Settings → Recycle Bin (or search for Trash / Recycle Bin)
+    3. Empty the Recycle Bin (permanently delete all soft-deleted items)
+    4. Re-run this script: npx tsx scripts/cleanup-types.ts
+`);
+  }
+  console.log();
+}
+
+// ---------------------------------------------------------------------------
+// Part 2 — Orphaned NavigationItem cleanup
+// ---------------------------------------------------------------------------
+
+async function cleanupOrphanedNavItems(token: string): Promise<void> {
+  console.log("--- Part 2: Orphaned NavigationItems ---");
+  let deleted = 0, gone = 0, errors = 0;
+
+  for (const key of ORPHANED_NAV_ITEM_KEYS) {
+    const result = await deleteItem(token, key, key.slice(0, 8) + "…");
+    if (result === "deleted") deleted++;
+    else if (result === "gone") gone++;
+    else errors++;
+  }
+
+  console.log(`  Summary: ${deleted} deleted, ${gone} already gone, ${errors} errors.\n`);
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+async function main() {
+  console.log("=== CMS Cleanup ===\n");
+  const token = await getManagementToken();
+  await cleanupContentTypes(token);
+  await cleanupOrphanedNavItems(token);
+  console.log("=== Done ===");
 }
 
 main().catch((err) => {

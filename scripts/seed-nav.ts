@@ -26,8 +26,12 @@ const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 const CONTAINER = "43f936c99b234ea397b261c538ad07c9";
-// The Navigation shared block the user created in the CMS (hyphens removed for API)
-const USER_NAV_KEY = "a69d97d416ab475695caecbb83b69e1a";
+// Sentinel name for the seeded Navigation block. The app queries by this name so
+// re-runs can delete the old block (soft-delete → Graph removes it) and POST a
+// fresh one with a new random key without conflicting with the Recycle Bin.
+// NOTE: Optimizely Management API PATCH does not persist content-area properties;
+//       the only reliable pattern is DELETE → wait → POST with the payload.
+const NAV_BLOCK_NAME = "Seeded Navigation";
 
 function noHyphens(): string {
   return randomUUID().replace(/-/g, "");
@@ -190,7 +194,6 @@ async function cleanupNavItems(): Promise<void> {
   if (!ok) { console.log("  [skip] Could not list container items"); return; }
   const items = (body as { items?: Array<{ key: string; contentType?: string; locales?: Record<string, { displayName?: string; contentType?: string }> }> }).items ?? [];
   for (const item of items) {
-    if (item.key === USER_NAV_KEY) continue; // keep the user's Navigation block
     const ct = item.contentType ?? item.locales?.en?.contentType ?? "";
     if (ct === "NavigationItem" || ct === "Navigation") {
       const del = await apiFetch(`/${item.key}?permanent=true`, { method: "DELETE" });
@@ -306,23 +309,32 @@ async function createNavTree(nodes: NavDef[]): Promise<void> {
 
 async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
   const navItemRefs = topLevelNodes.map((n) => ({ reference: `cms://content/${n.key}` }));
-  const { ok, status, body: resp } = await apiFetch(`/${USER_NAV_KEY}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/merge-patch+json" },
+
+  // Optimizely Management API PATCH silently ignores content-area property updates.
+  // Reliable pattern: the cleanup step already soft-deleted the old Navigation block
+  // (which removes it from Graph). We POST a fresh one with a new random key.
+  // The app queries by NAV_BLOCK_NAME so the key doesn't need to be stable.
+  const newKey = noHyphens();
+  const { ok, status, body: resp } = await apiFetch("", {
+    method: "POST",
     body: JSON.stringify({
+      key: newKey,
+      contentType: "Navigation",
       locale: "en",
+      container: CONTAINER,
       status: "published",
+      displayName: NAV_BLOCK_NAME,
       properties: {
-        name: "Navigation",
+        name: NAV_BLOCK_NAME,
         navItems: navItemRefs,
       },
     }),
   });
   if (!ok) {
-    console.error(`  [ERROR] Navigation block PATCH: ${status} ${JSON.stringify(resp).slice(0, 400)}`);
-    throw new Error("Navigation block update failed");
+    console.error(`  [ERROR] Navigation block POST: ${status} ${JSON.stringify(resp).slice(0, 400)}`);
+    throw new Error("Navigation block creation failed");
   }
-  console.log(`  [nav-block] Updated user's Navigation block (${topLevelNodes.length} top-level items)`);
+  console.log(`  [nav-block] Created "${NAV_BLOCK_NAME}" block (key ${newKey}) with ${topLevelNodes.length} top-level items`);
 }
 
 // ---------------------------------------------------------------------------
