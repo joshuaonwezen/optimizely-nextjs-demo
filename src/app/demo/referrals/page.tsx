@@ -7,25 +7,23 @@ export const metadata: Metadata = {
 
 const TYPE_DEFINITION_SNIPPET = `// PUT https://cg.optimizely.com/api/content/v3/types?id=rfl
 // Authorization: Basic base64(APP_KEY:APP_SECRET)
+//
+// _Item is a globally defined contract — no need to register it.
+// We override _Metadata only to set displayName searchable:false;
+// the global definition uses searchable:true which silently drops
+// values from external sources via the full-text search pipeline.
 {
   "propertyTypes": {
     "_Metadata": {
       "properties": {
-        "key":          { "type": "String"   },
-        "displayName":  { "type": "String"   },
-        "lastModified": { "type": "DateTime" },
-        "type":         { "type": "String"   }
+        "key":          { "type": "String",   "searchable": false },
+        "displayName":  { "type": "String",   "searchable": false },
+        "lastModified": { "type": "DateTime", "searchable": false },
+        "type":         { "type": "String",   "searchable": false }
       }
     }
   },
   "contentTypes": {
-    "_Item": {
-      "abstract": true,
-      "contentType": [],
-      "properties": {
-        "_itemMetadata": { "type": "_Metadata" }
-      }
-    },
     "Referral": {
       "contentType": ["_Item"],
       "properties": {
