@@ -12,6 +12,9 @@ import { config } from "dotenv";
 
 config({ path: ".env.local" });
 
+const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
+const GRAPH_QUERY = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
+
 const APP_KEY    = process.env.OPTIMIZELY_APP_KEY!;
 const APP_SECRET = process.env.OPTIMIZELY_APP_SECRET!;
 
@@ -78,7 +81,7 @@ async function registerContentType(): Promise<void> {
         helpText: "The base metadata type for items.",
         properties: {
           key:          { type: "String",   searchable: false, index: true },
-          displayName:  { type: "String",   searchable: true,  index: true },
+          displayName:  { type: "String",   searchable: false, index: true },
           lastModified: { type: "DateTime", searchable: false, index: true },
           type:         { type: "String",   searchable: false, index: true },
         },
@@ -134,10 +137,10 @@ async function seedReferrals(): Promise<void> {
     lines.push(JSON.stringify({ index: { _id: ref.id, language_routing: "en" } }));
     lines.push(JSON.stringify({
       Id:      `ref-${ref.id}`,
-      Name:    `Referral from ${ref.name}`,
+      Name:    `Referral - ${ref.name}`,
       _itemMetadata: {
         key:          `ref-${ref.id}`,
-        displayName:  `Referral from ${ref.name}`,
+        displayName:  `Referral - ${ref.name}`,
         lastModified: new Date().toISOString(),
         type:         "Referral",
       },
@@ -173,6 +176,47 @@ async function seedReferrals(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Part 3 — Verify what Graph actually indexed
+// ---------------------------------------------------------------------------
+
+async function verifyIndexed(): Promise<void> {
+  console.log("--- Part 3: Verifying indexed data (waiting 10s for Graph) ---");
+  await new Promise((r) => setTimeout(r, 10000));
+
+  const query = `
+    query {
+      Referral(limit: 2) {
+        items {
+          name
+          comment
+          _itemMetadata {
+            key
+            displayName
+            lastModified
+            type
+          }
+        }
+      }
+    }
+  `;
+
+  const res = await fetch(GRAPH_QUERY, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `epi-single ${SINGLE_KEY}`,
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  const json = await res.json() as { data?: unknown; errors?: unknown };
+  if (json.errors) {
+    console.warn("  [GraphQL errors]", JSON.stringify(json.errors, null, 2));
+  }
+  console.log("  [indexed sample]", JSON.stringify(json.data, null, 2));
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -180,8 +224,8 @@ async function main() {
   console.log("=== Referral Seed Script ===\n");
   await registerContentType();
   await seedReferrals();
+  await verifyIndexed();
   console.log("\n=== Done ===");
-  console.log("Wait ~30s for Graph to index, then visit /demo/referrals.");
 }
 
 main().catch((err) => {

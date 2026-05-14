@@ -44,10 +44,10 @@ const SEED_DATA_SNIPPET = `// POST https://cg.optimizely.com/api/content/v2/data
 {"index": {"_id": 1, "language_routing": "en"}}
 {
   "Id": "ref-1",
-  "Name": "Referral from Sarah Chen",
+  "Name": "Referral - Sarah Chen",
   "_itemMetadata": {
     "key": "ref-1",
-    "displayName": "Referral from Sarah Chen",
+    "displayName": "Referral - Sarah Chen",
     "lastModified": "2026-05-14T00:00:00.000Z",
     "type": "Referral"
   },
