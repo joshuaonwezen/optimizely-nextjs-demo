@@ -8,21 +8,10 @@ export const metadata: Metadata = {
 const TYPE_DEFINITION_SNIPPET = `// PUT https://cg.optimizely.com/api/content/v3/types?id=rfl
 // Authorization: Basic base64(APP_KEY:APP_SECRET)
 //
-// _Item is a globally defined contract — no need to register it.
-// We override _Metadata only to set displayName searchable:false;
-// the global definition uses searchable:true which silently drops
-// values from external sources via the full-text search pipeline.
+// _Item and _Metadata are globally defined contracts — no need to register them.
+// Inheriting from _Item gives every Referral an _itemMetadata field that the
+// CMS uses to identify, name, and manage external items in its UI.
 {
-  "propertyTypes": {
-    "_Metadata": {
-      "properties": {
-        "key":          { "type": "String",   "searchable": false },
-        "displayName":  { "type": "String",   "searchable": false },
-        "lastModified": { "type": "DateTime", "searchable": false },
-        "type":         { "type": "String",   "searchable": false }
-      }
-    }
-  },
   "contentTypes": {
     "Referral": {
       "contentType": ["_Item"],
@@ -104,39 +93,23 @@ export default async function ReferralsDemoPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-6">
             Each card is a <code className="bg-surface-low px-1 rounded text-xs font-mono">Referral</code> item
-            synced from an external source. By inheriting from the{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">_Item</code> global contract,
-            each item exposes{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">_itemMetadata</code> with
-            key, displayName, and lastModified — populated from the seed payload.
+            synced from an external source. Custom properties (<code className="bg-surface-low px-1 rounded text-xs font-mono">name</code>,{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">comment</code>) are used for
+            application queries. Inheriting from{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">_Item</code> adds{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">_itemMetadata</code> so the CMS
+            can identify, name, and manage external items in its UI.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((ref) => (
               <div
-                key={ref.key}
+                key={ref.name}
                 className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex flex-col gap-3"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="font-display font-semibold text-on-surface text-sm">{ref.name}</span>
-                  {ref.lastModified && (
-                    <span className="text-xs text-on-surface-variant opacity-50 shrink-0">
-                      {new Date(ref.lastModified).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </span>
-                  )}
-                </div>
+                <span className="font-display font-semibold text-on-surface text-sm">{ref.name}</span>
                 <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
                   &ldquo;{ref.comment}&rdquo;
                 </p>
-                <div className="pt-2 border-t border-ghost-border space-y-1">
-                  <div className="flex gap-2 text-xs font-mono text-on-surface-variant">
-                    <span className="opacity-50">displayName</span>
-                    <span className="truncate">{ref.displayName}</span>
-                  </div>
-                  <div className="flex gap-2 text-xs font-mono text-on-surface-variant">
-                    <span className="opacity-50">key</span>
-                    <span>{ref.key || "—"}</span>
-                  </div>
-                </div>
               </div>
             ))}
           </div>

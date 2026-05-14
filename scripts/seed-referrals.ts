@@ -74,20 +74,10 @@ async function registerContentType(): Promise<void> {
   const body = {
     label: "Referrals",
     languages: ["en"],
-    // _Item is a globally defined abstract contract in Optimizely Graph — no need
-    // to register it. We only override _Metadata to set displayName searchable:false;
-    // the global definition has searchable:true which silently drops values from
-    // external content sources via the full-text search pipeline.
-    propertyTypes: {
-      _Metadata: {
-        properties: {
-          key:          { type: "String",   searchable: false, index: true },
-          displayName:  { type: "String",   searchable: false, index: true },
-          lastModified: { type: "DateTime", searchable: false, index: true },
-          type:         { type: "String",   searchable: false, index: true },
-        },
-      },
-    },
+    // _Item and _Metadata are globally defined contracts — no need to register them.
+    // The global _Metadata (searchable:true on all fields) is what the CMS uses to
+    // identify and display external items. Those fields return null in Graph queries
+    // from external sources — use custom properties (name, comment) for app queries.
     contentTypes: {
       Referral: {
         contentType: ["_Item"],
