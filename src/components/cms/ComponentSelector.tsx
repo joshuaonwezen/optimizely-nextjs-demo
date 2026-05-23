@@ -105,8 +105,19 @@ export function ComponentSelector({
 
         if (rendered.length === 0) return null;
 
+        // The outer wrapper carries the section/row key so communicationinjector.js
+        // can locate the right DOM element when the CMS responds with the section
+        // key for the selection outline. Inner wrappers carry the column key for
+        // property-level targeting.
         if (rendered.length === 1) {
-          return <div key={row.key}>{rendered}</div>;
+          return (
+            <div
+              key={row.key}
+              data-epi-block-id={inEditMode ? row.key : undefined}
+            >
+              {rendered}
+            </div>
+          );
         }
 
         const gridCols =
@@ -119,6 +130,7 @@ export function ComponentSelector({
         return (
           <div
             key={row.key}
+            data-epi-block-id={inEditMode ? row.key : undefined}
             className={`grid grid-cols-1 ${gridCols} gap-8 px-8 max-w-7xl mx-auto`}
           >
             {rendered}
