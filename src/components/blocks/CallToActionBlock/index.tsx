@@ -77,25 +77,23 @@ export default function CallToActionBlock(props: CallToActionProps) {
   const vs = VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.brand;
 
   return (
-    <section className="py-24 bg-surface-low">
-      <div className="max-w-7xl mx-auto px-8 text-center">
-        {(data.link || data.__context?.edit) && (
-          <a
-            href={data.__context?.edit ? undefined : (data.link ?? undefined)}
-            className={`hover-lift font-display inline-block rounded-lg font-semibold ${isLarge ? "px-12 py-5 text-lg" : "px-10 py-4 text-base"} ${vs}`}
-          >
-            <span {...pa("label")}>{data.label ?? "Get Started"}</span>
-          </a>
-        )}
-        {data.__context?.edit && (
-          <p
-            {...pa("link")}
-            className="mt-3 text-xs font-mono text-on-surface-variant/60 cursor-pointer hover:text-on-surface-variant transition-colors"
-          >
-            {data.link || "Click to set link URL…"}
-          </p>
-        )}
-      </div>
-    </section>
+    <div className="max-w-7xl mx-auto px-8 py-12 text-center">
+      {(data.link || data.__context?.edit) && (
+        <a
+          href={data.__context?.edit ? undefined : (data.link ?? undefined)}
+          className={`hover-lift font-display inline-block rounded-lg font-semibold ${isLarge ? "px-12 py-5 text-lg" : "px-10 py-4 text-base"} ${vs}`}
+        >
+          <span {...pa("label")}>{data.label ?? "Get Started"}</span>
+        </a>
+      )}
+      {data.__context?.edit && (
+        <p
+          {...pa("link")}
+          className="mt-3 text-xs font-mono text-on-surface-variant/60 cursor-pointer hover:text-on-surface-variant transition-colors"
+        >
+          {data.link || "Click to set link URL…"}
+        </p>
+      )}
+    </div>
   );
 }
