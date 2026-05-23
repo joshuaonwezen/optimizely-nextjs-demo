@@ -1,11 +1,70 @@
 import { notFound } from "next/navigation";
 import { draftMode } from "next/headers";
 import type { Metadata } from "next";
+import Script from "next/script";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import { ComponentSelector } from "@/components/cms/ComponentSelector";
 import { GET_PAGE_BY_URL_QUERY } from "@/lib/graphql/queries/GetPageByUrl";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
 import { extractRowsFromComposition } from "@/lib/optimizely/extractRows";
+import { RichText } from "@optimizely/cms-sdk/react/richText";
+
+function TraditionalPage({
+  page,
+  inEditMode = false,
+  cmsUrl = "",
+}: {
+  page: any;
+  inEditMode?: boolean;
+  cmsUrl?: string;
+}) {
+  return (
+    <>
+      {inEditMode && cmsUrl && (
+        <Script
+          src={`${cmsUrl}/util/javascript/communicationinjector.js`}
+          strategy="afterInteractive"
+        />
+      )}
+      <div
+        className="max-w-4xl mx-auto px-8 py-24"
+        data-epi-content-id={inEditMode ? page._metadata?.key : undefined}
+      >
+        <div className="insight-rail mb-12">
+          {page.heading && (
+            <h1
+              className="font-display text-4xl md:text-5xl font-extrabold text-on-surface mb-4"
+              data-epi-property-name={inEditMode ? "heading" : undefined}
+            >
+              {page.heading}
+            </h1>
+          )}
+          {page.subheading && (
+            <p
+              className="text-lg text-on-surface-variant leading-relaxed"
+              data-epi-property-name={inEditMode ? "subheading" : undefined}
+            >
+              {page.subheading}
+            </p>
+          )}
+        </div>
+        <div data-epi-property-name={inEditMode ? "body" : undefined}>
+          {page.body?.json && (
+            <div className="prose text-on-surface-variant leading-relaxed">
+              <RichText content={page.body.json} />
+            </div>
+          )}
+          {page.body?.html && !page.body?.json && (
+            <div
+              className="text-on-surface-variant leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: page.body.html }}
+            />
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
 
 interface PageParams {
   slug?: string[];
@@ -67,6 +126,11 @@ export default async function CmsPage({
 
   if (!page) {
     return notFound();
+  }
+
+  if (page.__typename === "LandingPage") {
+    const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
+    return <TraditionalPage page={page} inEditMode={inEditMode} cmsUrl={cmsUrl} />;
   }
 
   const rows = extractRowsFromComposition(page);

@@ -45,18 +45,15 @@ interface CompNode {
   layoutType?: string;
 }
 
-/** A component node placed directly in the experience outline (needs sectionEnabled) */
+/** A single-column section wrapping a full-width component */
 function sectionComponent(
   contentType: string,
   displayName: string,
   properties: Record<string, unknown>
 ): CompNode {
-  return {
-    id: uid(),
-    displayName,
-    nodeType: "component",
-    component: { contentType, properties },
-  };
+  return gridSection(displayName, [
+    elementComponent(contentType, displayName, properties),
+  ]);
 }
 
 /** A section containing a row of element components in a grid layout */
@@ -85,6 +82,20 @@ function gridSection(displayName: string, items: CompNode[]): CompNode {
 
 /** An element component node (goes inside a section, needs elementEnabled) */
 function elementComponent(
+  contentType: string,
+  displayName: string,
+  properties: Record<string, unknown>
+): CompNode {
+  return {
+    id: uid(),
+    displayName,
+    nodeType: "component",
+    component: { contentType, properties },
+  };
+}
+
+/** A root-level component node for sectionEnabled-only blocks (no elementEnabled) */
+function rootComponent(
   contentType: string,
   displayName: string,
   properties: Record<string, unknown>
@@ -148,7 +159,35 @@ function buildHomepage(featureExperimentationKey: string): CompNode[] {
         linkText: "Explore Analytics \u2192",
       }),
     ]),
-    sectionComponent("LogoGridBlock", "Trusted By", {
+    gridSection("Platform Stats", [
+      elementComponent("StatsCounterBlock", "Customers Stat", {
+        value: "10,000",
+        suffix: "+",
+        label: "Customers worldwide",
+      }),
+      elementComponent("StatsCounterBlock", "Experiments Stat", {
+        value: "500",
+        suffix: "M+",
+        label: "Experiments run",
+      }),
+      elementComponent("StatsCounterBlock", "Uptime Stat", {
+        value: "99.9",
+        suffix: "%",
+        label: "Platform uptime",
+      }),
+      elementComponent("StatsCounterBlock", "Countries Stat", {
+        value: "140",
+        suffix: "+",
+        label: "Countries served",
+      }),
+    ]),
+    sectionComponent("TestimonialBlock", "Homepage Testimonial", {
+      quote:
+        "Optimizely has completely changed how we ship products. We went from monthly releases to deploying dozens of times a day — safely, with full confidence in every change.",
+      authorName: "Sarah Chen",
+      authorRole: "VP of Engineering, Acme Digital",
+    }),
+    rootComponent("LogoGridBlock", "Trusted By", {
       heading: "Trusted by leading brands",
       subheading:
         "Thousands of companies use Optimizely to deliver exceptional digital experiences.",
@@ -200,7 +239,8 @@ function buildProductPage(
   ctaUrl: string,
   features: Array<{ title: string; description: string }>,
   bodyText: string,
-  ctaLabel: string
+  ctaLabel: string,
+  extras: CompNode[] = []
 ): CompNode[] {
   return [
     sectionComponent("ProductHeroBlock", `${title} Hero`, {
@@ -224,16 +264,9 @@ function buildProductPage(
       )
     ),
     sectionComponent("TextBlock", "Body Text", {
-      body: JSON.stringify({
-        type: "richText",
-        children: [
-          {
-            type: "paragraph",
-            children: [{ text: bodyText }],
-          },
-        ],
-      }),
+      body: `<p>${bodyText}</p>`,
     }),
+    ...extras,
     sectionComponent("CallToAction", "Page CTA", {
       label: ctaLabel,
       link: ctaUrl,
@@ -352,7 +385,37 @@ const pages: PageDef[] = [
         },
       ],
       "Optimizely Feature Experimentation gives engineering and product teams the tools to move fast without breaking things. Deploy features behind flags, test variations with real users, and roll out changes progressively \u2014 all while maintaining full control over who sees what.",
-      "Start Experimenting"
+      "Start Experimenting",
+      [
+        gridSection("Feature Experimentation Stats", [
+          elementComponent("StatsCounterBlock", "Experiments Stat", {
+            value: "500",
+            suffix: "M+",
+            label: "Experiments run globally",
+          }),
+          elementComponent("StatsCounterBlock", "Deployment Stat", {
+            value: "10",
+            suffix: "x",
+            label: "Faster feature delivery",
+          }),
+          elementComponent("StatsCounterBlock", "MTTR Stat", {
+            value: "90",
+            suffix: "%",
+            label: "Reduction in MTTR",
+          }),
+          elementComponent("StatsCounterBlock", "SDK Stat", {
+            value: "20",
+            suffix: "+",
+            label: "SDK languages supported",
+          }),
+        ]),
+        sectionComponent("TestimonialBlock", "Feature Experimentation Testimonial", {
+          quote:
+            "Feature flags changed everything for us. We went from once-a-month big-bang releases to deploying dozens of times a day \u2014 and rolling back takes seconds, not hours.",
+          authorName: "Marcus Rivera",
+          authorRole: "Head of Platform Engineering, NovaTech",
+        }),
+      ]
     ),
   },
   {
@@ -388,7 +451,15 @@ const pages: PageDef[] = [
         },
       ],
       "Optimizely Web Experimentation is the world's leading experimentation platform, trusted by thousands of businesses to optimize their digital experiences. From simple A/B tests to complex multivariate experiments, our platform makes it easy to test, learn, and improve.",
-      "Start Optimizing"
+      "Start Optimizing",
+      [
+        sectionComponent("TestimonialBlock", "Web Experimentation Testimonial", {
+          quote:
+            "We ran over 200 experiments last year using Optimizely. Our conversion rate is up 34% and we make every decision with data now — no more guessing what our customers want.",
+          authorName: "Priya Kapoor",
+          authorRole: "Director of Growth, Meridian Commerce",
+        }),
+      ]
     ),
   },
   {
@@ -687,8 +758,63 @@ const pages: PageDef[] = [
 // API
 // ---------------------------------------------------------------------------
 
+/** Keys of items that could not be deleted (e.g. homepage / start page). */
+const undeletableKeys = new Map<string, string>(); // displayName \u2192 existing CMS key
+
+const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
+const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
+
+/** Find the CMS key of whichever DynamicExperience is served at the root URL. */
+async function findHomepageKey(): Promise<string | null> {
+  const query = `{ _Page(where:{_metadata:{url:{default:{in:["/"," /en/","/en/homepage/"]}}}},limit:3) { items { _metadata { key } } } }`;
+  const res = await fetch(GRAPH_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) return null;
+  const { data } = await res.json() as { data?: { _Page?: { items?: Array<{ _metadata?: { key?: string } }> } } };
+  return data?._Page?.items?.[0]?._metadata?.key ?? null;
+}
+
 async function createPage(page: PageDef): Promise<void> {
   const token = await getManagementToken();
+
+  const composition = {
+    id: uid(),
+    displayName: page.displayName,
+    nodeType: "experience",
+    layoutType: "outline",
+    nodes: page.nodes,
+  };
+
+  // If this page previously failed to delete, find its real key via Graph and PATCH it.
+  const shouldPatch = !page.routeSegment && undeletableKeys.size > 0;
+  if (shouldPatch) {
+    const graphKey = await findHomepageKey();
+    if (graphKey) {
+      const patchBody = { status: "published", displayName: page.displayName, composition };
+      // Try locale-free endpoint (merge-patch), then locale-specific (json)
+      const attempts: Array<{ path: string; contentType: string }> = [
+        { path: `${CONTENT_ENDPOINT}/${graphKey}`, contentType: "application/merge-patch+json" },
+        { path: `${CONTENT_ENDPOINT}/${graphKey}/en`, contentType: "application/json" },
+      ];
+      for (const { path, contentType } of attempts) {
+        const res = await fetch(path, {
+          method: "PATCH",
+          headers: { "Content-Type": contentType, Authorization: `Bearer ${token}` },
+          body: JSON.stringify(patchBody),
+        });
+        if (res.ok) {
+          console.log(`  [patched] ${page.displayName} \u2192 key=${graphKey} route=/`);
+          return;
+        }
+        const text = await res.text();
+        console.warn(`  [warn] PATCH ${path}: ${res.status} ${text.slice(0, 120)}`);
+      }
+      console.warn(`  [warn] Could not patch homepage \u2014 update it manually in the CMS Visual Builder.`);
+    }
+  }
 
   const body: Record<string, unknown> = {
     key: page.key,
@@ -698,13 +824,7 @@ async function createPage(page: PageDef): Promise<void> {
     status: "published",
     displayName: page.displayName,
     ...(page.routeSegment ? { routeSegment: page.routeSegment } : {}),
-    composition: {
-      id: uid(),
-      displayName: page.displayName,
-      nodeType: "experience",
-      layoutType: "outline",
-      nodes: page.nodes,
-    },
+    composition,
   };
 
   const res = await fetch(CONTENT_ENDPOINT, {
@@ -739,6 +859,7 @@ async function deleteExisting(): Promise<void> {
 
   const data = await res.json();
   for (const item of data.items ?? []) {
+    const displayName = item.locales?.en?.displayName ?? item.key;
     const delRes = await fetch(
       `${CONTENT_ENDPOINT}/${item.key}?permanent=true`,
       {
@@ -746,9 +867,11 @@ async function deleteExisting(): Promise<void> {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
-    console.log(
-      `  [deleted] ${item.locales?.en?.displayName ?? item.key} (${delRes.status})`
-    );
+    if (!delRes.ok) {
+      // Can't delete (e.g. start page) \u2014 record for in-place update later
+      undeletableKeys.set(displayName, item.key);
+    }
+    console.log(`  [deleted] ${displayName} (${delRes.status})`);
   }
 }
 

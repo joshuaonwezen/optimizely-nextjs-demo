@@ -6,7 +6,7 @@ export const TextBlockType = contentType({
   key: "TextBlock",
   displayName: "Text Block",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled"],
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
     body: { type: "richText", displayName: "Body" },
   },
@@ -22,7 +22,8 @@ export const TextBlockNarrowTemplate = displayTemplate({
 });
 
 interface TextBlockData {
-  body?: { json: unknown } | null;
+  body?: { json: unknown } | string | null;
+  __context?: { edit?: boolean } | null;
 }
 
 type TextBlockProps = TextBlockData & {
@@ -35,18 +36,30 @@ export default function TextBlock(props: TextBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
 
-  if (!data.body?.json) return null;
-
   const isNarrow = props.displayTemplateKey === "TextBlockNarrowTemplate";
+  const containerClass = `${isNarrow ? "max-w-2xl" : "max-w-4xl"} mx-auto px-8 py-16 text-on-surface-variant`;
 
-  return (
-    <div
-      {...pa("body")}
-      className={`${isNarrow ? "max-w-2xl" : "max-w-4xl"} mx-auto px-8 py-16 text-on-surface-variant`}
-    >
-      <div className="text-base leading-relaxed space-y-6">
-        <RichText content={data.body.json as RichTextProps["content"]} />
+  // Typed GraphQL query: body arrives as { json: richTextAst }
+  if (data.body && typeof data.body === "object" && "json" in data.body && data.body.json) {
+    return (
+      <div {...pa("body")} className={containerClass}>
+        <div className="text-base leading-relaxed space-y-6">
+          <RichText content={data.body.json as RichTextProps["content"]} />
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // _json path: body arrives as an HTML string
+  if (typeof data.body === "string" && data.body) {
+    return (
+      <div
+        {...pa("body")}
+        className={containerClass}
+        dangerouslySetInnerHTML={{ __html: data.body }}
+      />
+    );
+  }
+
+  return null;
 }

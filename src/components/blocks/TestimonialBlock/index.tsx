@@ -31,6 +31,7 @@ interface TestimonialData {
   authorImage?: {
     _metadata?: { url?: { default?: string | null } | null } | null;
   } | null;
+  __context?: { edit?: boolean } | null;
 }
 
 type TestimonialBlockProps = TestimonialData & {

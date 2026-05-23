@@ -5,7 +5,7 @@ export const FormContainerBlockType = contentType({
   key: "FormContainerBlock",
   displayName: "Form Container",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled"],
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
     heading: { type: "string", displayName: "Heading" },
     description: { type: "string", displayName: "Description" },
@@ -19,6 +19,7 @@ interface FormContainerData {
   description?: string | null;
   submitUrl?: { default?: string | null } | null;
   successMessage?: string | null;
+  __context?: { edit?: boolean } | null;
 }
 
 type FormContainerBlockProps = FormContainerData & {
@@ -52,6 +53,14 @@ export default function FormContainerBlock(props: FormContainerBlockProps) {
             className="text-base mb-2 text-on-surface-variant"
           >
             {data.description}
+          </p>
+        )}
+        {data.__context?.edit && (
+          <p
+            {...pa("successMessage")}
+            className="mt-4 text-xs font-mono text-on-surface-variant/60 cursor-pointer hover:text-on-surface-variant transition-colors"
+          >
+            Success: {data.successMessage || "Click to set success message…"}
           </p>
         )}
       </div>

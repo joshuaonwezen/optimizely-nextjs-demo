@@ -53,6 +53,7 @@ export interface ContentAreaItem extends IContent {
 /** Content area item with display settings from composition */
 export interface ContentAreaItemWithSettings {
   item: ContentAreaItem;
+  nodeKey?: string;
   displaySettings?: Record<string, string | boolean>;
   displayTemplateKey?: string;
 }

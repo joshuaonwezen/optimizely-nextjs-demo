@@ -45,6 +45,11 @@ export const GET_PAGE_BY_URL_QUERY = /* GraphQL */ `
           locale
           published
         }
+        ... on LandingPage {
+          heading
+          subheading
+          body { json html }
+        }
         ... on _IExperience {
           composition {
             grids: nodes {

@@ -28,6 +28,7 @@ function resolveComponent(node: any): ContentAreaItemWithSettings | null {
 
   return {
     item,
+    nodeKey: node.key ?? undefined,
     displaySettings: parseSettings(node.displaySettings),
     displayTemplateKey: node.displayTemplateKey ?? undefined,
   };

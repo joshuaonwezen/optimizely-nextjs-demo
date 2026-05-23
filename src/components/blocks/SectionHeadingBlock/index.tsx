@@ -5,7 +5,7 @@ export const SectionHeadingBlockType = contentType({
   key: "SectionHeadingBlock",
   displayName: "Section Heading",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled"],
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
     heading: { type: "string", displayName: "Heading", indexingType: "searchable" },
     subheading: { type: "string", displayName: "Subheading" },
@@ -31,6 +31,7 @@ export const SectionHeadingCenteredTemplate = displayTemplate({
 interface SectionHeadingData {
   heading?: string | null;
   subheading?: string | null;
+  __context?: { edit?: boolean } | null;
 }
 
 type SectionHeadingBlockProps = SectionHeadingData & {

@@ -23,6 +23,10 @@ import FormTextArea, { FormTextAreaType } from "@/components/blocks/FormTextArea
 import FormSelect, { FormSelectType } from "@/components/blocks/FormSelect";
 import FormSubmitButton, { FormSubmitButtonType } from "@/components/blocks/FormSubmitButton";
 import { NavigationItemType, NavigationType } from "@/components/blocks/NavigationItemBlock";
+import FaqItemBlock, { FaqItemBlockType } from "@/components/blocks/FaqItemBlock";
+import FaqContainerBlock, { FaqContainerBlockType } from "@/components/blocks/FaqContainerBlock";
+import FeaturedContentBlock, { FeaturedContentBlockType } from "@/components/blocks/FeaturedContentBlock";
+import LogoGridBlock, { LogoGridBlockType } from "@/components/blocks/LogoGridBlock";
 
 // Experience/page types and structural templates stay in optimizely.config.mjs
 import {
@@ -60,6 +64,10 @@ export function initComponentRegistry() {
     FormSubmitButtonType,
     NavigationItemType,
     NavigationType,
+    FaqItemBlockType,
+    FaqContainerBlockType,
+    FeaturedContentBlockType,
+    LogoGridBlockType,
   ]);
 
   // Display templates
@@ -99,6 +107,10 @@ export function initComponentRegistry() {
       FormTextArea,
       FormSelect,
       FormSubmitButton,
+      FaqItemBlock,
+      FaqContainerBlock,
+      FeaturedContentBlock,
+      LogoGridBlock,
     },
   });
 

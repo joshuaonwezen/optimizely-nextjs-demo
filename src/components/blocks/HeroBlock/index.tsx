@@ -6,7 +6,7 @@ export const HeroBlockType = contentType({
   key: "HeroBlock",
   displayName: "Hero Block",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled"],
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
     headline: { type: "string", displayName: "Headline", indexingType: "searchable" },
     subheadline: { type: "string", displayName: "Subheadline", indexingType: "searchable" },
@@ -54,6 +54,7 @@ interface HeroBlockData {
   } | null;
   ctaText?: string | null;
   ctaLink?: string | null;
+  __context?: { edit?: boolean } | null;
 }
 
 type HeroBlockProps = HeroBlockData & {
@@ -108,13 +109,23 @@ export default function HeroBlock(props: HeroBlockProps) {
               {subtitle}
             </p>
           )}
-          {data.ctaLink && (
-            <a
-              href={data.ctaLink}
-              className="hover-lift font-display inline-block px-8 py-4 rounded-lg font-semibold text-lg bg-surface-lowest text-brand"
-            >
-              {data.ctaText ?? "Learn More"}
-            </a>
+          {(data.ctaLink || data.__context?.edit) && (
+            <div>
+              <a
+                href={data.__context?.edit ? undefined : (data.ctaLink ?? undefined)}
+                className="hover-lift font-display inline-block px-8 py-4 rounded-lg font-semibold text-lg bg-surface-lowest text-brand"
+              >
+                <span {...pa("ctaText")}>{data.ctaText ?? "Learn More"}</span>
+              </a>
+              {data.__context?.edit && (
+                <p
+                  {...pa("ctaLink")}
+                  className="mt-2 text-xs font-mono text-on-brand-subtle/70 cursor-pointer hover:text-on-brand-subtle transition-colors"
+                >
+                  {data.ctaLink || "Click to set CTA link…"}
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>

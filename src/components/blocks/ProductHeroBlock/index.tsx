@@ -5,7 +5,7 @@ export const ProductHeroBlockType = contentType({
   key: "ProductHeroBlock",
   displayName: "Product Hero",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled"],
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
     badge: { type: "string", displayName: "Badge Text" },
     title: { type: "string", displayName: "Title", indexingType: "searchable" },
@@ -40,6 +40,7 @@ interface ProductHeroData {
   description?: string | null;
   ctaText?: string | null;
   ctaUrl?: { default?: string | null } | null;
+  __context?: { edit?: boolean } | null;
 }
 
 type ProductHeroBlockProps = ProductHeroData & {
@@ -85,13 +86,23 @@ export default function ProductHeroBlock(props: ProductHeroBlockProps) {
               {data.description}
             </p>
           )}
-          {data.ctaUrl?.default && (
-            <a
-              href={data.ctaUrl.default}
-              className="hover-lift font-display inline-block px-8 py-3.5 rounded-lg font-semibold bg-surface-lowest text-brand"
-            >
-              {data.ctaText ?? "Learn More"}
-            </a>
+          {(data.ctaUrl?.default || data.__context?.edit) && (
+            <div>
+              <a
+                href={data.__context?.edit ? undefined : (data.ctaUrl?.default ?? undefined)}
+                className="hover-lift font-display inline-block px-8 py-3.5 rounded-lg font-semibold bg-surface-lowest text-brand"
+              >
+                <span {...pa("ctaText")}>{data.ctaText ?? "Learn More"}</span>
+              </a>
+              {data.__context?.edit && (
+                <p
+                  {...pa("ctaUrl")}
+                  className="mt-2 text-xs font-mono text-on-brand-subtle/70 cursor-pointer hover:text-on-brand-subtle transition-colors"
+                >
+                  {data.ctaUrl?.default || "Click to set CTA URL…"}
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>

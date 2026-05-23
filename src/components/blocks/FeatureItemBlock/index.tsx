@@ -33,6 +33,7 @@ export const FeatureItemFlatTemplate = displayTemplate({
 interface FeatureItemData {
   title?: string | null;
   description?: string | null;
+  __context?: { edit?: boolean } | null;
 }
 
 type FeatureItemBlockProps = FeatureItemData & {

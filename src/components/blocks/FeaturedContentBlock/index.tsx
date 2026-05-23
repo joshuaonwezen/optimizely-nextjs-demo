@@ -6,7 +6,7 @@ export const FeaturedContentBlockType = contentType({
   key: "FeaturedContentBlock",
   displayName: "Featured Content",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled"],
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
     label:        { type: "string",           displayName: "Label (e.g. Case Study, Featured Article)" },
     featuredPage: { type: "contentReference", displayName: "Featured Page", allowedTypes: ["_page"], indexingType: "disabled" },
@@ -27,6 +27,7 @@ interface FeaturedContentData {
   featuredPage?: FeaturedPageRef | null;
   description?:  string | null;
   ctaText?:      string | null;
+  __context?: { edit?: boolean } | null;
 }
 
 type FeaturedContentBlockProps = FeaturedContentData & {
@@ -72,12 +73,12 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
           </p>
         )}
 
-        {data.ctaText && pageUrl && (
+        {(data.ctaText || data.__context?.edit) && (
           <Link
-            href={pageUrl}
+            href={data.__context?.edit ? "#" : (pageUrl ?? "#")}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand text-on-brand font-semibold text-sm hover:opacity-90 transition-opacity"
           >
-            {data.ctaText}
+            <span {...pa("ctaText")}>{data.ctaText ?? "Read More"}</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M3 8H13M9 4L13 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

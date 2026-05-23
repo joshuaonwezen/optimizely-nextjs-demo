@@ -14,7 +14,6 @@ import FormTextInput from "@/components/blocks/FormTextInput";
 import FormTextArea from "@/components/blocks/FormTextArea";
 import FormSelect from "@/components/blocks/FormSelect";
 import FormSubmitButton from "@/components/blocks/FormSubmitButton";
-import NavigationBlock from "@/components/blocks/NavigationBlock";
 import FaqContainerBlock from "@/components/blocks/FaqContainerBlock";
 import FaqItemBlock from "@/components/blocks/FaqItemBlock";
 import FeaturedContentBlock from "@/components/blocks/FeaturedContentBlock";
@@ -42,7 +41,6 @@ export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   FormTextArea,
   FormSelect,
   FormSubmitButton,
-  Navigation: NavigationBlock,
   FaqContainerBlock,
   FaqItemBlock,
   FeaturedContentBlock,
@@ -74,7 +72,7 @@ export function ComponentSelector({
     <>
       {rows.map((row) => {
         const rendered = row.items
-          .map(({ item, displaySettings, displayTemplateKey }, index) => {
+          .map(({ item, nodeKey, displaySettings, displayTemplateKey }, index) => {
             const Component = COMPONENT_REGISTRY[item.__typename];
 
             if (!Component) {
@@ -86,15 +84,16 @@ export function ComponentSelector({
               return null;
             }
 
-            const key = item._metadata?.key ?? `block-${index}`;
+            const blockId = nodeKey ?? item._metadata?.key ?? `block-${index}`;
 
             return (
               <div
-                key={key}
-                data-epi-block-id={inEditMode ? key : undefined}
+                key={blockId}
+                data-epi-block-id={inEditMode ? blockId : undefined}
               >
                 <Component
                   {...item}
+                  __context={{ edit: inEditMode }}
                   displaySettings={displaySettings}
                   displayTemplateKey={displayTemplateKey}
                   inEditMode={inEditMode}

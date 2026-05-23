@@ -15,8 +15,13 @@ export const DynamicExperienceType = contentType({
 
 export const LandingPageType = contentType({
   key: "LandingPage",
-  displayName: "Landing Page",
+  displayName: "Traditional Page",
   baseType: "_page",
+  properties: {
+    heading:    { type: "string",   displayName: "Heading" },
+    subheading: { type: "string",   displayName: "Subheading" },
+    body:       { type: "richText", displayName: "Body" },
+  },
 });
 
 export const DefaultRowTemplate = displayTemplate({

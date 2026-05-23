@@ -5,7 +5,7 @@ export const FaqContainerBlockType = contentType({
   key: "FaqContainerBlock",
   displayName: "FAQ Container",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled"],
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
     heading:    { type: "string", displayName: "Heading" },
     subheading: { type: "string", displayName: "Subheading" },
@@ -15,6 +15,7 @@ export const FaqContainerBlockType = contentType({
 interface FaqContainerData {
   heading?:    string | null;
   subheading?: string | null;
+  __context?: { edit?: boolean } | null;
 }
 
 type FaqContainerBlockProps = FaqContainerData & {

@@ -5,7 +5,7 @@ export const FaqItemBlockType = contentType({
   key: "FaqItemBlock",
   displayName: "FAQ Item",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled"],
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
     question: { type: "string", displayName: "Question" },
     answer:   { type: "string", displayName: "Answer" },
@@ -15,6 +15,7 @@ export const FaqItemBlockType = contentType({
 interface FaqItemData {
   question?: string | null;
   answer?:   string | null;
+  __context?: { edit?: boolean } | null;
 }
 
 type FaqItemBlockProps = FaqItemData & {

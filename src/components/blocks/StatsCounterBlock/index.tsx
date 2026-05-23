@@ -17,6 +17,7 @@ interface StatsCounterData {
   value?: string | null;
   label?: string | null;
   suffix?: string | null;
+  __context?: { edit?: boolean } | null;
 }
 
 type StatsCounterBlockProps = StatsCounterData & {
@@ -31,13 +32,10 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
   return (
     <div className="text-center p-8">
       {data.value && (
-        <p
-          {...pa("value")}
-          className="font-display text-4xl md:text-5xl font-extrabold mb-2 text-brand"
-        >
-          {data.value}
+        <p className="font-display text-4xl md:text-5xl font-extrabold mb-2 text-brand">
+          <span {...pa("value")}>{data.value}</span>
           {data.suffix && (
-            <span className="text-3xl md:text-4xl">{data.suffix}</span>
+            <span {...pa("suffix")} className="text-3xl md:text-4xl">{data.suffix}</span>
           )}
         </p>
       )}
