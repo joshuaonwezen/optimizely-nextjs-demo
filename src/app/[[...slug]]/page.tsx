@@ -107,7 +107,7 @@ export default async function CmsPage({
     return notFound();
   }
 
-  if (page.__typename === "TraditionalPage") {
+  if (page.__typename === "TraditionalPage" || page.__typename === "LandingPage") {
     return <TraditionalPage page={page} />;
   }
 

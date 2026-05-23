@@ -32,6 +32,7 @@ import LogoGridBlock, { LogoGridBlockType } from "@/components/blocks/LogoGridBl
 import {
   DynamicExperienceType,
   LandingPageType,
+  LandingPageCompatType,
   DefaultRowTemplate,
   DefaultColumnTemplate,
 } from "../../../optimizely.config.mjs";
@@ -47,6 +48,7 @@ export function initComponentRegistry() {
     BlankSectionContentType,
     DynamicExperienceType,
     LandingPageType,
+    LandingPageCompatType,
     HeroBlockType,
     ProductHeroBlockType,
     SectionHeadingBlockType,
