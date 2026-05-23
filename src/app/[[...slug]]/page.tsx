@@ -134,8 +134,19 @@ export default async function CmsPage({
   }
 
   const rows = extractRowsFromComposition(page);
+  const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
 
-  return <ComponentSelector rows={rows} inEditMode={inEditMode} />;
+  return (
+    <>
+      {inEditMode && cmsUrl && (
+        <Script
+          src={`${cmsUrl}/util/javascript/communicationinjector.js`}
+          strategy="afterInteractive"
+        />
+      )}
+      <ComponentSelector rows={rows} inEditMode={inEditMode} />
+    </>
+  );
 }
 
 /** Pre-render all known CMS page paths at build time */
