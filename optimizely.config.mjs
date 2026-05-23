@@ -14,13 +14,18 @@ export const DynamicExperienceType = contentType({
 });
 
 export const LandingPageType = contentType({
-  key: "LandingPage",
+  key: "TraditionalPage",
   displayName: "Traditional Page",
   baseType: "_page",
   properties: {
     heading:    { type: "string",   displayName: "Heading" },
     subheading: { type: "string",   displayName: "Subheading" },
     body:       { type: "richText", displayName: "Body" },
+    relatedContent: {
+      type: "content",
+      displayName: "Related Content",
+      allowedTypes: ["_component"],
+    },
   },
 });
 

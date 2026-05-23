@@ -53,12 +53,13 @@ function collectComponents(node: any, columnKey?: string): ContentAreaItemWithSe
 
 export function extractRowsFromComposition(page: any): CompositionRow[] {
   const composition = page?.composition;
-  if (!composition?.grids) return [];
+  const nodes = composition?.nodes ?? composition?.grids;
+  if (!nodes) return [];
 
   const rows: CompositionRow[] = [];
   let rowIdx = 0;
 
-  for (const gridNode of composition.grids) {
+  for (const gridNode of nodes) {
     const topLevel = resolveComponent(gridNode);
     if (topLevel) {
       rows.push({

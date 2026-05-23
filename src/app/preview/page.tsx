@@ -50,6 +50,14 @@ const GET_SHARED_BLOCK_QUERY = /* GraphQL */ `
           heading description successMessage
           submitUrl { default }
         }
+        ... on FaqItemBlock { question answer }
+        ... on FaqContainerBlock { heading subheading }
+        ... on LogoGridBlock { heading subheading }
+        ... on FeaturedContentBlock { label description ctaText }
+        ... on FormTextInput { label placeholder required }
+        ... on FormTextArea { label placeholder required }
+        ... on FormSelect { label required }
+        ... on FormSubmitButton { label }
         ... on Navigation {
           name
           navItems { ...NavItemFields }

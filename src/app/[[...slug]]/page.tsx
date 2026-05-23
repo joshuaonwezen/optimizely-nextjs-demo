@@ -1,68 +1,68 @@
 import { notFound } from "next/navigation";
-import { draftMode } from "next/headers";
 import type { Metadata } from "next";
-import Script from "next/script";
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { GraphClient } from "@optimizely/cms-sdk";
+import { RichText } from "@optimizely/cms-sdk/react/richText";
+import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
+import { COMPONENT_REGISTRY } from "@/components/cms/ComponentSelector";
 import { ComponentSelector } from "@/components/cms/ComponentSelector";
-import { GET_PAGE_BY_URL_QUERY } from "@/lib/graphql/queries/GetPageByUrl";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
 import { extractRowsFromComposition } from "@/lib/optimizely/extractRows";
-import { RichText } from "@optimizely/cms-sdk/react/richText";
+import { graphqlFetch } from "@/lib/optimizely/client";
 
-function TraditionalPage({
-  page,
-  inEditMode = false,
-  cmsUrl = "",
-}: {
-  page: any;
-  inEditMode?: boolean;
-  cmsUrl?: string;
-}) {
+// The SDK auto-generates queries from the registered content type registry.
+// initComponentRegistry must run before any GraphClient.getContentByPath call.
+initComponentRegistry();
+
+const client = new GraphClient(process.env.OPTIMIZELY_GRAPH_SINGLE_KEY!, {
+  graphUrl: process.env.OPTIMIZELY_GRAPH_GATEWAY,
+});
+
+function TraditionalPage({ page }: { page: any }) {
   return (
-    <>
-      {inEditMode && cmsUrl && (
-        <Script
-          src={`${cmsUrl}/util/javascript/communicationinjector.js`}
-          strategy="afterInteractive"
+    <div className="max-w-4xl mx-auto px-8 py-24">
+      <div className="insight-rail mb-12">
+        {page.heading && (
+          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-surface mb-4">
+            {page.heading}
+          </h1>
+        )}
+        {page.subheading && (
+          <p className="text-lg text-on-surface-variant leading-relaxed">
+            {page.subheading}
+          </p>
+        )}
+      </div>
+
+      {page.body?.json && (
+        <div className="prose text-on-surface-variant leading-relaxed">
+          <RichText content={page.body.json} />
+        </div>
+      )}
+      {page.body?.html && !page.body?.json && (
+        <div
+          className="text-on-surface-variant leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: page.body.html }}
         />
       )}
-      <div
-        className="max-w-4xl mx-auto px-8 py-24"
-        data-epi-content-id={inEditMode ? page._metadata?.key : undefined}
-      >
-        <div className="insight-rail mb-12">
-          {page.heading && (
-            <h1
-              className="font-display text-4xl md:text-5xl font-extrabold text-on-surface mb-4"
-              data-epi-property-name={inEditMode ? "heading" : undefined}
-            >
-              {page.heading}
-            </h1>
-          )}
-          {page.subheading && (
-            <p
-              className="text-lg text-on-surface-variant leading-relaxed"
-              data-epi-property-name={inEditMode ? "subheading" : undefined}
-            >
-              {page.subheading}
-            </p>
-          )}
+
+      {page.relatedContent && page.relatedContent.length > 0 && (
+        <div className="mt-16 border-t border-outline-variant pt-12">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-8">
+            Related Content
+          </h2>
+          {page.relatedContent.map((item: any, i: number) => {
+            const Component = COMPONENT_REGISTRY[item.__typename];
+            if (!Component) return null;
+            const key = item._metadata?.key ?? `related-${i}`;
+            return (
+              <div key={key}>
+                <Component {...item} />
+              </div>
+            );
+          })}
         </div>
-        <div data-epi-property-name={inEditMode ? "body" : undefined}>
-          {page.body?.json && (
-            <div className="prose text-on-surface-variant leading-relaxed">
-              <RichText content={page.body.json} />
-            </div>
-          )}
-          {page.body?.html && !page.body?.json && (
-            <div
-              className="text-on-surface-variant leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: page.body.html }}
-            />
-          )}
-        </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 }
 
@@ -77,7 +77,6 @@ interface PageParams {
  */
 function buildUrlCandidates(slug?: string[]): string[] {
   if (!slug || slug.length === 0) {
-    // Homepage — could be at `/`, `/en/`, or `/en/homepage/`
     return ["/", "/en/", "/en/homepage/"];
   }
   const path = slug.join("/");
@@ -86,67 +85,35 @@ function buildUrlCandidates(slug?: string[]): string[] {
 
 export default async function CmsPage({
   params,
-  searchParams,
 }: {
   params: Promise<PageParams>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
-  const sp = await searchParams;
-  const { isEnabled: isDraftMode } = await draftMode();
-
   const urls = buildUrlCandidates(slug);
 
-  const previewToken =
-    typeof sp.preview_token === "string" ? sp.preview_token : undefined;
-  const ctx = typeof sp.ctx === "string" ? sp.ctx : undefined;
-  const inEditMode = ctx === "edit" && isDraftMode;
-
-  const result = await graphqlFetch<any>(
-    GET_PAGE_BY_URL_QUERY,
-    { urls, locale: ["en"] },
-    {
-      previewToken: isDraftMode ? previewToken : undefined,
-      ...(isDraftMode
-        ? { cache: "no-store" as RequestCache }
-        : { next: { revalidate: 60 } }),
+  // The SDK auto-generates the full query from registered content types —
+  // no hand-written GraphQL needed. Try each URL candidate until content is found.
+  let page: any = null;
+  for (const url of urls) {
+    const items = await client.getContentByPath(url);
+    if (items.length > 0) {
+      page = items[0];
+      break;
     }
-  );
-
-  // When multiple pages match (e.g. root URL), pick the one with the most
-  // composition nodes — our seeded pages have richer compositions.
-  const items = result.data?._Page?.items ?? [];
-  const page = items.length > 1
-    ? items.reduce((best: any, cur: any) => {
-        const bestLen = best?.composition?.grids?.length ?? 0;
-        const curLen = cur?.composition?.grids?.length ?? 0;
-        return curLen > bestLen ? cur : best;
-      })
-    : items[0];
+  }
 
   if (!page) {
     return notFound();
   }
 
-  if (page.__typename === "LandingPage") {
-    const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
-    return <TraditionalPage page={page} inEditMode={inEditMode} cmsUrl={cmsUrl} />;
+  if (page.__typename === "TraditionalPage") {
+    return <TraditionalPage page={page} />;
   }
 
   const rows = extractRowsFromComposition(page);
-  const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
 
-  return (
-    <>
-      {inEditMode && cmsUrl && (
-        <Script
-          src={`${cmsUrl}/util/javascript/communicationinjector.js`}
-          strategy="afterInteractive"
-        />
-      )}
-      <ComponentSelector rows={rows} inEditMode={inEditMode} />
-    </>
-  );
+  return <ComponentSelector rows={rows} />;
 }
 
 /** Pre-render all known CMS page paths at build time */
@@ -159,7 +126,6 @@ export async function generateStaticParams(): Promise<PageParams[]> {
       { next: { revalidate: 3600 } }
     );
   } catch {
-    // Graph may return 400 if content types aren't created yet
     return [];
   }
 
@@ -169,7 +135,6 @@ export async function generateStaticParams(): Promise<PageParams[]> {
     .map((page: any) => {
       const url: string = page?._metadata?.url?.default ?? "";
       if (!url || url === "/") return { slug: undefined };
-      // Strip locale prefix (e.g. `/en/cms/` → `cms`)
       const stripped = url.replace(/^\/en\//, "/");
       if (stripped === "/" || stripped === "/homepage/") return { slug: undefined };
       const segments = stripped
