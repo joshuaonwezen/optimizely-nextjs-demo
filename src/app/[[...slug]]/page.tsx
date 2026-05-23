@@ -1,13 +1,12 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { GraphClient } from "@optimizely/cms-sdk";
-import { RichText } from "@optimizely/cms-sdk/react/richText";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
-import { COMPONENT_REGISTRY } from "@/components/cms/ComponentSelector";
 import { ComponentSelector } from "@/components/cms/ComponentSelector";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
 import { extractRowsFromComposition } from "@/lib/optimizely/extractRows";
 import { graphqlFetch } from "@/lib/optimizely/client";
+import TraditionalPage from "@/components/pages/TraditionalPage";
 
 // The SDK auto-generates queries from the registered content type registry.
 // initComponentRegistry must run before any GraphClient.getContentByPath call.
@@ -16,55 +15,6 @@ initComponentRegistry();
 const client = new GraphClient(process.env.OPTIMIZELY_GRAPH_SINGLE_KEY!, {
   graphUrl: process.env.OPTIMIZELY_GRAPH_GATEWAY,
 });
-
-function TraditionalPage({ page }: { page: any }) {
-  return (
-    <div className="max-w-4xl mx-auto px-8 py-24">
-      <div className="insight-rail mb-12">
-        {page.heading && (
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-surface mb-4">
-            {page.heading}
-          </h1>
-        )}
-        {page.subheading && (
-          <p className="text-lg text-on-surface-variant leading-relaxed">
-            {page.subheading}
-          </p>
-        )}
-      </div>
-
-      {page.body?.json && (
-        <div className="prose text-on-surface-variant leading-relaxed">
-          <RichText content={page.body.json} />
-        </div>
-      )}
-      {page.body?.html && !page.body?.json && (
-        <div
-          className="text-on-surface-variant leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: page.body.html }}
-        />
-      )}
-
-      {page.relatedContent && page.relatedContent.length > 0 && (
-        <div className="mt-16 border-t border-outline-variant pt-12">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-8">
-            Related Content
-          </h2>
-          {page.relatedContent.map((item: any, i: number) => {
-            const Component = COMPONENT_REGISTRY[item.__typename];
-            if (!Component) return null;
-            const key = item._metadata?.key ?? `related-${i}`;
-            return (
-              <div key={key}>
-                <Component {...item} />
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 interface PageParams {
   slug?: string[];
@@ -107,7 +57,7 @@ export default async function CmsPage({
     return notFound();
   }
 
-  if (page.__typename === "TraditionalPage" || page.__typename === "LandingPage") {
+  if (page.__typename === "TraditionalPage") {
     return <TraditionalPage page={page} />;
   }
 

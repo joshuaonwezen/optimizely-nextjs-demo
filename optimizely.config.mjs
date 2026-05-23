@@ -29,19 +29,6 @@ export const LandingPageType = contentType({
   },
 });
 
-// Compatibility shim for pages created before the LandingPage → TraditionalPage rename.
-// Remove once all legacy content has been migrated in the CMS.
-export const LandingPageCompatType = contentType({
-  key: "LandingPage",
-  displayName: "Traditional Page (Legacy)",
-  baseType: "_page",
-  properties: {
-    heading:    { type: "string",   displayName: "Heading" },
-    subheading: { type: "string",   displayName: "Subheading" },
-    body:       { type: "richText", displayName: "Body" },
-  },
-});
-
 export const DefaultRowTemplate = displayTemplate({
   key: "DefaultRowTemplate",
   isDefault: true,

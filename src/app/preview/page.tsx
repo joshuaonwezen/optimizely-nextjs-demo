@@ -7,6 +7,7 @@ import Script from "next/script";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import { COMPONENT_REGISTRY } from "@/components/cms/ComponentSelector";
+import TraditionalPage from "@/components/pages/TraditionalPage";
 
 const GET_SHARED_BLOCK_QUERY = /* GraphQL */ `
   fragment NavItemFields on _IContent {
@@ -118,6 +119,13 @@ export default async function PreviewPage({ searchParams }: Props) {
           <OptimizelyGridSection key={node.key} nodes={[node]} />
         )
       )
+    );
+  }
+
+  // Traditional page (_page type) — getPreviewContent returns the page directly, no composition.
+  if (sdkItem?.__typename === "TraditionalPage") {
+    return shell(
+      <TraditionalPage page={sdkItem} inEditMode={inEditMode} />
     );
   }
 
