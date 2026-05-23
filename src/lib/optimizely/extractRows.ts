@@ -12,7 +12,7 @@ function parseSettings(
   return result;
 }
 
-function resolveComponent(node: any): ContentAreaItemWithSettings | null {
+function resolveComponent(node: any, nodeKey?: string): ContentAreaItemWithSettings | null {
   const comp = node?.component;
   if (!comp) return null;
 
@@ -28,19 +28,24 @@ function resolveComponent(node: any): ContentAreaItemWithSettings | null {
 
   return {
     item,
-    nodeKey: node.key ?? undefined,
+    // Prefer the caller-supplied key (column key) so the CMS maps the selection
+    // outline to the column boundary rather than the leaf component node.
+    nodeKey: nodeKey ?? node.key ?? undefined,
     displaySettings: parseSettings(node.displaySettings),
     displayTemplateKey: node.displayTemplateKey ?? undefined,
   };
 }
 
-function collectComponents(node: any): ContentAreaItemWithSettings[] {
+function collectComponents(node: any, columnKey?: string): ContentAreaItemWithSettings[] {
   const items: ContentAreaItemWithSettings[] = [];
-  const resolved = resolveComponent(node);
+  const resolved = resolveComponent(node, columnKey);
   if (resolved) items.push(resolved);
   if (node?.nodes) {
+    // Pass the column's key down to children so each leaf component uses its
+    // parent column's UUID as data-epi-block-id — the CMS selects at column level.
+    const childKey = node.nodeType === "column" ? (node.key ?? columnKey) : columnKey;
     for (const child of node.nodes) {
-      items.push(...collectComponents(child));
+      items.push(...collectComponents(child, childKey));
     }
   }
   return items;
