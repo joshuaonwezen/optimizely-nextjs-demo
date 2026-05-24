@@ -21,11 +21,10 @@ export const LandingPageType = contentType({
     heading:    { type: "string",   displayName: "Heading" },
     subheading: { type: "string",   displayName: "Subheading" },
     body:       { type: "richText", displayName: "Body" },
-    relatedContent: {
-      type: "content",
-      displayName: "Related Content",
-      allowedTypes: ["_component"],
-    },
+    // content: references a single reusable block from the shared content library.
+    // The SDK auto-generates inline fragments for every registered component type,
+    // so the full block data (all properties) is fetched and rendered directly.
+    featuredBlock: { type: "content", displayName: "Featured Block", allowedTypes: ["_component"], indexingType: "disabled" },
   },
 });
 

@@ -9,16 +9,22 @@ interface TraditionalPageProps {
 /**
  * Renders a TraditionalPage (_page type).
  *
- * Demonstrates three Optimizely property types in one page:
+ * Demonstrates three Optimizely property types:
  *   - string    → heading, subheading
  *   - richText  → body
- *   - content   → relatedContent (content area — a list of blocks)
+ *   - content   → featuredBlock (single block reference — the SDK auto-generates
+ *                 inline fragments for every registered component type so the full
+ *                 block data is fetched and rendered directly, without a separate request)
  *
  * When inEditMode is true, data-epi-* attributes are emitted so
- * the CMS communicationinjector.js can open the right property panel
- * when an editor clicks a field.
+ * communicationinjector.js can open the right property panel on click.
  */
 export default function TraditionalPage({ page, inEditMode = false }: TraditionalPageProps) {
+  const featuredBlock = page.featuredBlock;
+  const FeaturedComponent = featuredBlock?.__typename
+    ? COMPONENT_REGISTRY[featuredBlock.__typename]
+    : undefined;
+
   return (
     <div
       className="max-w-4xl mx-auto px-8 py-24"
@@ -57,27 +63,12 @@ export default function TraditionalPage({ page, inEditMode = false }: Traditiona
         )}
       </div>
 
-      {page.relatedContent && page.relatedContent.length > 0 && (
+      {FeaturedComponent && (
         <div
           className="mt-16 border-t border-outline-variant pt-12"
-          data-epi-property-name={inEditMode ? "relatedContent" : undefined}
+          data-epi-property-name={inEditMode ? "featuredBlock" : undefined}
         >
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-8">
-            Related Content
-          </h2>
-          {page.relatedContent.map((item: any, i: number) => {
-            const Component = COMPONENT_REGISTRY[item.__typename];
-            if (!Component) return null;
-            const key = item._metadata?.key ?? `related-${i}`;
-            return (
-              <div
-                key={key}
-                data-epi-content-id={inEditMode ? key : undefined}
-              >
-                <Component {...item} inEditMode={inEditMode} />
-              </div>
-            );
-          })}
+          <FeaturedComponent {...featuredBlock} inEditMode={inEditMode} />
         </div>
       )}
     </div>
