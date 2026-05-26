@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import type { NavNode } from "@/lib/graphql/queries/GetNavigation";
 import SearchOverlay from "@/components/layout/SearchOverlay";
@@ -17,7 +18,7 @@ export default function NavItems({ tree }: Props) {
 
   return (
     <>
-    {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
+    {searchOpen && createPortal(<SearchOverlay onClose={() => setSearchOpen(false)} />, document.body)}
     <div className="flex items-center gap-1">
       {tree.map((node) => {
         const hasChildren = node.children.length > 0;
