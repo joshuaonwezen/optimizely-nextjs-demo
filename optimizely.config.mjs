@@ -24,7 +24,7 @@ export const LandingPageType = contentType({
     // content: references a single reusable block from the shared content library.
     // The SDK auto-generates inline fragments for every registered component type,
     // so the full block data (all properties) is fetched and rendered directly.
-    featuredBlock: { type: "content", displayName: "Featured Block", allowedTypes: ["_component"], indexingType: "disabled" },
+    featuredBlock: { type: "content", displayName: "Featured Block", allowedTypes: ["_component"] },
   },
 });
 
