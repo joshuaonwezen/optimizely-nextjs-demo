@@ -2,6 +2,7 @@ import {
   createInstance,
   createStaticProjectConfigManager,
   createLogger,
+  OptimizelyDecideOption,
   ERROR,
 } from "@optimizely/optimizely-sdk";
 
@@ -37,7 +38,7 @@ export async function getDecision(
   if (!client) return fallback;
   const ctx = client.createUserContext(userId, attributes);
   if (!ctx) return fallback;
-  const d = ctx.decide(flagKey);
+  const d = ctx.decide(flagKey, [OptimizelyDecideOption.DISABLE_DECISION_EVENT]);
   return {
     flagKey,
     enabled: d.enabled,
@@ -55,7 +56,7 @@ export async function getAllDecisions(
   if (!client) return {};
   const ctx = client.createUserContext(userId, attributes);
   if (!ctx) return {};
-  const raw = ctx.decideAll();
+  const raw = ctx.decideAll([OptimizelyDecideOption.DISABLE_DECISION_EVENT]);
   const out: Record<string, FxDecision> = {};
   for (const [key, d] of Object.entries(raw)) {
     out[key] = {
