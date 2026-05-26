@@ -50,7 +50,8 @@ export default async function CmsPage({
   const cookieStore = await cookies();
   const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
   const device = cookieStore.get("fx_device")?.value ?? "desktop";
-  const fxDecisions = await getAllDecisions(userId, { device, logged_in: false });
+  const attributes = { device, logged_in: false };
+  const fxDecisions = await getAllDecisions(userId, attributes);
   const activeVariations = Object.values(fxDecisions)
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
     .map((d) => d.variationKey as string);
@@ -82,7 +83,7 @@ export default async function CmsPage({
       (d) => d.variationKey === servedVariation
     );
     if (exposedFlag) {
-      void recordExposure(exposedFlag.flagKey, userId, { device, logged_in: false });
+      void recordExposure(exposedFlag.flagKey, userId, attributes);
     }
   }
 

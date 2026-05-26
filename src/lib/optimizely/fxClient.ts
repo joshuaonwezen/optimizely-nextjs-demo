@@ -48,19 +48,6 @@ export async function getDecision(
   };
 }
 
-/** Fire an impression event for a flag without re-fetching decisions. */
-export async function recordExposure(
-  flagKey: string,
-  userId: string,
-  attributes: FxAttributes = {}
-): Promise<void> {
-  const client = await buildClient();
-  if (!client) return;
-  const ctx = client.createUserContext(userId, attributes);
-  if (!ctx) return;
-  ctx.decide(flagKey);
-}
-
 export async function getAllDecisions(
   userId: string,
   attributes: FxAttributes = {}
@@ -81,4 +68,21 @@ export async function getAllDecisions(
     };
   }
   return out;
+}
+
+/**
+ * Fire a bare decide() for a flag so the SDK sends an impression event.
+ * Call this when the flag's content is actually rendered — not during the
+ * initial routing/bucketing pass where DISABLE_DECISION_EVENT is used.
+ */
+export async function recordExposure(
+  flagKey: string,
+  userId: string,
+  attributes: FxAttributes = {}
+): Promise<void> {
+  const client = await buildClient();
+  if (!client) return;
+  const ctx = client.createUserContext(userId, attributes);
+  if (!ctx) return;
+  ctx.decide(flagKey);
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { contentType } from "@optimizely/cms-sdk";
 import { getSiteBanner } from "@/lib/graphql/queries/GetSiteBanner";
-import { getDecision } from "@/lib/optimizely/fxClient";
+import { getDecision, recordExposure } from "@/lib/optimizely/fxClient";
 
 export const SiteBannerType = contentType({
   key: "SiteBanner",
@@ -36,6 +36,7 @@ export default async function GlobalBanner() {
     const message = (v.title as string) || (v.description as string) || "";
     const linkText = v.linkText as string | undefined;
     if (!message) return null;
+    void recordExposure("banner", userId, { device, logged_in: false });
     return (
       <div className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 bg-gradient-brand text-on-brand">
         <span>{message}</span>

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { getDecision } from "@/lib/optimizely/fxClient";
+import { getDecision, recordExposure } from "@/lib/optimizely/fxClient";
 
 export const ProductHeroBlockType = contentType({
   key: "ProductHeroBlock",
@@ -80,6 +80,7 @@ export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
 
   const fxColor = fxDecision.enabled ? (fxDecision.variables.button_color as string) : undefined;
   const fxStyle = fxDecision.enabled ? (fxDecision.variables.button_style as string) : undefined;
+  if (fxDecision.enabled) void recordExposure("add_to_cart", userId);
 
   const ctaColorClass = (fxColor && COLOR_CLASSES[fxColor]) || "bg-surface-lowest text-brand";
   const ctaStyleMod   = (fxStyle && STYLE_MODIFIERS[fxStyle]) || "";
