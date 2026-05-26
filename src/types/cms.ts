@@ -18,6 +18,8 @@ export interface OptimizelyMetadata {
   } | null;
   published?: string | null;
   lastModified?: string | null;
+  /** Set when Graph returned a CMS content variation instead of the original. */
+  variation?: string | null;
 }
 
 /** Base interface for all content items from Graph */

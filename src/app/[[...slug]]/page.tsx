@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { GraphClient } from "@optimizely/cms-sdk";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
@@ -7,6 +8,7 @@ import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths"
 import { extractRowsFromComposition } from "@/lib/optimizely/extractRows";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import TraditionalPage from "@/components/pages/TraditionalPage";
+import { getAllDecisions } from "@/lib/optimizely/fxClient";
 
 // The SDK auto-generates queries from the registered content type registry.
 // initComponentRegistry must run before any GraphClient.getContentByPath call.
@@ -42,11 +44,26 @@ export default async function CmsPage({
   const { slug } = await params;
   const urls = buildUrlCandidates(slug);
 
+  // Resolve FX variation keys for this user so CMS serves the matching
+  // content variation when one exists. Graph falls back to original content
+  // automatically for pages that have no variations — zero behaviour change.
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
+  const device = cookieStore.get("fx_device")?.value ?? "desktop";
+  const fxDecisions = await getAllDecisions(userId, { device, logged_in: false });
+  const activeVariations = Object.values(fxDecisions)
+    .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
+    .map((d) => d.variationKey as string);
+  const variationOption =
+    activeVariations.length > 0
+      ? { variation: { include: "SOME" as const, value: activeVariations } }
+      : undefined;
+
   // The SDK auto-generates the full query from registered content types —
   // no hand-written GraphQL needed. Try each URL candidate until content is found.
   let page: any = null;
   for (const url of urls) {
-    const items = await client.getContentByPath(url);
+    const items = await client.getContentByPath(url, variationOption);
     if (items.length > 0) {
       page = items[0];
       break;
