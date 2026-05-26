@@ -51,7 +51,15 @@ export default async function CmsPage({
   const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
   const device = cookieStore.get("fx_device")?.value ?? "desktop";
   const attributes = { device, logged_in: false };
-  const fxDecisions = await getAllDecisions(userId, attributes);
+
+  // FX is an enhancement — errors here must never break content delivery.
+  let fxDecisions: Awaited<ReturnType<typeof getAllDecisions>> = {};
+  try {
+    fxDecisions = await getAllDecisions(userId, attributes);
+  } catch {
+    // SDK unavailable; fall through with no variation filter
+  }
+
   const activeVariations = Object.values(fxDecisions)
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
     .map((d) => d.variationKey as string);
