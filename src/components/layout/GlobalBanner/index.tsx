@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { contentType } from "@optimizely/cms-sdk";
 import { getSiteBanner } from "@/lib/graphql/queries/GetSiteBanner";
+import { getDecision } from "@/lib/optimizely/fxClient";
 
 export const SiteBannerType = contentType({
   key: "SiteBanner",
@@ -23,8 +25,31 @@ const VARIANT_CLASSES: Record<string, string> = {
 };
 
 export default async function GlobalBanner() {
-  const banner = await getSiteBanner();
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
+  const device = cookieStore.get("fx_device")?.value ?? "desktop";
 
+  // FX flag takes priority over CMS banner when enabled
+  const fxDecision = await getDecision("banner", userId, { device, logged_in: false });
+  if (fxDecision.enabled) {
+    const v = fxDecision.variables;
+    const message = (v.title as string) || (v.description as string) || "";
+    const linkText = v.linkText as string | undefined;
+    if (!message) return null;
+    return (
+      <div className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 bg-gradient-brand text-on-brand">
+        <span>{message}</span>
+        {linkText && (
+          <span className="underline underline-offset-2 font-semibold opacity-80">
+            {linkText}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback: CMS-managed banner
+  const banner = await getSiteBanner();
   if (!banner || !banner.enabled || !banner.message) return null;
 
   const variantClass = VARIANT_CLASSES[banner.variant ?? "info"] ?? VARIANT_CLASSES.info;

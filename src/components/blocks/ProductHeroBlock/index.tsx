@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { getDecision } from "@/lib/optimizely/fxClient";
 
 export const ProductHeroBlockType = contentType({
   key: "ProductHeroBlock",
@@ -48,13 +50,40 @@ type ProductHeroBlockProps = ProductHeroData & {
   displaySettings?: Record<string, string | boolean>;
 };
 
-export default function ProductHeroBlock(props: ProductHeroBlockProps) {
+// Map FX button_color variable values to Tailwind classes
+const COLOR_CLASSES: Record<string, string> = {
+  blue:   "bg-blue-600 text-white",
+  green:  "bg-green-600 text-white",
+  red:    "bg-red-600 text-white",
+  purple: "bg-purple-600 text-white",
+  amber:  "bg-amber-500 text-white",
+};
+
+// Map FX button_style variable values to modifier classes
+const STYLE_MODIFIERS: Record<string, string> = {
+  outline: "!bg-transparent border-2 border-current",
+  filled:  "",
+};
+
+export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
 
   const isCompact = ds?.height === "compact";
   const isCentered = ds?.alignment === "center";
+
+  // Evaluate add_to_cart FX flag — drives button colour + style
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
+  const fxDecision = await getDecision("add_to_cart", userId);
+
+  const fxColor = fxDecision.enabled ? (fxDecision.variables.button_color as string) : undefined;
+  const fxStyle = fxDecision.enabled ? (fxDecision.variables.button_style as string) : undefined;
+
+  const ctaColorClass = (fxColor && COLOR_CLASSES[fxColor]) || "bg-surface-lowest text-brand";
+  const ctaStyleMod   = (fxStyle && STYLE_MODIFIERS[fxStyle]) || "";
+  const ctaClass = `hover-lift font-display inline-block px-8 py-3.5 rounded-lg font-semibold ${ctaColorClass} ${ctaStyleMod}`.trim();
 
   return (
     <section
@@ -90,7 +119,7 @@ export default function ProductHeroBlock(props: ProductHeroBlockProps) {
             <div>
               <a
                 href={data.__context?.edit ? undefined : (data.ctaUrl?.default ?? undefined)}
-                className="hover-lift font-display inline-block px-8 py-3.5 rounded-lg font-semibold bg-surface-lowest text-brand"
+                className={ctaClass}
               >
                 <span {...pa("ctaText")}>{data.ctaText ?? "Learn More"}</span>
               </a>
