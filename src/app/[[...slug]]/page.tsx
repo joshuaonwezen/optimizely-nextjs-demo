@@ -45,8 +45,8 @@ export default async function CmsPage({
   const urls = buildUrlCandidates(slug);
 
   // Resolve FX variation keys for this user so CMS serves the matching
-  // content variation when one exists. Graph falls back to original content
-  // automatically for pages that have no variations — zero behaviour change.
+  // content variation when one exists. includeOriginal:true ensures Graph
+  // returns the original content for pages that have no matching variation.
   const cookieStore = await cookies();
   const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
   const device = cookieStore.get("fx_device")?.value ?? "desktop";
@@ -65,7 +65,7 @@ export default async function CmsPage({
     .map((d) => d.variationKey as string);
   const variationOption =
     activeVariations.length > 0
-      ? { variation: { include: "SOME" as const, value: activeVariations } }
+      ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
       : undefined;
 
   // The SDK auto-generates the full query from registered content types —
