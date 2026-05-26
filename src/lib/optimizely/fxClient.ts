@@ -48,6 +48,19 @@ export async function getDecision(
   };
 }
 
+/** Fire an impression event for a flag without re-fetching decisions. */
+export async function recordExposure(
+  flagKey: string,
+  userId: string,
+  attributes: FxAttributes = {}
+): Promise<void> {
+  const client = await buildClient();
+  if (!client) return;
+  const ctx = client.createUserContext(userId, attributes);
+  if (!ctx) return;
+  ctx.decide(flagKey);
+}
+
 export async function getAllDecisions(
   userId: string,
   attributes: FxAttributes = {}

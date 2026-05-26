@@ -8,7 +8,7 @@ import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths"
 import { extractRowsFromComposition } from "@/lib/optimizely/extractRows";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import TraditionalPage from "@/components/pages/TraditionalPage";
-import { getAllDecisions } from "@/lib/optimizely/fxClient";
+import { getAllDecisions, recordExposure } from "@/lib/optimizely/fxClient";
 
 // The SDK auto-generates queries from the registered content type registry.
 // initComponentRegistry must run before any GraphClient.getContentByPath call.
@@ -72,6 +72,18 @@ export default async function CmsPage({
 
   if (!page) {
     return notFound();
+  }
+
+  // If Graph served a CMS variation, fire the real impression for the flag
+  // that owns that variation key so experiment metrics count the exposure.
+  const servedVariation: string | null = page._metadata?.variation ?? null;
+  if (servedVariation) {
+    const exposedFlag = Object.values(fxDecisions).find(
+      (d) => d.variationKey === servedVariation
+    );
+    if (exposedFlag) {
+      void recordExposure(exposedFlag.flagKey, userId, { device, logged_in: false });
+    }
   }
 
   if (page.__typename === "TraditionalPage") {
