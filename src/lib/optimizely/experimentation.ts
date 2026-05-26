@@ -1,7 +1,9 @@
 import {
   createInstance,
   createStaticProjectConfigManager,
+  createForwardingEventProcessor,
   createLogger,
+  eventDispatcher,
   OptimizelyDecideOption,
   ERROR,
 } from "@optimizely/optimizely-sdk";
@@ -25,7 +27,8 @@ async function buildClient() {
   const datafileText = await res.text();
   const projectConfigManager = createStaticProjectConfigManager({ datafile: datafileText });
   const logger = createLogger({ level: ERROR });
-  return createInstance({ projectConfigManager, logger }) ?? null;
+  const eventProcessor = createForwardingEventProcessor(eventDispatcher);
+  return createInstance({ projectConfigManager, logger, eventProcessor }) ?? null;
 }
 
 export async function getDecision(
