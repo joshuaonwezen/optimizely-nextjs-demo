@@ -75,7 +75,7 @@ export async function getAllDecisions(
  * Call this when the flag's content is actually rendered — not during the
  * initial routing/bucketing pass where DISABLE_DECISION_EVENT is used.
  */
-export async function recordExposure(
+export async function bucketVisitor(
   flagKey: string,
   userId: string,
   attributes: FxAttributes = {}

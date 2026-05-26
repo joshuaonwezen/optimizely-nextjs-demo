@@ -8,7 +8,7 @@ import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths"
 import { extractRowsFromComposition } from "@/lib/optimizely/extractRows";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import TraditionalPage from "@/components/pages/TraditionalPage";
-import { getAllDecisions, recordExposure } from "@/lib/optimizely/experimentation";
+import { getAllDecisions, bucketVisitor } from "@/lib/optimizely/experimentation";
 
 // The SDK auto-generates queries from the registered content type registry.
 // initComponentRegistry must run before any GraphClient.getContentByPath call.
@@ -83,7 +83,7 @@ export default async function CmsPage({
       (d) => d.variationKey === servedVariation
     );
     if (exposedFlag) {
-      void recordExposure(exposedFlag.flagKey, userId, attributes);
+      void bucketVisitor(exposedFlag.flagKey, userId, attributes);
     }
   }
 
