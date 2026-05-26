@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { getAllDecisions, type FxDecision } from "@/lib/optimizely/fxClient";
+import { getAllDecisions, type FxDecision } from "@/lib/optimizely/experimentation";
 
 export const metadata: Metadata = {
   title: "CMS Personalization Demo",
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 const INTEGRATION_SNIPPET = `// src/app/[[...slug]]/page.tsx
 import { cookies } from "next/headers";
-import { getAllDecisions } from "@/lib/optimizely/fxClient";
+import { getAllDecisions } from "@/lib/optimizely/experimentation";
 import { GraphClient } from "@optimizely/cms-sdk";
 
 const client = new GraphClient(process.env.OPTIMIZELY_GRAPH_SINGLE_KEY!);

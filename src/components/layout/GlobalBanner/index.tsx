@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { contentType } from "@optimizely/cms-sdk";
 import { getSiteBanner } from "@/lib/graphql/queries/GetSiteBanner";
-import { getDecision, recordExposure } from "@/lib/optimizely/fxClient";
+import { getDecision, recordExposure } from "@/lib/optimizely/experimentation";
 
 export const SiteBannerType = contentType({
   key: "SiteBanner",

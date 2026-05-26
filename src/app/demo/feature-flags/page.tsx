@@ -2,14 +2,14 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { getAllDecisions, type FxDecision } from "@/lib/optimizely/fxClient";
+import { getAllDecisions, type FxDecision } from "@/lib/optimizely/experimentation";
 
 export const metadata: Metadata = {
   title: "Feature Experimentation Demo",
 };
 
 const SDK_SNIPPET = `import { cookies } from "next/headers";
-import { getDecision } from "@/lib/optimizely/fxClient";
+import { getDecision } from "@/lib/optimizely/experimentation";
 
 // Server component — no client JS needed
 export default async function MyPage() {

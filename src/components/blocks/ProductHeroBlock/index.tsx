@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { getDecision, recordExposure } from "@/lib/optimizely/fxClient";
+import { getDecision, recordExposure } from "@/lib/optimizely/experimentation";
 
 export const ProductHeroBlockType = contentType({
   key: "ProductHeroBlock",
