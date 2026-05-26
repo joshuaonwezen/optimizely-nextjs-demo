@@ -1,3 +1,4 @@
+import { cache } from "react";
 import {
   createInstance,
   createStaticProjectConfigManager,
@@ -20,7 +21,8 @@ export type FxDecision = {
   reasons: string[];
 };
 
-async function buildClient() {
+// cache() memoises per request — all server components share one SDK instance.
+const buildClient = cache(async function buildClient() {
   const res = await fetch(DATAFILE_URL, { next: { revalidate: 60 } });
   if (!res.ok) return null;
   // SDK v5 createStaticProjectConfigManager requires the datafile as a JSON string
@@ -29,7 +31,7 @@ async function buildClient() {
   const logger = createLogger({ level: ERROR });
   const eventProcessor = createForwardingEventProcessor(eventDispatcher);
   return createInstance({ projectConfigManager, logger, eventProcessor }) ?? null;
-}
+});
 
 export async function getDecision(
   flagKey: string,
