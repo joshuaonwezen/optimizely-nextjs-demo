@@ -18,10 +18,10 @@ export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
 `;
 
 export const SEARCH_SEMANTIC_QUERY = /* GraphQL */ `
-  query SearchSemantic($query: String!) {
+  query SearchSemantic($query: String!, $weight: Float!) {
     _Page(
       where: { _fulltext: { match: $query } }
-      orderBy: { _ranking: SEMANTIC, _semanticWeight: 0.5 }
+      orderBy: { _ranking: SEMANTIC, _semanticWeight: $weight }
       limit: 10
     ) {
       total

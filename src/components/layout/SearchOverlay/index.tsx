@@ -18,6 +18,7 @@ interface Props {
 export default function SearchOverlay({ onClose }: Props) {
   const [query,   setQuery]   = useState("");
   const [mode,    setMode]    = useState<SearchMode>("relevance");
+  const [weight,  setWeight]  = useState(0.5);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [total,   setTotal]   = useState(0);
   const [loading, setLoading] = useState(false);
@@ -34,11 +35,14 @@ export default function SearchOverlay({ onClose }: Props) {
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
-  const runSearch = useCallback(async (q: string, m: SearchMode) => {
+  const runSearch = useCallback(async (q: string, m: SearchMode, w: number) => {
     if (q.length < 2) { setResults([]); setTotal(0); return; }
     setLoading(true);
     try {
-      const res  = await fetch(`/api/search?q=${encodeURIComponent(q)}&mode=${m}`);
+      const url = m === "semantic"
+        ? `/api/search?q=${encodeURIComponent(q)}&mode=semantic&weight=${w}`
+        : `/api/search?q=${encodeURIComponent(q)}&mode=relevance`;
+      const res  = await fetch(url);
       const data = await res.json();
       setResults(data.items ?? []);
       setTotal(data.total ?? 0);
@@ -50,12 +54,17 @@ export default function SearchOverlay({ onClose }: Props) {
   const handleQueryChange = (value: string) => {
     setQuery(value);
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => runSearch(value, mode), 300);
+    timerRef.current = setTimeout(() => runSearch(value, mode, weight), 300);
   };
 
   const handleModeChange = (m: SearchMode) => {
     setMode(m);
-    if (query.length >= 2) runSearch(query, m);
+    if (query.length >= 2) runSearch(query, m, weight);
+  };
+
+  const handleWeightChange = (w: number) => {
+    setWeight(w);
+    if (query.length >= 2) runSearch(query, mode, w);
   };
 
   return (
@@ -106,6 +115,26 @@ export default function SearchOverlay({ onClose }: Props) {
           </span>
         </div>
 
+        {/* Semantic weight slider */}
+        {mode === "semantic" && (
+          <div className="flex items-center gap-3 px-5 py-3 border-b border-ghost-border">
+            <span className="text-xs text-on-surface-variant shrink-0">BM25</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={weight}
+              onChange={(e) => handleWeightChange(parseFloat(e.target.value))}
+              className="flex-1 accent-brand h-1.5 cursor-pointer"
+            />
+            <span className="text-xs text-on-surface-variant shrink-0">Semantic</span>
+            <span className="text-xs font-mono text-brand w-8 text-right shrink-0">
+              {weight.toFixed(2)}
+            </span>
+          </div>
+        )}
+
         {/* Results */}
         <div className="max-h-96 overflow-y-auto">
           {loading && (
@@ -137,8 +166,11 @@ export default function SearchOverlay({ onClose }: Props) {
                         {r.url}
                       </div>
                     </div>
-                    <span className="shrink-0 text-xs tabular-nums text-on-surface-variant opacity-60">
-                      {r.score.toFixed(2)}
+                    <span className="shrink-0 text-xs tabular-nums text-on-surface-variant opacity-60 text-right">
+                      <span className="block">{r.score.toFixed(2)}</span>
+                      <span className="block text-[10px] uppercase tracking-wide">
+                        {mode === "semantic" ? "similarity" : "BM25"}
+                      </span>
                     </span>
                   </Link>
                 </li>

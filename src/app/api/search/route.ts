@@ -4,8 +4,9 @@ import { SEARCH_RELEVANCE_QUERY, SEARCH_SEMANTIC_QUERY } from "@/lib/graphql/que
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
-  const q    = searchParams.get("q")?.trim() ?? "";
-  const mode = searchParams.get("mode") === "semantic" ? "semantic" : "relevance";
+  const q      = searchParams.get("q")?.trim() ?? "";
+  const mode   = searchParams.get("mode") === "semantic" ? "semantic" : "relevance";
+  const weight = Math.min(1, Math.max(0, parseFloat(searchParams.get("weight") ?? "0.5")));
 
   if (!q || q.length < 2) {
     return NextResponse.json({ total: 0, items: [] });
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const result = await graphqlFetch<any>(
       mode === "semantic" ? SEARCH_SEMANTIC_QUERY : SEARCH_RELEVANCE_QUERY,
-      { query: q },
+      mode === "semantic" ? { query: q, weight } : { query: q },
       { cache: "no-store" }
     );
 
