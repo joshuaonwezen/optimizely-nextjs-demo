@@ -23,22 +23,6 @@ const nextConfig: NextConfig = {
   },
 
   /**
-   * Redirect CMS-generated preview URLs directly to /preview.
-   * When an editor clicks "Preview" in the CMS, Optimizely navigates to
-   * /episerver/CMS/Content/... — query params (preview_token, key, ctx) are
-   * preserved automatically by Next.js redirects.
-   */
-  async redirects() {
-    return [
-      {
-        source: "/episerver/CMS/Content/:slug*",
-        destination: "/preview",
-        permanent: false,
-      },
-    ];
-  },
-
-  /**
    * Allow Next.js Image to load images from the Optimizely CMS and Graph CDN.
    */
   images: {
