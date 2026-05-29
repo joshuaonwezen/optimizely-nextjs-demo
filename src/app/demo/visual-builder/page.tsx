@@ -28,191 +28,206 @@ export const HeroCenteredTemplate = displayTemplate({
   key: "HeroCenteredTemplate",
   displayName: "Centered Hero",
   contentType: "HeroBlock",
-  tag: "Centered",
+  tag: "Centered",          // links to the "Centered" key in the resolver tags object
   settings: {
     height: {
       editor: "select",
-      displayName: "Height",
-      choices: {
-        default: { displayName: "Default" },
-        tall:    { displayName: "Full Viewport" },
-      },
+      choices: { default: { displayName: "Default" }, tall: { displayName: "Full Viewport" } },
     },
     overlay: { editor: "checkbox", displayName: "Dark Overlay on Image" },
   },
 });`;
 
 const COMPONENT_SNIPPET = `type HeroBlockProps = {
-  headline?: string | null;
-  subheadline?: string | null;
-  backgroundImage?: { _metadata?: { url?: { default?: string | null } } } | null;
-  ctaText?: string | null;
-  ctaLink?: string | null;
-  displaySettings?: Record<string, string | boolean>;
+  content: ContentProps<typeof HeroBlockType>;
+  displaySettings?: ContentProps<typeof HeroCenteredTemplate>;
 };
 
-export default function HeroBlock(props: HeroBlockProps) {
-  const ds = props.displaySettings;
-
-  const isTall     = ds?.height === "tall";
-  const showOverlay = ds?.overlay === true;
-  const isCentered = ds?.alignment === "center";
+export default function HeroBlock({ content, displaySettings }: HeroBlockProps) {
+  const { pa } = getPreviewUtils(content);
+  const isTall      = displaySettings?.height === "tall";
+  const showOverlay = displaySettings?.overlay === true;
 
   return (
     <section className={isTall ? "min-h-screen" : "min-h-[640px]"}>
-      {props.backgroundImage && (
+      {content.backgroundImage && (
         <Image
-          src={props.backgroundImage._metadata?.url?.default ?? ""}
+          src={src(content.backgroundImage)}
           className={showOverlay ? "opacity-20" : "opacity-30"}
           fill
         />
       )}
-      <div className={isCentered ? "text-center" : ""}>
-        <h1>{props.headline}</h1>
-        <p>{props.subheadline}</p>
-        <a href={props.ctaLink}>{props.ctaText}</a>
-      </div>
+      <h1 {...pa("headline")}>{content.headline}</h1>
+      <p  {...pa("subheadline")}>{content.subheadline}</p>
+      <a  href={content.ctaLink}>{content.ctaText}</a>
     </section>
   );
 }`;
 
 const REGISTRY_SNIPPET = `// src/lib/optimizely/componentRegistry.ts
-import { initContentTypeRegistry, initDisplayTemplateRegistry } from "@optimizely/cms-sdk";
+import { config, initContentTypeRegistry, initDisplayTemplateRegistry } from "@optimizely/cms-sdk";
 import { initReactComponentRegistry } from "@optimizely/cms-sdk/react/server";
 import HeroBlock, { HeroBlockType, HeroCenteredTemplate } from "@/components/blocks/HeroBlock";
-// … other imports …
+import DynamicExperience from "@/components/experience/DynamicExperience";
+import BlankSection     from "@/components/experience/BlankSection";
+
+// Configure Graph client once — all getClient() calls in page routes use this.
+config({ apiKey: process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "" });
 
 export function initComponentRegistry() {
   initContentTypeRegistry([HeroBlockType, /* … */]);
   initDisplayTemplateRegistry([HeroCenteredTemplate, /* … */]);
-  initReactComponentRegistry({ resolver: { HeroBlock, /* … */ } });
+
+  initReactComponentRegistry({
+    resolver: {
+      // Experience / section types
+      DynamicExperience,
+      BlankSection,
+
+      // Blocks — tags map displayTemplateKey → component variant
+      HeroBlock: {
+        default: HeroBlock,
+        tags: { Centered: HeroCenteredBlock }, // HeroCenteredTemplate.tag = "Centered"
+      },
+    },
+  });
 }`;
 
 const SDK_QUERY_SNIPPET = `// src/app/[[...slug]]/page.tsx
-import { GraphClient } from "@optimizely/cms-sdk";
+import { getClient } from "@optimizely/cms-sdk";
+import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 
-// Must run before any GraphClient.getContentByPath call.
-// The SDK reads the registry to know which properties to fetch per block type.
-initComponentRegistry();
+initComponentRegistry(); // registers types + calls config()
 
-const client = new GraphClient(process.env.OPTIMIZELY_GRAPH_SINGLE_KEY!, {
-  graphUrl: process.env.OPTIMIZELY_GRAPH_GATEWAY,
-});
+async function CmsPage({ params }) {
+  const { slug } = await params;
+  const client = getClient(); // no env vars needed here — config() set them once
 
-// One call — SDK auto-generates the full GraphQL query from all registered
-// content types and fetches all blocks in a single round-trip.
-const [page] = await client.getContentByPath("/en/homepage/");`;
+  // SDK auto-generates the full GraphQL query from all registered content types.
+  // One call fetches the page + every possible block type in a single round-trip.
+  const [page] = await client.getContentByPath(\`/en/\${slug.join("/")}/\`);
 
-const EXTRACT_ROWS_SNIPPET = `// src/lib/optimizely/extractRows.ts
-export function extractRowsFromComposition(page: any): CompositionRow[] {
-  const nodes = page?.composition?.nodes ?? page?.composition?.grids ?? [];
-
-  return nodes.flatMap((gridNode) => {
-    // Top-level component (standalone block outside a section)
-    const topLevel = resolveComponent(gridNode);
-    if (topLevel) return [{ key: gridNode.key, items: [topLevel] }];
-
-    // Section node: walk columns → collect leaf components
-    if (gridNode?.nodes) {
-      const items = collectComponents(gridNode);
-      return items.length ? [{ key: gridNode.key, items }] : [];
-    }
-    return [];
-  });
+  return <OptimizelyComponent content={page} />;
+  // OptimizelyComponent reads page.__typename → dispatches to DynamicExperience
+  // or TraditionalPage via the resolver — no manual type switching needed.
 }
 
-// column key is propagated down so data-epi-block-id targets the column,
-// not the leaf — that is the boundary the CMS selection overlay uses.
-function collectComponents(node, columnKey?: string): ContentAreaItemWithSettings[] {
-  const resolved = resolveComponent(node, columnKey);
-  const childKey  = node.nodeType === "column" ? (node.key ?? columnKey) : columnKey;
-  const children  = node.nodes?.flatMap((n) => collectComponents(n, childKey)) ?? [];
-  return resolved ? [resolved, ...children] : children;
+export default withAppContext(CmsPage);`;
+
+const EXPERIENCE_SNIPPET = `// src/components/experience/DynamicExperience.tsx
+import { OptimizelyComposition, getPreviewUtils, type ComponentContainerProps }
+  from "@optimizely/cms-sdk/react/server";
+
+// Wraps each component node with preview attributes so editors can click-to-edit.
+function ComponentWrapper({ children, node }: ComponentContainerProps) {
+  const { pa } = getPreviewUtils(node);
+  return <div {...pa(node)}>{children}</div>;
+}
+
+export default function DynamicExperience({ content }: { content: any }) {
+  // content.composition.nodes = top-level section + standalone element nodes.
+  // OptimizelyComposition walks the tree:
+  //   - Component nodes → ComponentWrapper → OptimizelyComponent (dispatches to block)
+  //   - Section nodes   → OptimizelyComponent (dispatches to BlankSection)
+  return (
+    <OptimizelyComposition
+      nodes={content?.composition?.nodes ?? []}
+      ComponentWrapper={ComponentWrapper}
+    />
+  );
 }`;
 
-const COMPONENT_SELECTOR_SNIPPET = `// src/components/cms/ComponentSelector.tsx
-export function ComponentSelector({ rows, inEditMode }: ComponentSelectorProps) {
-  return rows.map((row) => {
-    const rendered = row.items.map(({ item, nodeKey, displaySettings }) => {
-      const Component = COMPONENT_REGISTRY[item.__typename];
-      const blockId   = nodeKey ?? item._metadata?.key;
+const SECTION_SNIPPET = `// src/components/experience/BlankSection.tsx
+import { OptimizelyGridSection, getPreviewUtils, type StructureContainerProps }
+  from "@optimizely/cms-sdk/react/server";
 
-      return (
-        // data-epi-block-id is only set in edit mode — omitted on published pages.
-        // The CMS communicationinjector.js reads this attribute to draw selection outlines.
-        <div key={blockId} data-epi-block-id={inEditMode ? blockId : undefined}>
-          <Component {...item} displaySettings={displaySettings} />
-        </div>
-      );
-    });
+function Row({ children, node, displaySettings }: StructureContainerProps) {
+  const { pa } = getPreviewUtils(node);
+  const count  = (node as any).nodes?.length ?? 1;
+  const grid   = count === 2 ? "md:grid-cols-2"
+               : count === 3 ? "md:grid-cols-3"
+               : count >= 4  ? "md:grid-cols-4" : "";
+  const gap    = displaySettings?.gap === "compact" ? "gap-4"
+               : displaySettings?.gap === "spacious" ? "gap-16" : "gap-8";
+  return (
+    <div className={[count > 1 ? \`grid grid-cols-1 \${grid}\` : "", gap].join(" ")} {...pa(node)}>
+      {children}
+    </div>
+  );
+}
 
-    const gridCols = rendered.length === 2 ? "md:grid-cols-2"
-                   : rendered.length === 3 ? "md:grid-cols-3"
-                   :                         "md:grid-cols-4";
+function Column({ children, node, displaySettings }: StructureContainerProps) {
+  const { pa } = getPreviewUtils(node);
+  const bg      = displaySettings?.background === "surface" ? "bg-surface" : "";
+  const padding = displaySettings?.padding === "compact" ? "p-4" : "";
+  const rounded = displaySettings?.rounded ? "rounded-2xl" : "";
+  return (
+    <div className={[bg, padding, rounded].join(" ")} {...pa(node)}>{children}</div>
+  );
+}
 
-    // Outer wrapper uses the row/section key; CMS targets sections before columns.
-    return (
-      <div key={row.key}
-           data-epi-block-id={inEditMode ? row.key : undefined}
-           className={rendered.length > 1 ? \`grid \${gridCols}\` : undefined}>
-        {rendered}
-      </div>
-    );
-  });
+export default function BlankSection({ content }: { content: any }) {
+  const { pa } = getPreviewUtils(content);
+  // content.nodes = row/column nodes inside the section.
+  // OptimizelyGridSection walks rows → columns → dispatches leaf blocks.
+  return (
+    <section {...pa(content)}>
+      <OptimizelyGridSection nodes={content?.nodes ?? []} row={Row} column={Column} />
+    </section>
+  );
 }`;
 
-const PREVIEW_INJECT_SNIPPET = `// src/app/preview/page.tsx
-import Script from "next/script";
-import { PreviewComponent } from "@optimizely/cms-sdk/react/server";
-
-// Always force-dynamic — preview responses must never be cached.
+const PREVIEW_SNIPPET = `// src/app/preview/page.tsx
 export const dynamic = "force-dynamic";
 
-export default async function PreviewPage({ searchParams }) {
-  const { preview_token, key, ctx } = await searchParams;
-  const inEditMode = ctx === "edit";
+import { getClient, type PreviewParams } from "@optimizely/cms-sdk";
+import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
+import { PreviewComponent } from "@optimizely/cms-sdk/react/client";
+import Script from "next/script";
 
-  const [page] = await client.getContentByPath(url, { preview_token });
+async function PreviewPage({ searchParams }) {
+  const params = await searchParams;
+  const client = getClient();
+
+  // getPreviewContent reads preview_token, key, ver, ctx from query params,
+  // fetches the draft version, and populates the withAppContext context store.
+  const content = await client.getPreviewContent(params as PreviewParams);
 
   return (
     <>
-      {inEditMode && (
-        // Loaded by the CMS iframe to establish a postMessage channel so the
-        // selection outline overlay knows which DOM node is being edited.
-        <Script src={\`\${process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL}/episerver/cms/latest/communicationinjector.js\`} />
-      )}
-
-      {/* Renders the composition or traditional page */}
-      {page?.composition
-        ? <DynamicExperience page={page} inEditMode={inEditMode} />
-        : <TraditionalPage page={page} inEditMode={inEditMode} />}
-
-      {inEditMode && <PreviewComponent />}
+      {/* Establishes the postMessage channel between the CMS iframe and this page. */}
+      <Script src={\`\${process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL}/util/javascript/communicationinjector.js\`} />
+      {/* SDK client component that receives live content-change events from the CMS. */}
+      <PreviewComponent />
+      {/* Same dispatch path as the published page — no separate preview renderer needed. */}
+      <OptimizelyComponent content={content} />
     </>
   );
-}`;
+}
+
+export default withAppContext(PreviewPage);`;
 
 // ---------------------------------------------------------------------------
 // Block table rows
 // ---------------------------------------------------------------------------
 
 const BLOCKS = [
-  { name: "HeroBlock",            baseType: "_component", templates: "HeroCenteredTemplate" },
-  { name: "ProductHeroBlock",     baseType: "_component", templates: "ProductHeroCompactTemplate" },
-  { name: "SectionHeadingBlock",  baseType: "_component", templates: "SectionHeadingCenteredTemplate" },
-  { name: "RichTextBlock",        baseType: "_component", templates: "TextBlockNarrowTemplate" },
-  { name: "CallToActionBlock",    baseType: "_component", templates: "CallToActionOutlineTemplate, CallToActionSurfaceTemplate" },
-  { name: "ProductCardBlock",     baseType: "_component", templates: "ProductCardFeaturedTemplate" },
-  { name: "FeatureItemBlock",     baseType: "_component", templates: "FeatureItemOutlinedTemplate, FeatureItemFlatTemplate" },
-  { name: "TestimonialBlock",     baseType: "_component", templates: "TestimonialCardTemplate" },
-  { name: "StatsCounterBlock",    baseType: "_component", templates: "—" },
-  { name: "ImageBlock",           baseType: "_component", templates: "ImageBlockRoundedTemplate" },
-  { name: "FaqContainerBlock",    baseType: "_component", templates: "—" },
-  { name: "FaqItemBlock",         baseType: "_component", templates: "—" },
-  { name: "FeaturedContentBlock", baseType: "_component", templates: "—" },
-  { name: "LogoGridBlock",        baseType: "_component", templates: "—" },
-  { name: "FormContainerBlock",   baseType: "_component", templates: "—" },
+  { name: "HeroBlock",            templates: "HeroCenteredTemplate (tag: Centered)" },
+  { name: "ProductHeroBlock",     templates: "ProductHeroCompactTemplate (tag: Compact)" },
+  { name: "SectionHeadingBlock",  templates: "SectionHeadingCenteredTemplate (tag: Centered)" },
+  { name: "RichTextBlock",        templates: "TextBlockNarrowTemplate (tag: Narrow)" },
+  { name: "CallToActionBlock",    templates: "CallToActionOutlineTemplate, CallToActionSurfaceTemplate" },
+  { name: "ProductCardBlock",     templates: "ProductCardFeaturedTemplate (tag: Featured)" },
+  { name: "FeatureItemBlock",     templates: "FeatureItemOutlinedTemplate, FeatureItemFlatTemplate" },
+  { name: "TestimonialBlock",     templates: "TestimonialCardTemplate (tag: Card)" },
+  { name: "StatsCounterBlock",    templates: "—" },
+  { name: "ImageBlock",           templates: "ImageBlockRoundedTemplate (tag: Rounded)" },
+  { name: "FaqContainerBlock",    templates: "—" },
+  { name: "FaqItemBlock",         templates: "—" },
+  { name: "FeaturedContentBlock", templates: "—" },
+  { name: "LogoGridBlock",        templates: "—" },
+  { name: "FormContainerBlock",   templates: "—" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -232,16 +247,16 @@ export default function VisualBuilderPage() {
             Visual Builder
           </h1>
           <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            How Optimizely Visual Builder enables editors to compose pages from blocks
-            with zero code — and how the SDK auto-generates GraphQL queries from the
-            component registry so you never write page-level queries by hand.
+            How the Optimizely CMS SDK turns Visual Builder page compositions into
+            rendered React — using the SDK&apos;s built-in rendering pipeline instead
+            of hand-written GraphQL queries or manual tree-walking.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-              SDK · GraphClient · contentType · displayTemplate
+              SDK · config · getClient · withAppContext
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              ComponentSelector · data-epi-block-id
+              OptimizelyComponent · OptimizelyComposition · OptimizelyGridSection
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
               15 blocks · display templates · display settings
@@ -258,87 +273,125 @@ export default function VisualBuilderPage() {
             Composition Model
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            A Visual Builder page is a tree of nodes. Editors see this as a canvas
-            of rows and columns; developers see a JSON composition that the SDK
-            flattens into{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">CompositionRow[]</code>{" "}
-            before rendering.
+            Visual Builder pages are a tree. The SDK flattens and dispatches that
+            tree through three components — one per level.
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
 {`Experience (DynamicExperience)
-└── Section (BlankSection / BlankExperience)
-    └── Row  ──────────────────────── gridNode   ← extractRowsFromComposition iterates here
-        ├── Column A  ─────────────── column key ← data-epi-block-id on <div> wrapper
-        │   └── HeroBlock            leaf block  ← COMPONENT_REGISTRY["HeroBlock"]
-        └── Column B
-            └── CallToActionBlock`}
+└── composition.nodes
+    └── Section node  → OptimizelyComposition dispatches to BlankSection
+        └── content.nodes
+            └── Row   → OptimizelyGridSection dispatches to Row component
+                └── Column → dispatches to Column component
+                    └── HeroBlock → OptimizelyComponent dispatches to HeroBlock`}
           </pre>
-          <p className="text-sm text-on-surface-variant mt-4 max-w-3xl leading-relaxed">
-            Standalone blocks (placed directly at row level, outside a section)
-            are resolved as a single-item row. Multi-column rows auto-grid by count:
-            2 → <code className="bg-surface-low px-1 rounded text-xs font-mono">md:grid-cols-2</code>,
-            3 → <code className="bg-surface-low px-1 rounded text-xs font-mono">md:grid-cols-3</code>,
-            4+ → <code className="bg-surface-low px-1 rounded text-xs font-mono">md:grid-cols-4</code>.
-          </p>
-        </section>
-
-        {/* SDK auto-generated query */}
-        <section>
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            SDK Auto-Generated Query
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            Instead of writing a hand-crafted GraphQL query for every page type,
-            you register content types once and let the SDK build the query.{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">initComponentRegistry()</code>{" "}
-            must run before the first{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">GraphClient.getContentByPath</code>{" "}
-            call — the SDK reads the registry to know which properties to fetch for
-            each block type in a single round-trip.
-          </p>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Registry Setup</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed h-full">
-                <code>{REGISTRY_SNIPPET}</code>
-              </pre>
+          <div className="mt-6 grid sm:grid-cols-3 gap-4 max-w-3xl">
+            <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4">
+              <p className="text-xs font-semibold text-on-surface mb-1">OptimizelyComposition</p>
+              <p className="text-xs text-on-surface-variant leading-relaxed">Iterates <code className="bg-surface px-1 rounded font-mono">composition.nodes</code>. Dispatches section nodes to their registered component. Wraps leaf blocks with <code className="bg-surface px-1 rounded font-mono">ComponentWrapper</code>.</p>
             </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Page Route Query</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed h-full">
-                <code>{SDK_QUERY_SNIPPET}</code>
-              </pre>
+            <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4">
+              <p className="text-xs font-semibold text-on-surface mb-1">OptimizelyGridSection</p>
+              <p className="text-xs text-on-surface-variant leading-relaxed">Iterates <code className="bg-surface px-1 rounded font-mono">content.nodes</code> (rows/columns). Calls your custom <code className="bg-surface px-1 rounded font-mono">row</code> and <code className="bg-surface px-1 rounded font-mono">column</code> wrappers so you control layout with Tailwind.</p>
+            </div>
+            <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4">
+              <p className="text-xs font-semibold text-on-surface mb-1">OptimizelyComponent</p>
+              <p className="text-xs text-on-surface-variant leading-relaxed">Reads <code className="bg-surface px-1 rounded font-mono">content.__typename</code> (and <code className="bg-surface px-1 rounded font-mono">__tag</code> for display template variants), looks up the resolver, renders the matching React component.</p>
             </div>
           </div>
         </section>
 
-        {/* Rendering pipeline */}
+        {/* Page route */}
         <section>
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Rendering Pipeline
+            Page Route
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">config()</code> sets the
+            Graph credentials once at module init. Every page route then calls{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">getClient()</code> — no env vars
+            threaded through props. The SDK auto-generates the full GraphQL query from all
+            registered content types, so one{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">getContentByPath()</code> call
+            fetches the page and every possible block type in a single round-trip. The{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">withAppContext</code> HOC
+            initialises request-scoped context storage required for preview utilities.
+          </p>
+          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+            <code>{SDK_QUERY_SNIPPET}</code>
+          </pre>
+        </section>
+
+        {/* Registry */}
+        <section>
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Component Registry
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">initComponentRegistry()</code>{" "}
+            is called once (guarded by an <code className="bg-surface-low px-1 rounded text-xs font-mono">initialized</code> flag)
+            and registers all content types, display templates, and React components. Display template
+            variants use the <code className="bg-surface-low px-1 rounded text-xs font-mono">tags</code> pattern
+            so the SDK routes by <code className="bg-surface-low px-1 rounded text-xs font-mono">displayTemplateKey</code>{" "}
+            automatically — no manual <code className="bg-surface-low px-1 rounded text-xs font-mono">if/switch</code> on the template key in components.
+          </p>
+          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+            <code>{REGISTRY_SNIPPET}</code>
+          </pre>
+        </section>
+
+        {/* Experience and Section components */}
+        <section>
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Experience & Section Components
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            After fetching, the composition JSON is processed in two steps before
-            any React component is invoked.
+            The SDK provides <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyComposition</code>{" "}
+            and <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyGridSection</code> to walk
+            the composition tree. You only need to supply the layout components —
+            the SDK handles all JSON traversal.
           </p>
           <div className="space-y-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
-                Step 1 — extractRowsFromComposition()
+                DynamicExperience — top-level composition entry point
               </p>
               <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                <code>{EXTRACT_ROWS_SNIPPET}</code>
+                <code>{EXPERIENCE_SNIPPET}</code>
               </pre>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
-                Step 2 — ComponentSelector
+                BlankSection — row/column grid rendering
               </p>
               <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                <code>{COMPONENT_SELECTOR_SNIPPET}</code>
+                <code>{SECTION_SNIPPET}</code>
               </pre>
             </div>
           </div>
+        </section>
+
+        {/* Preview */}
+        <section>
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Preview Route
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">getPreviewContent()</code>{" "}
+            reads the <code className="bg-surface-low px-1 rounded text-xs font-mono">preview_token</code>,{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">key</code>, and{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">ver</code> query params,
+            fetches the draft content, and stores them in the{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">withAppContext</code> context — which{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">getPreviewUtils</code> reads to know
+            whether to emit <code className="bg-surface-low px-1 rounded text-xs font-mono">data-epi-*</code> attributes.
+            The rendered output goes through the exact same{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyComponent</code> path
+            as the published page — no separate preview renderer.
+          </p>
+          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+            <code>{PREVIEW_SNIPPET}</code>
+          </pre>
         </section>
 
         {/* Building a block */}
@@ -347,23 +400,23 @@ export default function VisualBuilderPage() {
             Building a Block
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            Every block colocates three things in one file: a{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">contentType()</code> definition
-            (schema + base type), optional{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">displayTemplate()</code> definitions
-            (alternate layouts + editor-configurable settings), and the React component that
-            reads <code className="bg-surface-low px-1 rounded text-xs font-mono">displaySettings</code> to
-            apply conditional styles.
+            Each block colocates its{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">contentType()</code> definition,
+            optional <code className="bg-surface-low px-1 rounded text-xs font-mono">displayTemplate()</code> definitions,
+            and the React component. The component receives typed{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">content</code> and{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">displaySettings</code> props;
+            the SDK dispatches the right variant via the <code className="bg-surface-low px-1 rounded text-xs font-mono">tags</code> registry entry.
           </p>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Content Type + Display Template</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Content type + display template</p>
               <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
                 <code>{CONTENT_TYPE_SNIPPET}</code>
               </pre>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">React Component (display settings)</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">React component (typed props + display settings)</p>
               <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
                 <code>{COMPONENT_SNIPPET}</code>
               </pre>
@@ -372,67 +425,12 @@ export default function VisualBuilderPage() {
           <div className="mt-6 bg-surface-low border border-ghost-border rounded-2xl p-5 max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-3">Checklist — adding a new block</p>
             <ol className="text-sm text-on-surface-variant space-y-1.5 list-decimal list-inside leading-relaxed">
-              <li>
-                Create <code className="bg-surface px-1 rounded text-xs font-mono">src/components/blocks/MyBlock/index.tsx</code> — export{" "}
-                <code className="bg-surface px-1 rounded text-xs font-mono">MyBlockType</code> (contentType) and the default component.
-              </li>
-              <li>
-                Add <code className="bg-surface px-1 rounded text-xs font-mono">MyBlockType</code> to{" "}
-                <code className="bg-surface px-1 rounded text-xs font-mono">initContentTypeRegistry()</code> in{" "}
-                <code className="bg-surface px-1 rounded text-xs font-mono">src/lib/optimizely/componentRegistry.ts</code>.
-              </li>
-              <li>
-                Add <code className="bg-surface px-1 rounded text-xs font-mono">MyBlock</code> to{" "}
-                <code className="bg-surface px-1 rounded text-xs font-mono">initReactComponentRegistry()</code> resolver in the same file.
-              </li>
-              <li>
-                Add the component to{" "}
-                <code className="bg-surface px-1 rounded text-xs font-mono">COMPONENT_REGISTRY</code> in{" "}
-                <code className="bg-surface px-1 rounded text-xs font-mono">src/components/cms/ComponentSelector.tsx</code>.
-              </li>
-              <li>Register any display templates via <code className="bg-surface px-1 rounded text-xs font-mono">initDisplayTemplateRegistry()</code> — then editors can pick them in the Visual Builder panel.</li>
+              <li>Create <code className="bg-surface px-1 rounded text-xs font-mono">src/components/blocks/MyBlock/index.tsx</code> — export <code className="bg-surface px-1 rounded text-xs font-mono">MyBlockType</code> (contentType) and default component.</li>
+              <li>Add <code className="bg-surface px-1 rounded text-xs font-mono">MyBlockType</code> to <code className="bg-surface px-1 rounded text-xs font-mono">initContentTypeRegistry()</code> in <code className="bg-surface px-1 rounded text-xs font-mono">componentRegistry.ts</code>.</li>
+              <li>Add <code className="bg-surface px-1 rounded text-xs font-mono">MyBlock</code> to <code className="bg-surface px-1 rounded text-xs font-mono">initReactComponentRegistry()</code> resolver — use <code className="bg-surface px-1 rounded text-xs font-mono">{"{ default: MyBlock, tags: { Variant: MyBlockVariant } }"}</code> if you have display template variants.</li>
+              <li>Register display templates via <code className="bg-surface px-1 rounded text-xs font-mono">initDisplayTemplateRegistry()</code>.</li>
+              <li>Push updated content types to CMS: <code className="bg-surface px-1 rounded text-xs font-mono">npm run opti:push</code></li>
             </ol>
-          </div>
-        </section>
-
-        {/* In-context editing */}
-        <section>
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            In-Context Editing
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            When the CMS opens the site in its Visual Builder iframe, it passes{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">ctx=edit</code> in the
-            URL. The preview route then injects two things: a{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">{"<Script>"}</code> tag loading{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">communicationinjector.js</code> (establishes
-            the postMessage channel between the CMS shell and the page iframe), and{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">{"<PreviewComponent />"}</code> (SDK helper
-            that registers available content types with the CMS overlay).
-          </p>
-          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{PREVIEW_INJECT_SNIPPET}</code>
-          </pre>
-          <div className="mt-6 grid sm:grid-cols-2 gap-4 max-w-3xl">
-            <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4">
-              <p className="text-xs font-semibold text-on-surface mb-1">data-epi-block-id</p>
-              <p className="text-xs text-on-surface-variant leading-relaxed">
-                Set on each wrapper div when <code className="bg-surface px-1 rounded font-mono">inEditMode=true</code>.
-                Value is the <em>column</em> key — not the leaf block key — because the CMS
-                selection outline targets columns, not individual components.
-                Omitted entirely on published pages (no overhead, no DOM pollution).
-              </p>
-            </div>
-            <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4">
-              <p className="text-xs font-semibold text-on-surface mb-1">getPreviewUtils(data)</p>
-              <p className="text-xs text-on-surface-variant leading-relaxed">
-                SDK utility used inside block components. Returns a{" "}
-                <code className="bg-surface px-1 rounded font-mono">pa(fieldKey)</code> helper that
-                spreads <code className="bg-surface px-1 rounded font-mono">data-epi-edit</code> attributes
-                onto inline elements — lets editors click directly on a headline or
-                paragraph to open the property panel.
-              </p>
-            </div>
           </div>
         </section>
 
@@ -442,17 +440,17 @@ export default function VisualBuilderPage() {
             Registered Blocks
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            All blocks registered in <code className="bg-surface-low px-1 rounded text-xs font-mono">componentRegistry.ts</code>.
-            Each can be placed anywhere in Visual Builder — standalone, in a 2/3/4-column
-            grid, or nested inside a section.
+            All blocks registered in{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">componentRegistry.ts</code>.
+            Tags are the key the SDK uses to dispatch to a variant component when an
+            editor selects that display template in Visual Builder.
           </p>
           <div className="overflow-auto rounded-2xl border border-ghost-border">
             <table className="w-full text-xs font-mono">
               <thead>
                 <tr className="bg-surface-low border-b border-ghost-border">
                   <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">Block</th>
-                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">Base type</th>
-                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">Display templates</th>
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">Display templates (tag key)</th>
                 </tr>
               </thead>
               <tbody>
@@ -462,7 +460,6 @@ export default function VisualBuilderPage() {
                     className={`border-b border-ghost-border ${i % 2 === 0 ? "bg-surface" : "bg-surface-lowest"}`}
                   >
                     <td className="px-4 py-2.5 text-brand">{b.name}</td>
-                    <td className="px-4 py-2.5 text-on-surface-variant">{b.baseType}</td>
                     <td className="px-4 py-2.5 text-on-surface-variant">{b.templates}</td>
                   </tr>
                 ))}

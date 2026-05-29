@@ -1,32 +1,21 @@
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
-import { GraphClient } from "@optimizely/cms-sdk";
+import { getClient } from "@optimizely/cms-sdk";
+import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
-import { ComponentSelector } from "@/components/cms/ComponentSelector";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
-import { extractRowsFromComposition } from "@/lib/optimizely/extractRows";
 import { graphqlFetch } from "@/lib/optimizely/client";
-import TraditionalPage from "@/components/pages/TraditionalPage";
 import { getAllDecisions, bucketVisitor } from "@/lib/optimizely/experimentation";
 
-// The SDK auto-generates queries from the registered content type registry.
-// initComponentRegistry must run before any GraphClient.getContentByPath call.
+// Registers all content types, display templates, and React components.
+// Also calls config() so getClient() works throughout the app.
 initComponentRegistry();
-
-const client = new GraphClient(process.env.OPTIMIZELY_GRAPH_SINGLE_KEY!, {
-  graphUrl: process.env.OPTIMIZELY_GRAPH_GATEWAY,
-});
 
 interface PageParams {
   slug?: string[];
 }
 
-/**
- * Build candidate Optimizely Graph URLs for a given slug.
- * Graph URLs may include a locale prefix (e.g. `/en/cms/`) depending on
- * the CMS site configuration, so we try multiple patterns.
- */
 function buildUrlCandidates(slug?: string[]): string[] {
   if (!slug || slug.length === 0) {
     return ["/", "/en/", "/en/homepage/"];
@@ -35,7 +24,7 @@ function buildUrlCandidates(slug?: string[]): string[] {
   return [`/en/${path}/`, `/${path}/`];
 }
 
-export default async function CmsPage({
+async function CmsPage({
   params,
 }: {
   params: Promise<PageParams>;
@@ -45,19 +34,17 @@ export default async function CmsPage({
   const urls = buildUrlCandidates(slug);
 
   // Resolve FX variation keys for this user so CMS serves the matching
-  // content variation when one exists. includeOriginal:true ensures Graph
-  // returns the original content for pages that have no matching variation.
+  // content variation when one exists.
   const cookieStore = await cookies();
   const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
   const device = cookieStore.get("fx_device")?.value ?? "desktop";
   const attributes = { device, logged_in: false };
 
-  // FX is an enhancement — errors here must never break content delivery.
   let fxDecisions: Awaited<ReturnType<typeof getAllDecisions>> = {};
   try {
     fxDecisions = await getAllDecisions(userId, attributes);
   } catch {
-    // SDK unavailable; fall through with no variation filter
+    // FX SDK unavailable; fall through with no variation filter
   }
 
   const activeVariations = Object.values(fxDecisions)
@@ -68,8 +55,8 @@ export default async function CmsPage({
       ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
       : undefined;
 
-  // The SDK auto-generates the full query from registered content types —
-  // no hand-written GraphQL needed. Try each URL candidate until content is found.
+  const client = getClient();
+
   let page: any = null;
   for (const url of urls) {
     const items = await client.getContentByPath(url, variationOption);
@@ -83,8 +70,7 @@ export default async function CmsPage({
     return notFound();
   }
 
-  // If Graph served a CMS variation, fire the real impression for the flag
-  // that owns that variation key so experiment metrics count the exposure.
+  // Fire the real FX impression when Graph served a variation.
   const servedVariation: string | null = page._metadata?.variation ?? null;
   if (servedVariation) {
     const exposedFlag = Object.values(fxDecisions).find(
@@ -95,14 +81,10 @@ export default async function CmsPage({
     }
   }
 
-  if (page.__typename === "TraditionalPage") {
-    return <TraditionalPage page={page} />;
-  }
-
-  const rows = extractRowsFromComposition(page);
-
-  return <ComponentSelector rows={rows} />;
+  return <OptimizelyComponent content={page} />;
 }
+
+export default withAppContext(CmsPage);
 
 /** Pre-render all known CMS page paths at build time */
 export async function generateStaticParams(): Promise<PageParams[]> {
@@ -150,7 +132,6 @@ const GET_PAGE_META_QUERY = /* GraphQL */ `
   }
 `;
 
-/** Pull page title from CMS for Next.js <head> */
 export async function generateMetadata({
   params,
 }: {

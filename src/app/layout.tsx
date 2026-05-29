@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import Script from "next/script";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import NavigationHeader from "@/components/layout/NavigationHeader";
 import GlobalBanner from "@/components/layout/GlobalBanner";
@@ -29,18 +28,6 @@ export const metadata: Metadata = {
     "Headless Optimizely SaaS CMS + Next.js reference architecture",
 };
 
-/**
- * communicationInjector.js is the bridge between the CMS editor and this frontend.
- * Without it, Visual Builder on-page editing events (click-to-edit, content save
- * notifications) never reach the page. The script listens for CMS iframe messages
- * and dispatches them as DOM events.
- */
-const CMS_URL = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
-const INJECTOR_URL = `${CMS_URL}/util/javascript/communicationinjector.js`;
-
-const shouldInjectScript =
-  process.env.NEXT_PUBLIC_ENABLE_VISUAL_BUILDER === "true" && CMS_URL;
-
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -51,10 +38,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <NavigationHeader />
         <main>{children}</main>
         <Footer />
-
-        {shouldInjectScript && (
-          <Script src={INJECTOR_URL} strategy="afterInteractive" />
-        )}
       </body>
     </html>
   );

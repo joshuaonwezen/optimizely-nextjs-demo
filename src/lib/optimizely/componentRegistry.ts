@@ -1,4 +1,5 @@
 import {
+  config,
   initContentTypeRegistry,
   initDisplayTemplateRegistry,
   BlankExperienceContentType,
@@ -28,6 +29,12 @@ import FaqContainerBlock, { FaqContainerBlockType } from "@/components/blocks/Fa
 import FeaturedContentBlock, { FeaturedContentBlockType } from "@/components/blocks/FeaturedContentBlock";
 import LogoGridBlock, { LogoGridBlockType } from "@/components/blocks/LogoGridBlock";
 
+// Experience and section components
+import DynamicExperience from "@/components/experience/DynamicExperience";
+import BlankExperience from "@/components/experience/BlankExperience";
+import BlankSection from "@/components/experience/BlankSection";
+import TraditionalPage from "@/components/pages/TraditionalPage";
+
 // Experience/page types and structural templates stay in optimizely.config.mjs
 import {
   DynamicExperienceType,
@@ -35,6 +42,12 @@ import {
   DefaultRowTemplate,
   DefaultColumnTemplate,
 } from "../../../optimizely.config.mjs";
+
+// Configure the Graph client once for the whole app — all getClient() calls use this.
+config({
+  apiKey: process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "",
+  graphUrl: process.env.OPTIMIZELY_GRAPH_GATEWAY,
+});
 
 let initialized = false;
 
@@ -87,21 +100,62 @@ export function initComponentRegistry() {
     DefaultColumnTemplate,
   ]);
 
-  // React components
+  // React components — display template variants use the tags pattern so the SDK
+  // dispatches to the right component based on the editor-selected template.
   initReactComponentRegistry({
     resolver: {
-      HeroBlock,
+      // Experience / page types
+      DynamicExperience,
+      BlankExperience,
+      BlankSection,
+      TraditionalPage,
+
+      // Blocks — variants registered via tags so the SDK routes by displayTemplateKey
+      HeroBlock: {
+        default: HeroBlock,
+        tags: { Centered: HeroBlock },
+      },
       Hero: HeroBlock,
-      CallToAction: CallToActionBlock,
+      CallToAction: {
+        default: CallToActionBlock,
+        tags: {
+          Outline: CallToActionBlock,
+          Surface: CallToActionBlock,
+        },
+      },
       CallToActionBlock: CallToActionBlock,
-      TextBlock,
-      ProductCardBlock,
-      ProductHeroBlock,
-      FeatureItemBlock,
-      SectionHeadingBlock,
-      TestimonialBlock,
+      TextBlock: {
+        default: TextBlock,
+        tags: { Narrow: TextBlock },
+      },
+      ProductCardBlock: {
+        default: ProductCardBlock,
+        tags: { Featured: ProductCardBlock },
+      },
+      ProductHeroBlock: {
+        default: ProductHeroBlock,
+        tags: { Compact: ProductHeroBlock },
+      },
+      FeatureItemBlock: {
+        default: FeatureItemBlock,
+        tags: {
+          Outlined: FeatureItemBlock,
+          Flat: FeatureItemBlock,
+        },
+      },
+      SectionHeadingBlock: {
+        default: SectionHeadingBlock,
+        tags: { Centered: SectionHeadingBlock },
+      },
+      TestimonialBlock: {
+        default: TestimonialBlock,
+        tags: { Card: TestimonialBlock },
+      },
       StatsCounterBlock,
-      ImageBlock,
+      ImageBlock: {
+        default: ImageBlock,
+        tags: { Rounded: ImageBlock },
+      },
       FormContainerBlock,
       FormTextInput,
       FormTextArea,

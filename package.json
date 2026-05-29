@@ -15,7 +15,7 @@
     "webhook:register": "node scripts/register-webhook.mjs"
   },
   "dependencies": {
-    "@optimizely/cms-sdk": "^1.0.0",
+    "@optimizely/cms-sdk": "^2.0.0",
     "@optimizely/optimizely-sdk": "^6.4.0",
     "next": "16.1.6",
     "react": "19.2.3",
