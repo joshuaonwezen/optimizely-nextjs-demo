@@ -143,7 +143,8 @@ async function seedReferrals(): Promise<void> {
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-ndjson",
+        "Content-Type": "text/plain",
+        "og-job-id": `seed-referrals-${Date.now()}`,
         Authorization: AUTH,
       },
       body: ndjson,

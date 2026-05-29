@@ -37,6 +37,47 @@ function noHyphens(): string {
   return randomUUID().replace(/-/g, "");
 }
 
+function uid(): string {
+  return randomUUID();
+}
+
+interface CompNode {
+  id: string;
+  displayName: string;
+  nodeType: string;
+  component?: { contentType: string; properties: Record<string, unknown> };
+  nodes?: CompNode[];
+}
+
+function section(contentType: string, displayName: string, properties: Record<string, unknown>): CompNode {
+  return { id: uid(), displayName, nodeType: "component", component: { contentType, properties } };
+}
+
+function buildNavPageComposition(heading: string, subheading: string, ctaLabel: string, ctaLink: string): CompNode[] {
+  return [
+    section("SectionHeadingBlock", "Page Heading", { heading, subheading }),
+    section("CallToAction", "Page CTA", { label: ctaLabel, link: ctaLink }),
+  ];
+}
+
+const PAGE_CONTENT: Record<string, { heading: string; subheading: string; ctaLabel: string; ctaLink: string }> = {
+  products:        { heading: "Optimizely Products",         subheading: "A complete suite for content management, experimentation, and analytics.", ctaLabel: "Explore the Platform", ctaLink: "https://www.optimizely.com/products" },
+  solutions:       { heading: "Solutions",                   subheading: "Optimizely for every industry, team size, and use case.", ctaLabel: "Find Your Solution", ctaLink: "https://www.optimizely.com/solutions" },
+  ecommerce:       { heading: "E-Commerce",                  subheading: "Convert more shoppers with data-driven experiences. Personalize every step of the purchase journey.", ctaLabel: "See E-Commerce Solutions", ctaLink: "https://www.optimizely.com/solutions" },
+  "media-publishing": { heading: "Media & Publishing",       subheading: "Create, distribute, and optimize editorial content at scale. Built for fast-moving content teams.", ctaLabel: "Explore Media Solutions", ctaLink: "https://www.optimizely.com/solutions" },
+  enterprise:      { heading: "Enterprise",                  subheading: "The digital experience platform trusted by the world's most ambitious organizations. Scale with confidence.", ctaLabel: "Talk to Sales", ctaLink: "https://www.optimizely.com/contact" },
+  resources:       { heading: "Resources",                   subheading: "Everything you need to get started with and master the Optimizely platform.", ctaLabel: "Browse Resources", ctaLink: "https://www.optimizely.com/resources" },
+  docs:            { heading: "Documentation",               subheading: "Guides, API references, and tutorials to help you build with Optimizely.", ctaLabel: "Read the Docs", ctaLink: "https://docs.developers.optimizely.com" },
+  blog:            { heading: "Blog",                        subheading: "Insights, product updates, and best practices from the Optimizely team and community.", ctaLabel: "Read the Blog", ctaLink: "https://www.optimizely.com/insights/blog" },
+  "case-studies":  { heading: "Case Studies",                subheading: "See how leading teams use Optimizely to deliver exceptional digital experiences — with measurable results.", ctaLabel: "Browse Case Studies", ctaLink: "https://www.optimizely.com/insights/case-studies" },
+  developers:      { heading: "Developer Hub",               subheading: "SDKs, APIs, and integration guides for building on the Optimizely platform.", ctaLabel: "Explore Developer Docs", ctaLink: "https://docs.developers.optimizely.com" },
+  "api-reference": { heading: "API Reference",               subheading: "Complete reference documentation for all Optimizely APIs — REST, GraphQL, and management endpoints.", ctaLabel: "View API Docs", ctaLink: "https://docs.developers.optimizely.com" },
+  sdks:            { heading: "SDKs & Libraries",            subheading: "Official SDKs for JavaScript, Python, Go, Java, Ruby, Swift, Kotlin, and more.", ctaLabel: "Download an SDK", ctaLink: "https://docs.developers.optimizely.com" },
+  company:         { heading: "Company",                     subheading: "Learn about Optimizely — our mission, our team, and our culture.", ctaLabel: "Learn More", ctaLink: "https://www.optimizely.com/company" },
+  about:           { heading: "About Optimizely",            subheading: "We believe every digital decision should be backed by data. Our platform makes that possible for teams of every size.", ctaLabel: "Our Story", ctaLink: "https://www.optimizely.com/company" },
+  careers:         { heading: "Careers",                     subheading: "Join a team building the future of digital experience. We're always looking for exceptional people.", ctaLabel: "See Open Roles", ctaLink: "https://www.optimizely.com/company/careers" },
+};
+
 // ---------------------------------------------------------------------------
 // Nav tree definition
 // ---------------------------------------------------------------------------
@@ -65,13 +106,13 @@ const NAV_TREE: NavDef[] = [
         key: noHyphens(), label: "Content Management", href: "/en/cms",
         existing: true,
         children: [
-          { key: noHyphens(), label: "Visual Builder",   href: "/en/visual-builder",   existing: true, children: [] },
-          { key: noHyphens(), label: "Content Modeling", href: "/content-modeling", existing: true, children: [] },
+          { key: noHyphens(), label: "Visual Builder",   href: "/en/visual-builder",     existing: true, children: [] },
+          { key: noHyphens(), label: "Content Modeling", href: "/en/content-modeling", existing: true, children: [] },
           { key: noHyphens(), label: "Localization",     href: "/en/localization",     existing: true, children: [] },
         ],
       },
       {
-        key: noHyphens(), label: "Feature Experimentation", href: "/feature-experimentation",
+        key: noHyphens(), label: "Feature Experimentation", href: "/en/feature-experimentation",
         existing: true,
         children: [
           { key: noHyphens(), label: "Feature Flags",        href: "/en/feature-flags",        existing: true, children: [] },
@@ -195,7 +236,7 @@ async function cleanupNavItems(): Promise<void> {
   const items = (body as { items?: Array<{ key: string; contentType?: string; locales?: Record<string, { displayName?: string; contentType?: string }> }> }).items ?? [];
   for (const item of items) {
     const ct = item.contentType ?? item.locales?.en?.contentType ?? "";
-    if (ct === "NavigationItem" || ct === "Navigation") {
+    if (ct === "NavigationItem" || ct === "Navigation" || ct === "LandingPage") {
       const del = await apiFetch(`/${item.key}?permanent=true`, { method: "DELETE" });
       console.log(`  [deleted] ${item.locales?.en?.displayName ?? item.key} (${del.status})`);
     }
@@ -206,13 +247,20 @@ async function cleanupNavItems(): Promise<void> {
 // Create a LandingPage — returns its CMS key
 // ---------------------------------------------------------------------------
 
-async function createLandingPage(node: NavDef, pageKeyMap: Map<string, string>): Promise<string | undefined> {
+async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>): Promise<string | undefined> {
   // Page already in Graph → reuse its key
   const existing = pageKeyMap.get(node.href);
   if (existing) {
     console.log(`  [page (exists)] ${node.label} → ${node.href}`);
     return existing;
   }
+
+  const content = PAGE_CONTENT[node.routeSegment!] ?? {
+    heading: node.label,
+    subheading: `Learn more about ${node.label} and how Optimizely can help your team.`,
+    ctaLabel: "Learn More",
+    ctaLink: "https://www.optimizely.com",
+  };
 
   const key = noHyphens();
   const { ok, status, body: resp } = await apiFetch("", {
@@ -225,11 +273,16 @@ async function createLandingPage(node: NavDef, pageKeyMap: Map<string, string>):
       status: "published",
       displayName: node.label,
       routeSegment: node.routeSegment,
+      properties: {
+        heading:    content.heading,
+        subheading: content.subheading,
+        body:       `<p>${content.subheading}</p>`,
+      },
     }),
   });
   const respStr = JSON.stringify(resp);
   if (!ok && !(status === 400 && respStr.includes("is already in use"))) {
-    console.error(`  [ERROR] LandingPage "${node.label}": ${status} ${respStr.slice(0, 200)}`);
+    console.error(`  [ERROR] Page "${node.label}": ${status} ${respStr.slice(0, 200)}`);
     return undefined;
   }
   console.log(`  [page] ${node.label} → /en/${node.routeSegment}`);
@@ -254,7 +307,7 @@ async function resolvePageKeys(nodes: NavDef[], pageKeyMap: Map<string, string>)
         console.warn(`  [warn] ${node.label}: not found in Graph at ${node.href} — href reference will be omitted`);
       }
     } else if (node.routeSegment) {
-      node.pageKey = await createLandingPage(node, pageKeyMap);
+      node.pageKey = await createNavPage(node, pageKeyMap);
     }
     if (node.children.length > 0) {
       await resolvePageKeys(node.children, pageKeyMap);
