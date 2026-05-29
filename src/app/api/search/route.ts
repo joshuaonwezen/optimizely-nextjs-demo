@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       { cache: "no-store" }
     );
 
-    const raw = result.data?._Page ?? { total: 0, items: [] };
+    const raw = result.data?._Content ?? { total: 0, items: [] };
 
     const items = (raw.items ?? [])
       .filter((item: any) => item?._metadata?.displayName && item?._metadata?.url?.default)

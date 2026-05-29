@@ -1,6 +1,6 @@
 export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
   query SearchRelevance($query: String!) {
-    _Page(
+    _Content(
       where: { _fulltext: { match: $query } }
       orderBy: { _ranking: RELEVANCE }
       limit: 10
@@ -19,7 +19,7 @@ export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
 
 export const SEARCH_SEMANTIC_QUERY = /* GraphQL */ `
   query SearchSemantic($query: String!, $weight: Float!) {
-    _Page(
+    _Content(
       where: { _fulltext: { match: $query } }
       orderBy: { _ranking: SEMANTIC, _semanticWeight: $weight }
       limit: 10
