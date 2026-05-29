@@ -23,15 +23,16 @@ const nextConfig: NextConfig = {
   },
 
   /**
-   * Redirect CMS-generated preview URLs to the Next.js draft mode handler.
+   * Redirect CMS-generated preview URLs directly to /preview.
    * When an editor clicks "Preview" in the CMS, Optimizely navigates to
-   * /episerver/CMS/Content/... — this redirect routes it to our API handler.
+   * /episerver/CMS/Content/... — query params (preview_token, key, ctx) are
+   * preserved automatically by Next.js redirects.
    */
   async redirects() {
     return [
       {
         source: "/episerver/CMS/Content/:slug*",
-        destination: "/api/draft/:slug*",
+        destination: "/preview",
         permanent: false,
       },
     ];

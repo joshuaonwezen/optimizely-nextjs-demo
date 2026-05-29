@@ -18,9 +18,7 @@ const PREVIEW_PARAMS_SNIPPET = `// CMS is configured with Preview URL: https://y
 // ctx            — "edit" when opened inside the Visual Builder iframe;
 //                  omitted for plain content preview.
 
-// Optional: /api/draft wraps this flow if you need to enable Next.js
-// draftMode() first (sets __prerender_bypass cookie):
-//   GET /api/draft?preview_token=X&key=Y → draftMode().enable() → redirect /preview?...`;
+`;
 
 const GRAPHQL_PREVIEW_SNIPPET = `// src/lib/optimizely/client.ts
 // When a previewToken is present, ISR is bypassed entirely
@@ -362,7 +360,6 @@ export default function PreviewDemoPage() {
                   "Set the Preview URL to: https://your-app.com/preview",
                   "The CMS will append ?preview_token=X&key=Y&ctx=edit automatically when an editor clicks Preview.",
                   "For Visual Builder in-context editing: set NEXT_PUBLIC_OPTIMIZELY_CMS_URL and NEXT_PUBLIC_ENABLE_VISUAL_BUILDER=true so the live site also loads communicationinjector.js.",
-                  "Optional: configure /api/draft as the Preview URL instead if you need Next.js draftMode() to be active for the full editor session.",
                 ].map((step, i) => (
                   <li key={i} className="flex gap-3">
                     <span className="shrink-0 w-6 h-6 rounded-full bg-brand text-on-brand text-xs font-bold flex items-center justify-center">{i + 1}</span>
