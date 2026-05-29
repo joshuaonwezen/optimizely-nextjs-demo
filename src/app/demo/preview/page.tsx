@@ -156,7 +156,7 @@ export default function PreviewDemoPage() {
             and Optimizely&apos;s communicationinjector for real-time edit events.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
-            {["Next.js draft mode", "force-dynamic /preview", "communicationinjector.js", "data-epi-block-id"].map(tag => (
+            {["force-dynamic /preview", "getPreviewContent()", "communicationinjector.js", "data-epi-block-id"].map(tag => (
               <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
                 {tag}
               </span>
@@ -173,10 +173,10 @@ export default function PreviewDemoPage() {
             Three Content Modes
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            The app serves content in three distinct modes depending on context.
+            The app serves content in two distinct modes depending on context.
             The caching strategy and Graph auth header change accordingly.
           </p>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 gap-4 max-w-2xl">
             {[
               {
                 label: "Published",
@@ -192,15 +192,7 @@ export default function PreviewDemoPage() {
                 badgeColor: "bg-amber-100 text-amber-800",
                 auth: "Bearer {previewToken}",
                 cache: "cache: 'no-store'",
-                description: "Activated when the CMS calls /preview?preview_token=X&key=Y. getPreviewContent() fetches the latest draft version — unpublished changes visible only to the editor.",
-              },
-              {
-                label: "Visual Builder",
-                badge: "force-dynamic",
-                badgeColor: "bg-blue-100 text-blue-800",
-                auth: "Bearer {previewToken}",
-                cache: "cache: 'no-store'",
-                description: "The /preview page is force-dynamic and renders inside the CMS iframe. communicationinjector.js bridges click-to-edit events between the page and the CMS panel.",
+                description: "Activated when the CMS calls /preview?preview_token=X&key=Y. getPreviewContent() fetches the latest draft version — unpublished changes visible only to the editor. The /preview route is force-dynamic and renders inside the CMS iframe when ctx=edit.",
               },
             ].map(mode => (
               <div key={mode.label} className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex flex-col gap-3">
