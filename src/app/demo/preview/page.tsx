@@ -6,21 +6,21 @@ export const metadata: Metadata = { title: "Draft Mode & Preview Demo" };
 // Code snippets
 // ---------------------------------------------------------------------------
 
-const DRAFT_ROUTE_SNIPPET = `// src/app/api/draft/route.ts
-// Entry point: CMS calls /api/draft?preview_token=X&key=Y&ctx=edit
+const PREVIEW_PARAMS_SNIPPET = `// CMS is configured with Preview URL: https://your-app.com/preview
+// It appends these query params automatically:
 
-export async function GET(request: NextRequest) {
-  const draft = await draftMode();
-  draft.enable();                          // sets __prerender_bypass cookie
+/preview?preview_token=<jwt>&key=<contentKey>&ctx=edit
 
-  // Forward all CMS params (preview_token, key, ctx) to /preview
-  const previewUrl = new URL("/preview", request.url);
-  for (const [k, v] of searchParams.entries()) {
-    previewUrl.searchParams.set(k, v);
-  }
+// preview_token  — short-lived JWT issued by the CMS for this editor session.
+//                  Passed to Graph as "Authorization: Bearer <token>" to
+//                  fetch draft (unpublished) content instead of published.
+// key            — UUID of the content item being previewed.
+// ctx            — "edit" when opened inside the Visual Builder iframe;
+//                  omitted for plain content preview.
 
-  redirect(previewUrl.pathname + previewUrl.search);
-}`;
+// Optional: /api/draft wraps this flow if you need to enable Next.js
+// draftMode() first (sets __prerender_bypass cookie):
+//   GET /api/draft?preview_token=X&key=Y → draftMode().enable() → redirect /preview?...`;
 
 const GRAPHQL_PREVIEW_SNIPPET = `// src/lib/optimizely/client.ts
 // When a previewToken is present, ISR is bypassed entirely
@@ -119,21 +119,26 @@ const EPI_BLOCK_SNIPPET = `// data-epi-block-id is the contract between the fron
 // (provided by getPreviewUtils() from the CMS SDK)
 <h1 {...pa("headline")}>{headline}</h1>`;
 
-const VB_LAYOUT_SNIPPET = `// src/app/layout.tsx
-// communicationinjector.js is also injected in the root layout when
-// NEXT_PUBLIC_ENABLE_VISUAL_BUILDER=true. This enables on-page editing
-// even when navigating within the live app (not just inside /preview).
+const VB_LAYOUT_SNIPPET = `// src/app/preview/page.tsx
+// communicationinjector.js is injected directly on the /preview route —
+// no env var needed, it's always present when previewing.
 
-const shouldInjectScript =
-  process.env.NEXT_PUBLIC_ENABLE_VISUAL_BUILDER === "true" && CMS_URL;
+const shell = (children) => (
+  <>
+    <Script
+      src={\`\${CMS_URL}/util/javascript/communicationinjector.js\`}
+      strategy="afterInteractive"
+    />
+    <PreviewComponent />
+    {children}
+  </>
+);
 
-// ...
-{shouldInjectScript && (
-  <Script
-    src={\`\${CMS_URL}/util/javascript/communicationinjector.js\`}
-    strategy="afterInteractive"
-  />
-)}`;
+// src/app/layout.tsx
+// Optionally also inject in the root layout if you want the CMS to open
+// the full live site in its iframe (not just /preview). Controlled by
+// NEXT_PUBLIC_ENABLE_VISUAL_BUILDER=true + NEXT_PUBLIC_OPTIMIZELY_CMS_URL.
+// Not required for standard preview to work.`;
 
 // ---------------------------------------------------------------------------
 // Page
@@ -230,31 +235,31 @@ export default function PreviewDemoPage() {
             The Preview URL Flow
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            When an editor clicks &ldquo;Preview&rdquo; in the CMS, the request travels
-            through two hops before the editor sees the live preview.
+            The CMS is configured with a Preview URL pointing directly to{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code>.
+            When an editor clicks &ldquo;Preview&rdquo;, the CMS appends{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">preview_token</code>,{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">key</code>, and{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">ctx</code> automatically.
           </p>
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 overflow-x-auto mb-8">
             <pre className="text-xs font-mono text-on-surface-variant leading-relaxed">{`CMS editor clicks "Preview"
         │
-        └─→ GET /api/draft?preview_token=<token>&key=<contentKey>&ctx=edit
+        └─→ /preview?preview_token=<token>&key=<contentKey>&ctx=edit
                 │
-                ├─→ draftMode().enable()        sets __prerender_bypass cookie
-                │
-                └─→ redirect /preview?preview_token=<token>&key=<contentKey>&ctx=edit
+                ├─→ force-dynamic (never cached)
+                ├─→ client.getPreviewContent(params) → draft content via previewToken
+                ├─→ communicationinjector.js injected
+                ├─→ <PreviewComponent /> mounted
+                └─→ Render with data-epi-block-id attributes
                         │
-                        ├─→ force-dynamic (never cached)
-                        ├─→ client.getPreviewContent(params) → draft content via previewToken
-                        ├─→ communicationinjector.js injected
-                        ├─→ <PreviewComponent /> mounted
-                        └─→ Render with data-epi-block-id attributes
-                                │
-                                └─→ Editor can click any block → CMS panel highlights that property`}</pre>
+                        └─→ Editor clicks any block → CMS panel highlights that property`}</pre>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">/api/draft — draft mode entry point</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">/preview query params</p>
               <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed h-full">
-                <code>{DRAFT_ROUTE_SNIPPET}</code>
+                <code>{PREVIEW_PARAMS_SNIPPET}</code>
               </pre>
             </div>
             <div>
@@ -338,9 +343,9 @@ export default function PreviewDemoPage() {
               <h3 className="font-display text-base font-semibold text-on-surface mb-3">Environment variables</h3>
               <div className="space-y-2">
                 {[
-                  { key: "NEXT_PUBLIC_OPTIMIZELY_CMS_URL", desc: "Your CMS instance URL. Used to build the communicationinjector.js script URL." },
-                  { key: "NEXT_PUBLIC_ENABLE_VISUAL_BUILDER", desc: 'Set to "true" to inject communicationinjector.js globally for in-context editing.' },
+                  { key: "NEXT_PUBLIC_OPTIMIZELY_CMS_URL", desc: "Your CMS instance URL. Used to build the communicationinjector.js script URL on the /preview route." },
                   { key: "OPTIMIZELY_GRAPH_SINGLE_KEY", desc: "Read-only key for published Graph queries. Already required for the main app." },
+                  { key: "NEXT_PUBLIC_ENABLE_VISUAL_BUILDER", desc: 'Optional. Set to "true" to also inject communicationinjector.js in the root layout, enabling the CMS to open the full live site (not just /preview) inside its iframe.' },
                 ].map(({ key, desc }) => (
                   <div key={key} className="bg-surface-lowest border border-ghost-border rounded-xl p-3">
                     <code className="text-xs font-mono text-brand block mb-1">{key}</code>
@@ -354,10 +359,10 @@ export default function PreviewDemoPage() {
               <ol className="space-y-3">
                 {[
                   "In CMS admin: Settings → Sites → select your site.",
-                  "Set the Preview URL to: https://your-app.com/api/draft",
-                  "The CMS will append ?preview_token=X&key=Y&ctx=edit automatically.",
-                  "For Visual Builder: Settings → Visual Builder → enable in-context editing and set the app URL.",
-                  "Set NEXT_PUBLIC_ENABLE_VISUAL_BUILDER=true and deploy — editors can now click any block on the live site to edit it.",
+                  "Set the Preview URL to: https://your-app.com/preview",
+                  "The CMS will append ?preview_token=X&key=Y&ctx=edit automatically when an editor clicks Preview.",
+                  "For Visual Builder in-context editing: set NEXT_PUBLIC_OPTIMIZELY_CMS_URL and NEXT_PUBLIC_ENABLE_VISUAL_BUILDER=true so the live site also loads communicationinjector.js.",
+                  "Optional: configure /api/draft as the Preview URL instead if you need Next.js draftMode() to be active for the full editor session.",
                 ].map((step, i) => (
                   <li key={i} className="flex gap-3">
                     <span className="shrink-0 w-6 h-6 rounded-full bg-brand text-on-brand text-xs font-bold flex items-center justify-center">{i + 1}</span>
