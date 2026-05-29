@@ -39,42 +39,30 @@ if (previewToken) {
 const PREVIEW_PAGE_SNIPPET = `// src/app/preview/page.tsx
 export const dynamic = "force-dynamic";  // never statically generate this page
 
-export default async function PreviewPage({ searchParams }) {
-  const previewToken = params.preview_token;
-  const contentKey   = params.key;
-  const inEditMode   = params.ctx === "edit";
+import { getClient, type PreviewParams } from "@optimizely/cms-sdk";
+import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
+import { PreviewComponent } from "@optimizely/cms-sdk/react/client";
 
-  // Path 1: DynamicExperience (composition-based page)
-  //   getPreviewContent() returns a composition with rows + columns + blocks.
-  //   OptimizelyGridSection renders the tree; data-epi-block-id on each section
-  //   lets the CMS overlay target the right block when clicked.
-  const sdkItem = await client.getPreviewContent(params);
-  const nodes   = sdkItem?.composition?.nodes ?? [];
-  if (nodes.length > 0) {
-    return shell(
-      nodes.map(node =>
-        <div key={node.key} data-epi-block-id={node.key}>
-          <OptimizelyGridSection nodes={node.nodes ?? []} />
-        </div>
-      )
-    );
-  }
+async function PreviewPage({ searchParams }) {
+  const params = await searchParams;
+  const client = getClient();
 
-  // Path 2: TraditionalPage (_page type)
-  if (sdkItem?.__typename === "TraditionalPage") {
-    return shell(<TraditionalPage page={sdkItem} inEditMode={inEditMode} />);
-  }
+  // getPreviewContent reads preview_token, key, ver, ctx from query params,
+  // fetches the draft version, and populates the withAppContext context store.
+  // OptimizelyComponent dispatches to the right component by __typename —
+  // same path as the published page, no separate preview renderer needed.
+  const content = await client.getPreviewContent(params as PreviewParams);
 
-  // Path 3: Shared block (component from content library)
-  //   getPreviewContent() returns the block directly — no composition.
-  //   Look up the React component in COMPONENT_REGISTRY by __typename.
-  const Component = COMPONENT_REGISTRY[sdkItem.__typename];
-  return shell(
-    <div data-epi-block-id={inEditMode ? contentKey : undefined}>
-      <Component {...props} inEditMode={inEditMode} previewToken={previewToken} />
-    </div>
+  return (
+    <>
+      <Script src={\`\${CMS_URL}/util/javascript/communicationinjector.js\`} strategy="afterInteractive" />
+      <PreviewComponent />
+      <OptimizelyComponent content={content} />
+    </>
   );
-}`;
+}
+
+export default withAppContext(PreviewPage);`;
 
 const SHELL_SNIPPET = `// The preview shell injects two things:
 //
@@ -99,44 +87,51 @@ const shell = (children) => (
 );`;
 
 const EPI_BLOCK_SNIPPET = `// data-epi-block-id is the contract between the frontend and the CMS overlay.
-// Set it to the content node's UUID on any element that wraps an editable block.
-// The CMS reads this attribute to know which content item to highlight and
-// which property panel to open when the user clicks on something in preview.
+// The SDK's getPreviewUtils() handles this — pa(node) spreads data-epi-block-id
+// onto structural wrappers, and pa("propertyName") adds data-epi-edit to leaf elements.
 
-// On a section node:
-<div data-epi-block-id={node.key}>
-  <OptimizelyGridSection nodes={node.nodes} />
-</div>
+// In BlankSection — pa(node) on row/column wrappers
+function Row({ children, node }) {
+  const { pa } = getPreviewUtils(node);
+  return <div {...pa(node)}>{children}</div>;  // → data-epi-block-id={node.key}
+}
 
-// On a shared block:
-<div data-epi-block-id={inEditMode ? contentKey : undefined}>
-  <HeroBlock {...props} />
-</div>
+// In DynamicExperience — ComponentWrapper wraps each composition component
+function ComponentWrapper({ children, node }) {
+  const { pa } = getPreviewUtils(node);
+  return <div {...pa(node)}>{children}</div>;  // → data-epi-block-id={node.key}
+}
 
-// Blocks can also emit it per-property for fine-grained targeting:
-// (provided by getPreviewUtils() from the CMS SDK)
-<h1 {...pa("headline")}>{headline}</h1>`;
+// In block components — pa("propertyName") enables click-to-edit on fields
+export default function HeroBlock({ content }) {
+  const { pa } = getPreviewUtils(content);
+  return (
+    <section>
+      <h1 {...pa("headline")}>{content.headline}</h1>   // → data-epi-edit="headline"
+      <p  {...pa("subheadline")}>{content.subheadline}</p>
+    </section>
+  );
+}
 
-const VB_LAYOUT_SNIPPET = `// src/app/preview/page.tsx
-// communicationinjector.js is injected directly on the /preview route —
-// no env var needed, it's always present when previewing.
+// getPreviewUtils reads the withAppContext context — pa() only emits attributes
+// when the request was initiated via getPreviewContent() (i.e. in preview mode).
+// On published pages it returns empty objects, adding zero DOM overhead.`;
 
-const shell = (children) => (
+const VB_LAYOUT_SNIPPET = `// communicationinjector.js is injected on the /preview route only.
+// The root layout (src/app/layout.tsx) does NOT inject it — the script is
+// only needed when the page is loaded inside the CMS editor iframe.
+
+// src/app/preview/page.tsx
+return (
   <>
     <Script
-      src={\`\${CMS_URL}/util/javascript/communicationinjector.js\`}
+      src={\`\${process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL}/util/javascript/communicationinjector.js\`}
       strategy="afterInteractive"
     />
     <PreviewComponent />
-    {children}
+    <OptimizelyComponent content={content} />
   </>
-);
-
-// src/app/layout.tsx
-// Optionally also inject in the root layout if you want the CMS to open
-// the full live site in its iframe (not just /preview). Controlled by
-// NEXT_PUBLIC_ENABLE_VISUAL_BUILDER=true + NEXT_PUBLIC_OPTIMIZELY_CMS_URL.
-// Not required for standard preview to work.`;
+);`;
 
 // ---------------------------------------------------------------------------
 // Page
@@ -197,7 +192,7 @@ export default function PreviewDemoPage() {
                 badgeColor: "bg-amber-100 text-amber-800",
                 auth: "Bearer {previewToken}",
                 cache: "cache: 'no-store'",
-                description: "Activated when the CMS calls /api/draft. Fetches the latest draft version of content via the previewToken — unpublished changes visible only to the editor.",
+                description: "Activated when the CMS calls /preview?preview_token=X&key=Y. getPreviewContent() fetches the latest draft version — unpublished changes visible only to the editor.",
               },
               {
                 label: "Visual Builder",
@@ -269,15 +264,17 @@ export default function PreviewDemoPage() {
           </div>
         </section>
 
-        {/* /preview render paths */}
+        {/* /preview render path */}
         <section>
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            The /preview Page — Three Render Paths
+            The /preview Page
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            The SDK&apos;s <code className="bg-surface-low px-1 rounded text-xs font-mono">getPreviewContent()</code> returns
-            different shapes depending on the content type being previewed. The page handles
-            all three cases in order of priority.
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">getPreviewContent()</code> handles
+            all content types — experience pages, traditional pages, and shared blocks — and returns
+            the item directly. <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyComponent</code>{" "}
+            dispatches to the right React component by <code className="bg-surface-low px-1 rounded text-xs font-mono">__typename</code>,
+            exactly as the published page does. No separate preview renderer needed.
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
             <code>{PREVIEW_PAGE_SNIPPET}</code>
@@ -313,18 +310,16 @@ export default function PreviewDemoPage() {
           </div>
         </section>
 
-        {/* Visual Builder layout injection */}
+        {/* communicationinjector scope */}
         <section>
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Visual Builder in the Root Layout
+            Where communicationinjector.js Lives
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">communicationinjector.js</code> is
-            also injected globally via the root layout when{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">NEXT_PUBLIC_ENABLE_VISUAL_BUILDER=true</code>.
-            This enables the CMS to open the full live site (not just <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code>)
-            inside its iframe for in-context editing — editors navigate the real site and
-            click any block to edit it directly.
+            The script is injected on the <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code> route only —
+            not in the root layout. It is only needed when the page is rendered inside the
+            CMS editor iframe, so keeping it scoped to <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code>{" "}
+            avoids loading it on every visitor page.
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
             <code>{VB_LAYOUT_SNIPPET}</code>
@@ -343,7 +338,7 @@ export default function PreviewDemoPage() {
                 {[
                   { key: "NEXT_PUBLIC_OPTIMIZELY_CMS_URL", desc: "Your CMS instance URL. Used to build the communicationinjector.js script URL on the /preview route." },
                   { key: "OPTIMIZELY_GRAPH_SINGLE_KEY", desc: "Read-only key for published Graph queries. Already required for the main app." },
-                  { key: "NEXT_PUBLIC_ENABLE_VISUAL_BUILDER", desc: 'Optional. Set to "true" to also inject communicationinjector.js in the root layout, enabling the CMS to open the full live site (not just /preview) inside its iframe.' },
+                  { key: "OPTIMIZELY_GRAPH_GATEWAY", desc: "Graph gateway URL (default: https://cg.optimizely.com/content/v2). Passed to config() in componentRegistry.ts." },
                 ].map(({ key, desc }) => (
                   <div key={key} className="bg-surface-lowest border border-ghost-border rounded-xl p-3">
                     <code className="text-xs font-mono text-brand block mb-1">{key}</code>
@@ -359,7 +354,7 @@ export default function PreviewDemoPage() {
                   "In CMS admin: Settings → Sites → select your site.",
                   "Set the Preview URL to: https://your-app.com/preview",
                   "The CMS will append ?preview_token=X&key=Y&ctx=edit automatically when an editor clicks Preview.",
-                  "For Visual Builder in-context editing: set NEXT_PUBLIC_OPTIMIZELY_CMS_URL and NEXT_PUBLIC_ENABLE_VISUAL_BUILDER=true so the live site also loads communicationinjector.js.",
+                  "For Visual Builder in-context editing: set NEXT_PUBLIC_OPTIMIZELY_CMS_URL so the /preview route can build the communicationinjector.js URL. No additional env var needed.",
                 ].map((step, i) => (
                   <li key={i} className="flex gap-3">
                     <span className="shrink-0 w-6 h-6 rounded-full bg-brand text-on-brand text-xs font-bold flex items-center justify-center">{i + 1}</span>

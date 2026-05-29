@@ -10,12 +10,14 @@ export const metadata: Metadata = {
 
 const INTEGRATION_SNIPPET = `// src/app/[[...slug]]/page.tsx
 import { cookies } from "next/headers";
+import { getClient } from "@optimizely/cms-sdk";
+import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
 import { getAllDecisions } from "@/lib/optimizely/experimentation";
-import { GraphClient } from "@optimizely/cms-sdk";
+import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 
-const client = new GraphClient(process.env.OPTIMIZELY_GRAPH_SINGLE_KEY!);
+initComponentRegistry(); // also calls config() so getClient() works
 
-export default async function CmsPage({ params }) {
+async function CmsPage({ params }) {
   const { slug } = await params;
 
   // 1. Get stable user ID from middleware cookie
@@ -31,16 +33,19 @@ export default async function CmsPage({ params }) {
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
     .map((d) => d.variationKey as string);
 
-  // 4. Pass them to Graph — it serves the matching CMS variation if one exists,
-  //    and falls back to original content automatically when it doesn't.
+  // 4. Pass them to Graph — it serves the matching CMS variation if one exists.
+  //    includeOriginal:true ensures pages with no matching variation still render.
   const variationOption = activeVariations.length > 0
-    ? { variation: { include: "SOME" as const, value: activeVariations } }
+    ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
     : undefined;
 
-  const url = \`/en/\${slug?.join("/") ?? ""}/\`;
-  const [page] = await client.getContentByPath(url, variationOption);
-  // ...
-}`;
+  const client = getClient();
+  const [page] = await client.getContentByPath(\`/en/\${slug?.join("/") ?? ""}/\`, variationOption);
+
+  return <OptimizelyComponent content={page} />;
+}
+
+export default withAppContext(CmsPage);`;
 
 function ActiveVariationBadge({ variation }: { variation: string }) {
   return (

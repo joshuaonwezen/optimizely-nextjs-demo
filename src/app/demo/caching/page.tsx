@@ -102,7 +102,7 @@ const CACHE_TABLE = [
   { data: "Static page paths", location: "generateStaticParams()",         ttl: "3600s (1 hr)", tag: "—",           revalidatedBy: "Next.js build / deploy" },
   { data: "FX datafile",       location: "buildClient() in experimentation.ts", ttl: "60s",   tag: "—",            revalidatedBy: "Automatic (fetch cache)" },
   { data: "Search results",    location: "GET /api/search",                ttl: "no-store",     tag: "—",           revalidatedBy: "Always fresh — bypasses ISR" },
-  { data: "Draft/preview",     location: "graphqlFetch() with previewToken", ttl: "no-store",  tag: "—",            revalidatedBy: "Always fresh — bypasses ISR" },
+  { data: "Draft/preview",     location: "client.getPreviewContent()",     ttl: "no-store",  tag: "—",            revalidatedBy: "Always fresh — bypasses ISR" },
 ];
 
 export default function CachingDemoPage() {
