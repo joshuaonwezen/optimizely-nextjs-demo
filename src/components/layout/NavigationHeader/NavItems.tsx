@@ -8,9 +8,10 @@ import SearchOverlay from "@/components/layout/SearchOverlay";
 
 interface Props {
   tree: NavNode[];
+  demoLinks: { href: string; label: string }[];
 }
 
-export default function NavItems({ tree }: Props) {
+export default function NavItems({ tree, demoLinks }: Props) {
   const [activeKey,    setActiveKey]    = useState<string | null>(null);
   const [searchOpen,   setSearchOpen]   = useState(false);
 
@@ -100,6 +101,35 @@ export default function NavItems({ tree }: Props) {
           </div>
         );
       })}
+
+      {/* Demo dropdown */}
+      <div
+        className="relative"
+        onMouseEnter={() => setActiveKey("__demo__")}
+        onMouseLeave={() => setActiveKey(null)}
+      >
+        <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors font-body ${activeKey === "__demo__" ? "text-brand" : "text-on-surface-variant hover:text-brand"}`}>
+          Demo
+          <svg width="10" height="6" viewBox="0 0 10 6" className={`transition-transform duration-150 ${activeKey === "__demo__" ? "rotate-180" : ""}`} fill="none">
+            <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {activeKey === "__demo__" && (
+          <div className="absolute top-full right-0 pt-2 z-50">
+            <div className="bg-surface-lowest border border-ghost-border rounded-xl shadow-lg py-2 min-w-52">
+              {demoLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="block px-4 py-1.5 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Search icon */}
       <button
