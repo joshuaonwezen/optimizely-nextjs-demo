@@ -87,6 +87,8 @@ async function registerContentType(): Promise<void> {
         },
       },
     },
+    preset: "next",
+    useTypedFieldNames: true,
   };
 
   const res = await fetch(
@@ -122,10 +124,10 @@ async function seedReferrals(): Promise<void> {
       Id:      `ref-${ref.id}`,
       Name:    `Referral - ${ref.name}`,
       _itemMetadata: {
-        key:          `ref-${ref.id}`,
-        displayName:  `Referral - ${ref.name}`,
-        lastModified: new Date().toISOString(),
-        type:         "Referral",
+        key:                       `ref-${ref.id}`,
+        displayName___searchable:  `Referral - ${ref.name}`,
+        lastModified:              new Date().toISOString(),
+        type:                      "Referral",
       },
       name:               ref.name,
       comment:            ref.comment,

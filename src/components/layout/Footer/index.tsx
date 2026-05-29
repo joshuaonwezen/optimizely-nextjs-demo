@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const DEMO_LINKS = [
   { href: "/demo/navigation",        label: "Navigation" },
-  { href: "/demo/referrals",         label: "External Content Sync" },
+  { href: "/demo/external-content",         label: "External Content Sync" },
   { href: "/demo/feature-flags",     label: "Feature Experimentation" },
   { href: "/demo/personalization",   label: "CMS Personalization" },
 ];
