@@ -102,27 +102,33 @@ async function CmsPage({
     }
   }
 
-  // Key-based fallback: _Content.item (used internally by getContentByPath) returns
-  // null when a CMS container and its start page share the same URL, causing the
-  // URL-based lookup to silently fail. _Page.items handles duplicates correctly, so
-  // find the key that way then fetch by key — which is always unique.
+  // Key+version fallback: _Content.item (used internally by getContentByPath and
+  // getContent) returns null when multiple published versions exist for the same key
+  // or URL — which happens when variations were published as regular versions rather
+  // than named CMS variations. _Page.items (plural) handles this correctly.
+  // Fetching by key+version is always unambiguous — exactly one item matches.
+  // The variation filter ensures the right version is returned for the active persona.
   if (!page) {
     const KEY_QUERY = /* GraphQL */ `
-      query FindPageKey($urls: [String]) {
+      query FindPageKey($urls: [String], $variation: VariationInput) {
         _Page(
           where: { _metadata: { url: { default: { in: $urls } } } }
+          variation: $variation
           limit: 1
         ) {
-          items { _metadata { key } }
+          items { _metadata { key version } }
         }
       }
     `;
     const keyResult = await graphqlFetch<{
-      _Page: { items: Array<{ _metadata: { key: string } }> };
-    }>(KEY_QUERY, { urls }, { next: { revalidate: 0 } });
-    const key = keyResult.data?._Page?.items?.[0]?._metadata?.key;
-    if (key) {
-      page = await client.getContent({ key }, { cache: false });
+      _Page: { items: Array<{ _metadata: { key: string; version: string } }> };
+    }>(KEY_QUERY, { urls, variation: variationOption.variation }, { next: { revalidate: 0 } });
+    const meta = keyResult.data?._Page?.items?.[0]?._metadata;
+    if (meta?.key && meta?.version) {
+      page = await client.getContent(
+        { key: meta.key, version: String(meta.version) },
+        { cache: false }
+      );
     }
   }
 
