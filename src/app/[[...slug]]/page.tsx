@@ -75,26 +75,22 @@ async function CmsPage({
   const demoPersona = cookieStore.get("demo_persona")?.value;
   if (demoPersona) activeVariations.unshift(demoPersona);
 
-  // Graph's _Content.item returns null (ambiguous) when variation.value is an
-  // empty array — it treats that as "return all published versions", which is
-  // non-deterministic. Providing at least one value (even a sentinel that
-  // matches no real CMS variation) forces Graph to use includeOriginal:true to
-  // return specifically the canonical base version.
-  const variationValues = activeVariations.length > 0 ? activeVariations : ["__base__"];
-  const variationOption = {
-    variation: {
-      include: "SOME" as const,
-      value: variationValues,
-      includeOriginal: true,
-    },
-  };
+  // Only attach a variation filter when there are active variation keys.
+  // An empty value array causes ambiguous results for pages with multiple
+  // published versions — Graph cannot determine the canonical base content.
+  const variationOption =
+    activeVariations.length > 0
+      ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
+      : undefined;
 
   const client = getClient();
 
   // cache: false bypasses Graph's own server-side CDN cache (?cache=false).
   // Without this, a stale empty response cached on Graph's side is served even
   // after the content or query logic is fixed.
-  const fetchOptions = { ...variationOption, cache: false as const };
+  const fetchOptions = variationOption
+    ? { ...variationOption, cache: false as const }
+    : { cache: false as const };
 
   let page: any = null;
   for (const url of urls) {
@@ -102,37 +98,6 @@ async function CmsPage({
     if (items.length > 0) {
       page = items[0];
       break;
-    }
-  }
-
-  // Key+version fallback: _Content.item (used internally by getContentByPath and
-  // getContent) returns null when multiple published versions exist for the same key
-  // or URL — which happens when variations were published as regular versions rather
-  // than named CMS variations. _Page.items (plural) handles this correctly.
-  // Fetching by key+version is always unambiguous — exactly one item matches.
-  // The variation filter ensures the right version is returned for the active persona.
-  if (!page) {
-    // Fallback: _Page.items (plural) handles multiple published versions correctly
-    // and does not need a variation filter to find the page — same as generateMetadata.
-    const KEY_QUERY = /* GraphQL */ `
-      query FindPageKey($urls: [String]) {
-        _Page(
-          where: { _metadata: { url: { default: { in: $urls } } } }
-          limit: 1
-        ) {
-          items { _metadata { key version } }
-        }
-      }
-    `;
-    const keyResult = await graphqlFetch<{
-      _Page: { items: Array<{ _metadata: { key: string; version: string } }> };
-    }>(KEY_QUERY, { urls }, { next: { revalidate: 0 } });
-    const meta = keyResult.data?._Page?.items?.[0]?._metadata;
-    if (meta?.key && meta?.version) {
-      page = await client.getContent(
-        { key: meta.key, version: String(meta.version) },
-        { cache: false }
-      );
     }
   }
 
