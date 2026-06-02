@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const cookieStore = await cookies();
-  const initialPersona = cookieStore.get("demo_persona")?.value ?? "new_visitor";
+  const initialPersona = cookieStore.get("demo_persona")?.value ?? "";
 
   return (
     <html lang="en">

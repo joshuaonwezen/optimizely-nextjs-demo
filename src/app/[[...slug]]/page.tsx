@@ -60,10 +60,11 @@ async function CmsPage({
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
     .map((d) => d.variationKey as string);
 
-  // Demo presenter override: force a specific variation without FX bucketing.
-  // Defaults to "new_visitor" so new visitors always get a controlled experience.
-  const demoPersona = cookieStore.get("demo_persona")?.value ?? "new_visitor";
-  activeVariations.unshift(demoPersona);
+  // Demo presenter override: inject a specific variation without FX bucketing.
+  // Only applied when the demo_persona cookie is explicitly set via the AudienceSwitcher.
+  const demoPersona = cookieStore.get("demo_persona")?.value;
+  if (demoPersona) activeVariations.unshift(demoPersona);
+
   const variationOption =
     activeVariations.length > 0
       ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }

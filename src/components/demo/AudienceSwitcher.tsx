@@ -16,7 +16,7 @@ export default function AudienceSwitcher({ initialPersona }: { initialPersona: s
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const currentLabel = PERSONAS.find((p) => p.key === current)?.label ?? "New Visitor";
+  const currentLabel = PERSONAS.find((p) => p.key === current)?.label ?? "Default";
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
