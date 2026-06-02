@@ -16,11 +16,20 @@ interface PageParams {
   slug?: string[];
 }
 
+const LOCALE_PREFIX_RE = /^[a-z]{2}(-[a-z]{2})?$/;
+
 function buildUrlCandidates(slug?: string[]): string[] {
+  // Root "/" — no slug — defaults to the English homepage
   if (!slug || slug.length === 0) {
     return ["/", "/en/", "/en/homepage/"];
   }
   const path = slug.join("/");
+  // If the first segment is a locale code the URL is already fully qualified
+  if (LOCALE_PREFIX_RE.test(slug[0])) {
+    return [`/${path}/`];
+  }
+  // Legacy English paths without locale prefix (e.g. /savings from generateStaticParams
+  // stripping /en/ in earlier builds) — try both prefixed and bare.
   return [`/en/${path}/`, `/${path}/`];
 }
 
@@ -50,6 +59,11 @@ async function CmsPage({
   const activeVariations = Object.values(fxDecisions)
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
     .map((d) => d.variationKey as string);
+
+  // Demo presenter override: force a specific variation without FX bucketing.
+  // Defaults to "new_visitor" so new visitors always get a controlled experience.
+  const demoPersona = cookieStore.get("demo_persona")?.value ?? "new_visitor";
+  activeVariations.unshift(demoPersona);
   const variationOption =
     activeVariations.length > 0
       ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
@@ -105,12 +119,17 @@ export async function generateStaticParams(): Promise<PageParams[]> {
     .map((page: any) => {
       const url: string = page?._metadata?.url?.default ?? "";
       if (!url || url === "/") return { slug: undefined };
-      const stripped = url.replace(/^\/en\//, "/");
-      if (stripped === "/" || stripped === "/homepage/") return { slug: undefined };
-      const segments = stripped
-        .replace(/^\/|\/$/g, "")
-        .split("/")
-        .filter(Boolean);
+
+      // English homepage variants → root route (no slug)
+      if (url === "/en/" || url === "/en/homepage/") return { slug: undefined };
+
+      // For English pages, strip the /en/ prefix so URLs stay clean (/savings not /en/savings).
+      // For all other locales, keep the full path (/nl/savings stays /nl/savings).
+      const locale = url.split("/").filter(Boolean)[0] ?? "";
+      const effective =
+        locale === "en" ? url.replace(/^\/en\//, "/") : url;
+
+      const segments = effective.replace(/^\/|\/$/g, "").split("/").filter(Boolean);
       if (segments.length === 0) return { slug: undefined };
       return { slug: segments };
     })

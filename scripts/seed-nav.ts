@@ -61,21 +61,21 @@ function buildNavPageComposition(heading: string, subheading: string, ctaLabel: 
 }
 
 const PAGE_CONTENT: Record<string, { heading: string; subheading: string; ctaLabel: string; ctaLink: string }> = {
-  products:        { heading: "Optimizely Products",         subheading: "A complete suite for content management, experimentation, and analytics.", ctaLabel: "Explore the Platform", ctaLink: "https://www.optimizely.com/products" },
-  solutions:       { heading: "Solutions",                   subheading: "Optimizely for every industry, team size, and use case.", ctaLabel: "Find Your Solution", ctaLink: "https://www.optimizely.com/solutions" },
-  ecommerce:       { heading: "E-Commerce",                  subheading: "Convert more shoppers with data-driven experiences. Personalize every step of the purchase journey.", ctaLabel: "See E-Commerce Solutions", ctaLink: "https://www.optimizely.com/solutions" },
-  "media-publishing": { heading: "Media & Publishing",       subheading: "Create, distribute, and optimize editorial content at scale. Built for fast-moving content teams.", ctaLabel: "Explore Media Solutions", ctaLink: "https://www.optimizely.com/solutions" },
-  enterprise:      { heading: "Enterprise",                  subheading: "The digital experience platform trusted by the world's most ambitious organizations. Scale with confidence.", ctaLabel: "Talk to Sales", ctaLink: "https://www.optimizely.com/contact" },
-  resources:       { heading: "Resources",                   subheading: "Everything you need to get started with and master the Optimizely platform.", ctaLabel: "Browse Resources", ctaLink: "https://www.optimizely.com/resources" },
-  docs:            { heading: "Documentation",               subheading: "Guides, API references, and tutorials to help you build with Optimizely.", ctaLabel: "Read the Docs", ctaLink: "https://docs.developers.optimizely.com" },
-  blog:            { heading: "Blog",                        subheading: "Insights, product updates, and best practices from the Optimizely team and community.", ctaLabel: "Read the Blog", ctaLink: "https://www.optimizely.com/insights/blog" },
-  "case-studies":  { heading: "Case Studies",                subheading: "See how leading teams use Optimizely to deliver exceptional digital experiences — with measurable results.", ctaLabel: "Browse Case Studies", ctaLink: "https://www.optimizely.com/insights/case-studies" },
-  developers:      { heading: "Developer Hub",               subheading: "SDKs, APIs, and integration guides for building on the Optimizely platform.", ctaLabel: "Explore Developer Docs", ctaLink: "https://docs.developers.optimizely.com" },
-  "api-reference": { heading: "API Reference",               subheading: "Complete reference documentation for all Optimizely APIs — REST, GraphQL, and management endpoints.", ctaLabel: "View API Docs", ctaLink: "https://docs.developers.optimizely.com" },
-  sdks:            { heading: "SDKs & Libraries",            subheading: "Official SDKs for JavaScript, Python, Go, Java, Ruby, Swift, Kotlin, and more.", ctaLabel: "Download an SDK", ctaLink: "https://docs.developers.optimizely.com" },
-  company:         { heading: "Company",                     subheading: "Learn about Optimizely — our mission, our team, and our culture.", ctaLabel: "Learn More", ctaLink: "https://www.optimizely.com/company" },
-  about:           { heading: "About Optimizely",            subheading: "We believe every digital decision should be backed by data. Our platform makes that possible for teams of every size.", ctaLabel: "Our Story", ctaLink: "https://www.optimizely.com/company" },
-  careers:         { heading: "Careers",                     subheading: "Join a team building the future of digital experience. We're always looking for exceptional people.", ctaLabel: "See Open Roles", ctaLink: "https://www.optimizely.com/company/careers" },
+  personal:           { heading: "Personal Banking",       subheading: "Everything you need for day-to-day money management — current accounts, savings, and more.", ctaLabel: "Open an Account", ctaLink: "/en/current-account" },
+  loans:              { heading: "Personal Loans",         subheading: "Borrow from £1,000 to £25,000 with a fixed rate and no early repayment fees. Get a decision in minutes.", ctaLabel: "Check My Rate", ctaLink: "/en/loans" },
+  business:           { heading: "Business Banking",       subheading: "Current accounts, lending, and payment solutions built for UK businesses of every size.", ctaLabel: "Open a Business Account", ctaLink: "/en/business-banking" },
+  "merchant-services": { heading: "Merchant Services",    subheading: "Accept card payments in-store and online. Competitive rates, next-day settlement, and 24/7 support.", ctaLabel: "Get Started", ctaLink: "/en/merchant-services" },
+  "business-lending": { heading: "Business Lending",      subheading: "Flexible loans, overdrafts, and invoice finance to help your business grow on your terms.", ctaLabel: "Explore Business Lending", ctaLink: "/en/business-lending" },
+  investments:        { heading: "Investments",            subheading: "Build your future with Stocks & Shares ISAs, pensions, and investment accounts. Capital at risk.", ctaLabel: "Start Investing", ctaLink: "/en/investments" },
+  "stocks-isa":       { heading: "Stocks & Shares ISA",   subheading: "Invest up to £20,000 tax-free each year. Choose from thousands of funds, shares, and ETFs.", ctaLabel: "Open an ISA", ctaLink: "/en/stocks-isa" },
+  pensions:           { heading: "Pensions",               subheading: "A self-invested personal pension (SIPP) that puts you in control. Start with as little as £50 a month.", ctaLabel: "Plan My Retirement", ctaLink: "/en/pensions" },
+  help:               { heading: "Help & Support",         subheading: "Find answers to common questions, get in touch with our team, or locate your nearest branch.", ctaLabel: "Get Help", ctaLink: "/en/faqs" },
+  faqs:               { heading: "Frequently Asked Questions", subheading: "Quick answers to the questions we hear most — from opening an account to reporting a lost card.", ctaLabel: "Browse FAQs", ctaLink: "/en/faqs" },
+  branches:           { heading: "Find a Branch",          subheading: "With over 140 branches across the UK, expert advice is never far away. Find your nearest location.", ctaLabel: "Find a Branch", ctaLink: "/en/branches" },
+  about:              { heading: "About Mosey Bank",  subheading: "Trusted by over 2 million customers since 1998. We believe banking should be simple, fair, and built around you.", ctaLabel: "Our Story", ctaLink: "/en/about-us" },
+  "about-us":         { heading: "About Us",               subheading: "Founded in 1998, Mosey Bank has grown from a single branch in Leeds to a national bank serving 2 million customers.", ctaLabel: "Meet the Team", ctaLink: "/en/about-us" },
+  careers:            { heading: "Careers",                subheading: "Join a team that puts people first — customers and colleagues. We're always looking for exceptional people.", ctaLabel: "See Open Roles", ctaLink: "/en/careers" },
+  press:              { heading: "Press & Media",          subheading: "Latest news, press releases, and media resources from Mosey Bank.", ctaLabel: "View Press Releases", ctaLink: "/en/press" },
 };
 
 // ---------------------------------------------------------------------------
@@ -98,75 +98,73 @@ interface NavDef {
 
 const NAV_TREE: NavDef[] = [
   {
-    key: noHyphens(), label: "Products", href: "/en/products", description: "Our full product suite",
-    routeSegment: "products",
+    key: noHyphens(), label: "Personal", href: "/en/personal", description: "Personal banking products",
+    routeSegment: "personal",
     children: [
       {
-        // DynamicExperience pages created by seed-content.ts
-        key: noHyphens(), label: "Content Management", href: "/en/cms",
+        key: noHyphens(), label: "Current Account", href: "/en/current-account",
         existing: true,
         children: [
-          { key: noHyphens(), label: "Visual Builder",   href: "/en/visual-builder",     existing: true, children: [] },
-          { key: noHyphens(), label: "Content Modeling", href: "/en/content-modeling", existing: true, children: [] },
-          { key: noHyphens(), label: "Localization",     href: "/en/localization",     existing: true, children: [] },
+          { key: noHyphens(), label: "Instant Payments", href: "/en/instant-payments", existing: true, children: [] },
+          { key: noHyphens(), label: "Mobile App",       href: "/en/mobile-app",       existing: true, children: [] },
+          { key: noHyphens(), label: "Travel Money",     href: "/en/travel-money",     existing: true, children: [] },
         ],
       },
       {
-        key: noHyphens(), label: "Feature Experimentation", href: "/en/feature-experimentation",
+        key: noHyphens(), label: "Savings", href: "/en/savings",
         existing: true,
         children: [
-          { key: noHyphens(), label: "Feature Flags",        href: "/en/feature-flags",        existing: true, children: [] },
-          { key: noHyphens(), label: "Progressive Rollouts", href: "/en/progressive-rollouts", existing: true, children: [] },
+          { key: noHyphens(), label: "Easy Access", href: "/en/easy-access-savings", existing: true, children: [] },
+          { key: noHyphens(), label: "Fixed Rate",  href: "/en/fixed-rate-savings",  existing: true, children: [] },
         ],
       },
+      { key: noHyphens(), label: "Personal Loans", href: "/en/loans", routeSegment: "loans", children: [] },
+    ],
+  },
+  {
+    key: noHyphens(), label: "Business", href: "/en/business", routeSegment: "business",
+    children: [
       {
-        key: noHyphens(), label: "Web Experimentation", href: "/en/web-experimentation",
+        key: noHyphens(), label: "Business Banking", href: "/en/business-banking",
         existing: true,
         children: [
-          { key: noHyphens(), label: "Visual Editor", href: "/en/visual-editor", existing: true, children: [] },
-          { key: noHyphens(), label: "Stats Engine",  href: "/en/stats-engine",  existing: true, children: [] },
+          { key: noHyphens(), label: "Business Current Account", href: "/en/business-current-account", existing: true, children: [] },
+          { key: noHyphens(), label: "Business Lending",         href: "/en/business-lending",         existing: true, children: [] },
         ],
       },
-      {
-        key: noHyphens(), label: "Analytics", href: "/en/analytics",
-        existing: true,
-        children: [
-          { key: noHyphens(), label: "Reports & Dashboards", href: "/en/reports",      existing: true, children: [] },
-          { key: noHyphens(), label: "Integrations",         href: "/en/integrations", existing: true, children: [] },
-        ],
-      },
+      { key: noHyphens(), label: "Merchant Services", href: "/en/merchant-services", routeSegment: "merchant-services", children: [] },
     ],
   },
   {
-    key: noHyphens(), label: "Solutions", href: "/en/solutions", routeSegment: "solutions",
+    key: noHyphens(), label: "Mortgages", href: "/en/mortgage", description: "Find your mortgage",
+    existing: true,
     children: [
-      { key: noHyphens(), label: "E-Commerce",        href: "/en/ecommerce",       routeSegment: "ecommerce",       children: [] },
-      { key: noHyphens(), label: "Media & Publishing", href: "/en/media-publishing", routeSegment: "media-publishing", children: [] },
-      { key: noHyphens(), label: "Enterprise",         href: "/en/enterprise",       routeSegment: "enterprise",       children: [] },
+      { key: noHyphens(), label: "First-Time Buyers", href: "/en/first-time-buyers", existing: true,  children: [] },
+      { key: noHyphens(), label: "Remortgaging",      href: "/en/remortgaging",      existing: true,  children: [] },
+      { key: noHyphens(), label: "Buy-to-Let",        href: "/en/buy-to-let",        routeSegment: "buy-to-let", children: [] },
     ],
   },
   {
-    key: noHyphens(), label: "Resources", href: "/en/resources", routeSegment: "resources",
+    key: noHyphens(), label: "Investments", href: "/en/investments", routeSegment: "investments",
     children: [
-      { key: noHyphens(), label: "Documentation",  href: "/en/docs",         routeSegment: "docs",         children: [] },
-      { key: noHyphens(), label: "Blog",           href: "/en/blog",         routeSegment: "blog",         children: [] },
-      { key: noHyphens(), label: "Case Studies",   href: "/en/case-studies", routeSegment: "case-studies", children: [] },
+      { key: noHyphens(), label: "Stocks & Shares ISA", href: "/en/stocks-isa", routeSegment: "stocks-isa", children: [] },
+      { key: noHyphens(), label: "Pensions",             href: "/en/pensions",   routeSegment: "pensions",   children: [] },
     ],
   },
   {
-    key: noHyphens(), label: "Developers", href: "/en/developers", routeSegment: "developers",
+    key: noHyphens(), label: "Help", href: "/en/help", routeSegment: "help",
     children: [
-      { key: noHyphens(), label: "API Reference",  href: "/en/api-reference",  routeSegment: "api-reference",  children: [] },
-      { key: noHyphens(), label: "SDKs",           href: "/en/sdks",           routeSegment: "sdks",           children: [] },
-      { key: noHyphens(), label: "GitHub ↗",  href: "https://github.com/episerver", openInNewTab: true, external: true, children: [] },
+      { key: noHyphens(), label: "FAQs",           href: "/en/faqs",     routeSegment: "faqs",     children: [] },
+      { key: noHyphens(), label: "Contact Us",     href: "/en/contact",  existing: true,           children: [] },
+      { key: noHyphens(), label: "Find a Branch",  href: "/en/branches", routeSegment: "branches", children: [] },
     ],
   },
   {
-    key: noHyphens(), label: "Company", href: "/en/company", routeSegment: "company",
+    key: noHyphens(), label: "About", href: "/en/about", routeSegment: "about",
     children: [
-      { key: noHyphens(), label: "About",   href: "/en/about",   routeSegment: "about",   children: [] },
-      { key: noHyphens(), label: "Careers", href: "/en/careers", routeSegment: "careers", children: [] },
-      { key: noHyphens(), label: "Contact", href: "/en/contact", existing: true,           children: [] },
+      { key: noHyphens(), label: "About Mosey", href: "/en/about-us", routeSegment: "about-us", children: [] },
+      { key: noHyphens(), label: "Careers",          href: "/en/careers",  routeSegment: "careers",  children: [] },
+      { key: noHyphens(), label: "Press",            href: "/en/press",    routeSegment: "press",    children: [] },
     ],
   },
 ];
@@ -178,10 +176,7 @@ const NAV_TREE: NavDef[] = [
 async function buildPageKeyMap(): Promise<Map<string, string>> {
   const query = `
     query GetAllPages {
-      LandingPage(limit: 100) {
-        items { _metadata { key url { default } } }
-      }
-      DynamicExperience(limit: 50) {
+      DynamicExperience(limit: 100) {
         items { _metadata { key url { default } } }
       }
     }
@@ -191,9 +186,11 @@ async function buildPageKeyMap(): Promise<Map<string, string>> {
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
     body: JSON.stringify({ query }),
   });
-  const { data } = await res.json() as { data?: Record<string, { items?: Array<{ _metadata?: { key?: string; url?: { default?: string } } }> }> };
+  const json = await res.json() as { data?: Record<string, { items?: Array<{ _metadata?: { key?: string; url?: { default?: string } } }> }>; errors?: unknown };
+  if (json.errors) console.warn("  [graph warn]", JSON.stringify(json.errors).slice(0, 200));
+  const { data } = json;
   const map = new Map<string, string>();
-  for (const typeName of ["LandingPage", "DynamicExperience"]) {
+  for (const typeName of ["DynamicExperience"]) {
     for (const item of (data?.[typeName]?.items ?? [])) {
       const url = item._metadata?.url?.default;
       const key = item._metadata?.key;
@@ -236,7 +233,7 @@ async function cleanupNavItems(): Promise<void> {
   const items = (body as { items?: Array<{ key: string; contentType?: string; locales?: Record<string, { displayName?: string; contentType?: string }> }> }).items ?? [];
   for (const item of items) {
     const ct = item.contentType ?? item.locales?.en?.contentType ?? "";
-    if (ct === "NavigationItem" || ct === "Navigation" || ct === "LandingPage") {
+    if (ct === "NavigationItem" || ct === "Navigation" || ct === "LandingPage" || ct === "TraditionalPage") {
       const del = await apiFetch(`/${item.key}?permanent=true`, { method: "DELETE" });
       console.log(`  [deleted] ${item.locales?.en?.displayName ?? item.key} (${del.status})`);
     }
@@ -257,9 +254,9 @@ async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>): Pro
 
   const content = PAGE_CONTENT[node.routeSegment!] ?? {
     heading: node.label,
-    subheading: `Learn more about ${node.label} and how Optimizely can help your team.`,
+    subheading: `Learn more about ${node.label} and how Mosey Bank can help you.`,
     ctaLabel: "Learn More",
-    ctaLink: "https://www.optimizely.com",
+    ctaLink: "#",
   };
 
   const key = noHyphens();
@@ -267,7 +264,7 @@ async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>): Pro
     method: "POST",
     body: JSON.stringify({
       key,
-      contentType: "LandingPage",
+      contentType: "TraditionalPage",
       locale: "en",
       container: CONTAINER,
       status: "published",
@@ -339,7 +336,15 @@ async function createNavItem(node: NavDef): Promise<void> {
     },
   };
 
-  const { ok, status, body: resp } = await apiFetch("", { method: "POST", body: JSON.stringify(body) });
+  let { ok, status, body: resp } = await apiFetch("", { method: "POST", body: JSON.stringify(body) });
+
+  // If the href reference isn't committed yet, retry once without it
+  if (!ok && hrefRef && JSON.stringify(resp).includes("does not exist")) {
+    console.warn(`  [retry] ${node.label} — href not committed yet, creating without href`);
+    const bodyNoHref = { ...body, properties: { ...(body.properties as object), href: undefined } };
+    ({ ok, status, body: resp } = await apiFetch("", { method: "POST", body: JSON.stringify(bodyNoHref) }));
+  }
+
   if (!ok) {
     console.error(`  [ERROR] NavItem "${node.label}": ${status} ${JSON.stringify(resp).slice(0, 400)}`);
     throw new Error(`NavItem creation failed for ${node.label}`);
@@ -406,8 +411,8 @@ async function main() {
   await resolvePageKeys(NAV_TREE, pageKeyMap);
 
   // Give the CMS a moment to propagate newly-created content before referencing it
-  console.log("\n  Waiting 5 s for content to propagate...");
-  await new Promise((r) => setTimeout(r, 5000));
+  console.log("\n  Waiting 20 s for content to propagate...");
+  await new Promise((r) => setTimeout(r, 20000));
 
   console.log("\n--- Creating NavigationItem tree (leaf-first) ---");
   await createNavTree(NAV_TREE);

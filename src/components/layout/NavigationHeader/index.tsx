@@ -9,11 +9,13 @@ function slugToLabel(slug: string): string {
 }
 
 function getDemoLinks(): { href: string; label: string }[] {
+  // Label overrides for slugs where the display name can't be derived from the folder name alone
+  const overrides: Record<string, string> = { personalization: "Personalization & Audiences" };
   try {
     const demoDir = join(process.cwd(), "src/app/demo");
     return readdirSync(demoDir, { withFileTypes: true })
       .filter((d) => d.isDirectory())
-      .map((d) => ({ href: `/demo/${d.name}`, label: slugToLabel(d.name) }))
+      .map((d) => ({ href: `/demo/${d.name}`, label: overrides[d.name] ?? slugToLabel(d.name) }))
       .sort((a, b) => a.label.localeCompare(b.label));
   } catch {
     return [];
@@ -31,7 +33,7 @@ export default async function NavigationHeader() {
           href="/"
           className="font-display text-xl font-extrabold tracking-tight text-on-surface"
         >
-          Optimizely
+          Mosey Bank
         </Link>
         <NavItems tree={tree} demoLinks={demoLinks} />
       </nav>

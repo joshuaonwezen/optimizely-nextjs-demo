@@ -32,6 +32,7 @@ export default function FormSubmitButton(props: FormSubmitButtonProps) {
   const data = props.content ?? props;
   const ref = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [successMessage, setSuccessMessage] = useState("Thank you! We'll be in touch soon.");
 
   const alignment = ALIGN_CLASS[String(props.displaySettings?.alignment ?? "left")] ?? "text-left";
   const isOutline = props.displaySettings?.variant === "outline";
@@ -45,6 +46,8 @@ export default function FormSubmitButton(props: FormSubmitButtonProps) {
     const scope = ref.current?.closest("main") ?? document.body;
     const configEl = scope.querySelector("[data-form-submit-url]");
     const submitUrl = configEl?.getAttribute("data-form-submit-url") ?? "/api/form-submit";
+    const msg = configEl?.getAttribute("data-form-success-message");
+    if (msg) setSuccessMessage(msg);
 
     // Collect all form inputs within the page scope
     const inputs = scope.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
@@ -87,7 +90,7 @@ export default function FormSubmitButton(props: FormSubmitButtonProps) {
     return (
       <div ref={ref} className={`max-w-2xl mx-auto px-8 pt-4 pb-2 ${alignment}`}>
         <p className="text-base font-semibold text-brand">
-          Thank you! We&apos;ll be in touch soon.
+          {successMessage}
         </p>
       </div>
     );

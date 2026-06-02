@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { cookies } from "next/headers";
 import NavigationHeader from "@/components/layout/NavigationHeader";
 import GlobalBanner from "@/components/layout/GlobalBanner";
 import Footer from "@/components/layout/Footer";
+import AudienceSwitcher from "@/components/demo/AudienceSwitcher";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -21,14 +23,17 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Optimizely Demo",
-    default: "Optimizely Demo",
+    template: "%s | Mosey Bank",
+    default: "Mosey Bank",
   },
   description:
-    "Headless Optimizely SaaS CMS + Next.js reference architecture",
+    "Personal, business, and mortgage banking — built around you.",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const cookieStore = await cookies();
+  const initialPersona = cookieStore.get("demo_persona")?.value ?? "new_visitor";
+
   return (
     <html lang="en">
       <body
@@ -38,6 +43,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <NavigationHeader />
         <main>{children}</main>
         <Footer />
+        <AudienceSwitcher initialPersona={initialPersona} />
       </body>
     </html>
   );

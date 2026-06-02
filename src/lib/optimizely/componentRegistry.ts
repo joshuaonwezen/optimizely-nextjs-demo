@@ -109,6 +109,7 @@ export function initComponentRegistry() {
       BlankExperience,
       BlankSection,
       TraditionalPage,
+      LandingPage: TraditionalPage,
 
       // Blocks — variants registered via tags so the SDK routes by displayTemplateKey
       HeroBlock: {
@@ -165,6 +166,8 @@ export function initComponentRegistry() {
       FaqContainerBlock,
       FeaturedContentBlock,
       LogoGridBlock,
+      // Fallback: unknown types from the CMS (stale seeds, deleted types) — render nothing
+      _Component: () => null,
     },
   });
 

@@ -1,5 +1,6 @@
 import { RichText } from "@optimizely/cms-sdk/react/richText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import FaqContainerBlock from "@/components/blocks/FaqContainerBlock";
 
 export default function TraditionalPage({ content }: { content: any }) {
   const { pa } = getPreviewUtils(content);
@@ -39,12 +40,18 @@ export default function TraditionalPage({ content }: { content: any }) {
         )}
       </div>
 
-      {content.featuredBlock && (
+      {content.featuredBlock && content.featuredBlock.__typename !== "_Content" && (
         <div
           className="mt-16 border-t border-outline-variant pt-12"
           {...pa("featuredBlock")}
         >
           <OptimizelyComponent content={content.featuredBlock} />
+        </div>
+      )}
+
+      {content._metadata?.url?.default?.includes("/faqs") && (
+        <div className="mt-16 border-t border-outline-variant pt-12">
+          <FaqContainerBlock content={{}} />
         </div>
       )}
     </div>

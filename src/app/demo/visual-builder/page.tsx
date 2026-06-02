@@ -87,7 +87,7 @@ export function initComponentRegistry() {
       // Blocks — tags map displayTemplateKey → component variant
       HeroBlock: {
         default: HeroBlock,
-        tags: { Centered: HeroCenteredBlock }, // HeroCenteredTemplate.tag = "Centered"
+        tags: { Centered: HeroCenteredTemplate }, // HeroCenteredTemplate.tag = "Centered"
       },
     },
   });

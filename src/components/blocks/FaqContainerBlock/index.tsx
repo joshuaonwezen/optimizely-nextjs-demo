@@ -1,20 +1,43 @@
 import { contentType } from "@optimizely/cms-sdk";
-import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { graphqlFetch } from "@/lib/optimizely/client";
+import { FaqItemBlockType } from "@/components/blocks/FaqItemBlock";
 
 export const FaqContainerBlockType = contentType({
   key: "FaqContainerBlock",
   displayName: "FAQ Container",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
+  compositionBehaviors: ["sectionEnabled"],
   properties: {
-    heading:    { type: "string", displayName: "Heading" },
-    subheading: { type: "string", displayName: "Subheading" },
+    heading:    { type: "string",    displayName: "Heading" },
+    subheading: { type: "string",    displayName: "Subheading" },
+    faqItems:   { type: "array", items: { type: "content", allowedTypes: [FaqItemBlockType] }, displayName: "FAQ Items" },
   },
 });
+
+const FETCH_QUERY = /* GraphQL */`{
+  FaqContainerBlock(limit: 1) {
+    items {
+      heading
+      subheading
+      faqItems {
+        __typename
+        ... on FaqItemBlock { question answer }
+      }
+    }
+  }
+}`;
+
+interface FaqItemData {
+  __typename?: string;
+  question?: string | null;
+  answer?: string | null;
+}
 
 interface FaqContainerData {
   heading?:    string | null;
   subheading?: string | null;
+  faqItems?:   (FaqItemData | unknown)[] | null;
   __context?: { edit?: boolean } | null;
 }
 
@@ -23,8 +46,21 @@ type FaqContainerBlockProps = FaqContainerData & {
   displaySettings?: Record<string, string | boolean>;
 };
 
-export default function FaqContainerBlock(props: FaqContainerBlockProps) {
-  const data = props.content ?? props;
+export default async function FaqContainerBlock(props: FaqContainerBlockProps) {
+  let data: FaqContainerData = props.content ?? props;
+
+  // When featuredBlock resolves as a generic _Content reference (Graph doesn't
+  // inline-expand standalone content references on TraditionalPage), self-fetch
+  // the FAQ container data directly from Graph.
+  if (!data.heading) {
+    const res = await graphqlFetch<{ FaqContainerBlock: { items: FaqContainerData[] } }>(
+      FETCH_QUERY,
+      {},
+      { next: { revalidate: 60 } }
+    );
+    data = res.data?.FaqContainerBlock?.items?.[0] ?? data;
+  }
+
   const { pa } = getPreviewUtils(data as any);
 
   return (
@@ -40,10 +76,17 @@ export default function FaqContainerBlock(props: FaqContainerBlockProps) {
       {data.subheading && (
         <p
           {...pa("subheading")}
-          className="text-base text-on-surface-variant mb-2"
+          className="text-base text-on-surface-variant mb-8"
         >
           {data.subheading}
         </p>
+      )}
+      {data.faqItems && data.faqItems.length > 0 && (
+        <div {...pa("faqItems")} className="space-y-2">
+          {data.faqItems.map((item, i) => (
+            <OptimizelyComponent key={i} content={item as any} />
+          ))}
+        </div>
       )}
     </div>
   );

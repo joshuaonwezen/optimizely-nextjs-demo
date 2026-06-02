@@ -112,121 +112,121 @@ function rootComponent(
 // Page compositions
 // ---------------------------------------------------------------------------
 
-function buildHomepage(featureExperimentationKey: string): CompNode[] {
+function buildHomepage(savingsKey: string | null): CompNode[] {
   return [
-    sectionComponent("Hero", "Home Hero", {
-      heading: "Unlock Your Digital Potential",
+    rootComponent("Hero", "Home Hero", {
+      heading: "Banking built around you",
       summary:
-        "The leading digital experience platform for content management, experimentation, and commerce.",
+        "Straightforward current accounts, competitive savings rates, and mortgages that move at your pace.",
       theme: "dark",
     }),
     sectionComponent("SectionHeadingBlock", "Products Heading", {
-      heading: "Our Products",
+      heading: "Our products",
       subheading:
-        "Everything you need to create, test, and optimize digital experiences.",
+        "Everything you need to manage your money, save for the future, and plan for what's next.",
     }),
     gridSection("Product Cards", [
-      elementComponent("ProductCardBlock", "CMS Card", {
-        icon: "server",
-        title: "Content Management System",
+      elementComponent("ProductCardBlock", "Current Account Card", {
+        icon: "account",
+        title: "Current Account",
         description:
-          "Author, manage, and deliver content across channels with our headless CMS. Power personalized experiences at scale.",
-        linkUrl: "/cms",
-        linkText: "Explore CMS \u2192",
+          "A fee-free everyday account with instant payment notifications and no hidden charges.",
+        linkUrl: "/en/current-account",
+        linkText: "Open an account →",
       }),
-      elementComponent("ProductCardBlock", "Feature Experimentation Card", {
-        icon: "beaker",
-        title: "Feature Experimentation",
+      elementComponent("ProductCardBlock", "Savings Card", {
+        icon: "savings",
+        title: "Savings",
         description:
-          "Deploy features safely with feature flags, A/B tests, and progressive rollouts. Ship with confidence.",
-        linkUrl: "/feature-experimentation",
-        linkText: "Explore Feature Experimentation \u2192",
+          "Easy-access and fixed-rate savings accounts with rates up to 5.1% AER. Your money working harder.",
+        linkUrl: "/en/savings",
+        linkText: "View savings rates →",
       }),
-      elementComponent("ProductCardBlock", "Web Experimentation Card", {
-        icon: "cursor",
-        title: "Web Experimentation",
+      elementComponent("ProductCardBlock", "Mortgage Card", {
+        icon: "mortgage",
+        title: "Mortgage",
         description:
-          "Optimize conversion rates with A/B testing and multivariate experiments. Data-driven decisions, made easy.",
-        linkUrl: "/web-experimentation",
-        linkText: "Explore Web Experimentation \u2192",
+          "Find your rate in minutes. Our advisors guide you from application to completion.",
+        linkUrl: "/en/mortgage",
+        linkText: "Get a mortgage →",
       }),
-      elementComponent("ProductCardBlock", "Analytics Card", {
-        icon: "chart",
-        title: "Analytics",
+      elementComponent("ProductCardBlock", "Business Banking Card", {
+        icon: "business",
+        title: "Business Banking",
         description:
-          "Gain real-time insights and make data-driven decisions across your entire digital stack.",
-        linkUrl: "/analytics",
-        linkText: "Explore Analytics \u2192",
+          "Current accounts, lending, and card payment solutions for UK businesses of every size.",
+        linkUrl: "/en/business-banking",
+        linkText: "Open a business account →",
       }),
     ]),
-    gridSection("Platform Stats", [
+    gridSection("Bank Stats", [
       elementComponent("StatsCounterBlock", "Customers Stat", {
-        value: "10,000",
-        suffix: "+",
-        label: "Customers worldwide",
-      }),
-      elementComponent("StatsCounterBlock", "Experiments Stat", {
-        value: "500",
+        value: "2",
         suffix: "M+",
-        label: "Experiments run",
+        label: "Customers",
+      }),
+      elementComponent("StatsCounterBlock", "Assets Stat", {
+        value: "50",
+        suffix: "B+",
+        label: "Assets under management",
       }),
       elementComponent("StatsCounterBlock", "Uptime Stat", {
         value: "99.9",
         suffix: "%",
-        label: "Platform uptime",
+        label: "App uptime",
       }),
-      elementComponent("StatsCounterBlock", "Countries Stat", {
+      elementComponent("StatsCounterBlock", "Branches Stat", {
         value: "140",
         suffix: "+",
-        label: "Countries served",
+        label: "UK branches",
       }),
     ]),
     sectionComponent("TestimonialBlock", "Homepage Testimonial", {
       quote:
-        "Optimizely has completely changed how we ship products. We went from monthly releases to deploying dozens of times a day — safely, with full confidence in every change.",
-      authorName: "Sarah Chen",
-      authorRole: "VP of Engineering, Acme Digital",
+        "Mosey made getting my mortgage so simple. The whole process was online and I had an offer within 48 hours. I couldn't believe how painless it was.",
+      authorName: "James Hartley",
+      authorRole: "Homeowner, Leeds",
     }),
     rootComponent("LogoGridBlock", "Trusted By", {
-      heading: "Trusted by leading brands",
+      heading: "Trusted by 2 million customers across the UK",
       subheading:
-        "Thousands of companies use Optimizely to deliver exceptional digital experiences.",
+        "From first current accounts to business banking — Mosey customers bank with confidence.",
       logos: [],
     }),
-    sectionComponent("FeaturedContentBlock", "Featured Case Study", {
-      label: "Customer Story",
-      featuredPage: `cms://content/${featureExperimentationKey}`,
+    ...(savingsKey ? [sectionComponent("FeaturedContentBlock", "Featured Savings", {
+      label: "Our best rate",
+      featuredPage: `cms://content/${savingsKey}`,
       description:
-        "See how leading teams ship faster and safer with feature flags, progressive rollouts, and real-time targeting \u2014 all without a code deploy.",
-      ctaText: "Read the story",
-    }),
+        "Our fixed-rate savings account now offers 5.1% AER. Lock in your rate today and watch your money grow — FSCS protected up to £85,000.",
+      ctaText: "See savings rates",
+    })] : []),
     sectionComponent("SectionHeadingBlock", "FAQ Heading", {
-      heading: "Frequently Asked Questions",
-      subheading: "Everything you need to know about the Optimizely platform.",
+      heading: "Frequently asked questions",
+      subheading: "Quick answers to the things we hear most.",
     }),
     sectionComponent("FaqItemBlock", "FAQ 1", {
-      question: "What is Optimizely?",
+      question: "How do I open a current account?",
       answer:
-        "Optimizely is a digital experience platform that combines content management, feature experimentation, web experimentation, and analytics into a single composable suite. It helps teams create, test, and optimize digital experiences at scale.",
+        "You can open a Mosey current account online in around 10 minutes. All you need is a smartphone, a valid UK address, and proof of identity. We run a soft credit check that won't affect your credit score.",
     }),
     sectionComponent("FaqItemBlock", "FAQ 2", {
-      question: "Do I need a developer to use Optimizely CMS?",
+      question: "What savings rates do you offer?",
       answer:
-        "No. Optimizely's Visual Builder lets content authors create and edit pages using a drag-and-drop interface without writing code. Developers set up the component library once; editors take it from there.",
+        "We currently offer an easy-access savings account at 4.6% AER and a 1-year fixed-rate account at 5.1% AER. Rates are variable on easy-access accounts and fixed for the term on fixed-rate accounts.",
     }),
     sectionComponent("FaqItemBlock", "FAQ 3", {
-      question: "How does Optimizely Graph work?",
+      question: "How does the mortgage application work?",
       answer:
-        "Optimizely Graph is a managed GraphQL API that indexes your CMS content automatically. Whenever you publish or update content, Graph re-indexes in seconds. Your frontend queries Graph for content \u2014 no database setup required.",
+        "Start by getting a decision in principle online — it takes around 10 minutes and won't affect your credit score. One of our advisors will then call you to discuss your options and guide you through the full application.",
     }),
     sectionComponent("FaqItemBlock", "FAQ 4", {
-      question: "Can I run A/B tests on CMS content?",
+      question: "Is my money protected?",
       answer:
-        "Yes. Optimizely's experimentation products integrate natively with the CMS. You can test entire page variations, individual component swaps, or personalize content for specific audience segments \u2014 all from the same platform.",
+        "Yes. Mosey Bank is authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority. Eligible deposits are protected by the FSCS up to £85,000 per person.",
     }),
     sectionComponent("CallToAction", "Home CTA", {
-      label: "Start Your Free Trial",
-      link: "https://www.optimizely.com",
+      label: "Open an account today",
+      link: "/en/current-account",
     }),
   ];
 }
@@ -251,8 +251,8 @@ function buildProductPage(
       ctaUrl,
     }),
     sectionComponent("SectionHeadingBlock", "Features Heading", {
-      heading: "Key Capabilities",
-      subheading: `What makes ${title} powerful.`,
+      heading: "Key features",
+      subheading: `What makes ${title} work for you.`,
     }),
     gridSection(
       "Features Grid",
@@ -290,234 +290,243 @@ interface PageDef {
 const PAGE_KEYS = {
   // Top-level pages
   homepage:               noHyphens(),
-  cms:                    noHyphens(),
-  featureExperimentation: noHyphens(),
-  webExperimentation:     noHyphens(),
-  analytics:              noHyphens(),
+  currentAccount:         noHyphens(),
+  savings:                noHyphens(),
+  mortgage:               noHyphens(),
+  businessBanking:        noHyphens(),
   contact:                noHyphens(),
-  // CMS subpages
-  visualBuilder:          noHyphens(),
-  contentModeling:        noHyphens(),
-  localization:           noHyphens(),
-  // Feature Experimentation subpages
-  featureFlags:           noHyphens(),
-  progressiveRollouts:    noHyphens(),
-  // Web Experimentation subpages
-  visualEditor:           noHyphens(),
-  statsEngine:            noHyphens(),
-  // Analytics subpages
-  analyticsReports:       noHyphens(),
-  analyticsIntegrations:  noHyphens(),
+  // Current Account subpages
+  instantPayments:        noHyphens(),
+  mobileApp:              noHyphens(),
+  travelMoney:            noHyphens(),
+  // Savings subpages
+  easyAccessSavings:      noHyphens(),
+  fixedRateSavings:       noHyphens(),
+  // Mortgage subpages
+  firstTimeBuyers:        noHyphens(),
+  remortgaging:           noHyphens(),
+  // Business Banking subpages
+  businessCurrentAccount: noHyphens(),
+  businessLending:        noHyphens(),
 };
 
 const pages: PageDef[] = [
+  // ── Top-level product pages ───────────────────────────────────────────────
+
   {
-    key: PAGE_KEYS.homepage,
-    displayName: "Homepage",
-    nodes: buildHomepage(PAGE_KEYS.featureExperimentation),
-  },
-  {
-    key: PAGE_KEYS.cms,
-    displayName: "Content Management System",
-    routeSegment: "cms",
+    key: PAGE_KEYS.currentAccount,
+    displayName: "Current Account",
+    routeSegment: "current-account",
     nodes: buildProductPage(
-      "Content Management",
-      "Optimizely CMS",
-      "Create, manage, and deliver personalized content at scale. The modern headless CMS built for the composable enterprise.",
-      "Explore CMS",
-      "https://www.optimizely.com/cms",
+      "Personal Banking",
+      "Current Account",
+      "A fee-free everyday account with instant notifications, smart budgeting tools, and no hidden charges.",
+      "Open an Account",
+      "/en/current-account",
       [
         {
-          title: "Visual Editor",
+          title: "No monthly fees",
           description:
-            "Edit content inline with a drag-and-drop visual editor. See changes in real-time before publishing.",
+            "Keep more of your money. Our current account has no monthly maintenance fee, no minimum balance, and no charge for standard transfers.",
         },
         {
-          title: "Content Scheduling",
+          title: "Instant notifications",
           description:
-            "Plan and schedule content publication across time zones. Automate your content workflow.",
+            "Get a push notification the moment money moves in or out of your account. Know your balance in real time, always.",
         },
         {
-          title: "Headless API",
+          title: "Contactless & Apple/Google Pay",
           description:
-            "Deliver content to any channel via GraphQL and REST APIs. Build with your preferred frontend framework.",
+            "Pay with your card or phone anywhere in the world. Freeze and unfreeze your card instantly from the app if it goes missing.",
         },
         {
-          title: "Localization",
+          title: "Smart spending insights",
           description:
-            "Manage multi-language content natively. Translate and adapt experiences for global audiences.",
+            "See exactly where your money goes each month, automatically categorised. Set spending limits and watch your savings grow.",
         },
       ],
-      "Optimizely CMS empowers marketing and development teams to collaborate seamlessly. With our Visual Builder, content authors can create stunning pages without touching code, while developers maintain full control over the component architecture and front-end framework of their choice. Whether you're building a corporate website, e-commerce experience, or multi-brand digital platform, Optimizely CMS scales with your ambitions.",
-      "Get Started with CMS"
+      "The Mosey current account is designed for modern life. Open in 10 minutes with just your phone and a valid ID — no branch visit required. Manage everything from the app: move money, set up direct debits, pay bills, and speak to a real person via in-app chat seven days a week.",
+      "Open an Account"
     ),
   },
+
   {
-    key: PAGE_KEYS.featureExperimentation,
-    displayName: "Feature Experimentation",
-    routeSegment: "feature-experimentation",
+    key: PAGE_KEYS.savings,
+    displayName: "Savings",
+    routeSegment: "savings",
     nodes: buildProductPage(
-      "Feature Management",
-      "Feature Experimentation",
-      "Deploy features with confidence using feature flags, A/B tests, and progressive rollouts. Reduce risk and accelerate innovation.",
-      "Explore Feature Experimentation",
-      "https://www.optimizely.com/products/feature-experimentation",
+      "Save Smarter",
+      "Savings",
+      "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £85,000.",
+      "View Savings Rates",
+      "/en/savings",
       [
         {
-          title: "Feature Flags",
+          title: "Easy-access at 4.6% AER",
           description:
-            "Toggle features on or off instantly without code deploys. Control feature access by user segment.",
+            "Withdraw whenever you need to with no penalty. Your rate is competitive and reviewed monthly to stay near the top of the market.",
         },
         {
-          title: "Server-Side Testing",
+          title: "1-year fixed rate at 5.1% AER",
           description:
-            "Run experiments on any platform \u2014 server, mobile, OTT. Full-stack experimentation at scale.",
+            "Lock in our best rate for 12 months and know exactly what you'll earn. Minimum deposit £500, maximum £250,000.",
         },
         {
-          title: "Progressive Rollouts",
+          title: "FSCS protected",
           description:
-            "Gradually roll out features to increasing percentages of users. Monitor and rollback instantly if needed.",
+            "Every penny you save with Mosey is protected by the Financial Services Compensation Scheme up to £85,000 per person.",
         },
         {
-          title: "Real-Time Targeting",
+          title: "Open in minutes",
           description:
-            "Target features based on user attributes, behavior, and context. Personalize every interaction.",
+            "Link any UK current account. Transfer funds instantly and start earning interest from the next business day.",
         },
       ],
-      "Optimizely Feature Experimentation gives engineering and product teams the tools to move fast without breaking things. Deploy features behind flags, test variations with real users, and roll out changes progressively \u2014 all while maintaining full control over who sees what.",
-      "Start Experimenting",
+      "Whether you're building an emergency fund, saving for a home, or making idle cash work harder, Mosey savings accounts give you competitive rates without the complexity. Our fixed-rate accounts are among the best available to UK savers — and our easy-access account means you're never locked out of your money when life happens.",
+      "Open a Savings Account",
       [
-        gridSection("Feature Experimentation Stats", [
-          elementComponent("StatsCounterBlock", "Experiments Stat", {
-            value: "500",
-            suffix: "M+",
-            label: "Experiments run globally",
-          }),
-          elementComponent("StatsCounterBlock", "Deployment Stat", {
-            value: "10",
-            suffix: "x",
-            label: "Faster feature delivery",
-          }),
-          elementComponent("StatsCounterBlock", "MTTR Stat", {
-            value: "90",
+        gridSection("Savings Stats", [
+          elementComponent("StatsCounterBlock", "AER Stat", {
+            value: "5.1",
             suffix: "%",
-            label: "Reduction in MTTR",
+            label: "AER fixed rate",
           }),
-          elementComponent("StatsCounterBlock", "SDK Stat", {
-            value: "20",
-            suffix: "+",
-            label: "SDK languages supported",
+          elementComponent("StatsCounterBlock", "AER Easy Stat", {
+            value: "4.6",
+            suffix: "%",
+            label: "AER easy access",
+          }),
+          elementComponent("StatsCounterBlock", "Protection Stat", {
+            value: "85",
+            suffix: "K",
+            label: "FSCS protection per person",
+          }),
+          elementComponent("StatsCounterBlock", "Open Stat", {
+            value: "10",
+            suffix: " min",
+            label: "To open an account",
           }),
         ]),
-        sectionComponent("TestimonialBlock", "Feature Experimentation Testimonial", {
+        sectionComponent("TestimonialBlock", "Savings Testimonial", {
           quote:
-            "Feature flags changed everything for us. We went from once-a-month big-bang releases to deploying dozens of times a day \u2014 and rolling back takes seconds, not hours.",
-          authorName: "Marcus Rivera",
-          authorRole: "Head of Platform Engineering, NovaTech",
+            "I moved my savings to Mosey after seeing the 5.1% fixed rate. The transfer took less than a day and the app makes it easy to watch my interest grow.",
+          authorName: "Sarah Chen",
+          authorRole: "Mosey customer",
         }),
       ]
     ),
   },
+
   {
-    key: PAGE_KEYS.webExperimentation,
-    displayName: "Web Experimentation",
-    routeSegment: "web-experimentation",
+    key: PAGE_KEYS.mortgage,
+    displayName: "Mortgage",
+    routeSegment: "mortgage",
     nodes: buildProductPage(
-      "Conversion Optimization",
-      "Web Experimentation",
-      "Optimize every digital touchpoint with A/B testing, multivariate experiments, and personalization. Turn visitors into customers.",
-      "Explore Web Experimentation",
-      "https://www.optimizely.com/products/web-experimentation",
+      "Home Buying",
+      "Mortgage",
+      "Find your mortgage rate in minutes. Our advisors guide you from first click to key handover.",
+      "Get a Mortgage",
+      "/en/mortgage",
       [
         {
-          title: "Visual Editor",
+          title: "Decision in principle online",
           description:
-            "Create experiments without code using our point-and-click editor. Empower marketers to test independently.",
+            "Get a DIP in 10 minutes without affecting your credit score. Know your budget before you start house hunting.",
         },
         {
-          title: "Multivariate Testing",
+          title: "Dedicated mortgage advisor",
           description:
-            "Test multiple variables simultaneously to find the optimal combination. Maximize your testing velocity.",
+            "A real person calls you after your DIP to talk through your options, answer questions, and guide you through the full application.",
         },
         {
-          title: "Audience Targeting",
+          title: "Fixed and tracker rates",
           description:
-            "Segment visitors by behavior, geography, device, and custom attributes. Deliver relevant experiences.",
+            "Choose the certainty of a 2 or 5 year fixed rate, or take advantage of falling rates with a tracker mortgage.",
         },
         {
-          title: "Stats Accelerator",
+          title: "No arrangement fee options",
           description:
-            "Reach statistical significance faster with our adaptive traffic allocation engine.",
+            "Pick a mortgage with no upfront arrangement fee — ideal if you want to keep costs down when buying.",
         },
       ],
-      "Optimizely Web Experimentation is the world's leading experimentation platform, trusted by thousands of businesses to optimize their digital experiences. From simple A/B tests to complex multivariate experiments, our platform makes it easy to test, learn, and improve.",
-      "Start Optimizing",
+      "Buying a home is the biggest financial decision most people make. Mosey's mortgage team is here to make it as straightforward as possible — from the first online check to the day you get your keys. We offer mortgages for first-time buyers, home movers, and those looking to remortgage to a better rate.",
+      "Get Started",
       [
-        sectionComponent("TestimonialBlock", "Web Experimentation Testimonial", {
+        sectionComponent("TestimonialBlock", "Mortgage Testimonial", {
           quote:
-            "We ran over 200 experiments last year using Optimizely. Our conversion rate is up 34% and we make every decision with data now — no more guessing what our customers want.",
-          authorName: "Priya Kapoor",
-          authorRole: "Director of Growth, Meridian Commerce",
+            "Applied for a mortgage online on a Sunday. Had a decision in principle by Monday morning. The advisor called to walk me through the full offer — never felt rushed.",
+          authorName: "Marcus Webb",
+          authorRole: "First-time buyer, Bristol",
         }),
       ]
     ),
   },
+
   {
-    key: PAGE_KEYS.analytics,
-    displayName: "Analytics",
-    routeSegment: "analytics",
+    key: PAGE_KEYS.businessBanking,
+    displayName: "Business Banking",
+    routeSegment: "business-banking",
     nodes: buildProductPage(
-      "Data & Insights",
-      "Optimizely Analytics",
-      "Gain real-time insights into user behavior and experiment performance. Make confident, data-driven decisions across your digital stack.",
-      "Explore Analytics",
-      "https://www.optimizely.com/products/intelligence",
+      "Business",
+      "Business Banking",
+      "Current accounts, lending, and payment solutions built for UK businesses. Open in 15 minutes.",
+      "Open a Business Account",
+      "/en/business-banking",
       [
         {
-          title: "Unified Dashboard",
+          title: "Fee-free business current account",
           description:
-            "See all your experiment results and key metrics in one place. No more switching between tools.",
+            "No monthly fee for the first 12 months. After that, £7 per month with unlimited transactions included.",
         },
         {
-          title: "Real-Time Reporting",
+          title: "Accounting integrations",
           description:
-            "Monitor experiment performance as it happens. Get instant alerts when significant results are detected.",
+            "Connect to Xero, QuickBooks, and FreeAgent in one click. Transactions sync automatically so your books are always up to date.",
         },
         {
-          title: "Funnel Analysis",
+          title: "Instant invoicing",
           description:
-            "Visualize user journeys and identify drop-off points. Optimize conversion funnels with data-driven insights.",
+            "Create and send professional invoices from the app and get notified the moment they're paid. Chasing payments is a thing of the past.",
         },
         {
-          title: "Revenue Attribution",
+          title: "Business lending",
           description:
-            "Connect experiments to revenue impact. Understand the true ROI of every optimization effort.",
+            "Flexible loans from £10,000 to £500,000 and overdraft facilities to smooth out cash flow. Decisions in 48 hours.",
         },
       ],
-      "Optimizely Analytics provides deep, actionable insights across all your experimentation and content optimization efforts. Our unified platform connects the dots between experiments, user behavior, and business outcomes \u2014 so you always know what's working and what to do next.",
-      "Explore Analytics"
+      "Mosey Business Banking is designed for the way modern businesses actually work — online, mobile-first, and integrated with the tools you already use. From sole traders to SMEs with 50 employees, our accounts give you the visibility and control to manage your money confidently.",
+      "Open a Business Account",
+      [
+        sectionComponent("TestimonialBlock", "Business Testimonial", {
+          quote:
+            "Opened a business current account in under 15 minutes. The integration with our accounting software was seamless — invoices reconcile automatically.",
+          authorName: "Tom Hartley",
+          authorRole: "Director, Hartley & Co.",
+        }),
+      ]
     ),
   },
+
   {
     key: PAGE_KEYS.contact,
     displayName: "Contact Us",
     routeSegment: "contact",
     nodes: [
       sectionComponent("SectionHeadingBlock", "Contact Heading", {
-        heading: "Get in Touch",
+        heading: "Get in touch",
         subheading:
-          "Have a question or want to learn more? Fill out the form below and our team will get back to you within 24 hours.",
+          "Have a question or need help with your account? Fill out the form and we'll get back to you within one business day.",
       }),
       sectionComponent("FormContainerBlock", "Contact Form Container", {
         heading: "Contact Us",
         description: "We'd love to hear from you. Please fill out the form below.",
         submitUrl: "/api/form-submit",
-        successMessage: "Thank you for reaching out! We'll be in touch within 24 hours.",
+        successMessage: "Thank you for getting in touch! We'll be in touch within one business day.",
       }),
       gridSection("Name Field Row", [
         elementComponent("FormTextInput", "Name Field", {
           label: "Full Name",
-          placeholder: "John Doe",
+          placeholder: "Jane Smith",
           fieldName: "name",
           inputType: "text",
           required: true,
@@ -526,33 +535,33 @@ const pages: PageDef[] = [
       gridSection("Email Field Row", [
         elementComponent("FormTextInput", "Email Field", {
           label: "Email Address",
-          placeholder: "john@company.com",
+          placeholder: "jane@example.com",
           fieldName: "email",
           inputType: "email",
           required: true,
         }),
       ]),
-      gridSection("Company Field Row", [
-        elementComponent("FormTextInput", "Company Field", {
-          label: "Company",
-          placeholder: "Acme Inc.",
-          fieldName: "company",
+      gridSection("Account Number Row", [
+        elementComponent("FormTextInput", "Account Number Field", {
+          label: "Account Number (optional)",
+          placeholder: "12345678",
+          fieldName: "account_number",
           inputType: "text",
           required: false,
         }),
       ]),
-      gridSection("Product Interest Row", [
-        elementComponent("FormSelect", "Product Interest", {
-          label: "Product Interest",
-          fieldName: "product",
-          options: "Content Management System,Feature Experimentation,Web Experimentation,Analytics,Full Platform",
+      gridSection("Enquiry Type Row", [
+        elementComponent("FormSelect", "Enquiry Type", {
+          label: "What's your enquiry about?",
+          fieldName: "enquiry_type",
+          options: "Current Account,Savings,Mortgage,Business Banking,General Enquiry",
           required: true,
         }),
       ]),
       gridSection("Message Row", [
         elementComponent("FormTextArea", "Message Field", {
           label: "Message",
-          placeholder: "Tell us about your project or question...",
+          placeholder: "How can we help you today?",
           fieldName: "message",
           required: true,
         }),
@@ -565,191 +574,200 @@ const pages: PageDef[] = [
     ],
   },
 
-  // ── CMS subpages ──────────────────────────────────────────────────────────
+  // ── Current Account subpages ──────────────────────────────────────────────
+
   {
-    key: PAGE_KEYS.visualBuilder,
-    displayName: "Visual Builder",
-    routeSegment: "visual-builder",
+    key: PAGE_KEYS.instantPayments,
+    displayName: "Instant Payments",
+    routeSegment: "instant-payments",
     nodes: buildProductPage(
-      "Visual Editing",
-      "Visual Builder",
-      "Create stunning pages without writing code. Drag, drop, and publish — all in real time.",
-      "Try Visual Builder",
-      "https://www.optimizely.com/cms/visual-builder",
+      "Faster Payments",
+      "Instant Payments",
+      "Send and receive money in seconds, 24 hours a day, 365 days a year. No delays, no cut-off times.",
+      "Open an Account",
+      "/en/current-account",
       [
-        { title: "Drag & Drop", description: "Compose pages by dragging blocks into place. Reorder sections with a single click." },
-        { title: "Component Library", description: "Pick from a curated palette of reusable, brand-approved blocks pre-built by your developers." },
-        { title: "Real-Time Preview", description: "See your changes live before publishing. Switch between desktop and mobile instantly." },
-        { title: "Responsive Design", description: "Every page looks great on any device. Preview across breakpoints before you publish." },
+        { title: "Faster Payments", description: "Send money to any UK bank account in seconds via the Faster Payments network. Available around the clock." },
+        { title: "Standing orders", description: "Set up regular payments on any schedule — weekly, monthly, or on a custom date — and manage them entirely in the app." },
+        { title: "Direct debits", description: "Authorise and cancel direct debits in the app. See what's due before it leaves your account." },
+        { title: "International transfers", description: "Send money abroad with real exchange rates and low fees. Track your transfer every step of the way." },
       ],
-      "Optimizely Visual Builder bridges the gap between development and content creation. Developers define the component library once; editors assemble pages freely within those guardrails — no code changes, no deploys, no waiting.",
-      "Get Started with Visual Builder"
-    ),
-  },
-  {
-    key: PAGE_KEYS.contentModeling,
-    displayName: "Content Modeling",
-    routeSegment: "content-modeling",
-    nodes: buildProductPage(
-      "Content Architecture",
-      "Content Modeling",
-      "Design the structure of your content once, reuse it everywhere. Custom types, validation, and rich relationships — built for scale.",
-      "Explore Content Modeling",
-      "https://www.optimizely.com/cms/content-types",
-      [
-        { title: "Custom Content Types", description: "Define exactly the fields your content needs. Strings, numbers, rich text, references, and arrays — all strongly typed." },
-        { title: "Field Validation", description: "Set constraints at the schema level. Required fields, character limits, regex patterns — enforced in the editor and the API." },
-        { title: "Content References", description: "Link content items to other pages, media, or structured data. Build a true content graph." },
-        { title: "Versioning", description: "Full audit trail on every change. Roll back to any published version with one click." },
-      ],
-      "Great content architecture is invisible to editors but felt by everyone. Optimizely's content modeling tools let developers define a schema that guides authors, enforces consistency, and keeps the content graph clean — at any scale.",
-      "Start Modeling"
-    ),
-  },
-  {
-    key: PAGE_KEYS.localization,
-    displayName: "Localization",
-    routeSegment: "localization",
-    nodes: buildProductPage(
-      "Global Publishing",
-      "Localization",
-      "Deliver the right content to the right audience, in their language. Multi-language content management built for global teams.",
-      "Explore Localization",
-      "https://www.optimizely.com/cms/localization",
-      [
-        { title: "Multi-Language Content", description: "Manage translations side-by-side. Publish in one locale without affecting others." },
-        { title: "Translation Workflows", description: "Route content to translators automatically. Track status across all locales from one dashboard." },
-        { title: "Regional Targeting", description: "Serve locale-specific assets, pricing, and calls-to-action based on visitor location." },
-        { title: "Fallback Locales", description: "Configure fallback chains so visitors always see content, even when a translation isn't ready." },
-      ],
-      "Building global digital experiences shouldn't mean doubling your effort. Optimizely Localization gives content teams a single source of truth that branches cleanly into any number of languages and regions — with workflows that keep translation on schedule.",
-      "Go Global"
+      "Modern banking means money moves at your speed — not the bank's. Mosey uses the UK Faster Payments network so transfers reach their destination in seconds, not hours.",
+      "Open an Account"
     ),
   },
 
-  // ── Feature Experimentation subpages ──────────────────────────────────────
   {
-    key: PAGE_KEYS.featureFlags,
-    displayName: "Feature Flags",
-    routeSegment: "feature-flags",
+    key: PAGE_KEYS.mobileApp,
+    displayName: "Mobile App",
+    routeSegment: "mobile-app",
     nodes: buildProductPage(
-      "Controlled Rollouts",
-      "Feature Flags",
-      "Ship features to production without exposing them to users. Toggle, target, and roll back in seconds — no redeploy required.",
-      "Explore Feature Flags",
-      "https://www.optimizely.com/products/feature-experimentation",
+      "Banking on the Go",
+      "Mobile App",
+      "Everything your bank account can do, from your pocket. Rated 4.8 stars on the App Store.",
+      "Download the App",
+      "/en/current-account",
       [
-        { title: "Instant Toggles", description: "Enable or disable any feature in real time. No code change, no build, no deploy cycle." },
-        { title: "Audience Targeting", description: "Show features to specific users, cohorts, or segments. Target by attribute, location, or custom rule." },
-        { title: "Kill Switch", description: "If something goes wrong, kill the feature immediately. Reduce MTTR from hours to seconds." },
-        { title: "SDK Support", description: "SDKs for JavaScript, Python, Go, Java, Ruby, and more. Works server-side, client-side, or on mobile." },
+        { title: "Instant balance & transactions", description: "See your real-time balance and every transaction the moment it happens. No delays, no end-of-day batch updates." },
+        { title: "Card controls", description: "Freeze, unfreeze, or cancel your card in one tap. Set limits on contactless payments, online spending, and withdrawals." },
+        { title: "Spending insights", description: "Transactions are automatically categorised so you can see where your money goes each month. Set budgets and track progress." },
+        { title: "In-app chat support", description: "Talk to a real Mosey person via in-app chat seven days a week. No hold music, no call centres." },
       ],
-      "Feature flags decouple deployment from release. Your team ships to production continuously; business stakeholders decide when — and for whom — each feature goes live. Optimizely makes that separation simple and auditable.",
-      "Start Using Feature Flags"
-    ),
-  },
-  {
-    key: PAGE_KEYS.progressiveRollouts,
-    displayName: "Progressive Rollouts",
-    routeSegment: "progressive-rollouts",
-    nodes: buildProductPage(
-      "Risk Reduction",
-      "Progressive Rollouts",
-      "Roll out features to a growing percentage of users. Monitor impact, catch issues early, and roll back instantly if needed.",
-      "Explore Rollouts",
-      "https://www.optimizely.com/products/feature-experimentation",
-      [
-        { title: "Percentage Rollouts", description: "Start at 1%, scale to 100%. Each step is measured before you proceed." },
-        { title: "Canary Releases", description: "Route a small cohort of early adopters to your new version. Battle-test before full launch." },
-        { title: "Auto-Rollback", description: "Set error-rate thresholds. If breached, the rollout pauses and alerts your team automatically." },
-        { title: "Monitoring Integration", description: "Connect to Datadog, New Relic, or your observability stack. See feature impact on your metrics in real time." },
-      ],
-      "Progressive rollouts are the difference between a scary big-bang release and a controlled, confidence-building launch. Optimizely's rollout engine lets you move fast without risking everything.",
-      "Start Rolling Out"
+      "The Mosey app is how most of our customers do their banking. It's fast, intuitive, and packed with features that used to require a branch visit. Rated 4.8 stars on the App Store and 4.7 on Google Play.",
+      "Download the App"
     ),
   },
 
-  // ── Web Experimentation subpages ──────────────────────────────────────────
   {
-    key: PAGE_KEYS.visualEditor,
-    displayName: "Visual Editor",
-    routeSegment: "visual-editor",
+    key: PAGE_KEYS.travelMoney,
+    displayName: "Travel Money",
+    routeSegment: "travel-money",
     nodes: buildProductPage(
-      "No-Code Testing",
-      "Visual Editor",
-      "Run A/B tests without writing a line of code. Click any element on your page, change it, and launch an experiment in minutes.",
-      "Try the Visual Editor",
-      "https://www.optimizely.com/products/web-experimentation",
+      "Travel",
+      "Travel Money",
+      "Spend abroad with no foreign transaction fees and real exchange rates. Your card works in 200+ countries.",
+      "Open an Account",
+      "/en/current-account",
       [
-        { title: "Point-and-Click", description: "Select any text, image, button, or section. Edit it directly — no developer required." },
-        { title: "WYSIWYG Editing", description: "See exactly what your visitors will see. No staging environment, no lag." },
-        { title: "Responsive Preview", description: "Check how your experiment looks on mobile, tablet, and desktop before launching." },
-        { title: "Change History", description: "Full audit log of every experiment variant. Revert any change in one click." },
+        { title: "No foreign transaction fees", description: "Use your Mosey card anywhere in the world and we'll never add a foreign transaction or currency conversion fee." },
+        { title: "Real exchange rates", description: "We use the mid-market exchange rate — the same one you see on Google. No hidden markup." },
+        { title: "Worldwide ATM withdrawals", description: "Withdraw up to £200 abroad per month for free. After that, a flat £1 fee per withdrawal — never a percentage." },
+        { title: "Instant notifications abroad", description: "Get notified the moment your card is used abroad. Spot unauthorised transactions immediately and freeze your card in one tap." },
       ],
-      "The Optimizely Visual Editor gives marketers superpowers. Create, test, and optimize page variations at the speed of thought — without filing a dev ticket. Developers stay focused on new features; marketers stay focused on conversion.",
-      "Open the Visual Editor"
-    ),
-  },
-  {
-    key: PAGE_KEYS.statsEngine,
-    displayName: "Stats Engine",
-    routeSegment: "stats-engine",
-    nodes: buildProductPage(
-      "Statistical Rigor",
-      "Stats Engine",
-      "Get to confident results faster. Sequential testing lets you act on data without waiting for arbitrary run times.",
-      "Explore the Stats Engine",
-      "https://www.optimizely.com/products/web-experimentation",
-      [
-        { title: "Bayesian Engine", description: "Understand probability of winning, not just p-values. Make intuitive, business-friendly decisions." },
-        { title: "Sequential Testing", description: "Peek at results at any time without inflating false positives. Stop experiments as soon as you're confident." },
-        { title: "Sample Size Calculator", description: "Enter your baseline and target lift. Get a recommended experiment duration before you even start." },
-        { title: "Significance Monitoring", description: "Get alerted the moment your experiment reaches significance. No more manual result-checking." },
-      ],
-      "Bad statistics cost companies real money — from false positives that ship broken features to long runtimes that slow the whole roadmap. Optimizely's stats engine is built by PhDs and battle-tested across millions of experiments.",
-      "Learn About the Stats Engine"
+      "Mosey current account holders get excellent foreign exchange as standard — no add-on needed. Whether you're travelling for a weekend or living abroad, your card works the same way it does at home.",
+      "Open an Account"
     ),
   },
 
-  // ── Analytics subpages ────────────────────────────────────────────────────
+  // ── Savings subpages ──────────────────────────────────────────────────────
+
   {
-    key: PAGE_KEYS.analyticsReports,
-    displayName: "Reports & Dashboards",
-    routeSegment: "reports",
+    key: PAGE_KEYS.easyAccessSavings,
+    displayName: "Easy Access Savings",
+    routeSegment: "easy-access-savings",
     nodes: buildProductPage(
-      "Actionable Insights",
-      "Reports & Dashboards",
-      "See everything in one place. Custom dashboards, funnel analysis, and revenue attribution — all connected to your experiments.",
-      "Explore Reports",
-      "https://www.optimizely.com/products/intelligence",
+      "Flexible Savings",
+      "Easy Access Savings",
+      "Earn 4.6% AER with no notice period and no limit on withdrawals. Your money is always within reach.",
+      "Open an Easy Access Account",
+      "/en/savings",
       [
-        { title: "Custom Dashboards", description: "Pin the metrics that matter. Build dashboards by team, campaign, or product area." },
-        { title: "Funnel Analysis", description: "Visualize the full user journey. Find exactly where visitors drop off and what experiments to run next." },
-        { title: "Revenue Attribution", description: "Connect experiment wins to revenue impact. Show the ROI of your optimization program in dollars." },
-        { title: "Data Exports", description: "Push raw experiment data to your data warehouse. Full control over how you analyze results." },
+        { title: "4.6% AER variable", description: "One of the highest easy-access rates available to UK savers. Rate is reviewed monthly and remains near the top of the market." },
+        { title: "Unlimited withdrawals", description: "Withdraw any amount, any time, with no penalty and no notice period. Funds are in your current account the same working day." },
+        { title: "No minimum balance", description: "Start saving from as little as £1. There's no minimum balance to earn interest." },
+        { title: "FSCS protected", description: "Your savings are protected by the Financial Services Compensation Scheme up to £85,000 per person." },
       ],
-      "Decisions made without data are guesses. Optimizely Analytics closes the loop between running experiments and understanding outcomes — so every team has the evidence it needs to move confidently.",
-      "See the Reports"
+      "The Mosey Easy Access Savings Account is for people who want their money to work harder without giving up flexibility. There's no fixed term, no notice period, and no limit on how many times you can dip into your savings.",
+      "Open an Easy Access Account"
     ),
   },
+
   {
-    key: PAGE_KEYS.analyticsIntegrations,
-    displayName: "Integrations",
-    routeSegment: "integrations",
+    key: PAGE_KEYS.fixedRateSavings,
+    displayName: "Fixed Rate Savings",
+    routeSegment: "fixed-rate-savings",
     nodes: buildProductPage(
-      "Connect Everything",
-      "Integrations",
-      "Optimizely works with the tools you already use. Connect your CDP, data warehouse, ad platforms, and analytics stack in minutes.",
-      "Explore Integrations",
-      "https://www.optimizely.com/integrations",
+      "Fixed Rate",
+      "Fixed Rate Savings",
+      "Lock in 5.1% AER for 12 months and know exactly what you'll earn. Minimum deposit £500.",
+      "Open a Fixed Rate Account",
+      "/en/savings",
       [
-        { title: "CDP Sync", description: "Push experiment assignments to Segment, mParticle, or Amplitude. Enrich your customer profiles with experiment data." },
-        { title: "Data Warehouse", description: "Send events to Snowflake, BigQuery, or Redshift. Own your data, run your own analysis." },
-        { title: "Ad Platforms", description: "Sync experiment audiences to Google Ads, Meta, and LinkedIn. Test messaging across paid channels." },
-        { title: "Webhook Events", description: "Subscribe to experiment lifecycle events. Trigger automations in Zapier, Slack, or your own systems." },
+        { title: "5.1% AER fixed for 12 months", description: "Our best savings rate, guaranteed for the full 12-month term. You'll know exactly what you'll earn before you open the account." },
+        { title: "Open from £500", description: "Start earning our top rate with a minimum deposit of £500. Maximum balance £250,000 per person." },
+        { title: "Guaranteed return", description: "Unlike easy-access accounts, your rate won't change during your term. Plan your finances with certainty." },
+        { title: "FSCS protected", description: "Your savings are protected by the Financial Services Compensation Scheme up to £85,000 per person." },
       ],
-      "The modern data stack is composable. Optimizely fits natively into your existing infrastructure — sending and receiving data through a rich set of native integrations and a powerful webhook system.",
-      "Browse All Integrations"
+      "Our fixed-rate savings account is for people who don't need immediate access to their money and want to earn as much interest as possible. Lock in 5.1% AER for 12 months and watch a £10,000 deposit grow to £10,510 by maturity.",
+      "Open a Fixed Rate Account"
+    ),
+  },
+
+  // ── Mortgage subpages ─────────────────────────────────────────────────────
+
+  {
+    key: PAGE_KEYS.firstTimeBuyers,
+    displayName: "First-Time Buyers",
+    routeSegment: "first-time-buyers",
+    nodes: buildProductPage(
+      "First Home",
+      "First-Time Buyers",
+      "Getting on the ladder is a big deal. We make the mortgage part as simple as possible.",
+      "Get a Decision in Principle",
+      "/en/mortgage",
+      [
+        { title: "5% deposit mortgages", description: "We offer mortgages with as little as a 5% deposit for first-time buyers purchasing their primary residence." },
+        { title: "Government scheme support", description: "Our advisors are experts in Help to Buy, Shared Ownership, and the Lifetime ISA. We'll help you use every available scheme." },
+        { title: "No arrangement fee", description: "Choose a mortgage with no upfront arrangement fee — keeping your costs down when every pound counts." },
+        { title: "Step-by-step guidance", description: "From offer accepted to keys in hand, your dedicated advisor walks you through every stage of the process." },
+      ],
+      "Buying your first home is one of life's biggest milestones — and one of its most confusing financial moments. Mosey's first-time buyer mortgages and specialist advisors are here to take the mystery out of the process so you can focus on finding the right home.",
+      "Get a Decision in Principle"
+    ),
+  },
+
+  {
+    key: PAGE_KEYS.remortgaging,
+    displayName: "Remortgaging",
+    routeSegment: "remortgaging",
+    nodes: buildProductPage(
+      "Better Rate",
+      "Remortgaging",
+      "Switch to a better deal when your fixed term ends. We do the heavy lifting so you don't have to.",
+      "Check My Remortgage Rate",
+      "/en/mortgage",
+      [
+        { title: "Rate alert before your term ends", description: "We'll contact you 3 months before your fixed rate expires so you have plenty of time to find a better deal." },
+        { title: "Free legal work for switchers", description: "Switch to Mosey and we cover the legal costs of the remortgage. No hidden charges." },
+        { title: "Like-for-like switching", description: "Already with us? Switch to a new deal in minutes with no new affordability assessment required in most cases." },
+        { title: "Borrow more if needed", description: "A remortgage is also a chance to release equity for home improvements or consolidate existing debt at a lower rate." },
+      ],
+      "When your current deal ends, your mortgage typically reverts to a standard variable rate — which is usually much higher. Remortgaging to a new fixed rate with Mosey can save hundreds of pounds a year. Our advisors make the switch straightforward.",
+      "Check My Rate"
+    ),
+  },
+
+  // ── Business Banking subpages ─────────────────────────────────────────────
+
+  {
+    key: PAGE_KEYS.businessCurrentAccount,
+    displayName: "Business Current Account",
+    routeSegment: "business-current-account",
+    nodes: buildProductPage(
+      "Business Account",
+      "Business Current Account",
+      "A full-featured business current account with no monthly fee for your first year.",
+      "Open a Business Account",
+      "/en/business-banking",
+      [
+        { title: "Free for 12 months", description: "No monthly fee for the first 12 months. After that, £7 per month with unlimited UK transactions included." },
+        { title: "Instant notifications", description: "See every payment in and out the moment it happens. Stay on top of cash flow without checking your balance manually." },
+        { title: "Multi-user access", description: "Give team members read-only or payment-authorisation access. Full audit trail of every action." },
+        { title: "Accounting integration", description: "Connect to Xero, QuickBooks, or FreeAgent. Transactions sync automatically every hour." },
+      ],
+      "The Mosey Business Current Account is built for businesses that want modern banking without the legacy bank experience. Open entirely online, manage everything in the app, and connect to the tools your business already uses.",
+      "Open a Business Account"
+    ),
+  },
+
+  {
+    key: PAGE_KEYS.businessLending,
+    displayName: "Business Lending",
+    routeSegment: "business-lending",
+    nodes: buildProductPage(
+      "Business Finance",
+      "Business Lending",
+      "Flexible loans and overdrafts to help your business grow on your terms. Decisions in 48 hours.",
+      "Apply for Business Finance",
+      "/en/business-banking",
+      [
+        { title: "Business loans from £10,000", description: "Borrow from £10,000 to £500,000 over 1 to 7 years at a fixed rate. No early repayment charges." },
+        { title: "Overdraft facilities", description: "A pre-agreed overdraft to smooth out seasonal cash flow. Only pay interest on what you use." },
+        { title: "Invoice finance", description: "Release cash tied up in unpaid invoices. Get up to 90% of an invoice's value within 24 hours of raising it." },
+        { title: "48-hour decisions", description: "Submit your application online and get a lending decision within two business days in most cases." },
+      ],
+      "Growing a business often means needing capital before revenue catches up. Mosey's business lending products are designed to give you the flexibility to invest, hire, and expand — without the red tape of traditional bank lending.",
+      "Apply for Finance"
     ),
   },
 ];
@@ -759,7 +777,7 @@ const pages: PageDef[] = [
 // ---------------------------------------------------------------------------
 
 /** Keys of items that could not be deleted (e.g. homepage / start page). */
-const undeletableKeys = new Map<string, string>(); // displayName \u2192 existing CMS key
+const undeletableKeys = new Map<string, string>(); // displayName → existing CMS key
 
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
@@ -794,25 +812,27 @@ async function createPage(page: PageDef): Promise<void> {
     const graphKey = await findHomepageKey();
     if (graphKey) {
       const patchBody = { status: "published", displayName: page.displayName, composition };
-      // Try locale-free endpoint (merge-patch), then locale-specific (json)
-      const attempts: Array<{ path: string; contentType: string }> = [
-        { path: `${CONTENT_ENDPOINT}/${graphKey}`, contentType: "application/merge-patch+json" },
-        { path: `${CONTENT_ENDPOINT}/${graphKey}/en`, contentType: "application/json" },
+      const putBody = { contentType: "DynamicExperience", locale: "en", status: "published", displayName: page.displayName, composition };
+      // Try locale-specific PUT (full replace), then locale-specific PATCH, then base PATCH
+      const attempts: Array<{ path: string; method: string; contentType: string; body: object }> = [
+        { path: `${CONTENT_ENDPOINT}/${graphKey}/en`, method: "PUT",   contentType: "application/json",             body: putBody },
+        { path: `${CONTENT_ENDPOINT}/${graphKey}/en`, method: "PATCH", contentType: "application/merge-patch+json", body: patchBody },
+        { path: `${CONTENT_ENDPOINT}/${graphKey}`,    method: "PATCH", contentType: "application/merge-patch+json", body: patchBody },
       ];
-      for (const { path, contentType } of attempts) {
+      for (const { path, method, contentType, body } of attempts) {
         const res = await fetch(path, {
-          method: "PATCH",
+          method,
           headers: { "Content-Type": contentType, Authorization: `Bearer ${token}` },
-          body: JSON.stringify(patchBody),
+          body: JSON.stringify(body),
         });
         if (res.ok) {
-          console.log(`  [patched] ${page.displayName} \u2192 key=${graphKey} route=/`);
+          console.log(`  [patched] ${page.displayName} → key=${graphKey} route=/ (${method} ${path.includes("/en") ? "locale" : "base"})`);
           return;
         }
         const text = await res.text();
-        console.warn(`  [warn] PATCH ${path}: ${res.status} ${text.slice(0, 120)}`);
+        console.warn(`  [warn] ${method} ${path}: ${res.status} ${text.slice(0, 120)}`);
       }
-      console.warn(`  [warn] Could not patch homepage \u2014 update it manually in the CMS Visual Builder.`);
+      console.warn(`  [warn] Could not patch homepage — update it manually in the CMS Visual Builder.`);
     }
   }
 
@@ -838,13 +858,18 @@ async function createPage(page: PageDef): Promise<void> {
 
   const text = await res.text();
   if (!res.ok) {
+    // Routesegment conflict means the page already exists (e.g. it's the CMS start page)
+    if (res.status === 400 && text.includes("is already in use")) {
+      console.log(`  [skipped] ${page.displayName} — routeSegment already in use (existing start page)`);
+      return;
+    }
     console.error(`  [ERROR] ${page.displayName}: ${res.status} ${text}`);
     throw new Error(`Create page failed: ${res.status}`);
   }
 
   const result = JSON.parse(text);
   console.log(
-    `  [created] ${page.displayName} \u2192 key=${result.key} route=${result.routeSegment ?? "/"}`
+    `  [created] ${page.displayName} → key=${result.key} route=${result.routeSegment ?? "/"}`
   );
 }
 
@@ -868,7 +893,7 @@ async function deleteExisting(): Promise<void> {
       }
     );
     if (!delRes.ok) {
-      // Can't delete (e.g. start page) \u2014 record for in-place update later
+      // Can't delete (e.g. start page) — record for in-place update later
       undeletableKeys.set(displayName, item.key);
     }
     console.log(`  [deleted] ${displayName} (${delRes.status})`);
@@ -879,27 +904,57 @@ async function deleteExisting(): Promise<void> {
 // Main
 // ---------------------------------------------------------------------------
 
+/** Find the CMS key of the savings page already in Graph. */
+async function findSavingsKey(): Promise<string | null> {
+  const query = `{ _Page(where:{_metadata:{url:{default:{in:["/en/savings/","/savings/"]}}}},limit:1) { items { _metadata { key } } } }`;
+  const res = await fetch(GRAPH_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) return null;
+  const { data } = await res.json() as { data?: { _Page?: { items?: Array<{ _metadata?: { key?: string } }> } } };
+  return data?._Page?.items?.[0]?._metadata?.key ?? null;
+}
+
 async function main() {
-  console.log("=== Optimizely Content Seeding Script ===\n");
+  console.log("=== Mosey Bank Content Seeding Script ===\n");
 
   console.log("--- Cleaning existing content ---");
   await deleteExisting();
 
+  // Wait for CMS to free up routeSegments from deleted pages before re-creating
+  console.log("\n  Waiting 8s for routeSegments to be released...");
+  await new Promise((r) => setTimeout(r, 8000));
+
   // Creation order matters: parents before children, homepage last (it references other pages)
   const topLevel = pages.filter((p) => !p.container && p.key !== PAGE_KEYS.homepage);
   const subPages = pages.filter((p) => !!p.container);
-  const home     = pages.filter((p) => p.key === PAGE_KEYS.homepage);
-  const ordered  = [...topLevel, ...subPages, ...home];
+  const ordered  = [...topLevel, ...subPages];
 
-  console.log(`\n--- Creating ${ordered.length} experience pages ---`);
+  console.log(`\n--- Creating ${ordered.length} non-homepage pages ---`);
   for (const page of ordered) {
     await createPage(page);
   }
 
+  // Look up the actual savings key (might differ if savings was skipped)
+  const savingsKey = await findSavingsKey() ?? PAGE_KEYS.savings;
+  console.log(`\n  Savings key for homepage: ${savingsKey}`);
+
+  // Build and create the homepage last so its featuredPage reference resolves
+  const homepageDef: PageDef = {
+    key: PAGE_KEYS.homepage,
+    displayName: "Homepage",
+    nodes: buildHomepage(savingsKey),
+  };
+
+  console.log("\n--- Creating homepage ---");
+  await createPage(homepageDef);
+
   console.log("\n=== Seeding Complete ===");
   console.log(`  Pages created: ${pages.length}`);
   console.log("\nWait 30-60 seconds for Optimizely Graph to index, then:");
-  console.log("  npm run dev \u2192 http://localhost:3000");
+  console.log("  npm run dev → http://localhost:3000");
 }
 
 main().catch((err) => {
