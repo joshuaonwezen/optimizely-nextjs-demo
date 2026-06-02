@@ -6,21 +6,18 @@ A reference of known issues and their fixes. Check here before assuming a bug in
 
 ---
 
-## Graph returns `{ __typename: "_Content", _metadata: { key: null } }` for a content reference
+## Single content reference fields don't expand in Graph
 
-**Cause:** Graph does NOT inline-expand `type: "content"` single references on page queries. This is by design — Graph only expands `type: "array"` content areas inline.
+**Cause:** Graph does NOT inline-expand `type: "content"` single reference properties on page queries. This is by design — Graph only expands `type: "array"` content areas inline.
 
-**How it appears:** Every `TraditionalPage.featuredBlock` returns `_Content` regardless of what's set. `_metadata.key` will be null. You cannot distinguish a set reference from an unset one via `__typename`.
+**How it appears:** Every `TraditionalPage.featuredBlock` returns only base metadata regardless of what's set. You cannot distinguish a set reference from an unset one from the returned value.
 
 **Fix:**
-1. Make the target component self-fetch via `graphqlFetch` when it receives no data
-2. Detect which page should render the block by URL, not by the `featuredBlock` value:
+1. Make the target component self-fetch via `graphqlFetch` when it receives no useful data
+2. Detect which page should render the block by URL, not by the reference field value:
 
 ```tsx
-// In TraditionalPage.tsx — URL-based detection, not featuredBlock detection
-{content.featuredBlock?.__typename !== "_Content" && (
-  <OptimizelyComponent content={content.featuredBlock} />
-)}
+// In TraditionalPage.tsx — URL-based detection
 {content._metadata?.url?.default?.includes("/faqs") && (
   <FaqContainerBlock content={{}} />
 )}

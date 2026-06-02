@@ -31,9 +31,9 @@ The client auto-selects based on whether a preview token is present in context. 
 | Property type | Graph behavior |
 |---------------|---------------|
 | `type: "array"` (content area) | **Inline-expanded** — you get full typed fields |
-| `type: "content"` (single ref) | **NOT expanded** — always returns `{ __typename: "_Content", _metadata: { key: null } }` |
+| `type: "content"` (single ref) | **NOT expanded** — returns only base metadata, never the typed fields you need |
 
-If a `TraditionalPage` has `featuredBlock: { type: "content" }`, Graph returns `_Content` for ALL pages regardless of whether the field is set. You cannot distinguish a set reference from an unset one from the `__typename` alone.
+If a `TraditionalPage` has `featuredBlock: { type: "content" }`, Graph returns only base metadata for ALL pages regardless of whether the field is set. You cannot reliably detect whether a single reference is set from the returned value alone.
 
 **Workaround:** Make the component self-fetch its own data via `graphqlFetch`, and use URL-based detection in the page component to decide which components to render:
 

@@ -12,7 +12,7 @@ Rules:
 - `baseType` must be `"_component"` for blocks
 - Use `"sectionEnabled"` in `compositionBehaviors` if the block needs to contain a content area (array of child blocks). Use `"elementEnabled"` for leaf blocks with no children.
 - `allowedTypes` in a content area must reference imported `ContentType` objects — NOT plain string keys like `"FaqItemBlock"`. Import the type object and reference it directly.
-- Single `type: "content"` references are NOT inline-expanded by Graph (Graph returns a `_Content` shell with null key). Content area arrays (`type: "array"`) ARE expanded. If a block needs to resolve a single reference, use a self-fetching pattern instead.
+- Single `type: "content"` references are NOT inline-expanded by Graph — you only get base metadata, not the typed fields. Content area arrays (`type: "array"`) ARE expanded. If a block needs to resolve a single reference, use a self-fetching pattern instead.
 
 ```tsx
 import { contentType } from "@optimizely/cms-sdk";

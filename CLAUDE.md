@@ -7,9 +7,9 @@ This is a Next.js 16 + Optimizely SaaS CMS + Feature Experimentation demo projec
 ## Optimizely Graph — Critical Gotchas
 
 ### Single content references are NOT inline-expanded
-`type: "content"` single reference properties on pages always return `{ __typename: "_Content", _metadata: { key: null } }` from Graph — regardless of whether the field is set. Graph only inline-expands `type: "array"` content areas.
+`type: "content"` single reference properties on pages return only base metadata from Graph — regardless of whether the field is set. Graph only inline-expands `type: "array"` content areas.
 
-**Do not** try to branch on `__typename !== "_Content"` to detect whether a reference is set — it's always `_Content`. Use URL-based detection instead:
+Do not try to detect whether a reference is set from its returned value — the value looks the same whether set or unset. Use URL-based detection instead:
 
 ```tsx
 // In TraditionalPage.tsx — detect by URL, not by featuredBlock value

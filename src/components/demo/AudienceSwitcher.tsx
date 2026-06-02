@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const PERSONAS = [
-  { key: "new_visitor",  label: "New Visitor" },
+  { key: "",             label: "Default" },
   { key: "personal",     label: "Personal Banking" },
   { key: "business",     label: "Business Banking" },
 ];

@@ -65,10 +65,16 @@ async function CmsPage({
   const demoPersona = cookieStore.get("demo_persona")?.value;
   if (demoPersona) activeVariations.unshift(demoPersona);
 
-  const variationOption =
-    activeVariations.length > 0
-      ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
-      : undefined;
+  // Always pass a variation option so Graph can unambiguously resolve the base
+  // content when no variation keys are active. Without this, pages that have
+  // published CMS variations cause _Content.item to return null (ambiguous).
+  const variationOption = {
+    variation: {
+      include: "SOME" as const,
+      value: activeVariations,
+      includeOriginal: true,
+    },
+  };
 
   const client = getClient();
 
