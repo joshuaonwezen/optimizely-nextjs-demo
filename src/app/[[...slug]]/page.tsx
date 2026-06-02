@@ -12,6 +12,11 @@ import { getAllDecisions, bucketVisitor } from "@/lib/optimizely/experimentation
 // Also calls config() so getClient() works throughout the app.
 initComponentRegistry();
 
+// Force SSR so Graph queries are always fresh and never served from a stale
+// build-time data cache. Without this, Next.js caches the first (possibly empty)
+// Graph response at build time and serves it on Vercel until a redeploy.
+export const dynamic = "force-dynamic";
+
 interface PageParams {
   slug?: string[];
 }
@@ -26,6 +31,11 @@ function buildUrlCandidates(slug?: string[]): string[] {
   const path = slug.join("/");
   // If the first segment is a locale code the URL is already fully qualified
   if (LOCALE_PREFIX_RE.test(slug[0])) {
+    // A bare locale slug (e.g. ["nl"]) is the locale homepage — also try
+    // /<locale>/homepage/ since that's how the CMS stores it.
+    if (slug.length === 1) {
+      return [`/${path}/`, `/${path}/homepage/`];
+    }
     return [`/${path}/`];
   }
   // Legacy English paths without locale prefix (e.g. /savings from generateStaticParams
