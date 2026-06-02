@@ -88,12 +88,41 @@ async function CmsPage({
 
   const client = getClient();
 
+  // cache: false bypasses Graph's own server-side CDN cache (?cache=false).
+  // Without this, a stale empty response cached on Graph's side is served even
+  // after the content or query logic is fixed.
+  const fetchOptions = { ...variationOption, cache: false as const };
+
   let page: any = null;
   for (const url of urls) {
-    const items = await client.getContentByPath(url, variationOption);
+    const items = await client.getContentByPath(url, fetchOptions);
     if (items.length > 0) {
       page = items[0];
       break;
+    }
+  }
+
+  // Key-based fallback: _Content.item (used internally by getContentByPath) returns
+  // null when a CMS container and its start page share the same URL, causing the
+  // URL-based lookup to silently fail. _Page.items handles duplicates correctly, so
+  // find the key that way then fetch by key — which is always unique.
+  if (!page) {
+    const KEY_QUERY = /* GraphQL */ `
+      query FindPageKey($urls: [String]) {
+        _Page(
+          where: { _metadata: { url: { default: { in: $urls } } } }
+          limit: 1
+        ) {
+          items { _metadata { key } }
+        }
+      }
+    `;
+    const keyResult = await graphqlFetch<{
+      _Page: { items: Array<{ _metadata: { key: string } }> };
+    }>(KEY_QUERY, { urls }, { next: { revalidate: 0 } });
+    const key = keyResult.data?._Page?.items?.[0]?._metadata?.key;
+    if (key) {
+      page = await client.getContent({ key }, { cache: false });
     }
   }
 
