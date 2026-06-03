@@ -156,9 +156,9 @@ export default async function PersonalizationDemoPage() {
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-16">
 
         {/* How it works — diagram */}
-        <section>
+        <section id="how-it-works">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            How It Works
+            How It Works <a href="#how-it-works" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Three moving parts, all server-side. The browser never touches the FX SDK
@@ -217,9 +217,9 @@ export default async function PersonalizationDemoPage() {
         </section>
 
         {/* Demo: Audience Switcher */}
-        <section>
+        <section id="audience-switcher">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Demo: Audience Switcher
+            Demo: Audience Switcher <a href="#audience-switcher" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             The floating pill in the bottom-right corner is a demo-only tool. It lets a presenter
@@ -314,9 +314,9 @@ const page = variationMatch ?? items[0];`}</code>
         </section>
 
         {/* Your session */}
-        <section>
+        <section id="your-session">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Your Session
+            Your Session <a href="#your-session" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             The table below shows every FX flag evaluated for your stable user ID using
@@ -425,9 +425,9 @@ const page = variationMatch ?? items[0];`}</code>
         </section>
 
         {/* Editor setup guide */}
-        <section>
+        <section id="setup-guide">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Setting It Up (Editor Guide)
+            Setting It Up (Editor Guide) <a href="#setup-guide" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             No engineering required once the FX SDK is wired in. Editors control which
@@ -490,9 +490,9 @@ const page = variationMatch ?? items[0];`}</code>
         </section>
 
         {/* Audience attributes */}
-        <section>
+        <section id="audience-attributes">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Audience Attributes &amp; Targeting Criteria
+            Audience Attributes &amp; Targeting Criteria <a href="#audience-attributes" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             FX audiences are matched against the attributes you pass to{" "}
@@ -513,23 +513,23 @@ const page = variationMatch ?? items[0];`}</code>
               <div className="p-6 grid md:grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                    Middleware parses the User-Agent and writes a{" "}
-                    <code className="bg-surface-low px-1 rounded font-mono text-xs">fx_device</code> cookie
-                    before any page logic runs. Use it to target mobile vs desktop audiences in FX.
+                    The User-Agent header is parsed server-side on every request — no cookie stored (GDPR safe).
+                    Use the <code className="bg-surface-low px-1 rounded font-mono text-xs">device</code> attribute
+                    to target mobile vs desktop audiences in FX.
                   </p>
                   <p className="text-sm text-on-surface-variant leading-relaxed">
                     Your current device attribute: <strong className="text-on-surface font-mono">{device}</strong>
                   </p>
                 </div>
                 <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                  <code>{`// src/middleware.ts
-const ua = req.headers.get("user-agent") ?? "";
-const isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);
-res.cookies.set("fx_device", isMobile ? "mobile" : "desktop");
+                  <code>{`// src/lib/optimizely/visitor.ts
+// No cookie — derived from headers() on every request
+const ua = headerStore.get("user-agent") ?? "";
+const device = /mobile|android|iphone|ipad/i.test(ua)
+  ? "mobile"
+  : "desktop";
 
-// In your page / Server Component:
-const device = cookieStore.get("fx_device")?.value ?? "desktop";
-await getAllDecisions(userId, { device });
+// Automatically included in getOptimizelyUser() attributes
 // FX audience condition: device = "mobile"`}</code>
                 </pre>
               </div>
@@ -606,7 +606,7 @@ const session = await getServerSession();
 // Use account ID for stable cross-device bucketing
 const userId =
   session?.user?.id ??
-  cookieStore.get("fx_user_id")?.value ??
+  cookieStore.get("optimizelyEndUserId")?.value ??
   "anonymous";
 
 await getAllDecisions(userId, {
@@ -749,9 +749,9 @@ await getAllDecisions(userId, {
         </section>
 
         {/* Code snippet */}
-        <section>
+        <section id="integration-code">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-1">
-            The Integration Code
+            The Integration Code <a href="#integration-code" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
             This is the only code change required to connect FX and CMS Variations.

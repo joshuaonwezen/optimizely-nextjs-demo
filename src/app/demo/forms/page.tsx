@@ -135,9 +135,9 @@ export default function FormsPage() {
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
         {/* Live demo form */}
-        <section>
+        <section id="live-form">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Live Form
+            Live Form <a href="#live-form" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The form below is assembled from the five form block components — the same
@@ -180,9 +180,9 @@ export default function FormsPage() {
         </section>
 
         {/* How it works */}
-        <section>
+        <section id="how-it-works">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            How It Works
+            How It Works <a href="#how-it-works" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             Form blocks are independent components that cooperate via the DOM rather
@@ -241,9 +241,9 @@ export default function FormsPage() {
         </section>
 
         {/* Block schema */}
-        <section>
+        <section id="block-schemas">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Block Schemas
+            Block Schemas <a href="#block-schemas" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             All five block types are registered in{" "}
@@ -260,9 +260,9 @@ export default function FormsPage() {
         </section>
 
         {/* API route */}
-        <section>
+        <section id="submit-handler">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            The Submit Handler
+            The Submit Handler <a href="#submit-handler" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             The route receives a flat JSON object keyed by field name. Swap the
@@ -274,9 +274,9 @@ export default function FormsPage() {
         </section>
 
         {/* Personalization loop */}
-        <section>
+        <section id="personalization-loop">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Closing the Personalization Loop
+            Closing the Personalization Loop <a href="#personalization-loop" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             A form submission is the beginning of a customer profile, not the end.

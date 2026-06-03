@@ -268,9 +268,9 @@ export default function VisualBuilderPage() {
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
         {/* Composition model */}
-        <section>
+        <section id="composition-model">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Composition Model
+            Composition Model <a href="#composition-model" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Visual Builder pages are a tree. The SDK flattens and dispatches that
@@ -302,9 +302,9 @@ export default function VisualBuilderPage() {
         </section>
 
         {/* Page route */}
-        <section>
+        <section id="page-route">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Page Route
+            Page Route <a href="#page-route" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             <code className="bg-surface-low px-1 rounded text-xs font-mono">config()</code> sets the
@@ -323,9 +323,9 @@ export default function VisualBuilderPage() {
         </section>
 
         {/* Registry */}
-        <section>
+        <section id="component-registry">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Component Registry
+            Component Registry <a href="#component-registry" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             <code className="bg-surface-low px-1 rounded text-xs font-mono">initComponentRegistry()</code>{" "}
@@ -341,9 +341,9 @@ export default function VisualBuilderPage() {
         </section>
 
         {/* Experience and Section components */}
-        <section>
+        <section id="experience-section">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Experience & Section Components
+            Experience & Section Components <a href="#experience-section" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             The SDK provides <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyComposition</code>{" "}
@@ -372,9 +372,9 @@ export default function VisualBuilderPage() {
         </section>
 
         {/* Preview */}
-        <section>
+        <section id="preview-route">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Preview Route
+            Preview Route <a href="#preview-route" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             <code className="bg-surface-low px-1 rounded text-xs font-mono">getPreviewContent()</code>{" "}
@@ -395,9 +395,9 @@ export default function VisualBuilderPage() {
         </section>
 
         {/* Building a block */}
-        <section>
+        <section id="building-a-block">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Building a Block
+            Building a Block <a href="#building-a-block" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             Each block colocates its{" "}
@@ -435,9 +435,9 @@ export default function VisualBuilderPage() {
         </section>
 
         {/* Block registry */}
-        <section>
+        <section id="registered-blocks">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Registered Blocks
+            Registered Blocks <a href="#registered-blocks" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             All blocks registered in{" "}

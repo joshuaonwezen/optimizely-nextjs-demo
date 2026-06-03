@@ -22,7 +22,7 @@ export type FxDecision = {
 };
 
 // cache() memoises per request — all server components share one SDK instance.
-const buildClient = cache(async function buildClient() {
+export const getOptimizelyClient = cache(async function getOptimizelyClient() {
   const res = await fetch(DATAFILE_URL, { next: { revalidate: 60 } });
   if (!res.ok) return null;
   // SDK v5 createStaticProjectConfigManager requires the datafile as a JSON string
@@ -39,7 +39,7 @@ export async function getDecision(
   attributes: FxAttributes = {}
 ): Promise<FxDecision> {
   const fallback: FxDecision = { flagKey, enabled: false, variationKey: null, variables: {}, reasons: [] };
-  const client = await buildClient();
+  const client = await getOptimizelyClient();
   if (!client) return fallback;
   const ctx = client.createUserContext(userId, attributes);
   if (!ctx) return fallback;
@@ -57,7 +57,7 @@ export async function getAllDecisions(
   userId: string,
   attributes: FxAttributes = {}
 ): Promise<Record<string, FxDecision>> {
-  const client = await buildClient();
+  const client = await getOptimizelyClient();
   if (!client) return {};
   const ctx = client.createUserContext(userId, attributes);
   if (!ctx) return {};
@@ -85,7 +85,7 @@ export async function bucketVisitor(
   userId: string,
   attributes: FxAttributes = {}
 ): Promise<void> {
-  const client = await buildClient();
+  const client = await getOptimizelyClient();
   if (!client) return;
   const ctx = client.createUserContext(userId, attributes);
   if (!ctx) return;

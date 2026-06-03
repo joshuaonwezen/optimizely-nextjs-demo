@@ -5,8 +5,7 @@ import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/s
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
 import { graphqlFetch } from "@/lib/optimizely/client";
-import { getAllDecisions, bucketVisitor } from "@/lib/optimizely/experimentation";
-import { getVisitorContext } from "@/lib/optimizely/visitor";
+import { getOptimizelyUser } from "@/lib/optimizely/user";
 
 // Registers all content types, display templates, and React components.
 // Also calls config() so getClient() works throughout the app.
@@ -60,14 +59,8 @@ async function CmsPage({
   const { slug } = await params;
   const urls = buildUrlCandidates(slug);
 
-  const { userId, attributes } = await getVisitorContext();
-
-  let fxDecisions: Awaited<ReturnType<typeof getAllDecisions>> = {};
-  try {
-    fxDecisions = await getAllDecisions(userId, attributes);
-  } catch {
-    // FX SDK unavailable; fall through with no variation filter
-  }
+  const user = await getOptimizelyUser();
+  const fxDecisions = user.decideAll();
 
   const activeVariations = Object.values(fxDecisions)
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
@@ -152,7 +145,7 @@ async function CmsPage({
       (d) => d.variationKey === servedVariation
     );
     if (exposedFlag) {
-      void bucketVisitor(exposedFlag.flagKey, userId, attributes);
+      void user.decide(exposedFlag.flagKey, []);
     }
   }
 

@@ -116,13 +116,13 @@ OPTIMIZELY_CMS_CLIENT_ID=xxx OPTIMIZELY_CMS_CLIENT_SECRET=yyy npm run opti:push
 ## Feature Experimentation (FX)
 
 ### Primary API: `getOptimizelyUser()`
-Use `getOptimizelyUser()` from `src/lib/optimizely/user.ts` in server components. It reads cookies (userId, device, persona, logged_in) and creates the SDK user context once per request via React `cache()`. Call `user.decide(flagKey)`, `user.decideAll()`, or `user.bucket(flagKey)` on the result — no userId or attributes to thread through manually.
+Use `getOptimizelyUser()` from `src/lib/optimizely/user.ts` in server components. It reads cookies (`optimizelyEndUserId`, `demo_persona`, `demo_logged_in`) plus the `User-Agent` header for `device`, and creates the SDK user context once per request via React `cache()`. Call `user.decide(flagKey)` or `user.decideAll()` — no userId or attributes to thread through manually.
 
 ```ts
 const user = await getOptimizelyUser();
-const decision = user.decide("my_flag");       // single flag
-const decisions = user.decideAll();             // all flags
-user.bucket("my_flag");                         // fire impression
+const decision = user.decide("my_flag");        // single flag, impression suppressed
+const decisions = user.decideAll();              // all flags, impressions suppressed
+user.decide("my_flag", []);                      // fire impression (empty options = no DISABLE_DECISION_EVENT)
 ```
 
 For component-specific extra attributes, spread after `getVisitorContext()`:
@@ -132,10 +132,10 @@ await getDecision("my_flag", userId, { ...attributes, plan: "premium" });
 ```
 
 ### User ID must be stable across requests
-Use the `fx_user_id` cookie set by middleware — never generate a new UUID per request. Unstable IDs mean users get randomly re-bucketed on every page load.
+Use the `optimizelyEndUserId` cookie set by middleware — never generate a new UUID per request. Unstable IDs mean users get randomly re-bucketed on every page load.
 
 ### Impressions are suppressed by default
-`user.decide()` and `user.decideAll()` use `DISABLE_DECISION_EVENT`. Call `user.bucket(flagKey)` in the component that actually renders the variant to fire the impression.
+`user.decide()` and `user.decideAll()` use `DISABLE_DECISION_EVENT` by default. Call `user.decide(flagKey, [])` (empty options array) in the component that actually renders the variant to fire the impression.
 
 ### CMS Variation names must exactly match FX variation key strings
 Case-sensitive. If the FX flag has variation key `variation_1`, the CMS variation must be named exactly `variation_1`. A mismatch means the variation is never served.

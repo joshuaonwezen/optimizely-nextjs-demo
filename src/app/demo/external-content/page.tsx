@@ -181,9 +181,9 @@ export default async function ExternalContentPage() {
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
         {/* Live referral cards */}
-        <section>
+        <section id="live-example">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Live Example — Referrals
+            Live Example — Referrals <a href="#live-example" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             Each card is a <code className="bg-surface-low px-1 rounded text-xs font-mono">Referral</code> item
@@ -209,9 +209,9 @@ export default async function ExternalContentPage() {
         </section>
 
         {/* GraphQL query */}
-        <section>
+        <section id="querying">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-1">
-            Querying External Content
+            Querying External Content <a href="#querying" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
             Once synced, external content is queried exactly like CMS-managed content —
@@ -226,10 +226,10 @@ export default async function ExternalContentPage() {
         </section>
 
         {/* Base type contracts */}
-        <section className="space-y-16">
+        <section id="base-types" className="space-y-16">
           <div>
             <h2 className="font-display text-2xl font-bold text-on-surface mb-3">
-              Base Type Contracts
+              Base Type Contracts <a href="#base-types" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
             </h2>
             <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
               Graph ships three built-in base type contracts. Inherit from one when registering

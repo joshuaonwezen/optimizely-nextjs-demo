@@ -1,7 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { getDecision, bucketVisitor } from "@/lib/optimizely/experimentation";
-import { getVisitorContext } from "@/lib/optimizely/visitor";
+import { getOptimizelyUser } from "@/lib/optimizely/user";
 
 export const ProductHeroBlockType = contentType({
   key: "ProductHeroBlock",
@@ -74,12 +73,12 @@ export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
   const isCentered = ds?.alignment === "center";
 
   // Evaluate add_to_cart FX flag — drives button colour + style
-  const { userId } = await getVisitorContext();
-  const fxDecision = await getDecision("add_to_cart", userId);
+  const user = await getOptimizelyUser();
+  const fxDecision = user.decide("add_to_cart");
 
   const fxColor = fxDecision.enabled ? (fxDecision.variables.button_color as string) : undefined;
   const fxStyle = fxDecision.enabled ? (fxDecision.variables.button_style as string) : undefined;
-  if (fxDecision.enabled) void bucketVisitor("add_to_cart", userId);
+  if (fxDecision.enabled) void user.decide("add_to_cart", []);
 
   const ctaColorClass = (fxColor && COLOR_CLASSES[fxColor]) || "bg-surface-lowest text-brand";
   const ctaStyleMod   = (fxStyle && STYLE_MODIFIERS[fxStyle]) || "";

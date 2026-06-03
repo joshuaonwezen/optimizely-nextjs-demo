@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
 // ---------------------------------------------------------------------------
 
 const CACHE_TABLE = [
-  { data: "CMS page content",  location: "GraphClient.getContentByPath()", ttl: "60s",        tag: "—",            revalidatedBy: "/api/revalidate or /api/webhooks" },
+  { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "60s",        tag: "—",            revalidatedBy: "/api/revalidate or /api/webhooks" },
   { data: "Navigation tree",   location: "getNavigation()",                ttl: "300s (5 min)", tag: "navigation",  revalidatedBy: "revalidateTag('navigation') in /api/webhooks" },
   { data: "Site banner",       location: "getSiteBanner()",                ttl: "60s",          tag: "banner",      revalidatedBy: "revalidateTag('banner') — manual" },
   { data: "External referrals",location: "getReferrals()",                 ttl: "60s",          tag: "referrals",   revalidatedBy: "revalidateTag('referrals') — manual" },
@@ -144,9 +144,9 @@ export default function CachingDemoPage() {
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
         {/* Live proof */}
-        <section>
+        <section id="live-proof">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Live Proof of ISR
+            Live Proof of ISR <a href="#live-proof" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             This page is server-rendered with{" "}
@@ -166,9 +166,9 @@ export default function CachingDemoPage() {
         </section>
 
         {/* Cache strategy table */}
-        <section>
+        <section id="caching-strategy">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Caching Strategy
+            Caching Strategy <a href="#caching-strategy" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             Every data source in the project has an explicit caching policy.
@@ -211,10 +211,10 @@ export default function CachingDemoPage() {
         </section>
 
         {/* graphqlFetch pattern */}
-        <section className="space-y-8">
+        <section id="graphql-fetch" className="space-y-8">
           <div>
             <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              The graphqlFetch Pattern
+              The graphqlFetch Pattern <a href="#graphql-fetch" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
             </h2>
             <p className="text-sm text-on-surface-variant max-w-3xl">
               All GraphQL requests go through a single{" "}
@@ -241,9 +241,9 @@ export default function CachingDemoPage() {
         </section>
 
         {/* Flow diagram */}
-        <section>
+        <section id="revalidate-flow">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Publish → Revalidate Flow
+            Publish → Revalidate Flow <a href="#revalidate-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             When an editor publishes content, Next.js ISR caches are invalidated
@@ -268,10 +268,10 @@ Next visitor request
         </section>
 
         {/* Webhook endpoints */}
-        <section className="space-y-12">
+        <section id="webhook-endpoints" className="space-y-12">
           <div>
             <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              Webhook Endpoints
+              Webhook Endpoints <a href="#webhook-endpoints" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
             </h2>
             <p className="text-sm text-on-surface-variant max-w-3xl">
               Three webhook routes handle different event sources. All return immediately —
@@ -337,9 +337,9 @@ Next visitor request
         </section>
 
         {/* Setup guide */}
-        <section>
+        <section id="setup-guide">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-4">
-            Setup Guide
+            Setup Guide <a href="#setup-guide" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <ol className="space-y-4 max-w-2xl">
             {[

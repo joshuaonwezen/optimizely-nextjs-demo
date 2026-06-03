@@ -5,5 +5,8 @@ export const TESTIMONIAL_FRAGMENT = /* GraphQL */ `
     quote
     authorName
     authorRole
+    authorImage {
+      _metadata { url { default } }
+    }
   }
 `;

@@ -168,9 +168,9 @@ export default function PreviewDemoPage() {
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
         {/* Three content modes */}
-        <section>
+        <section id="content-modes">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Three Content Modes
+            Three Content Modes <a href="#content-modes" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The app serves content in two distinct modes depending on context.
@@ -215,9 +215,9 @@ export default function PreviewDemoPage() {
         </section>
 
         {/* URL flow */}
-        <section>
+        <section id="preview-url">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            The Preview URL Flow
+            The Preview URL Flow <a href="#preview-url" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             The CMS is configured with a Preview URL pointing directly to{" "}
@@ -257,9 +257,9 @@ export default function PreviewDemoPage() {
         </section>
 
         {/* /preview render path */}
-        <section>
+        <section id="preview-page">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            The /preview Page
+            The /preview Page <a href="#preview-page" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             <code className="bg-surface-low px-1 rounded text-xs font-mono">getPreviewContent()</code> handles
@@ -274,7 +274,7 @@ export default function PreviewDemoPage() {
         </section>
 
         {/* communicationinjector + data-epi-block-id */}
-        <section className="grid md:grid-cols-2 gap-8">
+        <section id="preview-shell" className="grid md:grid-cols-2 gap-8">
           <div>
             <h2 className="font-display text-xl font-bold text-on-surface mb-2">
               The Preview Shell
@@ -303,9 +303,9 @@ export default function PreviewDemoPage() {
         </section>
 
         {/* communicationinjector scope */}
-        <section>
+        <section id="communication-injector">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Where communicationinjector.js Lives
+            Where communicationinjector.js Lives <a href="#communication-injector" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             The script is injected on the <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code> route only —
@@ -319,9 +319,9 @@ export default function PreviewDemoPage() {
         </section>
 
         {/* Setup guide */}
-        <section>
+        <section id="setup-guide">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-4">
-            Setup Guide
+            Setup Guide <a href="#setup-guide" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <div className="grid md:grid-cols-2 gap-8">
             <div>

@@ -100,9 +100,9 @@ export default async function NavigationDemoPage() {
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-16">
 
         {/* Interactive tree */}
-        <section>
+        <section id="nav-tree">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Navigation Tree
+            Navigation Tree <a href="#nav-tree" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6">
             Hover a row to reveal its URL. Click the chevron to collapse a branch.
@@ -115,9 +115,9 @@ export default async function NavigationDemoPage() {
         </section>
 
         {/* The @recursive query — centrepiece of the demo */}
-        <section>
+        <section id="recursive-query">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-1">
-            The Query — <code className="font-mono text-brand text-xl">@recursive</code>
+            The Query — <code className="font-mono text-brand text-xl">@recursive</code> <a href="#recursive-query" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
             Optimizely Graph&apos;s <code className="bg-surface-low px-1 rounded text-xs font-mono">@recursive</code> directive
@@ -134,7 +134,7 @@ export default async function NavigationDemoPage() {
         </section>
 
         {/* Content types + CMS setup */}
-        <section className="grid md:grid-cols-2 gap-8">
+        <section id="content-types" className="grid md:grid-cols-2 gap-8">
           <div>
             <h2 className="font-display text-xl font-bold text-on-surface mb-1">
               Content Types

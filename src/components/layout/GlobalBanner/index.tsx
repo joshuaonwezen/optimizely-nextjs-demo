@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { contentType } from "@optimizely/cms-sdk";
 import { getSiteBanner } from "@/lib/graphql/queries/GetSiteBanner";
-import { getDecision, bucketVisitor } from "@/lib/optimizely/experimentation";
-import { getVisitorContext } from "@/lib/optimizely/visitor";
+import { getOptimizelyUser } from "@/lib/optimizely/user";
 
 export const SiteBannerType = contentType({
   key: "SiteBanner",
@@ -25,16 +24,16 @@ const VARIANT_CLASSES: Record<string, string> = {
 };
 
 export default async function GlobalBanner() {
-  const { userId, attributes } = await getVisitorContext();
+  const user = await getOptimizelyUser();
 
   // FX flag takes priority over CMS banner when enabled
-  const fxDecision = await getDecision("banner", userId, attributes);
+  const fxDecision = user.decide("banner");
   if (fxDecision.enabled) {
     const v = fxDecision.variables;
     const message = (v.title as string) || (v.description as string) || "";
     const linkText = v.linkText as string | undefined;
     if (!message) return null;
-    void bucketVisitor("banner", userId, attributes);
+    void user.decide("banner", []);
     return (
       <div className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 bg-gradient-brand text-on-brand">
         <span>{message}</span>
