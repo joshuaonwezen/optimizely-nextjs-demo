@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getDecision, bucketVisitor } from "@/lib/optimizely/experimentation";
+import { getVisitorContext } from "@/lib/optimizely/visitor";
 
 export const ProductHeroBlockType = contentType({
   key: "ProductHeroBlock",
@@ -74,8 +74,7 @@ export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
   const isCentered = ds?.alignment === "center";
 
   // Evaluate add_to_cart FX flag — drives button colour + style
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
+  const { userId } = await getVisitorContext();
   const fxDecision = await getDecision("add_to_cart", userId);
 
   const fxColor = fxDecision.enabled ? (fxDecision.variables.button_color as string) : undefined;

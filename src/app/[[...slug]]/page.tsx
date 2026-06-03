@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
@@ -7,6 +6,7 @@ import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import { getAllDecisions, bucketVisitor } from "@/lib/optimizely/experimentation";
+import { getVisitorContext } from "@/lib/optimizely/visitor";
 
 // Registers all content types, display templates, and React components.
 // Also calls config() so getClient() works throughout the app.
@@ -60,23 +60,7 @@ async function CmsPage({
   const { slug } = await params;
   const urls = buildUrlCandidates(slug);
 
-  // Resolve FX variation keys for this user so CMS serves the matching
-  // content variation when one exists.
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
-  const device = cookieStore.get("fx_device")?.value ?? "desktop";
-
-  // The AudienceSwitcher stores the selected persona in demo_persona. Pass it
-  // as persona so FX flags can use it as an audience-targeting attribute
-  // (configure rules in the FX console: persona == "personal" → personal
-  // variation, persona == "business" → business variation, etc.).
-  const demoPersona = cookieStore.get("demo_persona")?.value;
-  const demoLoggedIn = cookieStore.get("demo_logged_in")?.value === "true";
-  const attributes = {
-    device,
-    logged_in: demoLoggedIn,
-    ...(demoPersona ? { persona: demoPersona } : {}),
-  };
+  const { userId, attributes } = await getVisitorContext();
 
   let fxDecisions: Awaited<ReturnType<typeof getAllDecisions>> = {};
   try {

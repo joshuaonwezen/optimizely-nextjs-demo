@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { contentType } from "@optimizely/cms-sdk";
 import { getSiteBanner } from "@/lib/graphql/queries/GetSiteBanner";
 import { getDecision, bucketVisitor } from "@/lib/optimizely/experimentation";
+import { getVisitorContext } from "@/lib/optimizely/visitor";
 
 export const SiteBannerType = contentType({
   key: "SiteBanner",
@@ -25,16 +25,7 @@ const VARIANT_CLASSES: Record<string, string> = {
 };
 
 export default async function GlobalBanner() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
-  const device = cookieStore.get("fx_device")?.value ?? "desktop";
-  const demoPersona = cookieStore.get("demo_persona")?.value;
-  const demoLoggedIn = cookieStore.get("demo_logged_in")?.value === "true";
-  const attributes = {
-    device,
-    logged_in: demoLoggedIn,
-    ...(demoPersona ? { persona: demoPersona } : {}),
-  };
+  const { userId, attributes } = await getVisitorContext();
 
   // FX flag takes priority over CMS banner when enabled
   const fxDecision = await getDecision("banner", userId, attributes);
@@ -43,7 +34,7 @@ export default async function GlobalBanner() {
     const message = (v.title as string) || (v.description as string) || "";
     const linkText = v.linkText as string | undefined;
     if (!message) return null;
-    void bucketVisitor("banner", userId, { device, logged_in: false });
+    void bucketVisitor("banner", userId, attributes);
     return (
       <div className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 bg-gradient-brand text-on-brand">
         <span>{message}</span>
