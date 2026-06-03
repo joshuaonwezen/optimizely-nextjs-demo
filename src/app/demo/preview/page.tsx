@@ -167,10 +167,10 @@ export default function PreviewDemoPage() {
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
-        {/* Three content modes */}
+        {/* Two content modes */}
         <section id="content-modes">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Three Content Modes <a href="#content-modes" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            Two Content Modes <a href="#content-modes" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The app serves content in two distinct modes depending on context.
