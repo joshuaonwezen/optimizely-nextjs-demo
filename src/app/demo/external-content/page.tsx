@@ -225,6 +225,264 @@ export default async function ExternalContentPage() {
           </pre>
         </section>
 
+        {/* Sync paths */}
+        <section id="sync-paths">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Sync Paths — Getting Data into Graph{" "}
+            <a href="#sync-paths" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            Four paths exist for pushing external data into Optimizely Graph. All four end up in
+            the same place — data queryable via GraphQL alongside CMS content — but differ in
+            who owns the pipeline, whether scheduling is managed, and what third-party tooling
+            is involved.
+          </p>
+
+          {/* CMS connection note */}
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 mb-8 flex items-start gap-4">
+            <div className="shrink-0 w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+              <span className="text-brand font-bold text-sm">→</span>
+            </div>
+            <div>
+              <p className="font-display font-semibold text-on-surface text-sm mb-1">
+                Connecting to CMS — same step for every path
+              </p>
+              <p className="text-sm text-on-surface-variant leading-relaxed">
+                Once data is in Graph, wire it to CMS via{" "}
+                <strong>Admin → Content Types → Create new… → Connect from Graph</strong>.
+                Choose the source ID, schema, a CMS base type (Page, Component, Media, Image, or Video),
+                and the fields to use as the content ID and display name. CMS creates a read-only
+                connected content type editors can reference and browse in the Content Manager.
+                Note: the label is <em>Connect from Graph</em>, not "Import from Graph" — a common
+                source of confusion in the UI.
+              </p>
+            </div>
+          </div>
+
+          {/* 4 path cards */}
+          <div className="grid md:grid-cols-2 gap-6 mb-10">
+
+            {/* Path 1 */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden flex flex-col">
+              <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">1</span>
+                <div>
+                  <h3 className="font-display font-semibold text-on-surface">Direct to Graph</h3>
+                  <p className="text-xs text-on-surface-variant">Content Source API — NdJSON over HTTP</p>
+                </div>
+              </div>
+              <div className="p-6 flex flex-col gap-4 flex-1">
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  Register a schema via{" "}
+                  <code className="bg-surface-low px-1 rounded font-mono text-xs">PUT /api/content/v3/types</code>{" "}
+                  and push NdJSON records via{" "}
+                  <code className="bg-surface-low px-1 rounded font-mono text-xs">POST /api/content/v2/data</code>.
+                  No third-party tools required. You build and run all sync logic.
+                </p>
+                <div className="space-y-1.5 text-xs">
+                  {[
+                    ["Schema", "Registered via API"],
+                    ["Data", "Pushed directly to Graph"],
+                    ["Sync", "Your code, your schedule"],
+                    ["Infra you own", "Everything"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-center gap-2">
+                      <span className="text-on-surface-variant w-20 shrink-0">{label}</span>
+                      <span className="bg-surface-low rounded px-2 py-0.5 font-mono text-on-surface">{value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-surface-low rounded-xl p-3 text-xs text-on-surface-variant">
+                  <strong className="text-on-surface">Best for:</strong> Custom or proprietary data
+                  with no off-the-shelf integration. Teams comfortable owning scheduling, retries,
+                  and rebuilds.
+                </div>
+                <p className="text-xs text-on-surface-variant mt-auto">
+                  ⚠ Two undocumented-but-required fields:{" "}
+                  <code className="bg-surface-low px-1 rounded font-mono">"preset": "next"</code> on
+                  the schema and{" "}
+                  <code className="bg-surface-low px-1 rounded font-mono">displayName___searchable</code>{" "}
+                  in <code className="bg-surface-low px-1 rounded font-mono">_itemMetadata</code>.
+                  See <a href="#base-types" className="text-brand hover:underline">Base Type Contracts ↓</a> for full examples.
+                  Additional sources may need to be enabled by Optimizely — contact support if the
+                  types endpoint returns a source-limit error.
+                </p>
+              </div>
+            </div>
+
+            {/* Path 2 */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden flex flex-col">
+              <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">2</span>
+                <div>
+                  <h3 className="font-display font-semibold text-on-surface">OCP — Free Tier</h3>
+                  <p className="text-xs text-on-surface-variant">Public apps + Custom Endpoints (real-time)</p>
+                </div>
+              </div>
+              <div className="p-6 flex flex-col gap-4 flex-1">
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  Included with SaaS CMS. Ships with public apps for common platforms — each app
+                  handles auth, schema registration, and field mapping automatically. If no public
+                  app exists, Custom Endpoints (real-time) adds a field-mapping UI over what you&apos;d
+                  build for Path 1.
+                </p>
+                <div className="space-y-1.5 text-xs">
+                  {[
+                    ["Schema", "OCP config + Graph"],
+                    ["Data", "Webhook ingestion"],
+                    ["Sync", "Real-time only (free tier)"],
+                    ["Infra you own", "Your data pipeline"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-center gap-2">
+                      <span className="text-on-surface-variant w-20 shrink-0">{label}</span>
+                      <span className="bg-surface-low rounded px-2 py-0.5 font-mono text-on-surface">{value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-on-surface mb-2">Public apps (free)</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {["Bynder", "Brandfolder", "Commercetools", "Shopify", "WordPress", "CMP"].map((app) => (
+                      <span key={app} className="inline-flex items-center px-2 py-0.5 rounded-md bg-brand/10 text-brand text-xs font-medium">
+                        {app}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-surface-low rounded-xl p-3 text-xs text-on-surface-variant mt-auto">
+                  <strong className="text-on-surface">Best for:</strong> Customers using a supported
+                  public app — this is the unambiguous recommendation for Bynder, Brandfolder, or
+                  Commercetools. For custom data with no matching app, the free tier adds little
+                  over Path 1 and doesn&apos;t support scheduled syncs from your source.
+                </div>
+              </div>
+            </div>
+
+            {/* Path 3 */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden flex flex-col">
+              <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">3</span>
+                <div>
+                  <h3 className="font-display font-semibold text-on-surface">OCP — Paid Tier</h3>
+                  <p className="text-xs text-on-surface-variant">Managed staging DB + scheduled syncs</p>
+                </div>
+              </div>
+              <div className="p-6 flex flex-col gap-4 flex-1">
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  Unlocks the OCP database as a hosted staging layer and scheduled outbound syncs
+                  to Graph via the Sync Manager. Data reaches OCP via S3 CSV, REST API, webhook, or
+                  an OCP app — from there OCP handles the sync to Graph on your chosen interval.
+                </p>
+                <div className="space-y-1.5 text-xs">
+                  {[
+                    ["Schema", "OCP database + Graph"],
+                    ["Data", "S3 / API / app → OCP DB → Graph"],
+                    ["Sync", "Scheduled or real-time (OCP managed)"],
+                    ["Infra you own", "Less — OCP hosts staging + intervals"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-center gap-2">
+                      <span className="text-on-surface-variant w-20 shrink-0">{label}</span>
+                      <span className="bg-surface-low rounded px-2 py-0.5 font-mono text-on-surface">{value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-surface-low rounded-xl p-3 text-xs text-on-surface-variant">
+                  <strong className="text-on-surface">Best for:</strong> Customers who want OCP to
+                  manage the staging layer and scheduling without building their own pipeline. Also
+                  the right path if data needs to flow from one source to multiple OCP destinations.
+                </div>
+                <div className="text-xs text-on-surface-variant mt-auto space-y-1">
+                  <p>
+                    ⚠ <strong className="text-on-surface">Paid tier required</strong> — confirm pricing
+                    with the CSM before scoping.
+                  </p>
+                  <p>
+                    Reference OCP app:{" "}
+                    <a
+                      href="https://github.com/joshuaonwezen/ocp-product-catalog"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand hover:underline font-mono"
+                    >
+                      joshuaonwezen/ocp-product-catalog
+                    </a>
+                    {" "}— TypeScript app with KV store, REST API, and bulk + real-time Graph sync.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Path 4 */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden flex flex-col">
+              <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">4</span>
+                <div>
+                  <h3 className="font-display font-semibold text-on-surface">CMP DAM → Graph</h3>
+                  <p className="text-xs text-on-surface-variant">For existing CMP customers</p>
+                </div>
+              </div>
+              <div className="p-6 flex flex-col gap-4 flex-1">
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  For customers already on Content Marketing Platform. CMP DAM assets sync to Graph
+                  in real-time via OCP, making them queryable via GraphQL and selectable in CMS via
+                  the Browse DAM action on content reference and image properties.
+                </p>
+                <div className="space-y-1.5 text-xs">
+                  {[
+                    ["Schema", "CMP + Graph (via OCP)"],
+                    ["Data", "CMP DAM → Graph (real-time)"],
+                    ["Sync", "Real-time, OCP-managed"],
+                    ["Infra you own", "None — fully managed"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-center gap-2">
+                      <span className="text-on-surface-variant w-20 shrink-0">{label}</span>
+                      <span className="bg-surface-low rounded px-2 py-0.5 font-mono text-on-surface">{value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-surface-low rounded-xl p-3 text-xs text-on-surface-variant">
+                  <strong className="text-on-surface">Best for:</strong> CMP customers who want DAM
+                  assets queryable in Graph and selectable in CMS without building a custom pipeline.
+                  CMP has a self-serve{" "}
+                  <strong>Settings → Organization → Misc → Enable &amp; Sync</strong> button that
+                  provisions the end-to-end OCP sync.
+                </div>
+                <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3 mt-auto">
+                  ⚠ CMP subscription required. Renditions are not supported in the CMS Browse DAM
+                  action — only original assets.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Recommendation matrix */}
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-ghost-border">
+              <h3 className="font-display font-semibold text-on-surface">Recommendation Matrix</h3>
+            </div>
+            <div className="divide-y divide-ghost-border">
+              {([
+                ["Custom data, full control, no managed layer needed", "Path 1", ""],
+                ["Using Bynder, Brandfolder, Commercetools, Shopify, or WordPress", "Path 2", "Public app handles auth, schema, and field mapping"],
+                ["Already on CMP, want DAM assets in Graph and selectable in CMS", "Path 4", ""],
+                ["Want managed scheduling + staging layer, paid tier acceptable", "Path 3", "Confirm pricing with CSM before scoping"],
+                ["Free OCP tier + scheduled (not real-time) syncs from source", "Path 1 or 3", "Free tier only supports real-time push — scheduled source syncs are paid-only"],
+              ] as [string, string, string][]).map(([situation, path, note]) => (
+                <div key={situation} className="px-6 py-4 flex items-start justify-between gap-6">
+                  <div className="flex-1">
+                    <p className="text-sm text-on-surface">{situation}</p>
+                    {note && <p className="text-xs text-on-surface-variant mt-0.5">{note}</p>}
+                  </div>
+                  <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-md bg-brand/10 text-brand text-xs font-mono font-semibold whitespace-nowrap">
+                    {path}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Base type contracts */}
         <section id="base-types" className="space-y-16">
           <div>
