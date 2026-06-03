@@ -89,6 +89,32 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ received: true, timestamp: Date.now() });
 }`;
 
+const GRAPH_CACHE_SNIPPET = `// Layer 2: Graph's own CDN cache at cg.optimizely.com
+// Bypassed by appending ?cache=false to the endpoint URL.
+// Setting cache: "no-store" in Next.js only skips Layer 1 — Graph can still
+// return a cached response unless you also pass ?cache=false.
+
+const GATEWAY = process.env.OPTIMIZELY_GRAPH_GATEWAY;
+// "https://cg.optimizely.com/content/v2"
+
+// Standard — Graph may return a CDN-cached response:
+fetch(\`\${GATEWAY}\`, { method: "POST", ... });
+
+// Bypass Graph cache — always fresh from Graph's data store:
+fetch(\`\${GATEWAY}?cache=false\`, { method: "POST", ... });
+
+// SDK methods (getContentByPath, getContent) support { cache: false }
+// which adds ?cache=false to the URL automatically:
+const client = getClient();
+await client.getContentByPath(url, { cache: false });
+await client.getContent({ key, version }, { cache: false });
+
+// The catch-all CMS page route (src/app/[[...slug]]/page.tsx) uses both:
+export const dynamic = "force-dynamic";  // Layer 1: skip Next.js output cache
+// ...
+await client.getContentByPath(url, { cache: false });  // Layer 2: skip Graph CDN cache
+// Result: every request gets the absolute latest content from Graph's data store.`;
+
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -103,6 +129,7 @@ const CACHE_TABLE = [
   { data: "FX datafile",       location: "buildClient() in experimentation.ts", ttl: "60s",   tag: "—",            revalidatedBy: "Automatic (fetch cache)" },
   { data: "Search results",    location: "GET /api/search",                ttl: "no-store",     tag: "—",           revalidatedBy: "Always fresh — bypasses ISR" },
   { data: "Draft/preview",     location: "client.getPreviewContent()",     ttl: "no-store",  tag: "—",            revalidatedBy: "Always fresh — bypasses ISR" },
+  { data: "Graph CDN cache",  location: "cg.optimizely.com/content/v2",   ttl: "Graph-managed", tag: "—",        revalidatedBy: "?cache=false on the request URL — see section below" },
 ];
 
 export default function CachingDemoPage() {
@@ -236,6 +263,145 @@ export default function CachingDemoPage() {
               <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed h-full">
                 <code>{CALLER_SNIPPET}</code>
               </pre>
+            </div>
+          </div>
+        </section>
+
+        {/* Graph CDN cache */}
+        <section id="graph-cache" className="space-y-8">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+              Graph&apos;s Response Cache — A Second Layer{" "}
+              <a href="#graph-cache" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            </h2>
+            <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
+              Two independent cache layers sit between an editor publishing content and a user seeing
+              it. They are bypassed with different mechanisms — and{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">cache: &quot;no-store&quot;</code>{" "}
+              in Next.js only skips Layer 1. Graph can still return a stale response from its own
+              CDN cache unless you also add{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">?cache=false</code> to
+              the endpoint URL.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">1</span>
+                <h3 className="font-display font-semibold text-on-surface">Next.js Fetch Cache</h3>
+              </div>
+              <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
+                Lives in the Node.js / Vercel infrastructure layer. Controlled entirely by the fetch
+                options you pass in{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch()</code>.
+              </p>
+              <div className="space-y-1.5 text-xs">
+                {[
+                  ["Cache with TTL", "next: { revalidate: 60 }"],
+                  ["Cache with tag", "next: { tags: ['navigation'] }"],
+                  ["Bypass", "cache: \"no-store\""],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-center gap-2">
+                    <span className="text-on-surface-variant w-24 shrink-0">{label}</span>
+                    <code className="bg-surface-low rounded px-2 py-0.5 font-mono text-on-surface">{value}</code>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">2</span>
+                <h3 className="font-display font-semibold text-on-surface">Graph CDN Cache</h3>
+              </div>
+              <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
+                Lives at <code className="bg-surface-low px-1 rounded font-mono text-xs">cg.optimizely.com</code> on
+                Optimizely&apos;s infrastructure. Applies to every request that doesn&apos;t opt out,
+                regardless of what Next.js does with the response.
+              </p>
+              <div className="space-y-1.5 text-xs">
+                {[
+                  ["Cache", "(default — no action needed)"],
+                  ["Bypass (raw)", "append ?cache=false to the URL"],
+                  ["Bypass (SDK)", "{ cache: false } in getContentByPath"],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-center gap-2">
+                    <span className="text-on-surface-variant w-24 shrink-0">{label}</span>
+                    <code className="bg-surface-low rounded px-2 py-0.5 font-mono text-on-surface">{value}</code>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+              Bypassing Graph&apos;s cache — raw URL vs SDK
+            </p>
+            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+              <code>{GRAPH_CACHE_SNIPPET}</code>
+            </pre>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+              <h3 className="font-display font-semibold text-on-surface mb-3 text-sm">
+                When you need <code className="font-mono text-brand">?cache=false</code>
+              </h3>
+              <ul className="space-y-2.5 text-sm text-on-surface-variant">
+                <li className="flex gap-2">
+                  <span className="text-brand shrink-0">→</span>
+                  <span>
+                    <strong className="text-on-surface">Force-dynamic pages</strong> — the catch-all
+                    CMS route is <code className="bg-surface-low px-1 rounded font-mono text-xs">force-dynamic</code>{" "}
+                    so Next.js never caches its output. Without{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono text-xs">?cache=false</code>,
+                    Graph&apos;s CDN would be the only remaining cache layer — with an uncontrolled TTL.
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-brand shrink-0">→</span>
+                  <span>
+                    <strong className="text-on-surface">Seed scripts and cache-warming</strong> — after
+                    indexing new content, subsequent queries need to verify the fresh data, not a
+                    Graph-cached version of the old data.
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-brand shrink-0">→</span>
+                  <span>
+                    <strong className="text-on-surface">Preview / draft content</strong> — ensures the
+                    very latest draft is returned from Graph&apos;s data store rather than a cached
+                    published version.
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+              <h3 className="font-display font-semibold text-on-surface mb-3 text-sm">
+                When you <em>don&apos;t</em> need it
+              </h3>
+              <ul className="space-y-2.5 text-sm text-on-surface-variant">
+                <li className="flex gap-2">
+                  <span className="text-brand shrink-0">→</span>
+                  <span>
+                    <strong className="text-on-surface">ISR pages with a revalidation window</strong> — if
+                    a page revalidates every 60s, Next.js ISR is already the controlling cache.
+                    Graph&apos;s short-lived CDN cache on top doesn&apos;t add meaningful staleness
+                    beyond what ISR already accepts.
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-brand shrink-0">→</span>
+                  <span>
+                    <strong className="text-on-surface">Navigation, banners, and other tagged caches</strong> — these
+                    use 60–300s TTLs in Next.js ISR. Graph&apos;s cache sits inside that window and
+                    is evicted when the tag is revalidated.
+                  </span>
+                </li>
+              </ul>
             </div>
           </div>
         </section>
