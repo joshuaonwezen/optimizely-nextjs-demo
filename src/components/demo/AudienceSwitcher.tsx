@@ -4,13 +4,25 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const PERSONAS = [
-  { key: "",             label: "Default" },
-  { key: "personal",     label: "Personal Banking" },
-  { key: "business",     label: "Business Banking" },
+  { key: "",          label: "Default" },
+  { key: "personal",  label: "Personal Banking" },
+  { key: "business",  label: "Business Banking" },
 ];
 
-export default function AudienceSwitcher({ initialPersona }: { initialPersona: string }) {
+const AUTH_STATES = [
+  { value: false, label: "Guest" },
+  { value: true,  label: "Logged In" },
+];
+
+export default function AudienceSwitcher({
+  initialPersona,
+  initialLoggedIn,
+}: {
+  initialPersona: string;
+  initialLoggedIn: boolean;
+}) {
   const [current, setCurrent] = useState(initialPersona);
+  const [loggedIn, setLoggedIn] = useState(initialLoggedIn);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -26,7 +38,7 @@ export default function AudienceSwitcher({ initialPersona }: { initialPersona: s
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
-  async function select(key: string) {
+  async function selectPersona(key: string) {
     if (key === current || loading) return;
     setLoading(true);
     setOpen(false);
@@ -40,17 +52,32 @@ export default function AudienceSwitcher({ initialPersona }: { initialPersona: s
     router.refresh();
   }
 
+  async function selectLoggedIn(value: boolean) {
+    if (value === loggedIn || loading) return;
+    setLoading(true);
+    await fetch("/api/demo/set-logged-in", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loggedIn: value }),
+    });
+    setLoggedIn(value);
+    setLoading(false);
+    router.refresh();
+  }
+
   return (
     <div ref={ref} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
       {open && (
-        <div className="bg-surface-lowest border border-outline-variant rounded-2xl shadow-xl overflow-hidden w-52">
+        <div className="bg-surface-lowest border border-outline-variant rounded-2xl shadow-xl overflow-hidden w-56">
+
+          {/* Persona section */}
           <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider">
-            Audience
+            Persona
           </p>
           {PERSONAS.map((p) => (
             <button
               key={p.key}
-              onClick={() => select(p.key)}
+              onClick={() => selectPersona(p.key)}
               className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 transition-colors ${
                 p.key === current
                   ? "text-brand font-semibold bg-brand/5"
@@ -65,9 +92,31 @@ export default function AudienceSwitcher({ initialPersona }: { initialPersona: s
               {p.label}
             </button>
           ))}
+
+          {/* Auth state section */}
+          <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider border-t border-outline-variant mt-1">
+            Auth State
+          </p>
+          <div className="px-4 pb-3 flex gap-2">
+            {AUTH_STATES.map(({ value, label }) => (
+              <button
+                key={String(value)}
+                onClick={() => selectLoggedIn(value)}
+                className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  loggedIn === value
+                    ? "bg-brand text-on-brand"
+                    : "bg-surface-low text-on-surface hover:bg-surface"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div className="px-4 py-3 border-t border-outline-variant">
             <p className="text-xs text-on-surface-variant leading-snug">
-              Sets <code className="font-mono">demo_persona</code> cookie to force a Graph variation.
+              Sets <code className="font-mono">demo_persona</code> and{" "}
+              <code className="font-mono">demo_logged_in</code> cookies.
             </p>
           </div>
         </div>
@@ -91,6 +140,9 @@ export default function AudienceSwitcher({ initialPersona }: { initialPersona: s
         </svg>
         <span className="text-on-surface-variant text-xs">Audience</span>
         <span>{loading ? "Switching…" : currentLabel}</span>
+        {loggedIn && (
+          <span className="text-xs bg-brand/10 text-brand px-1.5 py-0.5 rounded font-mono">auth</span>
+        )}
         <svg
           viewBox="0 0 20 20"
           fill="currentColor"

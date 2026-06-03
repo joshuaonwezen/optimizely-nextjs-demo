@@ -28,9 +28,16 @@ export default async function GlobalBanner() {
   const cookieStore = await cookies();
   const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
   const device = cookieStore.get("fx_device")?.value ?? "desktop";
+  const demoPersona = cookieStore.get("demo_persona")?.value;
+  const demoLoggedIn = cookieStore.get("demo_logged_in")?.value === "true";
+  const attributes = {
+    device,
+    logged_in: demoLoggedIn,
+    ...(demoPersona ? { persona: demoPersona } : {}),
+  };
 
   // FX flag takes priority over CMS banner when enabled
-  const fxDecision = await getDecision("banner", userId, { device, logged_in: false });
+  const fxDecision = await getDecision("banner", userId, attributes);
   if (fxDecision.enabled) {
     const v = fxDecision.variables;
     const message = (v.title as string) || (v.description as string) || "";

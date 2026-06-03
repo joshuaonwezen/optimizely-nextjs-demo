@@ -33,6 +33,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const cookieStore = await cookies();
   const initialPersona = cookieStore.get("demo_persona")?.value ?? "";
+  const initialLoggedIn = cookieStore.get("demo_logged_in")?.value === "true";
 
   return (
     <html lang="en">
@@ -43,7 +44,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <NavigationHeader />
         <main>{children}</main>
         <Footer />
-        <AudienceSwitcher initialPersona={initialPersona} />
+        <AudienceSwitcher initialPersona={initialPersona} initialLoggedIn={initialLoggedIn} />
       </body>
     </html>
   );

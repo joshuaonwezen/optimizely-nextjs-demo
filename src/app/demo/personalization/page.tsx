@@ -18,29 +18,46 @@ import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 initComponentRegistry(); // also calls config() so getClient() works
 
 async function CmsPage({ params }) {
-  const { slug } = await params;
-
-  // 1. Get stable user ID from middleware cookie
   const cookieStore = await cookies();
+
+  // 1. Stable user ID from middleware cookie
   const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
-  const device = cookieStore.get("fx_device")?.value ?? "desktop";
 
-  // 2. Evaluate ALL FX flags for this user
-  const decisions = await getAllDecisions(userId, { device, logged_in: false });
+  // 2. Build attributes — persona from audience switcher, device from middleware
+  const device    = cookieStore.get("fx_device")?.value ?? "desktop";
+  const persona   = cookieStore.get("demo_persona")?.value;
+  const loggedIn  = cookieStore.get("demo_logged_in")?.value === "true";
 
-  // 3. Collect active variation keys
+  const attributes = {
+    device,
+    logged_in: loggedIn,
+    ...(persona ? { persona } : {}),
+  };
+
+  // 3. Evaluate ALL FX flags for this user + attributes
+  const decisions = await getAllDecisions(userId, attributes);
+
+  // 4. Collect active variation keys
   const activeVariations = Object.values(decisions)
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
     .map((d) => d.variationKey as string);
 
-  // 4. Pass them to Graph — it serves the matching CMS variation if one exists.
-  //    includeOriginal:true ensures pages with no matching variation still render.
-  const variationOption = activeVariations.length > 0
+  // 5. URL-based content lookup — Graph returns base + variation when a filter
+  //    is active, so we prefer the variation match from the returned array.
+  const variationFilter = activeVariations.length > 0
     ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
     : undefined;
 
   const client = getClient();
-  const [page] = await client.getContentByPath(\`/en/\${slug?.join("/") ?? ""}/\`, variationOption);
+  const slug = (await params).slug as string[] | undefined;
+  const items = await client.getContentByPath(
+    \`/en/\${slug?.join("/") ?? ""}/\`,
+    { ...variationFilter, cache: false },
+  );
+  const variationMatch = variationFilter
+    ? items.find((item) => activeVariations.includes(item._metadata?.variation))
+    : null;
+  const page = variationMatch ?? items[0];
 
   return <OptimizelyComponent content={page} />;
 }
@@ -110,7 +127,14 @@ export default async function PersonalizationDemoPage() {
   const cookieStore = await cookies();
   const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
   const device = cookieStore.get("fx_device")?.value ?? "desktop";
-  const attributes = { device, logged_in: false };
+  const demoPersona = cookieStore.get("demo_persona")?.value;
+  const demoLoggedIn = cookieStore.get("demo_logged_in")?.value === "true";
+
+  const attributes = {
+    device,
+    logged_in: demoLoggedIn,
+    ...(demoPersona ? { persona: demoPersona } : {}),
+  };
 
   const decisions = await getAllDecisions(userId, attributes);
 
@@ -171,10 +195,12 @@ export default async function PersonalizationDemoPage() {
                 FX decides the bucket
               </h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
-                On every request, the FX SDK evaluates all flags for this user. When a
-                flag is enabled and the user is in an experiment, it returns a
+                On every request, the FX SDK evaluates all flags for this user and their
+                attributes. When a flag is enabled and the user matches an audience rule,
+                it returns a{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs mx-0.5">variationKey</code>
-                like <code className="bg-surface-low px-1 rounded font-mono text-xs">banner1</code>.
+                like <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code> or{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code>.
               </p>
             </div>
 
@@ -190,8 +216,8 @@ export default async function PersonalizationDemoPage() {
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">getContentByPath</code>{" "}
                 as a{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">{"{ include: 'SOME', value: [...] }"}</code>{" "}
-                filter. Graph returns the CMS variation if one exists — or the original
-                content if not.
+                filter. Graph returns both the base and any matching variation — the code
+                prefers the variation match.
               </p>
             </div>
 
@@ -204,7 +230,7 @@ export default async function PersonalizationDemoPage() {
               </h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 Editors create a content variation keyed to the FX variation name
-                (e.g. <code className="bg-surface-low px-1 rounded font-mono text-xs">banner1</code>).
+                (e.g. <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code>).
                 No code change required — the key is the contract between FX and CMS.
               </p>
             </div>
@@ -225,25 +251,40 @@ export default async function PersonalizationDemoPage() {
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
               <h3 className="font-display font-semibold text-on-surface mb-3">How it works</h3>
-              <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                Clicking a persona sets a <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_persona</code> cookie.
-                The catch-all page route reads it and <em>prepends</em> it to the active variation
-                array before passing it to Graph — so it takes priority over any real FX decision.
+              <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
+                The switcher sets two cookies that are passed as FX attributes on every server
+                request. Configure matching audience rules in the FX console and the SDK will
+                return the right variation key automatically.
               </p>
-              <p className="text-sm text-on-surface-variant leading-relaxed">
-                Selecting <strong>Default (Retail)</strong> clears the cookie, restoring normal FX bucketing.
-              </p>
-              <div className="mt-4 space-y-2">
-                {[
-                  { key: "personal",        label: "Personal Banking",  note: "sets demo_persona=personal" },
-                  { key: "business",        label: "Business Banking",  note: "sets demo_persona=business" },
-                  { key: "new_visitor", label: "New Visitor", note: "sets demo_persona=new_visitor" },
-                ].map(({ key, label, note }) => (
-                  <div key={label} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-on-surface font-medium">{label}</span>
-                    <code className="text-xs font-mono text-on-surface-variant">{key}</code>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-2">Persona</p>
+                  <div className="space-y-1.5">
+                    {[
+                      { key: "personal", note: "persona = \"personal\"" },
+                      { key: "business", note: "persona = \"business\"" },
+                    ].map(({ key, note }) => (
+                      <div key={key} className="flex items-center justify-between gap-3 text-sm">
+                        <code className="font-mono text-xs bg-surface-low px-2 py-0.5 rounded text-on-surface">{key}</code>
+                        <span className="text-xs text-on-surface-variant">{note}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+                <div>
+                  <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-2">Auth State</p>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: "Guest",     note: "logged_in = false" },
+                      { label: "Logged In", note: "logged_in = true" },
+                    ].map(({ label, note }) => (
+                      <div key={label} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-on-surface font-medium text-xs">{label}</span>
+                        <span className="text-xs text-on-surface-variant font-mono">{note}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -252,25 +293,35 @@ export default async function PersonalizationDemoPage() {
                 <span className="text-xs font-mono text-on-surface-variant">src/app/{"[[...slug]]"}/page.tsx</span>
               </div>
               <pre className="p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                <code>{`// FX decisions (real bucketing)
-const fxDecisions = await getAllDecisions(userId, attrs);
-const activeVariations = Object.values(fxDecisions)
+                <code>{`// Build attributes from cookies
+const persona  = cookieStore.get("demo_persona")?.value;
+const loggedIn = cookieStore.get("demo_logged_in")?.value === "true";
+
+const attributes = {
+  device,
+  logged_in: loggedIn,
+  ...(persona ? { persona } : {}),
+};
+
+// FX evaluates audience rules against these attributes
+const decisions = await getAllDecisions(userId, attributes);
+const activeVariations = Object.values(decisions)
   .filter((d) => d.enabled && d.variationKey !== "off")
   .map((d) => d.variationKey as string);
 
-// Demo override — takes priority over FX.
-// Defaults to "new_visitor" so visitors always get a controlled experience.
-const demoPersona = cookieStore.get("demo_persona")?.value ?? "new_visitor";
-activeVariations.unshift(demoPersona);
+// Graph returns base + variation — prefer the variation match
+const variationFilter = activeVariations.length > 0
+  ? { variation: { include: "SOME", value: activeVariations,
+                   includeOriginal: true } }
+  : undefined;
 
-// Pass to Graph — serves matching CMS variant
-const variationOption = activeVariations.length > 0
-  ? { variation: {
-        include: "SOME" as const,
-        value: activeVariations,
-        includeOriginal: true,
-      } }
-  : undefined;`}</code>
+const items = await client.getContentByPath(url, {
+  ...variationFilter, cache: false
+});
+const variationMatch = variationFilter
+  ? items.find((i) => activeVariations.includes(i._metadata?.variation))
+  : null;
+const page = variationMatch ?? items[0];`}</code>
               </pre>
             </div>
           </div>
@@ -283,10 +334,9 @@ const variationOption = activeVariations.length > 0
               <strong>version</strong> — you can then update its composition programmatically by PATCHing
               that version number (see <code className="bg-amber-100 px-1 rounded font-mono text-xs">scripts/update-homepage-variations.ts</code>).
               For this demo: open the homepage in Visual Builder, click <strong>Add variation</strong>, and
-              create three variations named exactly{" "}
-              <code className="bg-amber-100 px-1 rounded font-mono text-xs">personal</code>,{" "}
-              <code className="bg-amber-100 px-1 rounded font-mono text-xs">business</code>, and{" "}
-              <code className="bg-amber-100 px-1 rounded font-mono text-xs">new_visitor</code>,
+              create two variations named exactly{" "}
+              <code className="bg-amber-100 px-1 rounded font-mono text-xs">personal</code> and{" "}
+              <code className="bg-amber-100 px-1 rounded font-mono text-xs">business</code>,
               then run the update script to populate their content.
             </p>
           </div>
@@ -298,9 +348,9 @@ const variationOption = activeVariations.length > 0
             Your Session
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            The table below shows every FX flag evaluated for your stable user ID.
-            Flags with an active variation key are the ones that influence which CMS
-            content variant is served on other pages.
+            The table below shows every FX flag evaluated for your stable user ID using
+            the current attribute values. Flags with an active variation key are the ones
+            that influence which CMS content variant is served on other pages.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -328,9 +378,25 @@ const variationOption = activeVariations.length > 0
                   <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
                     logged_in
                   </span>
-                  <code className="text-sm font-mono text-on-surface">false</code>
+                  <code className={`text-sm font-mono ${demoLoggedIn ? "text-brand" : "text-on-surface"}`}>
+                    {String(demoLoggedIn)}
+                  </code>
                 </div>
+                {demoPersona && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
+                      persona
+                    </span>
+                    <code className="text-sm font-mono text-brand">{demoPersona}</code>
+                  </div>
+                )}
               </div>
+              {!demoPersona && !demoLoggedIn && (
+                <p className="mt-4 text-xs text-on-surface-variant italic">
+                  Use the audience switcher to set <code className="font-mono">persona</code> or{" "}
+                  <code className="font-mono">logged_in</code> and see the attributes update here.
+                </p>
+              )}
             </div>
 
             {/* Variation keys passed to Graph */}
@@ -347,7 +413,7 @@ const variationOption = activeVariations.length > 0
                 <p className="text-sm text-on-surface-variant italic">
                   No active variations — all flags are off or returning{" "}
                   <code className="bg-surface-low px-1 rounded font-mono text-xs">off</code>.
-                  Enable a flag and assign it to an experiment in the FX dashboard.
+                  Enable a flag and configure an audience rule in the FX dashboard.
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-2">
@@ -402,43 +468,46 @@ const variationOption = activeVariations.length > 0
             <Step number={1} title="Create an experiment in Feature Experimentation">
               In the FX dashboard, create a flag — for this demo it&apos;s{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">homepage_audience</code> — and
-              add an A/B experiment with named variations. This demo uses{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code> (22%),{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code> (22%),{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">new_visitor</code> (22%), and{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">off</code> (34%).
+              define two named variations:{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code> (33%) and{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code> (33%), with{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">off</code> (34%) as the holdout.
+              Add audience conditions using the{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code> attribute
+              (e.g. <code className="bg-surface-low px-1 rounded font-mono text-xs">persona = "personal"</code>)
+              so the switcher deterministically routes visitors to the right variant.
               The exact variation key strings become the contract with the CMS.
             </Step>
 
             <Step number={2} title="Create variations in Visual Builder, then update via script">
               Open the homepage in the CMS Visual Builder. Click{" "}
-              <strong>Add variation</strong> in the right-hand panel. Create three variations named
+              <strong>Add variation</strong> in the right-hand panel. Create two variations named
               exactly{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code>,{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code>, and{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">new_visitor</code>{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code> and{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code>{" "}
               (case-sensitive). Each variation is saved as a new draft <strong>version</strong>.
               Once created, run{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">npx tsx scripts/update-homepage-variations.ts</code>{" "}
-              to PATCH those versions with the correct compositions and publish them — no manual editing
-              in the Visual Builder UI required after that.
+              to PATCH those versions with the correct compositions and publish them.
             </Step>
 
             <Step number={3} title="Each audience gets its own homepage">
               Users bucketed into{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code>{" "}
-              see personal banking focus; <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code>{" "}
-              sees business banking; <code className="bg-surface-low px-1 rounded font-mono text-xs">new_visitor</code>{" "}
-              sees a broad welcome experience. The 34% in{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">off</code> see the original
-              homepage — no extra work because <code className="bg-surface-low px-1 rounded font-mono text-xs">includeOriginal: true</code>.
+              see a personal banking focus; users in{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code>{" "}
+              see business banking content. The 34% holdout sees the original
+              homepage — no extra work because{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">includeOriginal: true</code>.
             </Step>
 
             <Step number={4} title="Validate with the Audience Switcher">
               Use the floating switcher in the bottom-right corner to preview each variation
               instantly without waiting for FX bucketing. Select{" "}
-              <strong>Business Customer</strong> — the page should show &ldquo;Banking built for
-              business&rdquo; once the CMS variation exists in Visual Builder.
+              <strong>Business Banking</strong> — the page should show &ldquo;Banking built for
+              business&rdquo;. You can also toggle the <strong>Auth State</strong> to{" "}
+              <strong>Logged In</strong> and combine it with a persona to test multi-attribute
+              audience rules.
             </Step>
 
             <Step number={5} title="Launch the experiment">
@@ -495,10 +564,98 @@ await getAllDecisions(userId, { device });
               </div>
             </div>
 
-            {/* 2 — Geo */}
+            {/* 2 — Persona / audience switcher */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">2</span>
+                <h3 className="font-display font-semibold text-on-surface">Persona (already live — set by the Audience Switcher)</h3>
+              </div>
+              <div className="p-6 grid md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
+                    The Audience Switcher sets a <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_persona</code> cookie.
+                    The catch-all page reads it and passes it as the{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code> attribute to FX.
+                    Configure audience rules in the FX dashboard to target{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono text-xs">persona = "personal"</code> or{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono text-xs">persona = "business"</code>.
+                  </p>
+                  <p className="text-sm text-on-surface-variant leading-relaxed">
+                    Current value:{" "}
+                    <strong className="text-on-surface font-mono">
+                      {demoPersona ? `"${demoPersona}"` : "not set"}
+                    </strong>
+                  </p>
+                </div>
+                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
+                  <code>{`// Audience Switcher → POST /api/demo/set-persona
+// Sets demo_persona cookie (1-day maxAge)
+
+// In the catch-all page:
+const persona = cookieStore.get("demo_persona")?.value;
+await getAllDecisions(userId, {
+  device,
+  ...(persona ? { persona } : {}),
+});
+// FX audience: persona = "personal"
+//              persona = "business"`}</code>
+                </pre>
+              </div>
+            </div>
+
+            {/* 3 — Auth / logged-in state */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">3</span>
+                <h3 className="font-display font-semibold text-on-surface">Auth session (logged-in state — also live via the switcher)</h3>
+              </div>
+              <div className="p-6 grid md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
+                    Toggle <strong>Logged In</strong> in the Audience Switcher to flip{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono text-xs">logged_in</code> between
+                    true and false. In a real app, read your auth session instead and use the user&apos;s
+                    stable account ID as{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono text-xs">userId</code> for
+                    consistent cross-device bucketing.
+                  </p>
+                  <p className="text-sm text-on-surface-variant leading-relaxed">
+                    Current value:{" "}
+                    <strong className={`font-mono ${demoLoggedIn ? "text-brand" : "text-on-surface"}`}>
+                      {String(demoLoggedIn)}
+                    </strong>
+                  </p>
+                </div>
+                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
+                  <code>{`import { getServerSession } from "next-auth";
+// or: import { auth } from "@/auth"; // Auth.js v5
+
+const session = await getServerSession();
+
+// Use account ID for stable cross-device bucketing
+const userId =
+  session?.user?.id ??
+  cookieStore.get("fx_user_id")?.value ??
+  "anonymous";
+
+await getAllDecisions(userId, {
+  device,
+  logged_in:  Boolean(session),
+  plan:       session?.user?.plan ?? "free",
+  role:       session?.user?.role ?? "guest",
+});
+// FX audiences:
+//   logged_in = true
+//   plan = "premium"
+//   role = "admin"`}</code>
+                </pre>
+              </div>
+            </div>
+
+            {/* 4 — Geo */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">4</span>
                 <h3 className="font-display font-semibold text-on-surface">Geo / Country (request headers)</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
@@ -533,55 +690,10 @@ await getAllDecisions(userId, { country });
               </div>
             </div>
 
-            {/* 3 — Auth / logged-in state */}
+            {/* 5 — URL / query params */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">3</span>
-                <h3 className="font-display font-semibold text-on-surface">Auth session (logged-in state, user roles)</h3>
-              </div>
-              <div className="p-6 grid md:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                    Read your auth session in the Server Component and pass user properties
-                    as attributes. This lets you target authenticated users, specific roles,
-                    or subscription tiers without exposing data to the browser.
-                  </p>
-                  <p className="text-sm text-on-surface-variant leading-relaxed">
-                    Also use the user&apos;s stable account ID as{" "}
-                    <code className="bg-surface-low px-1 rounded font-mono text-xs">userId</code>{" "}
-                    instead of the anonymous cookie — this gives consistent bucketing across devices.
-                  </p>
-                </div>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                  <code>{`import { getServerSession } from "next-auth";
-// or: import { auth } from "@/auth"; // Auth.js v5
-
-const session = await getServerSession();
-
-// Use account ID for stable cross-device bucketing
-const userId =
-  session?.user?.id ??
-  cookieStore.get("fx_user_id")?.value ??
-  "anonymous";
-
-await getAllDecisions(userId, {
-  device,
-  logged_in:  Boolean(session),
-  plan:       session?.user?.plan ?? "free",
-  role:       session?.user?.role ?? "guest",
-});
-// FX audiences:
-//   logged_in = true
-//   plan = "premium"
-//   role = "admin"`}</code>
-                </pre>
-              </div>
-            </div>
-
-            {/* 4 — URL / query params */}
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
-              <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">4</span>
+                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">5</span>
                 <h3 className="font-display font-semibold text-on-surface">URL &amp; query parameters (UTM, campaign, force-bucket)</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
@@ -589,9 +701,8 @@ await getAllDecisions(userId, {
                   <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
                     Query params are available in Server Components via{" "}
                     <code className="bg-surface-low px-1 rounded font-mono text-xs">searchParams</code>.
-                    Use them to target campaign traffic, enable QA force-bucketing
-                    (<code className="bg-surface-low px-1 rounded font-mono text-xs">?fx_variation=banner1</code>),
-                    or segment by referral source.
+                    Use them to target campaign traffic, enable QA force-bucketing, or segment by
+                    referral source.
                   </p>
                   <p className="text-sm text-on-surface-variant leading-relaxed">
                     UTM parameters identify paid traffic — e.g. show a different hero to users
@@ -613,57 +724,12 @@ export default async function CmsPage({
     utm_campaign: sp.utm_campaign ?? "none",
   });
   // FX audience: utm_source = "google"
-
-  // QA force-bucket: override variation key
-  // ?fx_variation=banner1 → skip FX, always
-  // serve "banner1" CMS variant (dev only)
 }`}</code>
                 </pre>
               </div>
             </div>
 
-            {/* 5 — Custom cookie / localStorage via cookie */}
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
-              <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">5</span>
-                <h3 className="font-display font-semibold text-on-surface">Custom cookies (A/B opt-in, preferences, prior behaviour)</h3>
-              </div>
-              <div className="p-6 grid md:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                    Any first-party cookie is readable server-side. Set cookies from client
-                    components (e.g. on CTA click, form submit, or consent acceptance) and read
-                    them as attributes on the next request — this is how you use client-side
-                    behaviour to drive server-side personalisation without a full client SDK.
-                  </p>
-                  <p className="text-sm text-on-surface-variant leading-relaxed">
-                    Example: show a mortgage offer to users who visited the Mortgages page.
-                  </p>
-                </div>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                  <code>{`// Client component sets the cookie on interaction:
-// document.cookie = "viewed_mortgages=true; path=/";
-
-// Server Component reads it next request:
-const viewedMortgages =
-  cookieStore.get("viewed_mortgages")?.value === "true";
-
-const consentLevel =
-  cookieStore.get("consent_level")?.value ?? "essential";
-
-await getAllDecisions(userId, {
-  device,
-  viewed_mortgages: viewedMortgages,
-  consent_level:    consentLevel,  // "essential"|"analytics"|"all"
-});
-// FX audience:
-//   viewed_mortgages = true
-//   consent_level = "all"`}</code>
-                </pre>
-              </div>
-            </div>
-
-            {/* 6 — Segment size / traffic allocation */}
+            {/* 6 — Combining attributes */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">6</span>
@@ -678,7 +744,7 @@ await getAllDecisions(userId, {
                     call per decision.
                   </p>
                   <ul className="space-y-1 text-sm text-on-surface-variant leading-relaxed">
-                    <li>→ <strong className="text-on-surface">String match:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">country = "GB"</code></li>
+                    <li>→ <strong className="text-on-surface">String match:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">persona = "business"</code></li>
                     <li>→ <strong className="text-on-surface">Boolean:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">logged_in = true</code></li>
                     <li>→ <strong className="text-on-surface">Substring:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">plan contains "premium"</code></li>
                     <li>→ <strong className="text-on-surface">Numeric range:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">account_age_days &gt; 30</code></li>
@@ -687,21 +753,20 @@ await getAllDecisions(userId, {
                 <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
                   <code>{`// Pass everything you know about the user
 await getAllDecisions(userId, {
-  // From middleware / headers
-  device,          // "mobile" | "desktop"
-  country,         // "GB" | "US" | …
+  // From middleware / cookies
+  device,                     // "mobile" | "desktop"
+  persona,                    // "personal" | "business"
 
   // From auth session
-  logged_in:       Boolean(session),
-  plan:            session?.user?.plan ?? "free",
+  logged_in: Boolean(session),
+  plan:       session?.user?.plan ?? "free",
   account_age_days: session?.user?.ageDays ?? 0,
 
-  // From cookies (set by client)
-  viewed_mortgages: Boolean(cookieStore.get("viewed_mortgages")),
-  consent_level:    cookieStore.get("consent_level")?.value ?? "essential",
+  // From geo headers
+  country,                    // "GB" | "US" | …
 
   // From query params
-  utm_source:      sp.utm_source ?? "direct",
+  utm_source: sp.utm_source ?? "direct",
 });
 // FX evaluates ALL of these server-side.
 // Zero client-side data exposure.`}</code>
