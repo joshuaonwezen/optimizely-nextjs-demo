@@ -83,74 +83,66 @@ async function CmsPage({
   const demoPersona = cookieStore.get("demo_persona")?.value;
   if (demoPersona) activeVariations.unshift(demoPersona);
 
-  // Only attach a variation filter when there are active variation keys.
-  // An empty value array causes ambiguous results for pages with multiple
-  // published versions — Graph cannot determine the canonical base content.
-  const variationOption =
+  const client = getClient();
+
+  // When a persona is active, pass the variation names as a filter so Graph
+  // returns both the matching variation and the base (includeOriginal: true).
+  // We then prefer the variation item from the returned array.
+  const variationFilter =
     activeVariations.length > 0
       ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
       : undefined;
 
-  const client = getClient();
-
-  // cache: false bypasses Graph's own server-side CDN cache (?cache=false).
-  // Without this, a stale empty response cached on Graph's side is served even
-  // after the content or query logic is fixed.
-  const fetchOptions = variationOption
-    ? { ...variationOption, cache: false as const }
-    : { cache: false as const };
-
   let page: any = null;
+
+  // Step 1: URL-based lookup. Graph returns one item for pages with a single
+  // published version; for multi-version pages (e.g. homepage) it returns all
+  // matching versions so we pick the variation match.
+  // cache: false bypasses Graph's own server-side CDN cache (?cache=false).
   for (const url of urls) {
-    const items = await client.getContentByPath(url, fetchOptions);
+    const items = await client.getContentByPath(url, { ...variationFilter, cache: false });
     if (items.length > 0) {
-      page = items[0];
+      const variationMatch = variationFilter
+        ? items.find((item: any) => activeVariations.includes(item._metadata?.variation))
+        : null;
+      page = variationMatch ?? items[0];
       break;
     }
   }
 
-  // Fallback for pages with multiple published versions (e.g. homepage with
-  // CMS variations). _Content.item (used by getContentByPath) returns null when
-  // multiple items match the filter. _Page.items has no such restriction.
-  //
-  // Pass the same variation filter so Graph returns both the base version and
-  // any matching persona variation. Prefer the variation match; fall back to the
-  // highest base version for visitors with no active persona.
+  // Step 2: Fallback for pages where getContentByPath returns nothing because
+  // _Content.item resolves to null when multiple items share the same URL.
+  // _Page.items has no such restriction — use it to find key+variation by name,
+  // then fall back to the highest base version.
   if (!page) {
     const KEY_QUERY = /* GraphQL */ `
-      query FindPageKey($urls: [String], $variation: VariationInput) {
+      query FindPageKey($urls: [String]) {
         _Page(
           where: { _metadata: { url: { default: { in: $urls } } } }
-          variation: $variation
           limit: 10
         ) {
           items { _metadata { key version variation } }
         }
       }
     `;
-    const keyVars = variationOption
-      ? { urls, variation: variationOption.variation }
-      : { urls };
-
     const keyResult = await graphqlFetch<{
       _Page: { items: Array<{ _metadata: { key: string; version: string | number; variation: string | null } }> };
-    }>(KEY_QUERY, keyVars, { cache: "no-store" });
+    }>(KEY_QUERY, { urls }, { cache: "no-store" });
 
     const candidates = (keyResult.data?._Page?.items ?? [])
       .map((i) => i._metadata)
       .filter((m): m is { key: string; version: string | number; variation: string | null } => !!(m?.key && m?.version));
 
-    // Prefer the version whose variation name matches the active persona key
+    // Prefer a version whose variation name matches the active persona,
+    // fall back to the highest base version (no variation name).
     const variationMatch = candidates.find(
       (m) => m.variation != null && activeVariations.includes(m.variation)
     );
-    // Fall back to the highest base version (no variation name)
     const baseFallback = candidates
       .filter((m) => !m.variation)
       .sort((a, b) => Number(b.version) - Number(a.version))[0];
 
     const meta = variationMatch ?? baseFallback;
-
     if (meta) {
       page = await client.getContent(
         { key: meta.key, version: String(meta.version) },
