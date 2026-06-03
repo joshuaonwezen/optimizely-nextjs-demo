@@ -49,7 +49,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
 
   return (
     <div
-      className={`${isCard ? "rounded-2xl p-10 bg-surface-lowest" : "py-20 max-w-3xl mx-auto px-8"}`}
+      className={`${isCard ? "rounded-2xl p-10 bg-surface-lowest" : "py-20 max-w-3xl mx-auto"}`}
     >
       {data.quote && (
         <blockquote

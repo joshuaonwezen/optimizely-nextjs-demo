@@ -17,7 +17,12 @@ async function PreviewPage({ searchParams }: Props) {
   const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
 
   const client = getClient();
-  const content = await client.getPreviewContent(params as PreviewParams);
+  let content = null;
+  try {
+    content = await client.getPreviewContent(params as PreviewParams);
+  } catch {
+    // Content not found in Graph (e.g. deleted or unpublished) — render the empty state below
+  }
 
   return (
     <>

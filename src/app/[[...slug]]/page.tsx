@@ -31,10 +31,18 @@ function buildUrlCandidates(slug?: string[]): string[] {
   const path = slug.join("/");
   // If the first segment is a locale code the URL is already fully qualified
   if (LOCALE_PREFIX_RE.test(slug[0])) {
-    // A bare locale slug (e.g. ["nl"]) is the locale homepage — also try
-    // /<locale>/homepage/ since that's how the CMS stores it.
+    const locale = slug[0];
+    // A bare locale slug (e.g. ["en"]) is the locale homepage.
     if (slug.length === 1) {
+      // The English start page is stored at "/" in Graph (the CMS start page has no locale prefix).
+      if (locale === "en") return [`/${path}/`, `/${path}/homepage/`, "/"];
       return [`/${path}/`, `/${path}/homepage/`];
+    }
+    // For locale + path (e.g. ["en", "savings"]), try the locale-prefixed URL first.
+    // Also try the bare path because the CMS sometimes omits the locale prefix for English pages.
+    const rest = slug.slice(1).join("/");
+    if (locale === "en") {
+      return [`/${path}/`, `/${rest}/`];
     }
     return [`/${path}/`];
   }
@@ -101,36 +109,47 @@ async function CmsPage({
     }
   }
 
-  // Fallback for pages with multiple published versions (e.g. homepage after
-  // update-homepage-variations.ts published extra versions without variation names).
-  // _Content.item (used internally by getContentByPath) returns null when multiple
-  // items match the filter. _Page.items (plural) has no such restriction.
+  // Fallback for pages with multiple published versions (e.g. homepage with
+  // CMS variations). _Content.item (used by getContentByPath) returns null when
+  // multiple items match the filter. _Page.items has no such restriction.
   //
-  // We fetch up to 10 versions without a variation filter (same as generateMetadata,
-  // which is proven to work), sort by version number ascending to find the original
-  // base version, then call getContent with key+version — a combination that is
-  // always uniquely identified by _Content.item, so the SDK succeeds.
+  // Pass the same variation filter so Graph returns both the base version and
+  // any matching persona variation. Prefer the variation match; fall back to the
+  // highest base version for visitors with no active persona.
   if (!page) {
     const KEY_QUERY = /* GraphQL */ `
-      query FindPageKey($urls: [String]) {
+      query FindPageKey($urls: [String], $variation: VariationInput) {
         _Page(
           where: { _metadata: { url: { default: { in: $urls } } } }
+          variation: $variation
           limit: 10
         ) {
-          items { _metadata { key version } }
+          items { _metadata { key version variation } }
         }
       }
     `;
+    const keyVars = variationOption
+      ? { urls, variation: variationOption.variation }
+      : { urls };
+
     const keyResult = await graphqlFetch<{
-      _Page: { items: Array<{ _metadata: { key: string; version: string | number } }> };
-    }>(KEY_QUERY, { urls }, { cache: "no-store" });
+      _Page: { items: Array<{ _metadata: { key: string; version: string | number; variation: string | null } }> };
+    }>(KEY_QUERY, keyVars, { cache: "no-store" });
 
     const candidates = (keyResult.data?._Page?.items ?? [])
       .map((i) => i._metadata)
-      .filter((m): m is { key: string; version: string | number } => !!(m?.key && m?.version));
+      .filter((m): m is { key: string; version: string | number; variation: string | null } => !!(m?.key && m?.version));
 
-    // Pick the lowest version number — the original base version
-    const meta = candidates.sort((a, b) => Number(a.version) - Number(b.version))[0];
+    // Prefer the version whose variation name matches the active persona key
+    const variationMatch = candidates.find(
+      (m) => m.variation != null && activeVariations.includes(m.variation)
+    );
+    // Fall back to the highest base version (no variation name)
+    const baseFallback = candidates
+      .filter((m) => !m.variation)
+      .sort((a, b) => Number(b.version) - Number(a.version))[0];
+
+    const meta = variationMatch ?? baseFallback;
 
     if (meta) {
       page = await client.getContent(

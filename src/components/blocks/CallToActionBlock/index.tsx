@@ -77,7 +77,7 @@ export default function CallToActionBlock(props: CallToActionProps) {
   const vs = VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.brand;
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-12 text-center">
+    <div className="py-12 text-center">
       {(data.link || data.__context?.edit) && (
         <a
           href={data.__context?.edit ? undefined : (data.link ?? undefined)}

@@ -2,8 +2,15 @@
  * Content Seeding Script for Optimizely SaaS CMS
  *
  * Creates DynamicExperience pages with inline composition trees.
- * Components are embedded directly in the composition — they are NOT
- * standalone content items (which is how Visual Builder works).
+ * All product/sub-pages use nested containers to produce clean URLs:
+ *
+ *   /en/personal/current-account/
+ *   /en/personal/current-account/instant-payments/
+ *   /en/business/business-banking/
+ *   /en/mortgage/first-time-buyers/
+ *
+ * Requires: CMS content type settings must allow DynamicExperience children
+ * under DynamicExperience (Visual Builder → content type → allowed child types).
  *
  * Run: npx tsx scripts/seed-content.ts
  */
@@ -112,6 +119,16 @@ function rootComponent(
 // Page compositions
 // ---------------------------------------------------------------------------
 
+/** Minimal composition for a category landing page (personal, business, etc.) */
+function buildCategoryPage(heading: string, subheading: string): CompNode[] {
+  return [
+    sectionComponent("SectionHeadingBlock", `${heading} Heading`, {
+      heading,
+      subheading,
+    }),
+  ];
+}
+
 function buildHomepage(savingsKey: string | null): CompNode[] {
   return [
     rootComponent("Hero", "Home Hero", {
@@ -131,7 +148,7 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
         title: "Current Account",
         description:
           "A fee-free everyday account with instant payment notifications and no hidden charges.",
-        linkUrl: "/en/current-account",
+        linkUrl: "/en/personal/current-account",
         linkText: "Open an account →",
       }),
       elementComponent("ProductCardBlock", "Savings Card", {
@@ -139,7 +156,7 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
         title: "Savings",
         description:
           "Easy-access and fixed-rate savings accounts with rates up to 5.1% AER. Your money working harder.",
-        linkUrl: "/en/savings",
+        linkUrl: "/en/personal/savings",
         linkText: "View savings rates →",
       }),
       elementComponent("ProductCardBlock", "Mortgage Card", {
@@ -155,7 +172,7 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
         title: "Business Banking",
         description:
           "Current accounts, lending, and card payment solutions for UK businesses of every size.",
-        linkUrl: "/en/business-banking",
+        linkUrl: "/en/business/business-banking",
         linkText: "Open a business account →",
       }),
     ]),
@@ -226,7 +243,7 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
     }),
     sectionComponent("CallToAction", "Home CTA", {
       label: "Open an account today",
-      link: "/en/current-account",
+      link: "/en/personal/current-account",
     }),
   ];
 }
@@ -282,140 +299,92 @@ interface PageDef {
   key: string;
   displayName: string;
   routeSegment?: string;
-  container?: string; // parent page key for nested pages; defaults to root CONTAINER
+  container?: string; // parent page key; defaults to root CONTAINER
   nodes: CompNode[];
 }
 
 // Pre-declare keys so pages can cross-reference each other
 const PAGE_KEYS = {
-  // Top-level pages
+  // Homepage
   homepage:               noHyphens(),
-  currentAccount:         noHyphens(),
-  savings:                noHyphens(),
-  mortgage:               noHyphens(),
-  businessBanking:        noHyphens(),
-  contact:                noHyphens(),
-  // Current Account subpages
-  instantPayments:        noHyphens(),
-  mobileApp:              noHyphens(),
-  travelMoney:            noHyphens(),
-  // Savings subpages
-  easyAccessSavings:      noHyphens(),
-  fixedRateSavings:       noHyphens(),
-  // Mortgage subpages
-  firstTimeBuyers:        noHyphens(),
-  remortgaging:           noHyphens(),
-  // Business Banking subpages
-  businessCurrentAccount: noHyphens(),
-  businessLending:        noHyphens(),
+  // Level-1 category pages (DynamicExperience, direct children of CONTAINER)
+  personal:               noHyphens(),  // /en/personal/
+  business:               noHyphens(),  // /en/business/
+  investments:            noHyphens(),  // /en/investments/
+  help:                   noHyphens(),  // /en/help/
+  about:                  noHyphens(),  // /en/about/
+  // Level-1 product pages (DynamicExperience, direct children of CONTAINER)
+  mortgage:               noHyphens(),  // /en/mortgage/ — also URL prefix for mortgage sub-pages
+  // Level-2 product pages (DynamicExperience, children of category pages)
+  currentAccount:         noHyphens(),  // /en/personal/current-account/
+  savings:                noHyphens(),  // /en/personal/savings/
+  businessBanking:        noHyphens(),  // /en/business/business-banking/
+  contact:                noHyphens(),  // /en/help/contact/
+  // Level-2 mortgage sub-pages (DynamicExperience, children of mortgage)
+  firstTimeBuyers:        noHyphens(),  // /en/mortgage/first-time-buyers/
+  remortgaging:           noHyphens(),  // /en/mortgage/remortgaging/
+  // Level-3 current account sub-pages
+  instantPayments:        noHyphens(),  // /en/personal/current-account/instant-payments/
+  mobileApp:              noHyphens(),  // /en/personal/current-account/mobile-app/
+  travelMoney:            noHyphens(),  // /en/personal/current-account/travel-money/
+  // Level-3 savings sub-pages
+  easyAccessSavings:      noHyphens(),  // /en/personal/savings/easy-access-savings/
+  fixedRateSavings:       noHyphens(),  // /en/personal/savings/fixed-rate-savings/
+  // Level-3 business banking sub-pages
+  businessCurrentAccount: noHyphens(),  // /en/business/business-banking/business-current-account/
+  businessLending:        noHyphens(),  // /en/business/business-banking/business-lending/
 };
 
 const pages: PageDef[] = [
-  // ── Top-level product pages ───────────────────────────────────────────────
+  // ── Level-1: Category pages ───────────────────────────────────────────────
 
   {
-    key: PAGE_KEYS.currentAccount,
-    displayName: "Current Account",
-    routeSegment: "current-account",
-    nodes: buildProductPage(
+    key: PAGE_KEYS.personal,
+    displayName: "Personal Banking",
+    routeSegment: "personal",
+    nodes: buildCategoryPage(
       "Personal Banking",
-      "Current Account",
-      "A fee-free everyday account with instant notifications, smart budgeting tools, and no hidden charges.",
-      "Open an Account",
-      "/en/current-account",
-      [
-        {
-          title: "No monthly fees",
-          description:
-            "Keep more of your money. Our current account has no monthly maintenance fee, no minimum balance, and no charge for standard transfers.",
-        },
-        {
-          title: "Instant notifications",
-          description:
-            "Get a push notification the moment money moves in or out of your account. Know your balance in real time, always.",
-        },
-        {
-          title: "Contactless & Apple/Google Pay",
-          description:
-            "Pay with your card or phone anywhere in the world. Freeze and unfreeze your card instantly from the app if it goes missing.",
-        },
-        {
-          title: "Smart spending insights",
-          description:
-            "See exactly where your money goes each month, automatically categorised. Set spending limits and watch your savings grow.",
-        },
-      ],
-      "The Mosey current account is designed for modern life. Open in 10 minutes with just your phone and a valid ID — no branch visit required. Manage everything from the app: move money, set up direct debits, pay bills, and speak to a real person via in-app chat seven days a week.",
-      "Open an Account"
+      "Current accounts, savings, and mortgages designed around your everyday needs."
+    ),
+  },
+  {
+    key: PAGE_KEYS.business,
+    displayName: "Business",
+    routeSegment: "business",
+    nodes: buildCategoryPage(
+      "Business Banking",
+      "Current accounts, lending, and payment solutions for UK businesses of every size."
+    ),
+  },
+  {
+    key: PAGE_KEYS.investments,
+    displayName: "Investments",
+    routeSegment: "investments",
+    nodes: buildCategoryPage(
+      "Investments",
+      "Stocks & Shares ISAs, pensions, and long-term savings products."
+    ),
+  },
+  {
+    key: PAGE_KEYS.help,
+    displayName: "Help & Support",
+    routeSegment: "help",
+    nodes: buildCategoryPage(
+      "Help & Support",
+      "FAQs, contact us, and branch finder — we're here when you need us."
+    ),
+  },
+  {
+    key: PAGE_KEYS.about,
+    displayName: "About Mosey",
+    routeSegment: "about",
+    nodes: buildCategoryPage(
+      "About Mosey Bank",
+      "Our story, values, team, careers, and press."
     ),
   },
 
-  {
-    key: PAGE_KEYS.savings,
-    displayName: "Savings",
-    routeSegment: "savings",
-    nodes: buildProductPage(
-      "Save Smarter",
-      "Savings",
-      "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £85,000.",
-      "View Savings Rates",
-      "/en/savings",
-      [
-        {
-          title: "Easy-access at 4.6% AER",
-          description:
-            "Withdraw whenever you need to with no penalty. Your rate is competitive and reviewed monthly to stay near the top of the market.",
-        },
-        {
-          title: "1-year fixed rate at 5.1% AER",
-          description:
-            "Lock in our best rate for 12 months and know exactly what you'll earn. Minimum deposit £500, maximum £250,000.",
-        },
-        {
-          title: "FSCS protected",
-          description:
-            "Every penny you save with Mosey is protected by the Financial Services Compensation Scheme up to £85,000 per person.",
-        },
-        {
-          title: "Open in minutes",
-          description:
-            "Link any UK current account. Transfer funds instantly and start earning interest from the next business day.",
-        },
-      ],
-      "Whether you're building an emergency fund, saving for a home, or making idle cash work harder, Mosey savings accounts give you competitive rates without the complexity. Our fixed-rate accounts are among the best available to UK savers — and our easy-access account means you're never locked out of your money when life happens.",
-      "Open a Savings Account",
-      [
-        gridSection("Savings Stats", [
-          elementComponent("StatsCounterBlock", "AER Stat", {
-            value: "5.1",
-            suffix: "%",
-            label: "AER fixed rate",
-          }),
-          elementComponent("StatsCounterBlock", "AER Easy Stat", {
-            value: "4.6",
-            suffix: "%",
-            label: "AER easy access",
-          }),
-          elementComponent("StatsCounterBlock", "Protection Stat", {
-            value: "85",
-            suffix: "K",
-            label: "FSCS protection per person",
-          }),
-          elementComponent("StatsCounterBlock", "Open Stat", {
-            value: "10",
-            suffix: " min",
-            label: "To open an account",
-          }),
-        ]),
-        sectionComponent("TestimonialBlock", "Savings Testimonial", {
-          quote:
-            "I moved my savings to Mosey after seeing the 5.1% fixed rate. The transfer took less than a day and the app makes it easy to watch my interest grow.",
-          authorName: "Sarah Chen",
-          authorRole: "Mosey customer",
-        }),
-      ]
-    ),
-  },
+  // ── Level-1: Mortgage (product + URL prefix for its sub-pages) ────────────
 
   {
     key: PAGE_KEYS.mortgage,
@@ -428,35 +397,77 @@ const pages: PageDef[] = [
       "Get a Mortgage",
       "/en/mortgage",
       [
-        {
-          title: "Decision in principle online",
-          description:
-            "Get a DIP in 10 minutes without affecting your credit score. Know your budget before you start house hunting.",
-        },
-        {
-          title: "Dedicated mortgage advisor",
-          description:
-            "A real person calls you after your DIP to talk through your options, answer questions, and guide you through the full application.",
-        },
-        {
-          title: "Fixed and tracker rates",
-          description:
-            "Choose the certainty of a 2 or 5 year fixed rate, or take advantage of falling rates with a tracker mortgage.",
-        },
-        {
-          title: "No arrangement fee options",
-          description:
-            "Pick a mortgage with no upfront arrangement fee — ideal if you want to keep costs down when buying.",
-        },
+        { title: "Decision in principle online", description: "Get a DIP in 10 minutes without affecting your credit score. Know your budget before you start house hunting." },
+        { title: "Dedicated mortgage advisor", description: "A real person calls you after your DIP to talk through your options, answer questions, and guide you through the full application." },
+        { title: "Fixed and tracker rates", description: "Choose the certainty of a 2 or 5 year fixed rate, or take advantage of falling rates with a tracker mortgage." },
+        { title: "No arrangement fee options", description: "Pick a mortgage with no upfront arrangement fee — ideal if you want to keep costs down when buying." },
       ],
-      "Buying a home is the biggest financial decision most people make. Mosey's mortgage team is here to make it as straightforward as possible — from the first online check to the day you get your keys. We offer mortgages for first-time buyers, home movers, and those looking to remortgage to a better rate.",
+      "Buying a home is the biggest financial decision most people make. Mosey's mortgage team is here to make it as straightforward as possible — from the first online check to the day you get your keys.",
       "Get Started",
       [
         sectionComponent("TestimonialBlock", "Mortgage Testimonial", {
-          quote:
-            "Applied for a mortgage online on a Sunday. Had a decision in principle by Monday morning. The advisor called to walk me through the full offer — never felt rushed.",
+          quote: "Applied for a mortgage online on a Sunday. Had a decision in principle by Monday morning. The advisor called to walk me through the full offer — never felt rushed.",
           authorName: "Marcus Webb",
           authorRole: "First-time buyer, Bristol",
+        }),
+      ]
+    ),
+  },
+
+  // ── Level-2: Products (children of their category) ────────────────────────
+
+  {
+    key: PAGE_KEYS.currentAccount,
+    displayName: "Current Account",
+    routeSegment: "current-account",
+    container: PAGE_KEYS.personal,
+    nodes: buildProductPage(
+      "Personal Banking",
+      "Current Account",
+      "A fee-free everyday account with instant notifications, smart budgeting tools, and no hidden charges.",
+      "Open an Account",
+      "/en/personal/current-account",
+      [
+        { title: "No monthly fees", description: "Keep more of your money. Our current account has no monthly maintenance fee, no minimum balance, and no charge for standard transfers." },
+        { title: "Instant notifications", description: "Get a push notification the moment money moves in or out of your account. Know your balance in real time, always." },
+        { title: "Contactless & Apple/Google Pay", description: "Pay with your card or phone anywhere in the world. Freeze and unfreeze your card instantly from the app if it goes missing." },
+        { title: "Smart spending insights", description: "See exactly where your money goes each month, automatically categorised. Set spending limits and watch your savings grow." },
+      ],
+      "The Mosey current account is designed for modern life. Open in 10 minutes with just your phone and a valid ID — no branch visit required. Manage everything from the app: move money, set up direct debits, pay bills, and speak to a real person via in-app chat seven days a week.",
+      "Open an Account"
+    ),
+  },
+
+  {
+    key: PAGE_KEYS.savings,
+    displayName: "Savings",
+    routeSegment: "savings",
+    container: PAGE_KEYS.personal,
+    nodes: buildProductPage(
+      "Save Smarter",
+      "Savings",
+      "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £85,000.",
+      "View Savings Rates",
+      "/en/personal/savings",
+      [
+        { title: "Easy-access at 4.6% AER", description: "Withdraw whenever you need to with no penalty. Your rate is competitive and reviewed monthly to stay near the top of the market." },
+        { title: "1-year fixed rate at 5.1% AER", description: "Lock in our best rate for 12 months and know exactly what you'll earn. Minimum deposit £500, maximum £250,000." },
+        { title: "FSCS protected", description: "Every penny you save with Mosey is protected by the Financial Services Compensation Scheme up to £85,000 per person." },
+        { title: "Open in minutes", description: "Link any UK current account. Transfer funds instantly and start earning interest from the next business day." },
+      ],
+      "Whether you're building an emergency fund, saving for a home, or making idle cash work harder, Mosey savings accounts give you competitive rates without the complexity.",
+      "Open a Savings Account",
+      [
+        gridSection("Savings Stats", [
+          elementComponent("StatsCounterBlock", "AER Stat", { value: "5.1", suffix: "%", label: "AER fixed rate" }),
+          elementComponent("StatsCounterBlock", "AER Easy Stat", { value: "4.6", suffix: "%", label: "AER easy access" }),
+          elementComponent("StatsCounterBlock", "Protection Stat", { value: "85", suffix: "K", label: "FSCS protection per person" }),
+          elementComponent("StatsCounterBlock", "Open Stat", { value: "10", suffix: " min", label: "To open an account" }),
+        ]),
+        sectionComponent("TestimonialBlock", "Savings Testimonial", {
+          quote: "I moved my savings to Mosey after seeing the 5.1% fixed rate. The transfer took less than a day and the app makes it easy to watch my interest grow.",
+          authorName: "Sarah Chen",
+          authorRole: "Mosey customer",
         }),
       ]
     ),
@@ -466,40 +477,24 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.businessBanking,
     displayName: "Business Banking",
     routeSegment: "business-banking",
+    container: PAGE_KEYS.business,
     nodes: buildProductPage(
       "Business",
       "Business Banking",
       "Current accounts, lending, and payment solutions built for UK businesses. Open in 15 minutes.",
       "Open a Business Account",
-      "/en/business-banking",
+      "/en/business/business-banking",
       [
-        {
-          title: "Fee-free business current account",
-          description:
-            "No monthly fee for the first 12 months. After that, £7 per month with unlimited transactions included.",
-        },
-        {
-          title: "Accounting integrations",
-          description:
-            "Connect to Xero, QuickBooks, and FreeAgent in one click. Transactions sync automatically so your books are always up to date.",
-        },
-        {
-          title: "Instant invoicing",
-          description:
-            "Create and send professional invoices from the app and get notified the moment they're paid. Chasing payments is a thing of the past.",
-        },
-        {
-          title: "Business lending",
-          description:
-            "Flexible loans from £10,000 to £500,000 and overdraft facilities to smooth out cash flow. Decisions in 48 hours.",
-        },
+        { title: "Fee-free business current account", description: "No monthly fee for the first 12 months. After that, £7 per month with unlimited transactions included." },
+        { title: "Accounting integrations", description: "Connect to Xero, QuickBooks, and FreeAgent in one click. Transactions sync automatically so your books are always up to date." },
+        { title: "Instant invoicing", description: "Create and send professional invoices from the app and get notified the moment they're paid." },
+        { title: "Business lending", description: "Flexible loans from £10,000 to £500,000 and overdraft facilities to smooth out cash flow. Decisions in 48 hours." },
       ],
-      "Mosey Business Banking is designed for the way modern businesses actually work — online, mobile-first, and integrated with the tools you already use. From sole traders to SMEs with 50 employees, our accounts give you the visibility and control to manage your money confidently.",
+      "Mosey Business Banking is designed for the way modern businesses actually work — online, mobile-first, and integrated with the tools you already use.",
       "Open a Business Account",
       [
         sectionComponent("TestimonialBlock", "Business Testimonial", {
-          quote:
-            "Opened a business current account in under 15 minutes. The integration with our accounting software was seamless — invoices reconcile automatically.",
+          quote: "Opened a business current account in under 15 minutes. The integration with our accounting software was seamless — invoices reconcile automatically.",
           authorName: "Tom Hartley",
           authorRole: "Director, Hartley & Co.",
         }),
@@ -511,11 +506,11 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.contact,
     displayName: "Contact Us",
     routeSegment: "contact",
+    container: PAGE_KEYS.help,
     nodes: [
       sectionComponent("SectionHeadingBlock", "Contact Heading", {
         heading: "Get in touch",
-        subheading:
-          "Have a question or need help with your account? Fill out the form and we'll get back to you within one business day.",
+        subheading: "Have a question or need help with your account? Fill out the form and we'll get back to you within one business day.",
       }),
       sectionComponent("FormContainerBlock", "Contact Form Container", {
         heading: "Contact Us",
@@ -523,69 +518,73 @@ const pages: PageDef[] = [
         submitUrl: "/api/form-submit",
         successMessage: "Thank you for getting in touch! We'll be in touch within one business day.",
       }),
-      gridSection("Name Field Row", [
-        elementComponent("FormTextInput", "Name Field", {
-          label: "Full Name",
-          placeholder: "Jane Smith",
-          fieldName: "name",
-          inputType: "text",
-          required: true,
-        }),
-      ]),
-      gridSection("Email Field Row", [
-        elementComponent("FormTextInput", "Email Field", {
-          label: "Email Address",
-          placeholder: "jane@example.com",
-          fieldName: "email",
-          inputType: "email",
-          required: true,
-        }),
-      ]),
-      gridSection("Account Number Row", [
-        elementComponent("FormTextInput", "Account Number Field", {
-          label: "Account Number (optional)",
-          placeholder: "12345678",
-          fieldName: "account_number",
-          inputType: "text",
-          required: false,
-        }),
-      ]),
-      gridSection("Enquiry Type Row", [
-        elementComponent("FormSelect", "Enquiry Type", {
-          label: "What's your enquiry about?",
-          fieldName: "enquiry_type",
-          options: "Current Account,Savings,Mortgage,Business Banking,General Enquiry",
-          required: true,
-        }),
-      ]),
-      gridSection("Message Row", [
-        elementComponent("FormTextArea", "Message Field", {
-          label: "Message",
-          placeholder: "How can we help you today?",
-          fieldName: "message",
-          required: true,
-        }),
-      ]),
-      gridSection("Submit Row", [
-        elementComponent("FormSubmitButton", "Submit Button", {
-          label: "Send Message",
-        }),
-      ]),
+      gridSection("Name Field Row", [elementComponent("FormTextInput", "Name Field", { label: "Full Name", placeholder: "Jane Smith", fieldName: "name", inputType: "text", required: true })]),
+      gridSection("Email Field Row", [elementComponent("FormTextInput", "Email Field", { label: "Email Address", placeholder: "jane@example.com", fieldName: "email", inputType: "email", required: true })]),
+      gridSection("Enquiry Type Row", [elementComponent("FormSelect", "Enquiry Type", { label: "What's your enquiry about?", fieldName: "enquiry_type", options: "Current Account,Savings,Mortgage,Business Banking,General Enquiry", required: true })]),
+      gridSection("Message Row", [elementComponent("FormTextArea", "Message Field", { label: "Message", placeholder: "How can we help you today?", fieldName: "message", required: true })]),
+      gridSection("Submit Row", [elementComponent("FormSubmitButton", "Submit Button", { label: "Send Message" })]),
     ],
   },
 
-  // ── Current Account subpages ──────────────────────────────────────────────
+  // ── Level-2: Mortgage sub-pages (children of mortgage) ───────────────────
+
+  {
+    key: PAGE_KEYS.firstTimeBuyers,
+    displayName: "First-Time Buyers",
+    routeSegment: "first-time-buyers",
+    container: PAGE_KEYS.mortgage,
+    nodes: buildProductPage(
+      "First Home",
+      "First-Time Buyers",
+      "Getting on the ladder is a big deal. We make the mortgage part as simple as possible.",
+      "Get a Decision in Principle",
+      "/en/mortgage",
+      [
+        { title: "5% deposit mortgages", description: "We offer mortgages with as little as a 5% deposit for first-time buyers purchasing their primary residence." },
+        { title: "Government scheme support", description: "Our advisors are experts in Help to Buy, Shared Ownership, and the Lifetime ISA. We'll help you use every available scheme." },
+        { title: "No arrangement fee", description: "Choose a mortgage with no upfront arrangement fee — keeping your costs down when every pound counts." },
+        { title: "Step-by-step guidance", description: "From offer accepted to keys in hand, your dedicated advisor walks you through every stage of the process." },
+      ],
+      "Buying your first home is one of life's biggest milestones. Mosey's first-time buyer mortgages and specialist advisors are here to take the mystery out of the process.",
+      "Get a Decision in Principle"
+    ),
+  },
+
+  {
+    key: PAGE_KEYS.remortgaging,
+    displayName: "Remortgaging",
+    routeSegment: "remortgaging",
+    container: PAGE_KEYS.mortgage,
+    nodes: buildProductPage(
+      "Better Rate",
+      "Remortgaging",
+      "Switch to a better deal when your fixed term ends. We do the heavy lifting so you don't have to.",
+      "Check My Remortgage Rate",
+      "/en/mortgage",
+      [
+        { title: "Rate alert before your term ends", description: "We'll contact you 3 months before your fixed rate expires so you have plenty of time to find a better deal." },
+        { title: "Free legal work for switchers", description: "Switch to Mosey and we cover the legal costs of the remortgage. No hidden charges." },
+        { title: "Like-for-like switching", description: "Already with us? Switch to a new deal in minutes with no new affordability assessment required in most cases." },
+        { title: "Borrow more if needed", description: "A remortgage is also a chance to release equity for home improvements or consolidate existing debt at a lower rate." },
+      ],
+      "When your current deal ends, your mortgage typically reverts to a standard variable rate. Remortgaging to a new fixed rate with Mosey can save hundreds of pounds a year.",
+      "Check My Rate"
+    ),
+  },
+
+  // ── Level-3: Current Account sub-pages ───────────────────────────────────
 
   {
     key: PAGE_KEYS.instantPayments,
     displayName: "Instant Payments",
     routeSegment: "instant-payments",
+    container: PAGE_KEYS.currentAccount,
     nodes: buildProductPage(
       "Faster Payments",
       "Instant Payments",
       "Send and receive money in seconds, 24 hours a day, 365 days a year. No delays, no cut-off times.",
       "Open an Account",
-      "/en/current-account",
+      "/en/personal/current-account",
       [
         { title: "Faster Payments", description: "Send money to any UK bank account in seconds via the Faster Payments network. Available around the clock." },
         { title: "Standing orders", description: "Set up regular payments on any schedule — weekly, monthly, or on a custom date — and manage them entirely in the app." },
@@ -601,12 +600,13 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.mobileApp,
     displayName: "Mobile App",
     routeSegment: "mobile-app",
+    container: PAGE_KEYS.currentAccount,
     nodes: buildProductPage(
       "Banking on the Go",
       "Mobile App",
       "Everything your bank account can do, from your pocket. Rated 4.8 stars on the App Store.",
       "Download the App",
-      "/en/current-account",
+      "/en/personal/current-account",
       [
         { title: "Instant balance & transactions", description: "See your real-time balance and every transaction the moment it happens. No delays, no end-of-day batch updates." },
         { title: "Card controls", description: "Freeze, unfreeze, or cancel your card in one tap. Set limits on contactless payments, online spending, and withdrawals." },
@@ -622,12 +622,13 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.travelMoney,
     displayName: "Travel Money",
     routeSegment: "travel-money",
+    container: PAGE_KEYS.currentAccount,
     nodes: buildProductPage(
       "Travel",
       "Travel Money",
       "Spend abroad with no foreign transaction fees and real exchange rates. Your card works in 200+ countries.",
       "Open an Account",
-      "/en/current-account",
+      "/en/personal/current-account",
       [
         { title: "No foreign transaction fees", description: "Use your Mosey card anywhere in the world and we'll never add a foreign transaction or currency conversion fee." },
         { title: "Real exchange rates", description: "We use the mid-market exchange rate — the same one you see on Google. No hidden markup." },
@@ -639,18 +640,19 @@ const pages: PageDef[] = [
     ),
   },
 
-  // ── Savings subpages ──────────────────────────────────────────────────────
+  // ── Level-3: Savings sub-pages ────────────────────────────────────────────
 
   {
     key: PAGE_KEYS.easyAccessSavings,
     displayName: "Easy Access Savings",
     routeSegment: "easy-access-savings",
+    container: PAGE_KEYS.savings,
     nodes: buildProductPage(
       "Flexible Savings",
       "Easy Access Savings",
       "Earn 4.6% AER with no notice period and no limit on withdrawals. Your money is always within reach.",
       "Open an Easy Access Account",
-      "/en/savings",
+      "/en/personal/savings",
       [
         { title: "4.6% AER variable", description: "One of the highest easy-access rates available to UK savers. Rate is reviewed monthly and remains near the top of the market." },
         { title: "Unlimited withdrawals", description: "Withdraw any amount, any time, with no penalty and no notice period. Funds are in your current account the same working day." },
@@ -666,12 +668,13 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.fixedRateSavings,
     displayName: "Fixed Rate Savings",
     routeSegment: "fixed-rate-savings",
+    container: PAGE_KEYS.savings,
     nodes: buildProductPage(
       "Fixed Rate",
       "Fixed Rate Savings",
       "Lock in 5.1% AER for 12 months and know exactly what you'll earn. Minimum deposit £500.",
       "Open a Fixed Rate Account",
-      "/en/savings",
+      "/en/personal/savings",
       [
         { title: "5.1% AER fixed for 12 months", description: "Our best savings rate, guaranteed for the full 12-month term. You'll know exactly what you'll earn before you open the account." },
         { title: "Open from £500", description: "Start earning our top rate with a minimum deposit of £500. Maximum balance £250,000 per person." },
@@ -683,62 +686,19 @@ const pages: PageDef[] = [
     ),
   },
 
-  // ── Mortgage subpages ─────────────────────────────────────────────────────
-
-  {
-    key: PAGE_KEYS.firstTimeBuyers,
-    displayName: "First-Time Buyers",
-    routeSegment: "first-time-buyers",
-    nodes: buildProductPage(
-      "First Home",
-      "First-Time Buyers",
-      "Getting on the ladder is a big deal. We make the mortgage part as simple as possible.",
-      "Get a Decision in Principle",
-      "/en/mortgage",
-      [
-        { title: "5% deposit mortgages", description: "We offer mortgages with as little as a 5% deposit for first-time buyers purchasing their primary residence." },
-        { title: "Government scheme support", description: "Our advisors are experts in Help to Buy, Shared Ownership, and the Lifetime ISA. We'll help you use every available scheme." },
-        { title: "No arrangement fee", description: "Choose a mortgage with no upfront arrangement fee — keeping your costs down when every pound counts." },
-        { title: "Step-by-step guidance", description: "From offer accepted to keys in hand, your dedicated advisor walks you through every stage of the process." },
-      ],
-      "Buying your first home is one of life's biggest milestones — and one of its most confusing financial moments. Mosey's first-time buyer mortgages and specialist advisors are here to take the mystery out of the process so you can focus on finding the right home.",
-      "Get a Decision in Principle"
-    ),
-  },
-
-  {
-    key: PAGE_KEYS.remortgaging,
-    displayName: "Remortgaging",
-    routeSegment: "remortgaging",
-    nodes: buildProductPage(
-      "Better Rate",
-      "Remortgaging",
-      "Switch to a better deal when your fixed term ends. We do the heavy lifting so you don't have to.",
-      "Check My Remortgage Rate",
-      "/en/mortgage",
-      [
-        { title: "Rate alert before your term ends", description: "We'll contact you 3 months before your fixed rate expires so you have plenty of time to find a better deal." },
-        { title: "Free legal work for switchers", description: "Switch to Mosey and we cover the legal costs of the remortgage. No hidden charges." },
-        { title: "Like-for-like switching", description: "Already with us? Switch to a new deal in minutes with no new affordability assessment required in most cases." },
-        { title: "Borrow more if needed", description: "A remortgage is also a chance to release equity for home improvements or consolidate existing debt at a lower rate." },
-      ],
-      "When your current deal ends, your mortgage typically reverts to a standard variable rate — which is usually much higher. Remortgaging to a new fixed rate with Mosey can save hundreds of pounds a year. Our advisors make the switch straightforward.",
-      "Check My Rate"
-    ),
-  },
-
-  // ── Business Banking subpages ─────────────────────────────────────────────
+  // ── Level-3: Business Banking sub-pages ──────────────────────────────────
 
   {
     key: PAGE_KEYS.businessCurrentAccount,
     displayName: "Business Current Account",
     routeSegment: "business-current-account",
+    container: PAGE_KEYS.businessBanking,
     nodes: buildProductPage(
       "Business Account",
       "Business Current Account",
       "A full-featured business current account with no monthly fee for your first year.",
       "Open a Business Account",
-      "/en/business-banking",
+      "/en/business/business-banking",
       [
         { title: "Free for 12 months", description: "No monthly fee for the first 12 months. After that, £7 per month with unlimited UK transactions included." },
         { title: "Instant notifications", description: "See every payment in and out the moment it happens. Stay on top of cash flow without checking your balance manually." },
@@ -754,19 +714,20 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.businessLending,
     displayName: "Business Lending",
     routeSegment: "business-lending",
+    container: PAGE_KEYS.businessBanking,
     nodes: buildProductPage(
       "Business Finance",
       "Business Lending",
       "Flexible loans and overdrafts to help your business grow on your terms. Decisions in 48 hours.",
       "Apply for Business Finance",
-      "/en/business-banking",
+      "/en/business/business-banking",
       [
         { title: "Business loans from £10,000", description: "Borrow from £10,000 to £500,000 over 1 to 7 years at a fixed rate. No early repayment charges." },
         { title: "Overdraft facilities", description: "A pre-agreed overdraft to smooth out seasonal cash flow. Only pay interest on what you use." },
         { title: "Invoice finance", description: "Release cash tied up in unpaid invoices. Get up to 90% of an invoice's value within 24 hours of raising it." },
         { title: "48-hour decisions", description: "Submit your application online and get a lending decision within two business days in most cases." },
       ],
-      "Growing a business often means needing capital before revenue catches up. Mosey's business lending products are designed to give you the flexibility to invest, hire, and expand — without the red tape of traditional bank lending.",
+      "Growing a business often means needing capital before revenue catches up. Mosey's business lending products are designed to give you the flexibility to invest, hire, and expand.",
       "Apply for Finance"
     ),
   },
@@ -806,14 +767,13 @@ async function createPage(page: PageDef): Promise<void> {
     nodes: page.nodes,
   };
 
-  // If this page previously failed to delete, find its real key via Graph and PATCH it.
+  // Homepage is the undeletable start page — PATCH it in place instead of creating new.
   const shouldPatch = !page.routeSegment && undeletableKeys.size > 0;
   if (shouldPatch) {
     const graphKey = await findHomepageKey();
     if (graphKey) {
       const patchBody = { status: "published", displayName: page.displayName, composition };
       const putBody = { contentType: "DynamicExperience", locale: "en", status: "published", displayName: page.displayName, composition };
-      // Try locale-specific PUT (full replace), then locale-specific PATCH, then base PATCH
       const attempts: Array<{ path: string; method: string; contentType: string; body: object }> = [
         { path: `${CONTENT_ENDPOINT}/${graphKey}/en`, method: "PUT",   contentType: "application/json",             body: putBody },
         { path: `${CONTENT_ENDPOINT}/${graphKey}/en`, method: "PATCH", contentType: "application/merge-patch+json", body: patchBody },
@@ -858,7 +818,6 @@ async function createPage(page: PageDef): Promise<void> {
 
   const text = await res.text();
   if (!res.ok) {
-    // Routesegment conflict means the page already exists (e.g. it's the CMS start page)
     if (res.status === 400 && text.includes("is already in use")) {
       console.log(`  [skipped] ${page.displayName} — routeSegment already in use (existing start page)`);
       return;
@@ -893,7 +852,6 @@ async function deleteExisting(): Promise<void> {
       }
     );
     if (!delRes.ok) {
-      // Can't delete (e.g. start page) — record for in-place update later
       undeletableKeys.set(displayName, item.key);
     }
     console.log(`  [deleted] ${displayName} (${delRes.status})`);
@@ -906,7 +864,7 @@ async function deleteExisting(): Promise<void> {
 
 /** Find the CMS key of the savings page already in Graph. */
 async function findSavingsKey(): Promise<string | null> {
-  const query = `{ _Page(where:{_metadata:{url:{default:{in:["/en/savings/","/savings/"]}}}},limit:1) { items { _metadata { key } } } }`;
+  const query = `{ _Page(where:{_metadata:{url:{default:{in:["/en/personal/savings/","/en/savings/","/savings/"]}}}},limit:1) { items { _metadata { key } } } }`;
   const res = await fetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
@@ -927,15 +885,31 @@ async function main() {
   console.log("\n  Waiting 8s for routeSegments to be released...");
   await new Promise((r) => setTimeout(r, 8000));
 
-  // Creation order matters: parents before children, homepage last (it references other pages)
-  const topLevel = pages.filter((p) => !p.container && p.key !== PAGE_KEYS.homepage);
-  const subPages = pages.filter((p) => !!p.container);
-  const ordered  = [...topLevel, ...subPages];
+  // Creation order matters: parents before children.
+  // Level-1 pages have no container (go under root CONTAINER).
+  // Level-2 pages have container = a level-1 key.
+  // Level-3 pages have container = a level-2 key.
+  const level1Keys = new Set([
+    PAGE_KEYS.personal, PAGE_KEYS.business, PAGE_KEYS.investments,
+    PAGE_KEYS.help, PAGE_KEYS.about, PAGE_KEYS.mortgage,
+  ]);
+  const level2Keys = new Set([
+    PAGE_KEYS.currentAccount, PAGE_KEYS.savings, PAGE_KEYS.businessBanking,
+    PAGE_KEYS.contact, PAGE_KEYS.firstTimeBuyers, PAGE_KEYS.remortgaging,
+  ]);
 
-  console.log(`\n--- Creating ${ordered.length} non-homepage pages ---`);
-  for (const page of ordered) {
-    await createPage(page);
-  }
+  const level1 = pages.filter((p) => level1Keys.has(p.key));
+  const level2 = pages.filter((p) => level2Keys.has(p.key));
+  const level3 = pages.filter((p) => !level1Keys.has(p.key) && !level2Keys.has(p.key) && p.key !== PAGE_KEYS.homepage);
+
+  console.log(`\n--- Creating ${level1.length} level-1 pages ---`);
+  for (const page of level1) await createPage(page);
+
+  console.log(`\n--- Creating ${level2.length} level-2 pages ---`);
+  for (const page of level2) await createPage(page);
+
+  console.log(`\n--- Creating ${level3.length} level-3 pages ---`);
+  for (const page of level3) await createPage(page);
 
   // Look up the actual savings key (might differ if savings was skipped)
   const savingsKey = await findSavingsKey() ?? PAGE_KEYS.savings;
@@ -952,8 +926,8 @@ async function main() {
   await createPage(homepageDef);
 
   console.log("\n=== Seeding Complete ===");
-  console.log(`  Pages created: ${pages.length}`);
-  console.log("\nWait 30-60 seconds for Optimizely Graph to index, then:");
+  console.log(`  Pages created: ${level1.length + level2.length + level3.length} content pages + 1 homepage`);
+  console.log("\nWait 60 seconds for Optimizely Graph to index, then:");
   console.log("  npm run dev → http://localhost:3000");
 }
 

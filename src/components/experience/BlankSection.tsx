@@ -77,7 +77,7 @@ export default function BlankSection({ content }: { content: any }) {
   const nodes: any[] = content?.nodes ?? [];
 
   return (
-    <section {...pa(content)}>
+    <section className="max-w-7xl mx-auto px-8" {...pa(content)}>
       <OptimizelyGridSection nodes={nodes} row={Row} column={Column} />
     </section>
   );

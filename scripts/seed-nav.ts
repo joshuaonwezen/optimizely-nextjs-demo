@@ -61,21 +61,16 @@ function buildNavPageComposition(heading: string, subheading: string, ctaLabel: 
 }
 
 const PAGE_CONTENT: Record<string, { heading: string; subheading: string; ctaLabel: string; ctaLink: string }> = {
-  personal:           { heading: "Personal Banking",       subheading: "Everything you need for day-to-day money management — current accounts, savings, and more.", ctaLabel: "Open an Account", ctaLink: "/en/current-account" },
-  loans:              { heading: "Personal Loans",         subheading: "Borrow from £1,000 to £25,000 with a fixed rate and no early repayment fees. Get a decision in minutes.", ctaLabel: "Check My Rate", ctaLink: "/en/loans" },
-  business:           { heading: "Business Banking",       subheading: "Current accounts, lending, and payment solutions built for UK businesses of every size.", ctaLabel: "Open a Business Account", ctaLink: "/en/business-banking" },
-  "merchant-services": { heading: "Merchant Services",    subheading: "Accept card payments in-store and online. Competitive rates, next-day settlement, and 24/7 support.", ctaLabel: "Get Started", ctaLink: "/en/merchant-services" },
-  "business-lending": { heading: "Business Lending",      subheading: "Flexible loans, overdrafts, and invoice finance to help your business grow on your terms.", ctaLabel: "Explore Business Lending", ctaLink: "/en/business-lending" },
-  investments:        { heading: "Investments",            subheading: "Build your future with Stocks & Shares ISAs, pensions, and investment accounts. Capital at risk.", ctaLabel: "Start Investing", ctaLink: "/en/investments" },
-  "stocks-isa":       { heading: "Stocks & Shares ISA",   subheading: "Invest up to £20,000 tax-free each year. Choose from thousands of funds, shares, and ETFs.", ctaLabel: "Open an ISA", ctaLink: "/en/stocks-isa" },
-  pensions:           { heading: "Pensions",               subheading: "A self-invested personal pension (SIPP) that puts you in control. Start with as little as £50 a month.", ctaLabel: "Plan My Retirement", ctaLink: "/en/pensions" },
-  help:               { heading: "Help & Support",         subheading: "Find answers to common questions, get in touch with our team, or locate your nearest branch.", ctaLabel: "Get Help", ctaLink: "/en/faqs" },
-  faqs:               { heading: "Frequently Asked Questions", subheading: "Quick answers to the questions we hear most — from opening an account to reporting a lost card.", ctaLabel: "Browse FAQs", ctaLink: "/en/faqs" },
-  branches:           { heading: "Find a Branch",          subheading: "With over 140 branches across the UK, expert advice is never far away. Find your nearest location.", ctaLabel: "Find a Branch", ctaLink: "/en/branches" },
-  about:              { heading: "About Mosey Bank",  subheading: "Trusted by over 2 million customers since 1998. We believe banking should be simple, fair, and built around you.", ctaLabel: "Our Story", ctaLink: "/en/about-us" },
-  "about-us":         { heading: "About Us",               subheading: "Founded in 1998, Mosey Bank has grown from a single branch in Leeds to a national bank serving 2 million customers.", ctaLabel: "Meet the Team", ctaLink: "/en/about-us" },
-  careers:            { heading: "Careers",                subheading: "Join a team that puts people first — customers and colleagues. We're always looking for exceptional people.", ctaLabel: "See Open Roles", ctaLink: "/en/careers" },
-  press:              { heading: "Press & Media",          subheading: "Latest news, press releases, and media resources from Mosey Bank.", ctaLabel: "View Press Releases", ctaLink: "/en/press" },
+  loans:               { heading: "Personal Loans",            subheading: "Borrow from £1,000 to £25,000 with a fixed rate and no early repayment fees. Get a decision in minutes.", ctaLabel: "Check My Rate",           ctaLink: "/en/personal/loans" },
+  "merchant-services": { heading: "Merchant Services",         subheading: "Accept card payments in-store and online. Competitive rates, next-day settlement, and 24/7 support.",      ctaLabel: "Get Started",             ctaLink: "/en/business/merchant-services" },
+  "stocks-isa":        { heading: "Stocks & Shares ISA",       subheading: "Invest up to £20,000 tax-free each year. Choose from thousands of funds, shares, and ETFs.",               ctaLabel: "Open an ISA",             ctaLink: "/en/investments/stocks-isa" },
+  pensions:            { heading: "Pensions",                  subheading: "A self-invested personal pension (SIPP) that puts you in control. Start with as little as £50 a month.",   ctaLabel: "Plan My Retirement",      ctaLink: "/en/investments/pensions" },
+  faqs:                { heading: "Frequently Asked Questions", subheading: "Quick answers to the questions we hear most — from opening an account to reporting a lost card.",           ctaLabel: "Browse FAQs",             ctaLink: "/en/help/faqs" },
+  branches:            { heading: "Find a Branch",             subheading: "With over 140 branches across the UK, expert advice is never far away. Find your nearest location.",        ctaLabel: "Find a Branch",           ctaLink: "/en/help/branches" },
+  "buy-to-let":        { heading: "Buy-to-Let Mortgages",      subheading: "Competitive buy-to-let rates for individual landlords and portfolio investors. Free valuation included.",    ctaLabel: "See BTL Rates",           ctaLink: "/en/mortgage/buy-to-let" },
+  "about-us":          { heading: "About Us",                  subheading: "Founded in 1998, Mosey Bank has grown from a single branch in Leeds to a national bank serving 2 million customers.", ctaLabel: "Meet the Team", ctaLink: "/en/about/about-us" },
+  careers:             { heading: "Careers",                   subheading: "Join a team that puts people first — customers and colleagues. We're always looking for exceptional people.", ctaLabel: "See Open Roles",         ctaLink: "/en/about/careers" },
+  press:               { heading: "Press & Media",             subheading: "Latest news, press releases, and media resources from Mosey Bank.",                                         ctaLabel: "View Press Releases",     ctaLink: "/en/about/press" },
 };
 
 // ---------------------------------------------------------------------------
@@ -98,73 +93,77 @@ interface NavDef {
 
 const NAV_TREE: NavDef[] = [
   {
-    key: noHyphens(), label: "Personal", href: "/en/personal", description: "Personal banking products",
-    routeSegment: "personal",
+    key: noHyphens(), label: "Personal", href: "/en/personal",
+    existing: true,
     children: [
       {
-        key: noHyphens(), label: "Current Account", href: "/en/current-account",
+        key: noHyphens(), label: "Current Account", href: "/en/personal/current-account",
         existing: true,
         children: [
-          { key: noHyphens(), label: "Instant Payments", href: "/en/instant-payments", existing: true, children: [] },
-          { key: noHyphens(), label: "Mobile App",       href: "/en/mobile-app",       existing: true, children: [] },
-          { key: noHyphens(), label: "Travel Money",     href: "/en/travel-money",     existing: true, children: [] },
+          { key: noHyphens(), label: "Instant Payments", href: "/en/personal/current-account/instant-payments", existing: true, children: [] },
+          { key: noHyphens(), label: "Mobile App",       href: "/en/personal/current-account/mobile-app",       existing: true, children: [] },
+          { key: noHyphens(), label: "Travel Money",     href: "/en/personal/current-account/travel-money",     existing: true, children: [] },
         ],
       },
       {
-        key: noHyphens(), label: "Savings", href: "/en/savings",
+        key: noHyphens(), label: "Savings", href: "/en/personal/savings",
         existing: true,
         children: [
-          { key: noHyphens(), label: "Easy Access", href: "/en/easy-access-savings", existing: true, children: [] },
-          { key: noHyphens(), label: "Fixed Rate",  href: "/en/fixed-rate-savings",  existing: true, children: [] },
+          { key: noHyphens(), label: "Easy Access", href: "/en/personal/savings/easy-access-savings", existing: true, children: [] },
+          { key: noHyphens(), label: "Fixed Rate",  href: "/en/personal/savings/fixed-rate-savings",  existing: true, children: [] },
         ],
       },
-      { key: noHyphens(), label: "Personal Loans", href: "/en/loans", routeSegment: "loans", children: [] },
+      { key: noHyphens(), label: "Personal Loans", href: "/en/personal/loans", routeSegment: "loans", children: [] },
     ],
   },
   {
-    key: noHyphens(), label: "Business", href: "/en/business", routeSegment: "business",
+    key: noHyphens(), label: "Business", href: "/en/business",
+    existing: true,
     children: [
       {
-        key: noHyphens(), label: "Business Banking", href: "/en/business-banking",
+        key: noHyphens(), label: "Business Banking", href: "/en/business/business-banking",
         existing: true,
         children: [
-          { key: noHyphens(), label: "Business Current Account", href: "/en/business-current-account", existing: true, children: [] },
-          { key: noHyphens(), label: "Business Lending",         href: "/en/business-lending",         existing: true, children: [] },
+          { key: noHyphens(), label: "Business Current Account", href: "/en/business/business-banking/business-current-account", existing: true, children: [] },
+          { key: noHyphens(), label: "Business Lending",         href: "/en/business/business-banking/business-lending",         existing: true, children: [] },
         ],
       },
-      { key: noHyphens(), label: "Merchant Services", href: "/en/merchant-services", routeSegment: "merchant-services", children: [] },
+      { key: noHyphens(), label: "Merchant Services", href: "/en/business/merchant-services", routeSegment: "merchant-services", children: [] },
     ],
   },
   {
     key: noHyphens(), label: "Mortgages", href: "/en/mortgage", description: "Find your mortgage",
     existing: true,
     children: [
-      { key: noHyphens(), label: "First-Time Buyers", href: "/en/first-time-buyers", existing: true,  children: [] },
-      { key: noHyphens(), label: "Remortgaging",      href: "/en/remortgaging",      existing: true,  children: [] },
-      { key: noHyphens(), label: "Buy-to-Let",        href: "/en/buy-to-let",        routeSegment: "buy-to-let", children: [] },
+      { key: noHyphens(), label: "First-Time Buyers", href: "/en/mortgage/first-time-buyers", existing: true,              children: [] },
+      { key: noHyphens(), label: "Remortgaging",      href: "/en/mortgage/remortgaging",      existing: true,              children: [] },
+      { key: noHyphens(), label: "Buy-to-Let",        href: "/en/mortgage/buy-to-let",        routeSegment: "buy-to-let", children: [] },
     ],
   },
   {
-    key: noHyphens(), label: "Investments", href: "/en/investments", routeSegment: "investments",
+    key: noHyphens(), label: "Investments", href: "/en/investments",
+    existing: true,
     children: [
-      { key: noHyphens(), label: "Stocks & Shares ISA", href: "/en/stocks-isa", routeSegment: "stocks-isa", children: [] },
-      { key: noHyphens(), label: "Pensions",             href: "/en/pensions",   routeSegment: "pensions",   children: [] },
+      { key: noHyphens(), label: "Stocks & Shares ISA", href: "/en/investments/stocks-isa", routeSegment: "stocks-isa", children: [] },
+      { key: noHyphens(), label: "Pensions",             href: "/en/investments/pensions",   routeSegment: "pensions",   children: [] },
     ],
   },
   {
-    key: noHyphens(), label: "Help", href: "/en/help", routeSegment: "help",
+    key: noHyphens(), label: "Help", href: "/en/help",
+    existing: true,
     children: [
-      { key: noHyphens(), label: "FAQs",           href: "/en/faqs",     routeSegment: "faqs",     children: [] },
-      { key: noHyphens(), label: "Contact Us",     href: "/en/contact",  existing: true,           children: [] },
-      { key: noHyphens(), label: "Find a Branch",  href: "/en/branches", routeSegment: "branches", children: [] },
+      { key: noHyphens(), label: "FAQs",          href: "/en/help/faqs",     routeSegment: "faqs",     children: [] },
+      { key: noHyphens(), label: "Contact Us",    href: "/en/help/contact",  existing: true,           children: [] },
+      { key: noHyphens(), label: "Find a Branch", href: "/en/help/branches", routeSegment: "branches", children: [] },
     ],
   },
   {
-    key: noHyphens(), label: "About", href: "/en/about", routeSegment: "about",
+    key: noHyphens(), label: "About", href: "/en/about",
+    existing: true,
     children: [
-      { key: noHyphens(), label: "About Mosey", href: "/en/about-us", routeSegment: "about-us", children: [] },
-      { key: noHyphens(), label: "Careers",          href: "/en/careers",  routeSegment: "careers",  children: [] },
-      { key: noHyphens(), label: "Press",            href: "/en/press",    routeSegment: "press",    children: [] },
+      { key: noHyphens(), label: "About Mosey", href: "/en/about/about-us", routeSegment: "about-us", children: [] },
+      { key: noHyphens(), label: "Careers",     href: "/en/about/careers",  routeSegment: "careers",  children: [] },
+      { key: noHyphens(), label: "Press",       href: "/en/about/press",    routeSegment: "press",    children: [] },
     ],
   },
 ];
@@ -176,7 +175,7 @@ const NAV_TREE: NavDef[] = [
 async function buildPageKeyMap(): Promise<Map<string, string>> {
   const query = `
     query GetAllPages {
-      DynamicExperience(limit: 100) {
+      _Page(limit: 100) {
         items { _metadata { key url { default } } }
       }
     }
@@ -186,18 +185,24 @@ async function buildPageKeyMap(): Promise<Map<string, string>> {
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
     body: JSON.stringify({ query }),
   });
-  const json = await res.json() as { data?: Record<string, { items?: Array<{ _metadata?: { key?: string; url?: { default?: string } } }> }>; errors?: unknown };
+  const json = await res.json() as { data?: { _Page?: { items?: Array<{ _metadata?: { key?: string; url?: { default?: string } } }> } }; errors?: unknown };
   if (json.errors) console.warn("  [graph warn]", JSON.stringify(json.errors).slice(0, 200));
-  const { data } = json;
   const map = new Map<string, string>();
-  for (const typeName of ["DynamicExperience"]) {
-    for (const item of (data?.[typeName]?.items ?? [])) {
-      const url = item._metadata?.url?.default;
-      const key = item._metadata?.key;
-      if (url && key) map.set(url.replace(/\/$/, ""), key);
+  for (const item of (json.data?._Page?.items ?? [])) {
+    const url = item._metadata?.url?.default;
+    const key = item._metadata?.key;
+    if (!url || !key) continue;
+    const bare = url.replace(/\/$/, "");
+    map.set(bare, key);
+    // Register cross-prefix aliases so lookups succeed regardless of whether Graph
+    // indexed the page with or without the /en/ locale prefix.
+    if (bare.startsWith("/en/")) {
+      map.set(bare.replace(/^\/en/, ""), key);   // /en/personal/savings → /personal/savings
+    } else if (bare !== "/" && !bare.match(/^\/[a-z]{2}(-[a-z]{2})?\//) ) {
+      map.set("/en" + bare, key);                // /current-account → /en/current-account
     }
   }
-  console.log(`  [graph] Found ${map.size} existing pages`);
+  console.log(`  [graph] Found ${map.size} page URL entries (incl. aliases) across all page types`);
   return map;
 }
 
@@ -244,7 +249,7 @@ async function cleanupNavItems(): Promise<void> {
 // Create a LandingPage — returns its CMS key
 // ---------------------------------------------------------------------------
 
-async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>): Promise<string | undefined> {
+async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>, parentKey: string = CONTAINER): Promise<string | undefined> {
   // Page already in Graph → reuse its key
   const existing = pageKeyMap.get(node.href);
   if (existing) {
@@ -266,7 +271,7 @@ async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>): Pro
       key,
       contentType: "TraditionalPage",
       locale: "en",
-      container: CONTAINER,
+      container: parentKey,
       status: "published",
       displayName: node.label,
       routeSegment: node.routeSegment,
@@ -282,7 +287,7 @@ async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>): Pro
     console.error(`  [ERROR] Page "${node.label}": ${status} ${respStr.slice(0, 200)}`);
     return undefined;
   }
-  console.log(`  [page] ${node.label} → /en/${node.routeSegment}`);
+  console.log(`  [page] ${node.label} → ${node.href}`);
   return key;
 }
 
@@ -290,7 +295,7 @@ async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>): Pro
 // Walk tree: resolve page keys for all nodes
 // ---------------------------------------------------------------------------
 
-async function resolvePageKeys(nodes: NavDef[], pageKeyMap: Map<string, string>): Promise<void> {
+async function resolvePageKeys(nodes: NavDef[], pageKeyMap: Map<string, string>, parentKey: string = CONTAINER): Promise<void> {
   for (const node of nodes) {
     if (node.external) {
       // no content reference for external links
@@ -304,10 +309,12 @@ async function resolvePageKeys(nodes: NavDef[], pageKeyMap: Map<string, string>)
         console.warn(`  [warn] ${node.label}: not found in Graph at ${node.href} — href reference will be omitted`);
       }
     } else if (node.routeSegment) {
-      node.pageKey = await createNavPage(node, pageKeyMap);
+      node.pageKey = await createNavPage(node, pageKeyMap, parentKey);
     }
     if (node.children.length > 0) {
-      await resolvePageKeys(node.children, pageKeyMap);
+      // Pass this node's resolved CMS key as the parent so children get the correct URL nesting.
+      // Fall back to the incoming parentKey if this node has no resolved key (e.g. lookup failed).
+      await resolvePageKeys(node.children, pageKeyMap, node.pageKey ?? parentKey);
     }
   }
 }
