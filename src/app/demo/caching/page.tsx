@@ -353,11 +353,14 @@ export default function CachingDemoPage() {
                 <li className="flex gap-2">
                   <span className="text-brand shrink-0">→</span>
                   <span>
-                    <strong className="text-on-surface">Force-dynamic pages</strong> — the catch-all
-                    CMS route is <code className="bg-surface-low px-1 rounded font-mono text-xs">force-dynamic</code>{" "}
-                    so Next.js never caches its output. Without{" "}
+                    <strong className="text-on-surface">Force-dynamic pages</strong> —{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono text-xs">force-dynamic</code>{" "}
+                    ensures Next.js re-renders the page on every request, but the fetch to Graph still
+                    executes on each render. Graph has its own query result cache and may return stale
+                    data if it hasn&apos;t been invalidated yet. Without{" "}
                     <code className="bg-surface-low px-1 rounded font-mono text-xs">?cache=false</code>,
-                    Graph&apos;s CDN would be the only remaining cache layer — with an uncontrolled TTL.
+                    a user visiting right after a publish could see pre-publish content even though
+                    the page itself is freshly rendered.
                   </span>
                 </li>
                 <li className="flex gap-2">
