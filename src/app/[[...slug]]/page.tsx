@@ -101,6 +101,45 @@ async function CmsPage({
     }
   }
 
+  // Fallback for pages with multiple published versions (e.g. homepage after
+  // update-homepage-variations.ts published extra versions without variation names).
+  // _Content.item (used internally by getContentByPath) returns null when multiple
+  // items match the filter. _Page.items (plural) has no such restriction.
+  //
+  // We fetch up to 10 versions without a variation filter (same as generateMetadata,
+  // which is proven to work), sort by version number ascending to find the original
+  // base version, then call getContent with key+version — a combination that is
+  // always uniquely identified by _Content.item, so the SDK succeeds.
+  if (!page) {
+    const KEY_QUERY = /* GraphQL */ `
+      query FindPageKey($urls: [String]) {
+        _Page(
+          where: { _metadata: { url: { default: { in: $urls } } } }
+          limit: 10
+        ) {
+          items { _metadata { key version } }
+        }
+      }
+    `;
+    const keyResult = await graphqlFetch<{
+      _Page: { items: Array<{ _metadata: { key: string; version: string | number } }> };
+    }>(KEY_QUERY, { urls }, { cache: "no-store" });
+
+    const candidates = (keyResult.data?._Page?.items ?? [])
+      .map((i) => i._metadata)
+      .filter((m): m is { key: string; version: string | number } => !!(m?.key && m?.version));
+
+    // Pick the lowest version number — the original base version
+    const meta = candidates.sort((a, b) => Number(a.version) - Number(b.version))[0];
+
+    if (meta) {
+      page = await client.getContent(
+        { key: meta.key, version: String(meta.version) },
+        { cache: false }
+      );
+    }
+  }
+
   if (!page) {
     return notFound();
   }
