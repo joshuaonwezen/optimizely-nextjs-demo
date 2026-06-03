@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import { getAllDecisions, type FxDecision } from "@/lib/optimizely/experimentation";
+import { type FxDecision } from "@/lib/optimizely/experimentation";
+import { getOptimizelyUser } from "@/lib/optimizely/user";
+import { getVisitorContext } from "@/lib/optimizely/visitor";
 
 export const metadata: Metadata = {
   title: "Feature Experimentation Demo",
@@ -12,19 +13,12 @@ export const metadata: Metadata = {
 // Code snippets
 // ---------------------------------------------------------------------------
 
-const DECISION_SNIPPET = `import { cookies } from "next/headers";
-import { getDecision } from "@/lib/optimizely/experimentation";
+const DECISION_SNIPPET = `import { getOptimizelyUser } from "@/lib/optimizely/user";
 
 // Server component — no client JS needed
 export default async function MyPage() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
-  const device = cookieStore.get("fx_device")?.value ?? "desktop";
-
-  const decision = await getDecision("subscribe_button", userId, {
-    device,
-    logged_in: false,
-  });
+  const user = await getOptimizelyUser();
+  const decision = user.decide("subscribe_button");
 
   if (!decision.enabled) return null;
 
@@ -34,16 +28,13 @@ export default async function MyPage() {
 }`;
 
 const VARIATIONS_SNIPPET = `// src/app/[[...slug]]/page.tsx
-import { getAllDecisions } from "@/lib/optimizely/experimentation";
+import { getOptimizelyUser } from "@/lib/optimizely/user";
 import { getClient } from "@optimizely/cms-sdk";
 
 async function CmsPage({ params }) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
-  const device = cookieStore.get("fx_device")?.value ?? "desktop";
-
-  // Step 1 — evaluate all FX flags
-  const decisions = await getAllDecisions(userId, { device, logged_in: false });
+  // Step 1 — evaluate all FX flags (userId + attributes from cookies automatically)
+  const user = await getOptimizelyUser();
+  const decisions = user.decideAll();
 
   // Step 2 — collect active variation keys (skip "off")
   const activeVariations = Object.values(decisions)
@@ -96,44 +87,34 @@ export function middleware(req: NextRequest) {
   return res;
 }`;
 
-const EXPERIMENTATION_LIB_SNIPPET = `// src/lib/optimizely/experimentation.ts
+const USER_LIB_SNIPPET = `// src/lib/optimizely/user.ts
 import { cache } from "react";
-import {
-  createInstance,
-  createStaticProjectConfigManager,
-  createForwardingEventProcessor,
-  createLogger,
-  eventDispatcher,
-  OptimizelyDecideOption,
-  ERROR,
-} from "@optimizely/optimizely-sdk";
+import { OptimizelyDecideOption } from "@optimizely/optimizely-sdk";
+import { getOptimizelyClient } from "./experimentation";
+import { getVisitorContext } from "./visitor";
 
-const DATAFILE_URL =
-  \`https://cdn.optimizely.com/datafiles/\${process.env.OPTIMIZELY_FX_SDK_KEY}.json\`;
+// cache() memoises per React request — created once, shared across all
+// server components that call getOptimizelyUser() in the same render tree.
+export const getOptimizelyUser = cache(async () => {
+  const [client, { userId, attributes }] = await Promise.all([
+    getOptimizelyClient(),
+    getVisitorContext(), // reads fx_user_id, fx_device, demo_persona, demo_logged_in
+  ]);
 
-// React cache() memoises per request — all server components share one instance
-const buildClient = cache(async function buildClient() {
-  const res = await fetch(DATAFILE_URL, { next: { revalidate: 60 } });
-  const datafile = await res.text();
-  const configManager = createStaticProjectConfigManager({ datafile });
-  const logger = createLogger({ level: ERROR });
-  const eventProcessor = createForwardingEventProcessor(eventDispatcher);
-  return createInstance({ projectConfigManager: configManager, logger, eventProcessor });
-});
-
-export async function getAllDecisions(userId, attributes) {
-  const client = await buildClient();
-  const ctx = client.createUserContext(userId, attributes);
-  const raw = ctx.decideAll([OptimizelyDecideOption.DISABLE_DECISION_EVENT]);
-  // Normalise to a plain object
-  return Object.fromEntries(
-    Object.entries(raw).map(([key, d]) => [
-      key,
-      { flagKey: key, enabled: d.enabled, variationKey: d.variationKey,
-        variables: d.variables, reasons: d.reasons },
-    ])
-  );
-}`;
+  const ctx = client?.createUserContext(userId, attributes);
+  return {
+    userId,
+    decide(flagKey: string) {
+      return ctx?.decide(flagKey, [OptimizelyDecideOption.DISABLE_DECISION_EVENT]);
+    },
+    decideAll() {
+      return ctx?.decideAll([OptimizelyDecideOption.DISABLE_DECISION_EVENT]) ?? {};
+    },
+    bucket(flagKey: string) {
+      ctx?.decide(flagKey); // fires the impression event
+    },
+  };
+});`;
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -267,12 +248,11 @@ function Arrow() {
 // ---------------------------------------------------------------------------
 
 export default async function FeatureFlagsDemoPage() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
-  const device = cookieStore.get("fx_device")?.value ?? "desktop";
-  const attributes = { device, logged_in: false };
+  const user = await getOptimizelyUser();
+  const { userId, attributes } = await getVisitorContext();
+  const device = attributes.device as string;
 
-  const decisions = await getAllDecisions(userId, attributes);
+  const decisions = user.decideAll();
   const subscribeDecision = decisions["subscribe_button"];
 
   const activeVariations = Object.values(decisions)
@@ -362,9 +342,9 @@ export default async function FeatureFlagsDemoPage() {
               </div>
               <h3 className="font-display font-semibold text-on-surface mb-2">FX SDK evaluates flags server-side</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
-                In a React Server Component, <code className="bg-surface-low px-1 rounded font-mono text-xs">getAllDecisions(userId, attributes)</code> calls
-                the locally-cached FX SDK. The datafile is refreshed every 60 seconds via Next.js fetch
-                revalidation — no round trip per request.
+                In a React Server Component, <code className="bg-surface-low px-1 rounded font-mono text-xs">getOptimizelyUser()</code> creates
+                a user context from cookies and the SDK client. The datafile is refreshed every 60 seconds via
+                Next.js fetch revalidation — no round trip per request.
               </p>
             </div>
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
@@ -622,7 +602,7 @@ export default async function FeatureFlagsDemoPage() {
               <div className="space-y-3">
                 {[
                   { key: "device", value: device, note: "derived from User-Agent in middleware" },
-                  { key: "logged_in", value: "false", note: "hardcoded — replace with your auth check" },
+                  { key: "logged_in", value: String(attributes.logged_in), note: "from demo_logged_in cookie (Audience Switcher)" },
                 ].map(({ key, value, note }) => (
                   <div key={key} className="flex items-start justify-between gap-4 pb-3 border-b border-ghost-border last:border-0">
                     <div>
@@ -643,12 +623,14 @@ export default async function FeatureFlagsDemoPage() {
                 Then define matching audience conditions in the FX dashboard.
               </p>
               <pre className="bg-surface-low rounded-xl p-3 text-xs font-mono text-on-surface-variant leading-relaxed">
-                <code>{`getAllDecisions(userId, {
-  device,           // "mobile" | "desktop"
-  logged_in: true,  // from auth session
+                <code>{`// Base attributes (device, logged_in, persona) are automatic.
+// For extra attributes, spread after getVisitorContext():
+const { userId, attributes } = await getVisitorContext();
+await getDecision("my_flag", userId, {
+  ...attributes,
   plan: "premium",  // from your database
   country: "GB",    // from geo header
-})`}</code>
+});`}</code>
               </pre>
             </div>
           </div>
@@ -740,14 +722,14 @@ const config =
 
             <div>
               <h3 className="font-display font-semibold text-on-surface mb-1">
-                2. FX SDK wrapper — datafile + decisions
+                2. FX user helper — one user context per request
               </h3>
               <p className="text-sm text-on-surface-variant mb-3">
                 React&apos;s <code className="bg-surface-low px-1 rounded font-mono text-xs">cache()</code> ensures
                 one SDK instance per request regardless of how many components call it.
                 The datafile is fetched once and revalidated every 60 seconds.
               </p>
-              <CodeBlock code={EXPERIMENTATION_LIB_SNIPPET} label="src/lib/optimizely/experimentation.ts" />
+              <CodeBlock code={USER_LIB_SNIPPET} label="src/lib/optimizely/user.ts" />
             </div>
 
             <div>
@@ -806,8 +788,8 @@ const config =
               <span className="text-brand font-bold shrink-0">→</span>
               <span>
                 <strong className="text-on-surface">React cache() gives one SDK instance per request.</strong>{" "}
-                Any number of server components can call <code className="bg-surface-low px-1 rounded font-mono text-xs">getDecision</code>{" "}
-                or <code className="bg-surface-low px-1 rounded font-mono text-xs">getAllDecisions</code> with no extra work.
+                Any number of server components can call <code className="bg-surface-low px-1 rounded font-mono text-xs">getOptimizelyUser()</code> with no extra work —
+                React <code className="bg-surface-low px-1 rounded font-mono text-xs">cache()</code> ensures one user context per request.
               </span>
             </li>
             <li className="flex gap-2">

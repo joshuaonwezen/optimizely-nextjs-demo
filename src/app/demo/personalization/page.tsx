@@ -1,48 +1,33 @@
 export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import { getAllDecisions, type FxDecision } from "@/lib/optimizely/experimentation";
+import { type FxDecision } from "@/lib/optimizely/experimentation";
+import { getOptimizelyUser } from "@/lib/optimizely/user";
+import { getVisitorContext } from "@/lib/optimizely/visitor";
 
 export const metadata: Metadata = {
   title: "Personalization & Audiences",
 };
 
 const INTEGRATION_SNIPPET = `// src/app/[[...slug]]/page.tsx
-import { cookies } from "next/headers";
 import { getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
-import { getAllDecisions } from "@/lib/optimizely/experimentation";
+import { getOptimizelyUser } from "@/lib/optimizely/user";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 
 initComponentRegistry(); // also calls config() so getClient() works
 
 async function CmsPage({ params }) {
-  const cookieStore = await cookies();
+  // 1. Evaluate ALL FX flags — userId, device, persona, logged_in from cookies
+  const user = await getOptimizelyUser();
+  const decisions = user.decideAll();
 
-  // 1. Stable user ID from middleware cookie
-  const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
-
-  // 2. Build attributes — persona from audience switcher, device from middleware
-  const device    = cookieStore.get("fx_device")?.value ?? "desktop";
-  const persona   = cookieStore.get("demo_persona")?.value;
-  const loggedIn  = cookieStore.get("demo_logged_in")?.value === "true";
-
-  const attributes = {
-    device,
-    logged_in: loggedIn,
-    ...(persona ? { persona } : {}),
-  };
-
-  // 3. Evaluate ALL FX flags for this user + attributes
-  const decisions = await getAllDecisions(userId, attributes);
-
-  // 4. Collect active variation keys
+  // 2. Collect active variation keys
   const activeVariations = Object.values(decisions)
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
     .map((d) => d.variationKey as string);
 
-  // 5. URL-based content lookup — Graph returns base + variation when a filter
+  // 3. URL-based content lookup — Graph returns base + variation when a filter
   //    is active, so we prefer the variation match from the returned array.
   const variationFilter = activeVariations.length > 0
     ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
@@ -62,7 +47,7 @@ async function CmsPage({ params }) {
   return <OptimizelyComponent content={page} />;
 }
 
-export default withAppContext(CmsPage);`;
+export default withAppContext(CmsPage);`
 
 function ActiveVariationBadge({ variation }: { variation: string }) {
   return (
@@ -124,19 +109,13 @@ function Step({
 }
 
 export default async function PersonalizationDemoPage() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("fx_user_id")?.value ?? "anonymous";
-  const device = cookieStore.get("fx_device")?.value ?? "desktop";
-  const demoPersona = cookieStore.get("demo_persona")?.value;
-  const demoLoggedIn = cookieStore.get("demo_logged_in")?.value === "true";
+  const user = await getOptimizelyUser();
+  const { userId, attributes } = await getVisitorContext();
+  const device = attributes.device as string;
+  const demoLoggedIn = attributes.logged_in as boolean;
+  const demoPersona = attributes.persona as string | undefined;
 
-  const attributes = {
-    device,
-    logged_in: demoLoggedIn,
-    ...(demoPersona ? { persona: demoPersona } : {}),
-  };
-
-  const decisions = await getAllDecisions(userId, attributes);
+  const decisions = user.decideAll();
 
   const activeVariations = Object.values(decisions)
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
@@ -293,18 +272,10 @@ export default async function PersonalizationDemoPage() {
                 <span className="text-xs font-mono text-on-surface-variant">src/app/{"[[...slug]]"}/page.tsx</span>
               </div>
               <pre className="p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                <code>{`// Build attributes from cookies
-const persona  = cookieStore.get("demo_persona")?.value;
-const loggedIn = cookieStore.get("demo_logged_in")?.value === "true";
-
-const attributes = {
-  device,
-  logged_in: loggedIn,
-  ...(persona ? { persona } : {}),
-};
-
-// FX evaluates audience rules against these attributes
-const decisions = await getAllDecisions(userId, attributes);
+                <code>{`// Cookies and attributes (device, persona, logged_in) are
+// handled automatically inside getOptimizelyUser().
+const user = await getOptimizelyUser();
+const decisions = user.decideAll();
 const activeVariations = Object.values(decisions)
   .filter((d) => d.enabled && d.variationKey !== "off")
   .map((d) => d.variationKey as string);

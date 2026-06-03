@@ -115,14 +115,27 @@ OPTIMIZELY_CMS_CLIENT_ID=xxx OPTIMIZELY_CMS_CLIENT_SECRET=yyy npm run opti:push
 
 ## Feature Experimentation (FX)
 
-### Always use the SDK wrapper
-Import from `src/lib/optimizely/experimentation.ts`, never from `@optimizely/optimizely-sdk` directly.
+### Primary API: `getOptimizelyUser()`
+Use `getOptimizelyUser()` from `src/lib/optimizely/user.ts` in server components. It reads cookies (userId, device, persona, logged_in) and creates the SDK user context once per request via React `cache()`. Call `user.decide(flagKey)`, `user.decideAll()`, or `user.bucket(flagKey)` on the result — no userId or attributes to thread through manually.
+
+```ts
+const user = await getOptimizelyUser();
+const decision = user.decide("my_flag");       // single flag
+const decisions = user.decideAll();             // all flags
+user.bucket("my_flag");                         // fire impression
+```
+
+For component-specific extra attributes, spread after `getVisitorContext()`:
+```ts
+const { userId, attributes } = await getVisitorContext();
+await getDecision("my_flag", userId, { ...attributes, plan: "premium" });
+```
 
 ### User ID must be stable across requests
 Use the `fx_user_id` cookie set by middleware — never generate a new UUID per request. Unstable IDs mean users get randomly re-bucketed on every page load.
 
 ### Impressions are suppressed by default
-`getDecision` uses `DISABLE_DECISION_EVENT`. Call `bucketVisitor(flagKey, userId, attributes)` explicitly in the component that actually renders the variant to fire the impression.
+`user.decide()` and `user.decideAll()` use `DISABLE_DECISION_EVENT`. Call `user.bucket(flagKey)` in the component that actually renders the variant to fire the impression.
 
 ### CMS Variation names must exactly match FX variation key strings
 Case-sensitive. If the FX flag has variation key `variation_1`, the CMS variation must be named exactly `variation_1`. A mismatch means the variation is never served.
@@ -170,7 +183,9 @@ src/
   lib/optimizely/
     client.ts          — graphqlFetch wrapper (handles published vs draft auth)
     auth.ts            — OAuth token cache for Management API
-    experimentation.ts — FX SDK wrapper (getDecision, getAllDecisions, bucketVisitor)
+    experimentation.ts — FX SDK wrapper (low-level: getOptimizelyClient, getDecision, etc.)
+    visitor.ts         — getVisitorContext() — reads fx_user_id, fx_device, demo_* cookies
+    user.ts            — getOptimizelyUser() — combines visitor context + SDK into one cached helper
     componentRegistry.ts — registers all content types + React components
   lib/graphql/
     queries/           — named Graph queries with fallback data
