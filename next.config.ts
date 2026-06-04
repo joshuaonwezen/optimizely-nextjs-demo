@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    "/demo/(.*)": ["./src/**/*"],
+  },
   /**
    * Allow the Optimizely CMS to embed this site in an iframe for Visual Builder.
    * Without the Content-Security-Policy frame-ancestors directive, the on-page

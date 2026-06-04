@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "cms": {
+      "type": "http",
+      "url": "https://cms.mcp.opal.optimizely.com/mcp"
+    }
+  }
+}

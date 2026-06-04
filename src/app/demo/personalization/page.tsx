@@ -1,8 +1,20 @@
 export const dynamic = "force-dynamic";
 
+import fs from "fs";
+import path from "path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
+import SourcePanel from "@/components/demo/SourcePanel";
+
+const userTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/optimizely/user.ts"),
+  "utf8"
+);
+const catchAllTs = fs.readFileSync(
+  path.join(process.cwd(), "src/app/[[...slug]]/page.tsx"),
+  "utf8"
+);
 
 export const metadata: Metadata = {
   title: "Personalization & Audiences",
@@ -812,6 +824,22 @@ const decision = await getDecision("homepage_audience", userId, {
             </Step>
           </div>
         </section>
+
+        <SourcePanel
+          heading="Source files"
+          files={[
+            {
+              label: "user.ts",
+              path: "src/lib/optimizely/user.ts",
+              content: userTs,
+            },
+            {
+              label: "[[...slug]]/page.tsx",
+              path: "src/app/[[...slug]]/page.tsx",
+              content: catchAllTs,
+            },
+          ]}
+        />
 
       </div>
     </div>

@@ -1,6 +1,14 @@
+import fs from "fs";
+import path from "path";
 import type { Metadata } from "next";
 import NestedNavMenu from "@/components/demo/NestedNavMenu";
 import { getNavigation, GET_NAVIGATION_QUERY } from "@/lib/graphql/queries/GetNavigation";
+import SourcePanel from "@/components/demo/SourcePanel";
+
+const getNavigationTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/graphql/queries/GetNavigation.ts"),
+  "utf8"
+);
 
 export const metadata: Metadata = {
   title: "Nested Navigation Demo",
@@ -167,6 +175,18 @@ export default async function NavigationDemoPage() {
             </pre>
           </div>
         </section>
+
+        <SourcePanel
+          heading="Source files"
+          files={[
+            {
+              label: "GetNavigation.ts",
+              path: "src/lib/graphql/queries/GetNavigation.ts",
+              content: getNavigationTs,
+            },
+          ]}
+        />
+
       </div>
     </div>
   );

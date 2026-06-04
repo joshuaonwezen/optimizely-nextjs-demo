@@ -1,4 +1,16 @@
+import fs from "fs";
+import path from "path";
 import type { Metadata } from "next";
+import SourcePanel from "@/components/demo/SourcePanel";
+
+const heroBlockTs = fs.readFileSync(
+  path.join(process.cwd(), "src/components/blocks/HeroBlock/index.tsx"),
+  "utf8"
+);
+const heroFragmentTs = fs.readFileSync(
+  path.join(process.cwd(), "src/components/blocks/HeroBlock/fragment.ts"),
+  "utf8"
+);
 
 export const metadata: Metadata = {
   title: "Visual Builder Demo",
@@ -467,6 +479,22 @@ export default function VisualBuilderPage() {
             </table>
           </div>
         </section>
+
+        <SourcePanel
+          heading="Source files"
+          files={[
+            {
+              label: "HeroBlock/index.tsx",
+              path: "src/components/blocks/HeroBlock/index.tsx",
+              content: heroBlockTs,
+            },
+            {
+              label: "HeroBlock/fragment.ts",
+              path: "src/components/blocks/HeroBlock/fragment.ts",
+              content: heroFragmentTs,
+            },
+          ]}
+        />
 
       </div>
     </div>

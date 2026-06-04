@@ -1,6 +1,14 @@
+import fs from "fs";
+import path from "path";
 import type { Metadata } from "next";
+import SourcePanel from "@/components/demo/SourcePanel";
 
 export const metadata: Metadata = { title: "ISR Caching & Webhooks Demo" };
+
+const clientTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/optimizely/client.ts"),
+  "utf8"
+);
 
 // This page regenerates every 30s so the "last rendered" timestamp visibly
 // updates — proof that ISR is working without a full redeploy.
@@ -525,6 +533,17 @@ Next visitor request
             ))}
           </ol>
         </section>
+
+        <SourcePanel
+          heading="Source files"
+          files={[
+            {
+              label: "client.ts",
+              path: "src/lib/optimizely/client.ts",
+              content: clientTs,
+            },
+          ]}
+        />
 
       </div>
     </div>

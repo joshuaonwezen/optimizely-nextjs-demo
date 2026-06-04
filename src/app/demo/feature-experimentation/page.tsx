@@ -1,9 +1,17 @@
 export const dynamic = "force-dynamic";
 
+import fs from "fs";
+import path from "path";
 import type { Metadata } from "next";
 import { type FxDecision } from "@/lib/optimizely/experimentation";
 import { getOptimizelyUser } from "@/lib/optimizely/user";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
+import SourcePanel from "@/components/demo/SourcePanel";
+
+const userTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/optimizely/user.ts"),
+  "utf8"
+);
 
 export const metadata: Metadata = {
   title: "Feature Experimentation Demo",
@@ -1035,6 +1043,17 @@ const config =
             </li>
           </ul>
         </section>
+
+        <SourcePanel
+          heading="Source files"
+          files={[
+            {
+              label: "user.ts",
+              path: "src/lib/optimizely/user.ts",
+              content: userTs,
+            },
+          ]}
+        />
 
       </div>
     </div>
