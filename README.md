@@ -32,6 +32,8 @@ You need active accounts for:
 2. **Optimizely Feature Experimentation** — for the FX SDK Key
 3. **Node.js 20+**
 
+One manual setup step is required in the CMS UI before seeding: a root content container with key `43f936c99b234ea397b261c538ad07c9` must exist (the Management API does not yet support creating containers). All other content is created by the seed scripts.
+
 ## Quick start
 
 ```bash
@@ -47,14 +49,10 @@ cp .env.example .env.local
 # 3. Push content types to CMS
 npm run opti:push
 
-# 4. Seed initial content
-npm run seed
-npm run seed:nav
+# 4. Seed everything (schema push + content + nav + modeling demo + webhook)
+npm run seed:all
 
-# 5. Register the Graph webhook (for ISR revalidation on publish)
-npm run webhook:register
-
-# 6. Start the dev server
+# 5. Start the dev server
 npm run dev
 ```
 
@@ -91,12 +89,14 @@ npm run opti:login       # Authenticate with the CMS CLI
 npm run opti:push        # Push content type schema to CMS
 
 # Content seeding
+npm run seed:all         # One-shot: schema push + all content + webhook (recommended)
 npm run seed             # Seed page content (home, about, product pages)
-npm run seed:nav         # Seed navigation structure
+npm run seed:nav         # Seed navigation structure + TraditionalPage leaf pages
+npm run seed:modeling    # Seed content modeling demo (articles, case studies, team, pricing, etc.)
+npm run seed:faqs        # FAQ blocks and container
 
 # Individual seed scripts (run with tsx directly)
 npx tsx scripts/seed-referrals.ts        # External referral data → Graph Content Source API
-npx tsx scripts/seed-faqs.ts             # FAQ blocks and container
 npx tsx scripts/seed-fx-experiment.ts    # Feature Experimentation flag + variations
 npx tsx scripts/seed-homepage-variations.ts   # CMS homepage variations for FX demo
 npx tsx scripts/update-homepage-variations.ts # Update existing homepage variation compositions

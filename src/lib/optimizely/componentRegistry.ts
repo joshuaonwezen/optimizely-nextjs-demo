@@ -28,17 +28,23 @@ import FaqItemBlock, { FaqItemBlockType } from "@/components/blocks/FaqItemBlock
 import FaqContainerBlock, { FaqContainerBlockType } from "@/components/blocks/FaqContainerBlock";
 import FeaturedContentBlock, { FeaturedContentBlockType } from "@/components/blocks/FeaturedContentBlock";
 import LogoGridBlock, { LogoGridBlockType } from "@/components/blocks/LogoGridBlock";
+import AuthorBlock, { AuthorBlockType } from "@/components/blocks/AuthorBlock";
+import OutcomeItemBlock, { OutcomeItemBlockType } from "@/components/blocks/OutcomeItemBlock";
 
 // Experience and section components
 import DynamicExperience from "@/components/experience/DynamicExperience";
 import BlankExperience from "@/components/experience/BlankExperience";
 import BlankSection from "@/components/experience/BlankSection";
 import TraditionalPage from "@/components/pages/TraditionalPage";
+import ArticlePage from "@/components/pages/ArticlePage";
+import CaseStudyPage from "@/components/pages/CaseStudyPage";
 
 // Experience/page types and structural templates stay in optimizely.config.mjs
 import {
   DynamicExperienceType,
   LandingPageType,
+  ArticlePageType,
+  CaseStudyPageType,
   DefaultRowTemplate,
   DefaultColumnTemplate,
 } from "../../../optimizely.config.mjs";
@@ -81,6 +87,10 @@ export function initComponentRegistry() {
     FaqContainerBlockType,
     FeaturedContentBlockType,
     LogoGridBlockType,
+    AuthorBlockType,
+    OutcomeItemBlockType,
+    ArticlePageType,
+    CaseStudyPageType,
   ]);
 
   // Display templates
@@ -110,6 +120,8 @@ export function initComponentRegistry() {
       BlankSection,
       TraditionalPage,
       LandingPage: TraditionalPage,
+      ArticlePage,
+      CaseStudyPage,
 
       // Blocks — variants registered via tags so the SDK routes by displayTemplateKey
       HeroBlock: {
@@ -166,6 +178,8 @@ export function initComponentRegistry() {
       FaqContainerBlock,
       FeaturedContentBlock,
       LogoGridBlock,
+      AuthorBlock,
+      OutcomeItemBlock,
       // Fallback: unknown types from the CMS (stale seeds, deleted types) — render nothing
       _Component: () => null,
     },

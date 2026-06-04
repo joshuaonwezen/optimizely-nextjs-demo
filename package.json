@@ -11,6 +11,9 @@
     "opti:push": "npx @optimizely/cms-cli@latest config push optimizely.config.mjs",
     "seed": "npx tsx scripts/seed-content.ts",
     "seed:nav": "npx tsx scripts/seed-nav.ts",
+    "seed:faqs": "npx tsx scripts/seed-faqs.ts",
+    "seed:modeling": "npx tsx scripts/seed-modeling.ts",
+    "seed:all": "npm run opti:push && npm run seed && npm run seed:nav && npm run seed:modeling && npm run seed:faqs && npm run webhook:register",
     "cleanup:types": "npx tsx scripts/cleanup-types.ts",
     "webhook:register": "node scripts/register-webhook.mjs"
   },
