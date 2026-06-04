@@ -9,32 +9,23 @@ const PERSONAS = [
   { key: "business",  label: "Business Banking" },
 ];
 
-const AUTH_STATES = [
-  { value: false, label: "Guest" },
-  { value: true,  label: "Logged In" },
-];
-
 const DEMO_ACCOUNT = "demo-account@mosey.bank";
 
 export default function AudienceSwitcher({
   initialPersona,
   initialLoggedIn,
-  initialBucketingId,
 }: {
   initialPersona: string;
   initialLoggedIn: boolean;
-  initialBucketingId: string;
 }) {
   const [current, setCurrent] = useState(initialPersona);
   const [loggedIn, setLoggedIn] = useState(initialLoggedIn);
-  const [bucketingId, setBucketingId] = useState(initialBucketingId);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const currentLabel = PERSONAS.find((p) => p.key === current)?.label ?? "Default";
-  const isLoggedIn = !!bucketingId;
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -58,28 +49,22 @@ export default function AudienceSwitcher({
     router.refresh();
   }
 
-  async function selectLoggedIn(value: boolean) {
+  async function selectAuth(value: boolean) {
     if (value === loggedIn || loading) return;
     setLoading(true);
-    await fetch("/api/demo/set-logged-in", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loggedIn: value }),
-    });
+    await Promise.all([
+      fetch("/api/demo/set-logged-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loggedIn: value }),
+      }),
+      fetch("/api/demo/set-bucketing-id", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bucketingId: value ? DEMO_ACCOUNT : null }),
+      }),
+    ]);
     setLoggedIn(value);
-    setLoading(false);
-    router.refresh();
-  }
-
-  async function selectBucketingId(id: string) {
-    if (id === bucketingId || loading) return;
-    setLoading(true);
-    await fetch("/api/demo/set-bucketing-id", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bucketingId: id || null }),
-    });
-    setBucketingId(id);
     setLoading(false);
     router.refresh();
   }
@@ -112,15 +97,15 @@ export default function AudienceSwitcher({
             </button>
           ))}
 
-          {/* Auth state section */}
+          {/* Auth + Login section */}
           <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider border-t border-outline-variant mt-1">
             Auth State
           </p>
           <div className="px-4 pb-3 flex gap-2">
-            {AUTH_STATES.map(({ value, label }) => (
+            {[{ value: false, label: "Guest" }, { value: true, label: "Logged In" }].map(({ value, label }) => (
               <button
                 key={String(value)}
-                onClick={() => selectLoggedIn(value)}
+                onClick={() => selectAuth(value)}
                 className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   loggedIn === value
                     ? "bg-brand text-on-brand"
@@ -132,30 +117,9 @@ export default function AudienceSwitcher({
             ))}
           </div>
 
-          {/* Login / bucketing ID section */}
-          <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider border-t border-outline-variant mt-1">
-            Login (Bucketing ID)
-          </p>
-          <div className="px-4 pb-3 flex gap-2">
-            {[{ value: false, label: "Logged Out" }, { value: true, label: "Logged In" }].map(({ value, label }) => (
-              <button
-                key={String(value)}
-                onClick={() => selectBucketingId(value ? DEMO_ACCOUNT : "")}
-                className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  isLoggedIn === value
-                    ? "bg-brand text-on-brand"
-                    : "bg-surface-low text-on-surface hover:bg-surface"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
           <div className="px-4 py-3 border-t border-outline-variant">
             <p className="text-xs text-on-surface-variant leading-snug">
-              Sets <code className="font-mono">demo_persona</code>,{" "}
-              <code className="font-mono">demo_logged_in</code>, and{" "}
+              Sets <code className="font-mono">demo_logged_in</code> and{" "}
               <code className="font-mono">demo_bucketing_id</code> cookies.
             </p>
           </div>
@@ -182,9 +146,6 @@ export default function AudienceSwitcher({
         <span>{loading ? "Switching…" : currentLabel}</span>
         {loggedIn && (
           <span className="text-xs bg-brand/10 text-brand px-1.5 py-0.5 rounded font-mono">auth</span>
-        )}
-        {isLoggedIn && (
-          <span className="text-xs bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded font-mono">login</span>
         )}
         <svg
           viewBox="0 0 20 20"
