@@ -33,7 +33,9 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const cookieStore = await cookies();
   const initialPersona = cookieStore.get("demo_persona")?.value ?? "";
-  const initialLoggedIn = cookieStore.get("demo_logged_in")?.value === "true";
+  const initialBucketingId = cookieStore.get("demo_bucketing_id")?.value ?? "";
+  const initialLoggedIn = !!initialBucketingId;
+  const initialUserId = cookieStore.get("optimizelyEndUserId")?.value ?? "anonymous";
 
   return (
     <html lang="en">
@@ -44,7 +46,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <NavigationHeader />
         <main>{children}</main>
         <Footer />
-        <AudienceSwitcher initialPersona={initialPersona} initialLoggedIn={initialLoggedIn} />
+        <AudienceSwitcher initialPersona={initialPersona} initialLoggedIn={initialLoggedIn} initialUserId={initialUserId} initialBucketingId={initialBucketingId} />
       </body>
     </html>
   );

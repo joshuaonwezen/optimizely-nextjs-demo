@@ -14,13 +14,12 @@ export const getVisitorContext = cache(async (): Promise<{
   const ua = headerStore.get("user-agent") ?? "";
   const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
   const demoPersona = cookieStore.get("demo_persona")?.value;
-  const demoLoggedIn = cookieStore.get("demo_logged_in")?.value === "true";
   const bucketingId = cookieStore.get("demo_bucketing_id")?.value;
   return {
     userId,
     attributes: {
       device,
-      logged_in: demoLoggedIn,
+      logged_in: !!bucketingId,
       ...(demoPersona ? { persona: demoPersona } : {}),
     },
     ...(bucketingId ? { bucketingId } : {}),

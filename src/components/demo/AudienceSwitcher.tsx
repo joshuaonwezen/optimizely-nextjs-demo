@@ -14,12 +14,17 @@ const DEMO_ACCOUNT = "demo-account@mosey.bank";
 export default function AudienceSwitcher({
   initialPersona,
   initialLoggedIn,
+  initialUserId,
+  initialBucketingId,
 }: {
   initialPersona: string;
   initialLoggedIn: boolean;
+  initialUserId: string;
+  initialBucketingId: string;
 }) {
   const [current, setCurrent] = useState(initialPersona);
   const [loggedIn, setLoggedIn] = useState(initialLoggedIn);
+  const [bucketingId, setBucketingId] = useState(initialBucketingId);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -52,19 +57,13 @@ export default function AudienceSwitcher({
   async function selectAuth(value: boolean) {
     if (value === loggedIn || loading) return;
     setLoading(true);
-    await Promise.all([
-      fetch("/api/demo/set-logged-in", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ loggedIn: value }),
-      }),
-      fetch("/api/demo/set-bucketing-id", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bucketingId: value ? DEMO_ACCOUNT : null }),
-      }),
-    ]);
+    await fetch("/api/demo/set-bucketing-id", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bucketingId: value ? DEMO_ACCOUNT : null }),
+    });
     setLoggedIn(value);
+    setBucketingId(value ? DEMO_ACCOUNT : "");
     setLoading(false);
     router.refresh();
   }
@@ -117,11 +116,15 @@ export default function AudienceSwitcher({
             ))}
           </div>
 
-          <div className="px-4 py-3 border-t border-outline-variant">
-            <p className="text-xs text-on-surface-variant leading-snug">
-              Sets <code className="font-mono">demo_logged_in</code> and{" "}
-              <code className="font-mono">demo_bucketing_id</code> cookies.
-            </p>
+          <div className="px-4 py-3 border-t border-outline-variant space-y-1.5">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs font-mono text-on-surface-variant shrink-0">visitor_id</span>
+              <span className="text-xs font-mono text-on-surface truncate text-right">{initialUserId === "anonymous" ? "anonymous" : `${initialUserId.slice(0, 8)}…${initialUserId.slice(-4)}`}</span>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs font-mono text-on-surface-variant shrink-0">bucketing_id</span>
+              <span className={`text-xs font-mono truncate text-right ${bucketingId ? "text-emerald-600" : "text-on-surface-variant"}`}>{bucketingId || "—"}</span>
+            </div>
           </div>
         </div>
       )}
