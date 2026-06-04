@@ -14,11 +14,7 @@ const AUTH_STATES = [
   { value: true,  label: "Logged In" },
 ];
 
-const PRESET_ACCOUNTS = [
-  { key: "alice@mosey.bank",   label: "Alice" },
-  { key: "bob@mosey.bank",     label: "Bob" },
-  { key: "charlie@mosey.bank", label: "Charlie" },
-];
+const DEMO_ACCOUNT = "demo-account@mosey.bank";
 
 export default function AudienceSwitcher({
   initialPersona,
@@ -38,7 +34,7 @@ export default function AudienceSwitcher({
   const router = useRouter();
 
   const currentLabel = PERSONAS.find((p) => p.key === current)?.label ?? "Default";
-  const loginLabel = PRESET_ACCOUNTS.find((a) => a.key === bucketingId)?.label ?? (bucketingId ? bucketingId.split("@")[0] : null);
+  const isLoggedIn = !!bucketingId;
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -140,28 +136,20 @@ export default function AudienceSwitcher({
           <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider border-t border-outline-variant mt-1">
             Login (Bucketing ID)
           </p>
-          <div className="px-3 pb-3 flex flex-wrap gap-1.5">
-            {PRESET_ACCOUNTS.map((a) => (
+          <div className="px-4 pb-3 flex gap-2">
+            {[{ value: false, label: "Logged Out" }, { value: true, label: "Logged In" }].map(({ value, label }) => (
               <button
-                key={a.key}
-                onClick={() => selectBucketingId(a.key === bucketingId ? "" : a.key)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  a.key === bucketingId
+                key={String(value)}
+                onClick={() => selectBucketingId(value ? DEMO_ACCOUNT : "")}
+                className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  isLoggedIn === value
                     ? "bg-brand text-on-brand"
                     : "bg-surface-low text-on-surface hover:bg-surface"
                 }`}
               >
-                {a.label}
+                {label}
               </button>
             ))}
-            {bucketingId && (
-              <button
-                onClick={() => selectBucketingId("")}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-surface-low text-on-surface-variant hover:bg-surface transition-colors"
-              >
-                Sign out
-              </button>
-            )}
           </div>
 
           <div className="px-4 py-3 border-t border-outline-variant">
@@ -195,8 +183,8 @@ export default function AudienceSwitcher({
         {loggedIn && (
           <span className="text-xs bg-brand/10 text-brand px-1.5 py-0.5 rounded font-mono">auth</span>
         )}
-        {loginLabel && (
-          <span className="text-xs bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded font-mono">{loginLabel}</span>
+        {isLoggedIn && (
+          <span className="text-xs bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded font-mono">login</span>
         )}
         <svg
           viewBox="0 0 20 20"
