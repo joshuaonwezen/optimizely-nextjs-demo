@@ -30,6 +30,12 @@ import FeaturedContentBlock, { FeaturedContentBlockType } from "@/components/blo
 import LogoGridBlock, { LogoGridBlockType } from "@/components/blocks/LogoGridBlock";
 import AuthorBlock, { AuthorBlockType } from "@/components/blocks/AuthorBlock";
 import OutcomeItemBlock, { OutcomeItemBlockType } from "@/components/blocks/OutcomeItemBlock";
+import PricingTierBlock, { PricingTierBlockType } from "@/components/blocks/PricingTierBlock";
+import TimelineMilestoneBlock, { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
+import TimelineBlock, { TimelineBlockType } from "@/components/blocks/TimelineBlock";
+import TeamMemberBlock, { TeamMemberBlockType } from "@/components/blocks/TeamMemberBlock";
+import TeamGridBlock, { TeamGridBlockType } from "@/components/blocks/TeamGridBlock";
+import ComparisonTableBlock, { ComparisonTableBlockType } from "@/components/blocks/ComparisonTableBlock";
 
 // Experience and section components
 import DynamicExperience from "@/components/experience/DynamicExperience";
@@ -89,6 +95,12 @@ export function initComponentRegistry() {
     LogoGridBlockType,
     AuthorBlockType,
     OutcomeItemBlockType,
+    PricingTierBlockType,
+    TimelineMilestoneBlockType,
+    TimelineBlockType,
+    TeamMemberBlockType,
+    TeamGridBlockType,
+    ComparisonTableBlockType,
     ArticlePageType,
     CaseStudyPageType,
   ]);
@@ -180,6 +192,12 @@ export function initComponentRegistry() {
       LogoGridBlock,
       AuthorBlock,
       OutcomeItemBlock,
+      PricingTierBlock,
+      TimelineMilestoneBlock,
+      TimelineBlock,
+      TeamMemberBlock,
+      TeamGridBlock,
+      ComparisonTableBlock,
       // Fallback: unknown types from the CMS (stale seeds, deleted types) — render nothing
       _Component: () => null,
     },

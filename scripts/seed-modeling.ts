@@ -21,7 +21,9 @@ import {
   CONTENT_ENDPOINT,
   createContent,
   deleteContentByKey,
+  deletePageByUrlIfExists,
   findItemsInContainerByName,
+  findPageKeyByUrl,
   noHyphens,
   patchContentProperties,
 } from "./_shared";
@@ -71,6 +73,33 @@ const HUB_KEYS = {
   caseStudiesIdx: noHyphens(), // /en/insights/case-studies/
 };
 
+const MILESTONE_KEYS = {
+  founded:    noHyphens(),
+  firstBranch:noHyphens(),
+  online:     noHyphens(),
+  appLaunch:  noHyphens(),
+  oneMillion: noHyphens(),
+  business:   noHyphens(),
+  fxSwitch:   noHyphens(),
+  today:      noHyphens(),
+};
+
+const TEAM_KEYS = {
+  ceo:       noHyphens(),
+  cfo:       noHyphens(),
+  cto:       noHyphens(),
+  business:  noHyphens(),
+  customer:  noHyphens(),
+  risk:      noHyphens(),
+};
+
+const PHASE_D_PAGE_KEYS = {
+  ourStory:       noHyphens(),
+  team:           noHyphens(),
+  pricing:        noHyphens(),
+  compareAccounts:noHyphens(),
+};
+
 // ---------------------------------------------------------------------------
 // Idempotent cleanup
 // ---------------------------------------------------------------------------
@@ -88,6 +117,18 @@ const MODELING_SENTINELS = [
   /^Insights Hub$/,
   /^Insights Hub: Articles$/,
   /^Insights Hub: Case Studies$/,
+  /^Milestone — /,
+  /^Team Member — /,
+];
+
+// URLs for Phase D pages that are nested under existing seed-content.ts
+// containers (about, business, personal). Cleanup-by-URL because they can't
+// be reached by container-scoped name scanning from the root.
+const PHASE_D_PAGE_URLS = [
+  "/en/about/our-story/",
+  "/en/about/team/",
+  "/en/business/pricing/",
+  "/en/personal/compare-accounts/",
 ];
 
 async function cleanupPreviousModelingContent(): Promise<void> {
@@ -99,7 +140,10 @@ async function cleanupPreviousModelingContent(): Promise<void> {
     await deleteContentByKey(item.key);
     console.log(`  [deleted] ${item.displayName}`);
   }
-  if (matches.length === 0) console.log("  (nothing to clean)");
+  for (const url of PHASE_D_PAGE_URLS) {
+    await deletePageByUrlIfExists([url]);
+  }
+  if (matches.length === 0) console.log("  (root-container content already clean)");
 }
 
 // ---------------------------------------------------------------------------
@@ -632,6 +676,407 @@ async function seedCaseStudies(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Phase D — Part 1: Timeline Milestones (reference targets for TimelineBlock)
+// ---------------------------------------------------------------------------
+
+interface MilestoneDef {
+  key: string;
+  displayName: string;
+  date: string;
+  title: string;
+  description: string;
+}
+
+const MILESTONES: MilestoneDef[] = [
+  { key: MILESTONE_KEYS.founded,     displayName: "Milestone — Founded",        date: "1998",     title: "Founded in Leeds",                 description: "Mosey Bank opens its first branch on Albion Street with 12 staff and a single goal: clearer banking, fewer surprises." },
+  { key: MILESTONE_KEYS.firstBranch, displayName: "Milestone — 10 branches",     date: "2003",     title: "Expansion across the North",       description: "Branch number ten opens in Newcastle. Mosey now serves 80,000 personal customers across Yorkshire and the North East." },
+  { key: MILESTONE_KEYS.online,      displayName: "Milestone — Online banking", date: "2008",     title: "Online banking launches",          description: "Mosey customers can now manage their account, set up standing orders, and pay bills entirely online — well ahead of the high-street competition." },
+  { key: MILESTONE_KEYS.appLaunch,   displayName: "Milestone — App launch",     date: "2014",     title: "The Mosey app arrives",            description: "Mobile-first banking, instant push notifications on every transaction, and Apple Pay support from day one. The app hits 4.8 stars within its first month." },
+  { key: MILESTONE_KEYS.oneMillion,  displayName: "Milestone — One million",     date: "2019",     title: "One million customers",            description: "Mosey crosses the one million customer mark — and we're still answering the phone in under 30 seconds on average." },
+  { key: MILESTONE_KEYS.business,    displayName: "Milestone — Business banking", date: "2021",   title: "Business banking launches",         description: "We bring the same simplicity to SMEs: a 15-minute opening flow, accounting integrations from launch day, and no monthly fee in year one." },
+  { key: MILESTONE_KEYS.fxSwitch,    displayName: "Milestone — FX rebuild",     date: "2024",     title: "Real-rate FX, zero fees",          description: "We rebuild the FX engine: real mid-market exchange rates and no foreign transaction fees on the current account. The change saves UK travellers an estimated £14M a year." },
+  { key: MILESTONE_KEYS.today,       displayName: "Milestone — Today",          date: "Today",    title: "Two million customers, one focus",  description: "140+ branches, two million customers, and a single principle that hasn't changed since 1998: tell people what their money is doing." },
+];
+
+async function seedMilestones(): Promise<void> {
+  console.log(`\n--- Seeding ${MILESTONES.length} Timeline Milestones ---`);
+  for (const m of MILESTONES) {
+    const payload = {
+      key: m.key,
+      contentType: "TimelineMilestoneBlock",
+      locale: "en",
+      container: CONTAINER,
+      status: "published",
+      displayName: m.displayName,
+      properties: { date: m.date, title: m.title, description: m.description },
+    };
+    const result = await createContent(payload, m.displayName);
+    if (result) console.log(`  [created] ${m.displayName}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase D — Part 2: Team Members
+// ---------------------------------------------------------------------------
+
+interface TeamMemberDef {
+  key: string;
+  displayName: string;
+  name: string;
+  role: string;
+  bio: string;
+  linkedinUrl?: string;
+}
+
+const TEAM_MEMBERS: TeamMemberDef[] = [
+  { key: TEAM_KEYS.ceo,       displayName: "Team Member — Maya Singh",     name: "Maya Singh",     role: "Chief Executive Officer",       bio: "Maya joined Mosey in 2017 and became CEO in 2022. Previously led retail banking at a UK challenger bank.",  linkedinUrl: "https://www.linkedin.com/in/maya-singh-mosey/" },
+  { key: TEAM_KEYS.cfo,       displayName: "Team Member — Tom Whitfield",  name: "Tom Whitfield",  role: "Chief Financial Officer",        bio: "Tom oversees finance, capital planning, and treasury. 18 years across UK and EU banking.",                    linkedinUrl: "https://www.linkedin.com/in/tom-whitfield-mosey/" },
+  { key: TEAM_KEYS.cto,       displayName: "Team Member — Anya Petrov",    name: "Anya Petrov",    role: "Chief Technology Officer",       bio: "Anya runs all of engineering, security, and platform. She rebuilt the Mosey app from the ground up in 2014.",   linkedinUrl: "https://www.linkedin.com/in/anya-petrov-mosey/" },
+  { key: TEAM_KEYS.business,  displayName: "Team Member — Priya Shah",     name: "Priya Shah",     role: "Director of Business Banking",   bio: "Priya leads the small-business banking team and writes about banking for founders.",                          linkedinUrl: "https://www.linkedin.com/in/priya-shah-mosey/" },
+  { key: TEAM_KEYS.customer,  displayName: "Team Member — Sam Okafor",     name: "Sam Okafor",     role: "Head of Customer Experience",    bio: "Sam ensures the average Mosey complaint is resolved in 3 days. Was an ombudsman before joining us.",            linkedinUrl: "https://www.linkedin.com/in/sam-okafor-mosey/" },
+  { key: TEAM_KEYS.risk,      displayName: "Team Member — Helena Bauer",   name: "Helena Bauer",   role: "Chief Risk Officer",             bio: "Helena oversees credit, financial, and operational risk. Previously CRO at a Tier-1 European bank.",            linkedinUrl: "https://www.linkedin.com/in/helena-bauer-mosey/" },
+];
+
+async function seedTeamMembers(): Promise<void> {
+  console.log(`\n--- Seeding ${TEAM_MEMBERS.length} Team Members ---`);
+  for (const t of TEAM_MEMBERS) {
+    const payload = {
+      key: t.key,
+      contentType: "TeamMemberBlock",
+      locale: "en",
+      container: CONTAINER,
+      status: "published",
+      displayName: t.displayName,
+      properties: {
+        name: t.name,
+        role: t.role,
+        bio:  t.bio,
+        ...(t.linkedinUrl ? { linkedinUrl: t.linkedinUrl } : {}),
+      },
+    };
+    const result = await createContent(payload, t.displayName);
+    if (result) console.log(`  [created] ${t.displayName}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase D — Part 3: Modeling-demo pages (Our Story, Team, Pricing, Compare)
+// ---------------------------------------------------------------------------
+//
+// These pages live under existing seed-content.ts containers — about, business,
+// personal. We look up the parent page keys in Graph at seed time.
+
+async function seedOurStoryPage(parentKey: string): Promise<void> {
+  console.log("\n--- Seeding /en/about/our-story/ (TimelineBlock demo) ---");
+  const composition = {
+    id: uid(),
+    displayName: "Composition",
+    nodeType: "experience",
+    layoutType: "outline",
+    nodes: [
+      {
+        id: uid(),
+        displayName: "Our Story",
+        nodeType: "component",
+        component: {
+          contentType: "TimelineBlock",
+          properties: {
+            heading: "Our story",
+            subheading:
+              "A short walk through the milestones that shaped how Mosey banks today — from a single branch in Leeds to two million customers across the UK.",
+            milestones: MILESTONES.map((m) => `cms://content/${m.key}`),
+          },
+        },
+      },
+    ],
+  };
+
+  await createContent(
+    {
+      key: PHASE_D_PAGE_KEYS.ourStory,
+      contentType: "DynamicExperience",
+      locale: "en",
+      container: parentKey,
+      status: "published",
+      displayName: "Page — Our Story",
+      routeSegment: "our-story",
+      composition,
+    },
+    "Page — Our Story"
+  );
+  console.log("  [created] /en/about/our-story/");
+}
+
+async function seedTeamPage(parentKey: string): Promise<void> {
+  console.log("\n--- Seeding /en/about/team/ (TeamGridBlock demo) ---");
+  const composition = {
+    id: uid(),
+    displayName: "Composition",
+    nodeType: "experience",
+    layoutType: "outline",
+    nodes: [
+      {
+        id: uid(),
+        displayName: "Team Grid",
+        nodeType: "component",
+        component: {
+          contentType: "TeamGridBlock",
+          properties: {
+            heading: "The Mosey leadership team",
+            subheading:
+              "Six people who answer for everything from credit risk to your last app update. We list everyone here, including how to reach them.",
+            members: TEAM_MEMBERS.map((t) => `cms://content/${t.key}`),
+          },
+        },
+      },
+    ],
+  };
+
+  await createContent(
+    {
+      key: PHASE_D_PAGE_KEYS.team,
+      contentType: "DynamicExperience",
+      locale: "en",
+      container: parentKey,
+      status: "published",
+      displayName: "Page — Team",
+      routeSegment: "team",
+      composition,
+    },
+    "Page — Team"
+  );
+  console.log("  [created] /en/about/team/");
+}
+
+async function seedPricingPage(parentKey: string): Promise<void> {
+  console.log("\n--- Seeding /en/business/pricing/ (PricingTier + ComparisonTable demo) ---");
+
+  const pricingRow = {
+    id: uid(),
+    displayName: "Pricing Row",
+    nodeType: "section",
+    layoutType: "grid",
+    component: { contentType: "BlankSection", properties: {} },
+    nodes: [
+      {
+        id: uid(),
+        displayName: "Row",
+        nodeType: "row",
+        nodes: [
+          {
+            id: uid(),
+            displayName: "Column",
+            nodeType: "column",
+            nodes: [
+              {
+                id: uid(),
+                displayName: "Starter Tier",
+                nodeType: "component",
+                component: {
+                  contentType: "PricingTierBlock",
+                  properties: {
+                    name: "Starter",
+                    price: "£0",
+                    period: "/month",
+                    highlighted: false,
+                    features: [
+                      "Business current account",
+                      "Up to 100 free transactions/month",
+                      "Free UK transfers",
+                      "Mobile app + web access",
+                      "Xero and QuickBooks integration",
+                    ],
+                    ctaText: "Open a Starter account",
+                    ctaLink: "/en/business/business-banking",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            id: uid(),
+            displayName: "Column",
+            nodeType: "column",
+            nodes: [
+              {
+                id: uid(),
+                displayName: "Plus Tier",
+                nodeType: "component",
+                component: {
+                  contentType: "PricingTierBlock",
+                  properties: {
+                    name: "Plus",
+                    price: "£12",
+                    period: "/month",
+                    highlighted: true,
+                    features: [
+                      "Everything in Starter",
+                      "Unlimited transactions",
+                      "Free same-day international transfers",
+                      "Dedicated relationship manager",
+                      "Invoice automation",
+                      "Cashflow forecasting tools",
+                    ],
+                    ctaText: "Try Plus free for 30 days",
+                    ctaLink: "/en/business/business-banking",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            id: uid(),
+            displayName: "Column",
+            nodeType: "column",
+            nodes: [
+              {
+                id: uid(),
+                displayName: "Pro Tier",
+                nodeType: "component",
+                component: {
+                  contentType: "PricingTierBlock",
+                  properties: {
+                    name: "Pro",
+                    price: "£35",
+                    period: "/month",
+                    highlighted: false,
+                    features: [
+                      "Everything in Plus",
+                      "Up to 50 user seats",
+                      "Multi-currency accounts",
+                      "Priority lending decisions",
+                      "Advanced fraud controls",
+                      "API access for custom workflows",
+                    ],
+                    ctaText: "Talk to our team",
+                    ctaLink: "/en/business/business-banking",
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  // ComparisonTableBlock is sectionEnabled-only (not elementEnabled), so it
+  // must be placed directly under the experience root, NOT inside a column.
+  const comparisonComponent = {
+    id: uid(),
+    displayName: "Comparison Table",
+    nodeType: "component",
+    component: {
+      contentType: "ComparisonTableBlock",
+      properties: {
+        heading: "Plan comparison",
+        subheading: "Pick the plan that matches where your business is today. Switch up or down whenever — no contract.",
+        columns: [
+          { name: "Starter", highlighted: false },
+          { name: "Plus",    highlighted: true },
+          { name: "Pro",     highlighted: false },
+        ],
+        rows: [
+          { label: "Monthly fee",            values: ["£0", "£12", "£35"] },
+          { label: "Free transactions",      values: ["100/month", "Unlimited", "Unlimited"] },
+          { label: "International transfers",values: ["£3 each", "Free same-day", "Free same-day"] },
+          { label: "Relationship manager",   values: ["—", "Dedicated", "Dedicated"] },
+          { label: "Multi-currency accounts",values: ["—", "—", "Included"] },
+          { label: "API access",             values: ["—", "—", "Included"] },
+          { label: "User seats",             values: ["1", "10", "50"] },
+        ],
+      },
+    },
+  };
+
+  await createContent(
+    {
+      key: PHASE_D_PAGE_KEYS.pricing,
+      contentType: "DynamicExperience",
+      locale: "en",
+      container: parentKey,
+      status: "published",
+      displayName: "Page — Pricing",
+      routeSegment: "pricing",
+      composition: {
+        id: uid(),
+        displayName: "Composition",
+        nodeType: "experience",
+        layoutType: "outline",
+        nodes: [
+          singleSectionHeading(
+            "Business banking plans",
+            "Transparent pricing. No hidden fees. Switch tiers at any time."
+          )[0],
+          pricingRow,
+          comparisonComponent,
+        ],
+      },
+    },
+    "Page — Pricing"
+  );
+  console.log("  [created] /en/business/pricing/");
+}
+
+async function seedCompareAccountsPage(parentKey: string): Promise<void> {
+  console.log("\n--- Seeding /en/personal/compare-accounts/ (ComparisonTable demo) ---");
+  const composition = {
+    id: uid(),
+    displayName: "Composition",
+    nodeType: "experience",
+    layoutType: "outline",
+    nodes: [
+      singleSectionHeading(
+        "Compare current accounts",
+        "Three Mosey current account options at a glance. Choose the one that fits how you spend."
+      )[0],
+      {
+        id: uid(),
+        displayName: "Account Comparison",
+        nodeType: "component",
+        component: {
+          contentType: "ComparisonTableBlock",
+          properties: {
+            heading: "Mosey current accounts",
+            subheading: "The Everyday account suits most. Plus adds travel perks. Premier is for higher balances and dedicated support.",
+            columns: [
+              { name: "Everyday",  highlighted: false },
+              { name: "Plus",      highlighted: true },
+              { name: "Premier",   highlighted: false },
+            ],
+            rows: [
+              { label: "Monthly fee",                values: ["£0",        "£5",         "£18"] },
+              { label: "Foreign transaction fees",   values: ["None",      "None",       "None"] },
+              { label: "Free ATM abroad / month",    values: ["£200",      "£500",       "Unlimited"] },
+              { label: "Travel insurance",           values: ["—",         "Worldwide",  "Worldwide + winter sports"] },
+              { label: "Mobile + web banking",       values: ["Included",  "Included",   "Included"] },
+              { label: "Dedicated phone line",       values: ["—",         "—",          "Included"] },
+              { label: "Interest on credit balances", values: ["—",        "2.5% AER",   "3.5% AER (first £20k)"] },
+              { label: "Best for",                   values: ["Day-to-day","Frequent travellers","Premium customers"] },
+            ],
+          },
+        },
+      },
+    ],
+  };
+
+  await createContent(
+    {
+      key: PHASE_D_PAGE_KEYS.compareAccounts,
+      contentType: "DynamicExperience",
+      locale: "en",
+      container: parentKey,
+      status: "published",
+      displayName: "Page — Compare Accounts",
+      routeSegment: "compare-accounts",
+      composition,
+    },
+    "Page — Compare Accounts"
+  );
+  console.log("  [created] /en/personal/compare-accounts/");
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -656,19 +1101,42 @@ async function main(): Promise<void> {
   await seedArticles();
   await seedCaseStudies();
 
-  console.log("\n=== Phase C complete ===");
-  console.log("  Authors:        " + AUTHORS.length);
-  console.log("  Outcomes:       " + OUTCOMES.length);
-  console.log("  Testimonials:   " + TESTIMONIALS.length);
-  console.log("  Hub pages:      3");
-  console.log("  Articles:       " + ARTICLES.length);
-  console.log("  Case Studies:   " + CASE_STUDIES.length);
+  // ----- Phase D ----------------------------------------------------------
+  await seedMilestones();
+  await seedTeamMembers();
+
+  console.log("\n--- Resolving parent page keys for Phase D pages ---");
+  const aboutKey    = await findPageKeyByUrl(["/en/about/"]);
+  const businessKey = await findPageKeyByUrl(["/en/business/"]);
+  const personalKey = await findPageKeyByUrl(["/en/personal/"]);
+
+  if (aboutKey)    { await seedOurStoryPage(aboutKey); await seedTeamPage(aboutKey); }
+  else             console.warn("  [warn] /en/about/ not found in Graph — skipping Our Story + Team pages. Run `npm run seed` first.");
+  if (businessKey) await seedPricingPage(businessKey);
+  else             console.warn("  [warn] /en/business/ not found in Graph — skipping Pricing page.");
+  if (personalKey) await seedCompareAccountsPage(personalKey);
+  else             console.warn("  [warn] /en/personal/ not found in Graph — skipping Compare Accounts page.");
+
+  console.log("\n=== Seeding complete ===");
+  console.log("  Authors:           " + AUTHORS.length);
+  console.log("  Outcomes:          " + OUTCOMES.length);
+  console.log("  Testimonials:      " + TESTIMONIALS.length);
+  console.log("  Hub pages:         3");
+  console.log("  Articles:          " + ARTICLES.length);
+  console.log("  Case Studies:      " + CASE_STUDIES.length);
+  console.log("  Timeline milestones: " + MILESTONES.length);
+  console.log("  Team members:      " + TEAM_MEMBERS.length);
+  console.log("  Phase D pages:     4 (Our Story, Team, Pricing, Compare Accounts)");
   console.log("\nWait ~30s for Graph to index, then visit:");
   console.log("  /en/insights/articles/saving-for-first-home/");
   console.log("  /en/insights/case-studies/local-bakery-growth/");
+  console.log("  /en/about/our-story/");
+  console.log("  /en/about/team/");
+  console.log("  /en/business/pricing/");
+  console.log("  /en/personal/compare-accounts/");
   console.log("\nUpcoming phases (not yet seeded):");
-  console.log("  D  Pricing, Team, Timeline, Compare Accounts");
-  console.log("  E  Insights hub with filtering");
+  console.log("  E  Insights hub with filtering (polymorphic + filter blocks)");
+  console.log("  F  Callout, Gallery + display template variants on existing blocks");
 }
 
 main().catch((err) => {

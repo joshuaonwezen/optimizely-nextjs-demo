@@ -7,7 +7,12 @@
  */
 
 import { randomUUID } from "crypto";
+import { config as loadEnv } from "dotenv";
 import { getManagementToken } from "../src/lib/optimizely/auth";
+
+// Load .env.local before anyone reads env-derived constants below.
+// Safe to call multiple times — dotenv is a no-op once vars are set.
+loadEnv({ path: ".env.local" });
 
 export { getManagementToken };
 
@@ -223,6 +228,46 @@ export async function patchContentProperties(
     lastBody = await res.text();
   }
   throw new Error(`PATCH ${key} failed: ${lastStatus} ${lastBody}`);
+}
+
+/**
+ * Look up the CMS key for a page by URL via Optimizely Graph. Returns null
+ * if no page exists at any of the given URLs.
+ *
+ * Use this when seed scripts need to reference (or clean up) a page that was
+ * created in an earlier script — keys aren't shared across script runs, but
+ * URLs are stable.
+ */
+export async function findPageKeyByUrl(urls: string[]): Promise<string | null> {
+  if (urls.length === 0) return null;
+  const query = `query FindPageKey($urls: [String]) {
+    _Page(where: { _metadata: { url: { default: { in: $urls } } } }, limit: 1) {
+      items { _metadata { key } }
+    }
+  }`;
+  const res = await fetch(GRAPH_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `epi-single ${SINGLE_KEY}`,
+    },
+    body: JSON.stringify({ query, variables: { urls } }),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as {
+    data?: { _Page?: { items?: Array<{ _metadata?: { key?: string } }> } };
+  };
+  return data.data?._Page?.items?.[0]?._metadata?.key ?? null;
+}
+
+/**
+ * If a page exists at any of the given URLs, delete it. Useful for idempotent
+ * cleanup of pages created in other containers (where
+ * `findItemsInContainerByName` against root can't reach them).
+ */
+export async function deletePageByUrlIfExists(urls: string[]): Promise<void> {
+  const key = await findPageKeyByUrl(urls);
+  if (key) await deleteContentByKey(key);
 }
 
 /**
