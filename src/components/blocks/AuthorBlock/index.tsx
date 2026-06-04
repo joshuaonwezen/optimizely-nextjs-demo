@@ -40,7 +40,7 @@ function resolveUrl(value: string | { default?: string | null } | null | undefin
   return value.default ?? null;
 }
 
-function resolveImageUrl(ref: ImageRef): string | null {
+function resolveImageUrl(ref: ImageRef | undefined): string | null {
   if (!ref) return null;
   return ref.url?.default ?? ref._metadata?.url?.default ?? null;
 }

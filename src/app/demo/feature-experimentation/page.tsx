@@ -298,13 +298,34 @@ function Arrow() {
 // Page
 // ---------------------------------------------------------------------------
 
+const BUCKETING_ID_SNIPPET = `import { getOptimizelyUser } from "@/lib/optimizely/user";
+import { getVisitorContext } from "@/lib/optimizely/visitor";
+
+export default async function MyPage() {
+  const user = await getOptimizelyUser();
+  const { bucketingId } = await getVisitorContext();
+
+  // Normal decision — bucketed by the visitor's stable userId
+  const decision = user.decide("subscribe_button");
+
+  // Account-level decision — when logged in, bucket by account ID instead.
+  // All seats on the same account see the same variation.
+  // userId is still used for analytics; only bucketing is overridden.
+  const accountDecision = bucketingId
+    ? user.decideWithBucketingId("subscribe_button", bucketingId)
+    : null;
+}`;
+
 export default async function FeatureFlagsDemoPage() {
   const user = await getOptimizelyUser();
-  const { userId, attributes } = await getVisitorContext();
+  const { userId, attributes, bucketingId } = await getVisitorContext();
   const device = attributes.device as string;
 
   const decisions = user.decideAll();
   const subscribeDecision = decisions["subscribe_button"];
+  const bucketedDecision = bucketingId
+    ? user.decideWithBucketingId("subscribe_button", bucketingId)
+    : null;
 
   const activeVariations = Object.values(decisions)
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
@@ -443,7 +464,7 @@ export default async function FeatureFlagsDemoPage() {
             reload and you always land in the same variation.
           </p>
 
-          <div className="grid sm:grid-cols-3 gap-4 mb-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div className="bg-surface-lowest border border-ghost-border rounded-xl px-5 py-4 flex flex-col gap-1">
               <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider">User ID</span>
               <span className="text-sm font-mono text-on-surface">{userId.slice(0, 8)}…{userId.slice(-4)}</span>
@@ -453,6 +474,15 @@ export default async function FeatureFlagsDemoPage() {
               <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider">Device</span>
               <span className="text-sm font-mono text-on-surface">{device}</span>
               <span className="text-xs text-on-surface-variant">derived from User-Agent header (no cookie)</span>
+            </div>
+            <div className={`rounded-xl px-5 py-4 flex flex-col gap-1 border ${bucketingId ? "bg-emerald-50 border-emerald-200" : "bg-surface-lowest border-ghost-border"}`}>
+              <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider">Bucketing ID</span>
+              <span className={`text-sm font-mono ${bucketingId ? "text-emerald-700" : "text-on-surface-variant"}`}>
+                {bucketingId ?? "—"}
+              </span>
+              <span className="text-xs text-on-surface-variant">
+                {bucketingId ? "overrides bucketing (not analytics)" : "sign in via Audience Switcher to set"}
+              </span>
             </div>
             <div className="bg-surface-lowest border border-ghost-border rounded-xl px-5 py-4 flex flex-col gap-1">
               <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider">Active Variations</span>
@@ -507,6 +537,89 @@ export default async function FeatureFlagsDemoPage() {
             <span>(alternate messaging + brand gradient)</span>
           </div>
           <SubscribeDemo decision={subscribeDecision} />
+        </section>
+
+        {/* ── Bucketing ID ── */}
+        <section id="bucketing-id">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Bucketing ID Override <a href="#bucketing-id" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
+            By default the FX SDK buckets users by their <code className="bg-surface-low px-1 rounded font-mono text-xs">userId</code>.
+            Setting the reserved <code className="bg-surface-low px-1 rounded font-mono text-xs">$opt_bucketing_id</code> attribute
+            overrides <em>which</em> ID drives bucketing — while keeping the original <code className="bg-surface-low px-1 rounded font-mono text-xs">userId</code> for
+            analytics. This means all users sharing the same bucketing ID land in the same variation,
+            regardless of their individual user IDs.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            {[
+              {
+                title: "B2B / account-level experiments",
+                body: "Every seat on the same company account sees the same variation. Avoids the awkward situation where user A sees Variation 1 and user B on the same account sees Variation 2 in the same meeting.",
+              },
+              {
+                title: "Family plans & shared subscriptions",
+                body: "Households or linked accounts that share access should have a consistent experience — buck by the primary account ID, not by each individual member.",
+              },
+              {
+                title: "Gradual rollouts to accounts",
+                body: "Roll out a new feature to 10% of accounts (not 10% of users). Avoids fragmenting the experience inside the same company during a staged rollout.",
+              },
+            ].map(({ title, body }) => (
+              <div key={title} className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
+                <h3 className="font-display font-semibold text-on-surface mb-2">{title}</h3>
+                <p className="text-sm text-on-surface-variant leading-relaxed">{body}</p>
+              </div>
+            ))}
+          </div>
+
+          <CodeBlock code={BUCKETING_ID_SNIPPET} label="src/components/MyPage.tsx" />
+
+          {/* Live comparison */}
+          <div className="mt-8">
+            <h3 className="font-display font-semibold text-on-surface mb-1">Live comparison — <code className="font-mono font-semibold">subscribe_button</code></h3>
+            <p className="text-sm text-on-surface-variant mb-5">
+              {bucketingId
+                ? `Signed in as ${bucketingId}. The two decisions below may land in different variations — the normal decision is bucketed by your browser's stable userId, the account decision by the login ID.`
+                : "Sign in via the Audience Switcher (bottom-right) to see the account-level decision alongside your normal decision."}
+            </p>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-3">
+                  Normal — bucketed by userId
+                </p>
+                <SubscribeDemo decision={subscribeDecision} />
+                {subscribeDecision && (
+                  <p className="mt-2 text-xs font-mono text-on-surface-variant">
+                    variation: <span className="text-brand">{subscribeDecision.variationKey ?? "off"}</span>
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-3">
+                  Account — bucketed by{" "}
+                  <span className={bucketingId ? "text-emerald-600" : "text-on-surface-variant"}>
+                    {bucketingId ? `$opt_bucketing_id: "${bucketingId}"` : "not set"}
+                  </span>
+                </p>
+                {bucketedDecision ? (
+                  <>
+                    <SubscribeDemo decision={bucketedDecision} />
+                    <p className="mt-2 text-xs font-mono text-on-surface-variant">
+                      variation: <span className="text-emerald-600">{bucketedDecision.variationKey ?? "off"}</span>
+                    </p>
+                  </>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-ghost-border bg-surface-lowest p-8 text-center h-full flex items-center justify-center">
+                    <p className="text-sm text-on-surface-variant">
+                      Sign in via the Audience Switcher to activate
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* ── CMS Variations — the connection ── */}

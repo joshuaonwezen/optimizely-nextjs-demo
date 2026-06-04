@@ -14,23 +14,26 @@ const noDecision = (flagKey: string, _options: OptimizelyDecideOption[] = [Optim
 
 const noOpUser = {
   userId: "anonymous" as string,
+  bucketingId: undefined as string | undefined,
   decide: noDecision,
   decideAll: (): Record<string, FxDecision> => ({}),
+  decideWithBucketingId: (flagKey: string, _bucketingId: string, options: OptimizelyDecideOption[] = [OptimizelyDecideOption.DISABLE_DECISION_EVENT]): FxDecision => noDecision(flagKey, options),
 };
 
 export const getOptimizelyUser = cache(async () => {
-  const [client, { userId, attributes }] = await Promise.all([
+  const [client, { userId, attributes, bucketingId }] = await Promise.all([
     getOptimizelyClient(),
     getVisitorContext(),
   ]);
 
-  if (!client) return { ...noOpUser, userId };
+  if (!client) return { ...noOpUser, userId, bucketingId };
 
   const ctx = client.createUserContext(userId, attributes);
-  if (!ctx) return { ...noOpUser, userId };
+  if (!ctx) return { ...noOpUser, userId, bucketingId };
 
   return {
     userId,
+    bucketingId,
     decide(flagKey: string, options: OptimizelyDecideOption[] = [OptimizelyDecideOption.DISABLE_DECISION_EVENT]): FxDecision {
       const d = ctx.decide(flagKey, options);
       return {
@@ -54,6 +57,19 @@ export const getOptimizelyUser = cache(async () => {
         };
       }
       return out;
+    },
+    decideWithBucketingId(flagKey: string, bId: string, options: OptimizelyDecideOption[] = [OptimizelyDecideOption.DISABLE_DECISION_EVENT]): FxDecision {
+      const fallback: FxDecision = { flagKey, enabled: false, variationKey: null, variables: {}, reasons: [] };
+      const bCtx = client.createUserContext(userId, { ...attributes, $opt_bucketing_id: bId });
+      if (!bCtx) return fallback;
+      const d = bCtx.decide(flagKey, options);
+      return {
+        flagKey,
+        enabled: d.enabled,
+        variationKey: d.variationKey,
+        variables: d.variables as Record<string, unknown>,
+        reasons: d.reasons,
+      };
     },
   };
 });

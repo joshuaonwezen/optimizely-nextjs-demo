@@ -14,21 +14,31 @@ const AUTH_STATES = [
   { value: true,  label: "Logged In" },
 ];
 
+const PRESET_ACCOUNTS = [
+  { key: "alice@mosey.bank",   label: "Alice" },
+  { key: "bob@mosey.bank",     label: "Bob" },
+  { key: "charlie@mosey.bank", label: "Charlie" },
+];
+
 export default function AudienceSwitcher({
   initialPersona,
   initialLoggedIn,
+  initialBucketingId,
 }: {
   initialPersona: string;
   initialLoggedIn: boolean;
+  initialBucketingId: string;
 }) {
   const [current, setCurrent] = useState(initialPersona);
   const [loggedIn, setLoggedIn] = useState(initialLoggedIn);
+  const [bucketingId, setBucketingId] = useState(initialBucketingId);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const currentLabel = PERSONAS.find((p) => p.key === current)?.label ?? "Default";
+  const loginLabel = PRESET_ACCOUNTS.find((a) => a.key === bucketingId)?.label ?? (bucketingId ? bucketingId.split("@")[0] : null);
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -61,6 +71,19 @@ export default function AudienceSwitcher({
       body: JSON.stringify({ loggedIn: value }),
     });
     setLoggedIn(value);
+    setLoading(false);
+    router.refresh();
+  }
+
+  async function selectBucketingId(id: string) {
+    if (id === bucketingId || loading) return;
+    setLoading(true);
+    await fetch("/api/demo/set-bucketing-id", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bucketingId: id || null }),
+    });
+    setBucketingId(id);
     setLoading(false);
     router.refresh();
   }
@@ -113,10 +136,39 @@ export default function AudienceSwitcher({
             ))}
           </div>
 
+          {/* Login / bucketing ID section */}
+          <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider border-t border-outline-variant mt-1">
+            Login (Bucketing ID)
+          </p>
+          <div className="px-3 pb-3 flex flex-wrap gap-1.5">
+            {PRESET_ACCOUNTS.map((a) => (
+              <button
+                key={a.key}
+                onClick={() => selectBucketingId(a.key === bucketingId ? "" : a.key)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  a.key === bucketingId
+                    ? "bg-brand text-on-brand"
+                    : "bg-surface-low text-on-surface hover:bg-surface"
+                }`}
+              >
+                {a.label}
+              </button>
+            ))}
+            {bucketingId && (
+              <button
+                onClick={() => selectBucketingId("")}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-surface-low text-on-surface-variant hover:bg-surface transition-colors"
+              >
+                Sign out
+              </button>
+            )}
+          </div>
+
           <div className="px-4 py-3 border-t border-outline-variant">
             <p className="text-xs text-on-surface-variant leading-snug">
-              Sets <code className="font-mono">demo_persona</code> and{" "}
-              <code className="font-mono">demo_logged_in</code> cookies.
+              Sets <code className="font-mono">demo_persona</code>,{" "}
+              <code className="font-mono">demo_logged_in</code>, and{" "}
+              <code className="font-mono">demo_bucketing_id</code> cookies.
             </p>
           </div>
         </div>
@@ -142,6 +194,9 @@ export default function AudienceSwitcher({
         <span>{loading ? "Switching…" : currentLabel}</span>
         {loggedIn && (
           <span className="text-xs bg-brand/10 text-brand px-1.5 py-0.5 rounded font-mono">auth</span>
+        )}
+        {loginLabel && (
+          <span className="text-xs bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded font-mono">{loginLabel}</span>
         )}
         <svg
           viewBox="0 0 20 20"

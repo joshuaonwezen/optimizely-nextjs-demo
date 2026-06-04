@@ -34,7 +34,7 @@ interface TeamMemberData {
   __context?: { edit?: boolean } | null;
 }
 
-function resolveImageUrl(ref: ImageRef): string | null {
+function resolveImageUrl(ref: ImageRef | undefined): string | null {
   if (!ref) return null;
   return ref.url?.default ?? ref._metadata?.url?.default ?? null;
 }
