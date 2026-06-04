@@ -20,9 +20,9 @@ export const TeamGridBlockType = contentType({
   },
 });
 
-interface MemberRef {
-  _metadata?: { key?: string | null } | null;
-}
+// Inline composition stores contentReference array items as raw cms URI
+// strings; Graph-fetched references come back as objects with _metadata.
+type MemberRef = string | { _metadata?: { key?: string | null } | null };
 
 interface MemberData {
   __typename?: string;
@@ -39,6 +39,15 @@ interface TeamGridData {
   subheading?: string | null;
   members?:    Array<MemberRef | null> | null;
   __context?: { edit?: boolean } | null;
+}
+
+function extractKey(ref: MemberRef | null | undefined): string | null {
+  if (!ref) return null;
+  if (typeof ref === "string") {
+    const m = /cms:\/\/content\/([a-f0-9-]+)/i.exec(ref);
+    return m?.[1] ?? null;
+  }
+  return ref._metadata?.key ?? null;
 }
 
 type TeamGridBlockProps = TeamGridData & {
@@ -74,7 +83,7 @@ export default async function TeamGridBlock(props: TeamGridBlockProps) {
   const { pa } = getPreviewUtils(data as any);
 
   const keys = (data.members ?? [])
-    .map((m) => m?._metadata?.key)
+    .map(extractKey)
     .filter((k): k is string => Boolean(k));
   const members = await loadMembers(keys);
 

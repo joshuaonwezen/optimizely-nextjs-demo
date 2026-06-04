@@ -20,9 +20,10 @@ export const TimelineBlockType = contentType({
   },
 });
 
-interface MilestoneRef {
-  _metadata?: { key?: string | null } | null;
-}
+// Inline composition stores contentReference array items as the raw cms URI
+// string ("cms://content/<key>"). Graph-fetched references come back as
+// objects with _metadata. Accept both.
+type MilestoneRef = string | { _metadata?: { key?: string | null } | null };
 
 interface MilestoneData {
   __typename?: string;
@@ -37,6 +38,15 @@ interface TimelineData {
   subheading?: string | null;
   milestones?: Array<MilestoneRef | null> | null;
   __context?: { edit?: boolean } | null;
+}
+
+function extractKey(ref: MilestoneRef | null | undefined): string | null {
+  if (!ref) return null;
+  if (typeof ref === "string") {
+    const m = /cms:\/\/content\/([a-f0-9-]+)/i.exec(ref);
+    return m?.[1] ?? null;
+  }
+  return ref._metadata?.key ?? null;
 }
 
 type TimelineBlockProps = TimelineData & {
@@ -72,7 +82,7 @@ export default async function TimelineBlock(props: TimelineBlockProps) {
   const { pa } = getPreviewUtils(data as any);
 
   const keys = (data.milestones ?? [])
-    .map((m) => m?._metadata?.key)
+    .map(extractKey)
     .filter((k): k is string => Boolean(k));
   const milestones = await loadMilestones(keys);
 
