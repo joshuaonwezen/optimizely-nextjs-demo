@@ -15,8 +15,8 @@ import ProductCardBlock, { ProductCardBlockType, ProductCardFeaturedTemplate } f
 import ProductHeroBlock, { ProductHeroBlockType, ProductHeroCompactTemplate } from "@/components/blocks/ProductHeroBlock";
 import FeatureItemBlock, { FeatureItemBlockType, FeatureItemOutlinedTemplate, FeatureItemFlatTemplate } from "@/components/blocks/FeatureItemBlock";
 import SectionHeadingBlock, { SectionHeadingBlockType, SectionHeadingCenteredTemplate } from "@/components/blocks/SectionHeadingBlock";
-import TestimonialBlock, { TestimonialBlockType, TestimonialCardTemplate } from "@/components/blocks/TestimonialBlock";
-import StatsCounterBlock, { StatsCounterBlockType } from "@/components/blocks/StatsCounterBlock";
+import TestimonialBlock, { TestimonialBlockType, TestimonialCardTemplate, TestimonialMinimalTemplate } from "@/components/blocks/TestimonialBlock";
+import StatsCounterBlock, { StatsCounterBlockType, StatsCounterHighlightTemplate } from "@/components/blocks/StatsCounterBlock";
 import ImageBlock, { ImageBlockType, ImageBlockRoundedTemplate } from "@/components/blocks/ImageBlock";
 import FormContainerBlock, { FormContainerBlockType } from "@/components/blocks/FormContainerBlock";
 import FormTextInput, { FormTextInputType } from "@/components/blocks/FormTextInput";
@@ -24,11 +24,11 @@ import FormTextArea, { FormTextAreaType } from "@/components/blocks/FormTextArea
 import FormSelect, { FormSelectType } from "@/components/blocks/FormSelect";
 import FormSubmitButton, { FormSubmitButtonType } from "@/components/blocks/FormSubmitButton";
 import { NavigationItemType, NavigationType } from "@/components/blocks/NavigationItemBlock";
-import FaqItemBlock, { FaqItemBlockType } from "@/components/blocks/FaqItemBlock";
+import FaqItemBlock, { FaqItemBlockType, FaqItemFlatTemplate } from "@/components/blocks/FaqItemBlock";
 import FaqContainerBlock, { FaqContainerBlockType } from "@/components/blocks/FaqContainerBlock";
 import FeaturedContentBlock, { FeaturedContentBlockType } from "@/components/blocks/FeaturedContentBlock";
-import LogoGridBlock, { LogoGridBlockType } from "@/components/blocks/LogoGridBlock";
-import AuthorBlock, { AuthorBlockType } from "@/components/blocks/AuthorBlock";
+import LogoGridBlock, { LogoGridBlockType, LogoGridColorTemplate } from "@/components/blocks/LogoGridBlock";
+import AuthorBlock, { AuthorBlockType, AuthorInlineTemplate } from "@/components/blocks/AuthorBlock";
 import OutcomeItemBlock, { OutcomeItemBlockType } from "@/components/blocks/OutcomeItemBlock";
 import PricingTierBlock, { PricingTierBlockType } from "@/components/blocks/PricingTierBlock";
 import TimelineMilestoneBlock, { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
@@ -117,6 +117,11 @@ export function initComponentRegistry() {
     FeatureItemOutlinedTemplate,
     FeatureItemFlatTemplate,
     TestimonialCardTemplate,
+    TestimonialMinimalTemplate,
+    StatsCounterHighlightTemplate,
+    AuthorInlineTemplate,
+    FaqItemFlatTemplate,
+    LogoGridColorTemplate,
     ImageBlockRoundedTemplate,
     DefaultRowTemplate,
     DefaultColumnTemplate,
@@ -174,9 +179,12 @@ export function initComponentRegistry() {
       },
       TestimonialBlock: {
         default: TestimonialBlock,
-        tags: { Card: TestimonialBlock },
+        tags: { Card: TestimonialBlock, Minimal: TestimonialBlock },
       },
-      StatsCounterBlock,
+      StatsCounterBlock: {
+        default: StatsCounterBlock,
+        tags: { Highlight: StatsCounterBlock },
+      },
       ImageBlock: {
         default: ImageBlock,
         tags: { Rounded: ImageBlock },
@@ -186,11 +194,20 @@ export function initComponentRegistry() {
       FormTextArea,
       FormSelect,
       FormSubmitButton,
-      FaqItemBlock,
+      FaqItemBlock: {
+        default: FaqItemBlock,
+        tags: { Flat: FaqItemBlock },
+      },
       FaqContainerBlock,
       FeaturedContentBlock,
-      LogoGridBlock,
-      AuthorBlock,
+      LogoGridBlock: {
+        default: LogoGridBlock,
+        tags: { Color: LogoGridBlock },
+      },
+      AuthorBlock: {
+        default: AuthorBlock,
+        tags: { Inline: AuthorBlock },
+      },
       OutcomeItemBlock,
       PricingTierBlock,
       TimelineMilestoneBlock,

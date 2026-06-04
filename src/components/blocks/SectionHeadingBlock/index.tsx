@@ -15,15 +15,24 @@ export const SectionHeadingBlockType = contentType({
 export const SectionHeadingCenteredTemplate = displayTemplate({
   key: "SectionHeadingCenteredTemplate",
   isDefault: false,
-  displayName: "Centered Section Heading",
+  displayName: "Centred heading",
   contentType: "SectionHeadingBlock",
   tag: "Centered",
   settings: {
     showAccent: {
-      editor: "checkbox",
-      displayName: "Show Accent Line",
+      editor: "checkbox" as const,
+      displayName: "Show coloured bar on the left",
       sortOrder: 0,
       choices: {},
+    },
+    size: {
+      editor: "select" as const,
+      displayName: "Heading size",
+      sortOrder: 1,
+      choices: {
+        default: { displayName: "Standard",              sortOrder: 0 },
+        large:   { displayName: "Large (section opener)", sortOrder: 1 },
+      },
     },
   },
 });
@@ -37,6 +46,7 @@ interface SectionHeadingData {
 type SectionHeadingBlockProps = SectionHeadingData & {
   content?: SectionHeadingData;
   displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 };
 
 export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
@@ -44,8 +54,9 @@ export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
 
-  const isCentered = ds?.alignment === "center";
+  const isCentered = props.displayTemplateKey === "SectionHeadingCenteredTemplate";
   const showAccent = ds?.showAccent === true;
+  const isLarge = ds?.size === "large";
 
   return (
     <div className={`py-20 ${isCentered ? "text-center" : ""}`}>
@@ -53,7 +64,7 @@ export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
         {data.heading && (
           <h2
             {...pa("heading")}
-            className="font-display text-3xl md:text-4xl font-extrabold mb-4 text-on-surface"
+            className={`font-display ${isLarge ? "text-4xl md:text-5xl" : "text-3xl md:text-4xl"} font-extrabold mb-4 text-on-surface`}
           >
             {data.heading}
           </h2>

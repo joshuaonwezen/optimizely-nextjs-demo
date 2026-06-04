@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { getNavigation } from "@/lib/graphql/queries/GetNavigation";
-import { getDemoLinks } from "@/lib/getDemoLinks";
+import { getDemoCategories } from "@/lib/getDemoLinks";
 import NavItems from "./NavItems";
 
 export default async function NavigationHeader() {
   const { tree } = await getNavigation();
-  const demoLinks = getDemoLinks();
+  const demoCategories = getDemoCategories();
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-[20px] bg-nav-glass">
@@ -16,7 +16,7 @@ export default async function NavigationHeader() {
         >
           Mosey Bank
         </Link>
-        <NavItems tree={tree} demoLinks={demoLinks} />
+        <NavItems tree={tree} demoCategories={demoCategories} />
       </nav>
     </header>
   );

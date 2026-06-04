@@ -1,19 +1,35 @@
-import { readdirSync } from "fs";
-import { join } from "path";
+export type DemoLink = { href: string; label: string; description: string };
+export type DemoCategory = { label: string; links: DemoLink[] };
 
-function slugToLabel(slug: string): string {
-  return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+export function getDemoCategories(): DemoCategory[] {
+  return [
+    {
+      label: "CMS",
+      links: [
+        { href: "/demo/visual-builder",    label: "Visual Builder",       description: "Page composition, blocks, and display templates" },
+        { href: "/demo/content-modelling", label: "Content Modelling",    description: "Structuring content types and properties" },
+        { href: "/demo/preview",           label: "Draft Mode & Preview", description: "In-context editing and draft content" },
+        { href: "/demo/forms",             label: "Forms",                description: "CMS-managed form blocks and submissions" },
+        { href: "/demo/navigation",        label: "Navigation",           description: "Recursive nav trees from the CMS" },
+      ],
+    },
+    {
+      label: "Integrations",
+      links: [
+        { href: "/demo/feature-experimentation", label: "Feature Experimentation", description: "A/B tests, flags, and SDK bucketing" },
+        { href: "/demo/personalization",          label: "Personalization",         description: "Audiences, personas, and Graph variation filter" },
+        { href: "/demo/external-content",         label: "External Content",        description: "Syncing third-party data via Content Source API" },
+      ],
+    },
+    {
+      label: "Performance",
+      links: [
+        { href: "/demo/caching", label: "Caching", description: "ISR, revalidation tags, and publish webhooks" },
+      ],
+    },
+  ];
 }
 
 export function getDemoLinks(): { href: string; label: string }[] {
-  const overrides: Record<string, string> = { personalization: "Personalization & Audiences" };
-  try {
-    const demoDir = join(process.cwd(), "src/app/demo");
-    return readdirSync(demoDir, { withFileTypes: true })
-      .filter((d) => d.isDirectory())
-      .map((d) => ({ href: `/demo/${d.name}`, label: overrides[d.name] ?? slugToLabel(d.name) }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  } catch {
-    return [];
-  }
+  return getDemoCategories().flatMap((c) => c.links);
 }

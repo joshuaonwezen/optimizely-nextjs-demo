@@ -1,4 +1,4 @@
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
 export const StatsCounterBlockType = contentType({
@@ -13,6 +13,34 @@ export const StatsCounterBlockType = contentType({
   },
 });
 
+export const StatsCounterHighlightTemplate = displayTemplate({
+  key: "StatsCounterHighlightTemplate",
+  isDefault: false,
+  displayName: "Number in a coloured box",
+  contentType: "StatsCounterBlock",
+  tag: "Highlight",
+  settings: {
+    theme: {
+      editor: "select" as const,
+      displayName: "Box colour",
+      sortOrder: 0,
+      choices: {
+        default: { displayName: "No background",         sortOrder: 0 },
+        brand:   { displayName: "Dark blue (brand)",     sortOrder: 1 },
+      },
+    },
+    size: {
+      editor: "select" as const,
+      displayName: "Number size",
+      sortOrder: 1,
+      choices: {
+        default: { displayName: "Standard — big",   sortOrder: 0 },
+        compact: { displayName: "Smaller",          sortOrder: 1 },
+      },
+    },
+  },
+});
+
 interface StatsCounterData {
   value?: string | null;
   label?: string | null;
@@ -23,26 +51,41 @@ interface StatsCounterData {
 type StatsCounterBlockProps = StatsCounterData & {
   content?: StatsCounterData;
   displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 };
 
 export default function StatsCounterBlock(props: StatsCounterBlockProps) {
   const data = props.content ?? props;
+  const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
 
+  const isHighlight = props.displayTemplateKey === "StatsCounterHighlightTemplate";
+  const isBrand = isHighlight && ds?.theme === "brand";
+  const isCompact = ds?.size === "compact";
+
+  const valueClass = isCompact
+    ? "font-display text-3xl md:text-4xl font-extrabold mb-2"
+    : "font-display text-4xl md:text-5xl font-extrabold mb-2";
+  const suffixClass = isCompact ? "text-2xl md:text-3xl" : "text-3xl md:text-4xl";
+  const valueColor = isBrand ? "text-on-brand" : "text-brand";
+  const labelColor = isBrand ? "text-on-brand/80" : "text-on-surface-variant";
+
   return (
-    <div className="text-center p-8">
+    <div
+      className={`text-center p-8 ${isBrand ? "bg-gradient-brand rounded-xl" : ""}`}
+    >
       {data.value && (
-        <p className="font-display text-4xl md:text-5xl font-extrabold mb-2 text-brand">
+        <p className={`${valueClass} ${valueColor}`}>
           <span {...pa("value")}>{data.value}</span>
           {data.suffix && (
-            <span {...pa("suffix")} className="text-3xl md:text-4xl">{data.suffix}</span>
+            <span {...pa("suffix")} className={suffixClass}>{data.suffix}</span>
           )}
         </p>
       )}
       {data.label && (
         <p
           {...pa("label")}
-          className="text-sm font-medium uppercase tracking-wider text-on-surface-variant"
+          className={`text-sm font-medium uppercase tracking-wider ${labelColor}`}
         >
           {data.label}
         </p>

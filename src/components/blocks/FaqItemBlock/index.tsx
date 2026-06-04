@@ -1,4 +1,4 @@
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
 export const FaqItemBlockType = contentType({
@@ -12,6 +12,15 @@ export const FaqItemBlockType = contentType({
   },
 });
 
+export const FaqItemFlatTemplate = displayTemplate({
+  key: "FaqItemFlatTemplate",
+  isDefault: false,
+  displayName: "Simple divider, no border",
+  contentType: "FaqItemBlock",
+  tag: "Flat",
+  settings: {},
+});
+
 interface FaqItemData {
   question?: string | null;
   answer?:   string | null;
@@ -21,6 +30,7 @@ interface FaqItemData {
 type FaqItemBlockProps = FaqItemData & {
   content?: FaqItemData;
   displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 };
 
 export default function FaqItemBlock(props: FaqItemBlockProps) {
@@ -28,6 +38,40 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
   const { pa } = getPreviewUtils(data as any);
 
   if (!data.question) return null;
+
+  const isFlat = props.displayTemplateKey === "FaqItemFlatTemplate";
+
+  if (isFlat) {
+    return (
+      <div className="max-w-3xl mx-auto px-8">
+        <details className="group border-b border-outline-variant">
+          <summary
+            {...pa("question")}
+            className="flex items-center justify-between gap-4 py-4 cursor-pointer select-none list-none font-medium text-on-surface hover:text-brand transition-colors"
+          >
+            {data.question}
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              className="shrink-0 transition-transform duration-200 group-open:rotate-180 text-on-surface-variant"
+            >
+              <path d="M3 6L8 11L13 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </summary>
+          {data.answer && (
+            <div
+              {...pa("answer")}
+              className="pb-5 text-sm leading-relaxed text-on-surface-variant"
+            >
+              {data.answer}
+            </div>
+          )}
+        </details>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-8 mb-2">

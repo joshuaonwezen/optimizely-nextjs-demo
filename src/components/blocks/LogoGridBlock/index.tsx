@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
 export const LogoGridBlockType = contentType({
@@ -14,6 +14,32 @@ export const LogoGridBlockType = contentType({
       type: "array",
       displayName: "Partner Logos",
       items: { type: "content", allowedTypes: ["_image"] },
+    },
+  },
+});
+
+export const LogoGridColorTemplate = displayTemplate({
+  key: "LogoGridColorTemplate",
+  isDefault: false,
+  displayName: "Full-colour logos",
+  contentType: "LogoGridBlock",
+  tag: "Color",
+  settings: {
+    size: {
+      editor: "select" as const,
+      displayName: "Logo size",
+      sortOrder: 0,
+      choices: {
+        sm:      { displayName: "Small",    sortOrder: 0 },
+        default: { displayName: "Standard", sortOrder: 1 },
+        lg:      { displayName: "Large",    sortOrder: 2 },
+      },
+    },
+    showNames: {
+      editor: "checkbox" as const,
+      displayName: "Show partner name below each logo",
+      sortOrder: 1,
+      choices: {},
     },
   },
 });
@@ -34,13 +60,26 @@ interface LogoGridData {
 type LogoGridBlockProps = LogoGridData & {
   content?: LogoGridData;
   displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 };
 
 const PLACEHOLDER_COUNT = 6;
 
+const LOGO_SIZES: Record<string, { wrapper: string; imgSizes: string }> = {
+  sm:      { wrapper: "w-24 h-12", imgSizes: "96px" },
+  default: { wrapper: "w-32 h-16", imgSizes: "128px" },
+  lg:      { wrapper: "w-40 h-20", imgSizes: "160px" },
+};
+
 export default function LogoGridBlock(props: LogoGridBlockProps) {
   const data = props.content ?? props;
+  const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
+
+  const isColor = props.displayTemplateKey === "LogoGridColorTemplate";
+  const showNames = ds?.showNames === true;
+  const sizeKey = (ds?.size as string) || "default";
+  const { wrapper: logoWrapper, imgSizes } = LOGO_SIZES[sizeKey] ?? LOGO_SIZES["default"];
 
   const logos = (data.logos ?? []).filter((l): l is LogoItem => l !== null);
   const showPlaceholders = logos.length === 0;
@@ -69,7 +108,7 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
           ? Array.from({ length: PLACEHOLDER_COUNT }).map((_, i) => (
               <div
                 key={i}
-                className="w-32 h-16 rounded-xl bg-surface-low flex items-center justify-center text-xs text-on-surface-variant opacity-50"
+                className={`${logoWrapper} rounded-xl bg-surface-low flex items-center justify-center text-xs text-on-surface-variant opacity-50`}
               >
                 Logo {i + 1}
               </div>
@@ -79,17 +118,21 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
               const name = logo._metadata?.displayName ?? `Partner ${i + 1}`;
               if (!src) return null;
               return (
-                <div
-                  key={i}
-                  className="relative w-32 h-16 grayscale hover:grayscale-0 transition-all duration-300 opacity-70 hover:opacity-100"
-                >
-                  <Image
-                    src={src}
-                    alt={name}
-                    fill
-                    className="object-contain"
-                    sizes="128px"
-                  />
+                <div key={i} className="flex flex-col items-center gap-1.5">
+                  <div
+                    className={`relative ${logoWrapper} ${isColor ? "" : "grayscale opacity-70"} hover:grayscale-0 transition-all duration-300 hover:opacity-100`}
+                  >
+                    <Image
+                      src={src}
+                      alt={name}
+                      fill
+                      className="object-contain"
+                      sizes={imgSizes}
+                    />
+                  </div>
+                  {showNames && (
+                    <span className="text-xs text-on-surface-variant">{name}</span>
+                  )}
                 </div>
               );
             })}
