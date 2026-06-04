@@ -312,7 +312,7 @@ export default async function MyPage() {
   // All seats on the same account see the same variation.
   // userId is still used for analytics; only bucketing is overridden.
   const accountDecision = bucketingId
-    ? user.decide("subscribe_button", undefined, { bucketingId })
+    ? user.decide("subscribe_button", { bucketingId })
     : null;
 }`;
 
@@ -324,7 +324,7 @@ export default async function FeatureFlagsDemoPage() {
   const decisions = user.decideAll();
   const subscribeDecision = decisions["subscribe_button"];
   const bucketedDecision = bucketingId
-    ? user.decide("subscribe_button", undefined, { bucketingId })
+    ? user.decide("subscribe_button", { bucketingId })
     : null;
 
   const activeVariations = Object.values(decisions)

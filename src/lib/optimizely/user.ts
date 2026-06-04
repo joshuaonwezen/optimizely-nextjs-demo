@@ -4,23 +4,33 @@ import { getOptimizelyClient } from "./experimentation";
 import type { FxDecision, FxAttributes } from "./experimentation";
 import { getVisitorContext } from "./visitor";
 
-type DecideOverrides = {
+type DecideOpts =
+  | OptimizelyDecideOption[]
+  | { options?: OptimizelyDecideOption[]; bucketingId?: string; attributes?: FxAttributes };
+
+function resolveOpts(opts: DecideOpts | undefined): {
+  sdkOptions: OptimizelyDecideOption[];
   bucketingId?: string;
   attributes?: FxAttributes;
-};
+} {
+  if (!opts || Array.isArray(opts)) {
+    return { sdkOptions: opts ?? [OptimizelyDecideOption.DISABLE_DECISION_EVENT] };
+  }
+  return {
+    sdkOptions: opts.options ?? [OptimizelyDecideOption.DISABLE_DECISION_EVENT],
+    bucketingId: opts.bucketingId,
+    attributes: opts.attributes,
+  };
+}
 
 const noDecision = (flagKey: string): FxDecision => ({
-  flagKey,
-  enabled: false,
-  variationKey: null,
-  variables: {},
-  reasons: [],
+  flagKey, enabled: false, variationKey: null, variables: {}, reasons: [],
 });
 
 const noOpUser = {
   userId: "anonymous" as string,
   bucketingId: undefined as string | undefined,
-  decide: (flagKey: string, _options?: OptimizelyDecideOption[], _overrides?: DecideOverrides): FxDecision => noDecision(flagKey),
+  decide: (flagKey: string, _opts?: DecideOpts): FxDecision => noDecision(flagKey),
   decideAll: (): Record<string, FxDecision> => ({}),
 };
 
@@ -38,19 +48,16 @@ export const getOptimizelyUser = cache(async () => {
   return {
     userId,
     bucketingId,
-    decide(
-      flagKey: string,
-      options: OptimizelyDecideOption[] = [OptimizelyDecideOption.DISABLE_DECISION_EVENT],
-      overrides?: DecideOverrides
-    ): FxDecision {
-      const activeCtx = overrides?.bucketingId || overrides?.attributes
+    decide(flagKey: string, opts?: DecideOpts): FxDecision {
+      const { sdkOptions, bucketingId: bId, attributes: attrOverrides } = resolveOpts(opts);
+      const activeCtx = bId || attrOverrides
         ? client.createUserContext(userId, {
             ...attributes,
-            ...overrides.attributes,
-            ...(overrides.bucketingId ? { $opt_bucketing_id: overrides.bucketingId } : {}),
+            ...attrOverrides,
+            ...(bId ? { $opt_bucketing_id: bId } : {}),
           }) ?? ctx
         : ctx;
-      const d = activeCtx.decide(flagKey, options);
+      const d = activeCtx.decide(flagKey, sdkOptions);
       return {
         flagKey,
         enabled: d.enabled,
