@@ -1,10 +1,15 @@
 import { cache } from "react";
 import { OptimizelyDecideOption } from "@optimizely/optimizely-sdk";
 import { getOptimizelyClient } from "./experimentation";
-import type { FxDecision } from "./experimentation";
+import type { FxDecision, FxAttributes } from "./experimentation";
 import { getVisitorContext } from "./visitor";
 
-const noDecision = (flagKey: string, _options: OptimizelyDecideOption[] = [OptimizelyDecideOption.DISABLE_DECISION_EVENT]): FxDecision => ({
+type DecideOverrides = {
+  bucketingId?: string;
+  attributes?: FxAttributes;
+};
+
+const noDecision = (flagKey: string): FxDecision => ({
   flagKey,
   enabled: false,
   variationKey: null,
@@ -15,9 +20,8 @@ const noDecision = (flagKey: string, _options: OptimizelyDecideOption[] = [Optim
 const noOpUser = {
   userId: "anonymous" as string,
   bucketingId: undefined as string | undefined,
-  decide: noDecision,
+  decide: (flagKey: string, _options?: OptimizelyDecideOption[], _overrides?: DecideOverrides): FxDecision => noDecision(flagKey),
   decideAll: (): Record<string, FxDecision> => ({}),
-  decideWithBucketingId: (flagKey: string, _bucketingId: string, options: OptimizelyDecideOption[] = [OptimizelyDecideOption.DISABLE_DECISION_EVENT]): FxDecision => noDecision(flagKey, options),
 };
 
 export const getOptimizelyUser = cache(async () => {
@@ -34,8 +38,19 @@ export const getOptimizelyUser = cache(async () => {
   return {
     userId,
     bucketingId,
-    decide(flagKey: string, options: OptimizelyDecideOption[] = [OptimizelyDecideOption.DISABLE_DECISION_EVENT]): FxDecision {
-      const d = ctx.decide(flagKey, options);
+    decide(
+      flagKey: string,
+      options: OptimizelyDecideOption[] = [OptimizelyDecideOption.DISABLE_DECISION_EVENT],
+      overrides?: DecideOverrides
+    ): FxDecision {
+      const activeCtx = overrides?.bucketingId || overrides?.attributes
+        ? client.createUserContext(userId, {
+            ...attributes,
+            ...overrides.attributes,
+            ...(overrides.bucketingId ? { $opt_bucketing_id: overrides.bucketingId } : {}),
+          }) ?? ctx
+        : ctx;
+      const d = activeCtx.decide(flagKey, options);
       return {
         flagKey,
         enabled: d.enabled,
@@ -57,19 +72,6 @@ export const getOptimizelyUser = cache(async () => {
         };
       }
       return out;
-    },
-    decideWithBucketingId(flagKey: string, bId: string, options: OptimizelyDecideOption[] = [OptimizelyDecideOption.DISABLE_DECISION_EVENT]): FxDecision {
-      const fallback: FxDecision = { flagKey, enabled: false, variationKey: null, variables: {}, reasons: [] };
-      const bCtx = client.createUserContext(userId, { ...attributes, $opt_bucketing_id: bId });
-      if (!bCtx) return fallback;
-      const d = bCtx.decide(flagKey, options);
-      return {
-        flagKey,
-        enabled: d.enabled,
-        variationKey: d.variationKey,
-        variables: d.variables as Record<string, unknown>,
-        reasons: d.reasons,
-      };
     },
   };
 });
