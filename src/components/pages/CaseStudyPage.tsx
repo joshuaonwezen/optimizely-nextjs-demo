@@ -38,6 +38,10 @@ interface RelatedRef {
   clientName?: string | null;
 }
 
+// References in a Graph-fetched page expose `.key` directly; inline composition
+// reads put the same key under `_metadata.key`. Accept both.
+type ContentRefShape = { key?: string | null; _metadata?: { key?: string | null } | null };
+
 interface CaseStudyContent {
   _metadata?: { key?: string | null; displayName?: string | null } | null;
   title?: string | null;
@@ -47,10 +51,14 @@ interface CaseStudyContent {
   heroImage?: ImageRef | null;
   challenge?: { json?: unknown; html?: string | null } | null;
   solution?: { json?: unknown; html?: string | null } | null;
-  outcomes?: Array<{ _metadata?: { key?: string | null } | null } | null> | null;
-  testimonial?: { _metadata?: { key?: string | null } | null } | null;
+  outcomes?: Array<ContentRefShape | null> | null;
+  testimonial?: ContentRefShape | null;
   tags?: string[] | null;
   relatedCaseStudies?: RelatedRef[] | null;
+}
+
+function refKey(ref: ContentRefShape | null | undefined): string | null {
+  return ref?.key ?? ref?._metadata?.key ?? null;
 }
 
 const INDUSTRY_LABEL: Record<string, string> = {
@@ -108,11 +116,11 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
   const industryLabel = content.industry ? INDUSTRY_LABEL[content.industry] ?? content.industry : null;
 
   const outcomeKeys = (content.outcomes ?? [])
-    .map((o) => o?._metadata?.key)
+    .map(refKey)
     .filter((k): k is string => Boolean(k));
   const outcomes = await loadOutcomes(outcomeKeys);
 
-  const testimonial = await loadTestimonial(content.testimonial?._metadata?.key);
+  const testimonial = await loadTestimonial(refKey(content.testimonial));
   const tags = (content.tags ?? []).filter(Boolean);
   const related = (content.relatedCaseStudies ?? []).filter((r) => r?._metadata?.url?.default);
 

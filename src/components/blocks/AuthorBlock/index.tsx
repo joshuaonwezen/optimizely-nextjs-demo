@@ -18,13 +18,31 @@ export const AuthorBlockType = contentType({
   },
 });
 
+// Graph returns { url: { default } } for image contentReferences; inline
+// composition snapshots return { _metadata: { url: { default } } }.
+type ImageRef =
+  | { url?: { default?: string | null } | null; _metadata?: { url?: { default?: string | null } | null } | null }
+  | null;
+
 interface AuthorData {
   name?:        string | null;
   role?:        string | null;
   bio?:         { json: unknown } | string | null;
-  avatar?:      { _metadata?: { url?: { default?: string | null } | null } | null } | null;
-  linkedinUrl?: string | null;
+  avatar?:      ImageRef;
+  // type: "url" returns { default } from Graph; raw strings from inline reads
+  linkedinUrl?: string | { default?: string | null } | null;
   __context?:   { edit?: boolean } | null;
+}
+
+function resolveUrl(value: string | { default?: string | null } | null | undefined): string | null {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  return value.default ?? null;
+}
+
+function resolveImageUrl(ref: ImageRef): string | null {
+  if (!ref) return null;
+  return ref.url?.default ?? ref._metadata?.url?.default ?? null;
 }
 
 type AuthorBlockProps = AuthorData & {
@@ -35,7 +53,8 @@ type AuthorBlockProps = AuthorData & {
 export default function AuthorBlock(props: AuthorBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
-  const avatarUrl = data.avatar?._metadata?.url?.default;
+  const avatarUrl = resolveImageUrl(data.avatar);
+  const linkedinHref = resolveUrl(data.linkedinUrl);
 
   const bioContent =
     data.bio && typeof data.bio === "object" && "json" in data.bio
@@ -66,9 +85,9 @@ export default function AuthorBlock(props: AuthorBlockProps) {
               {data.role}
             </p>
           )}
-          {data.linkedinUrl && (
+          {linkedinHref && (
             <Link
-              href={data.linkedinUrl}
+              href={linkedinHref}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm text-brand font-semibold mt-2 hover:opacity-80"

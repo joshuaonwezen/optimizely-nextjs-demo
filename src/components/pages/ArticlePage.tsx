@@ -16,7 +16,11 @@ interface AuthorData {
   linkedinUrl?: string | null;
 }
 
-interface AuthorRef extends AuthorData {
+// The page query passes the author contentReference through; depending on
+// whether the data arrives via inline composition or via Graph, the key sits
+// in either `key` directly or under `_metadata.key`.
+interface AuthorRef {
+  key?: string | null;
   _metadata?: { key?: string | null; displayName?: string | null } | null;
 }
 
@@ -82,8 +86,9 @@ function formatDate(input: string | null | undefined): string | null {
 export default async function ArticlePage({ content }: { content: ArticleContent }) {
   const { pa } = getPreviewUtils(content as any);
 
-  const heroUrl = content.heroImage?._metadata?.url?.default;
-  const author = await loadAuthor(content.author?._metadata?.key);
+  const heroUrl = content.heroImage?._metadata?.url?.default ?? null;
+  const authorKey = content.author?.key ?? content.author?._metadata?.key ?? null;
+  const author = await loadAuthor(authorKey);
   const formattedDate = formatDate(content.publishDate);
   const categoryLabel = content.category ? CATEGORY_LABEL[content.category] ?? content.category : null;
   const tags = (content.tags ?? []).filter(Boolean);
