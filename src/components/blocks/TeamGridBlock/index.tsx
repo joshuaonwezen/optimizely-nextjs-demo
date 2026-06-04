@@ -20,9 +20,11 @@ export const TeamGridBlockType = contentType({
   },
 });
 
-// Inline composition stores contentReference array items as raw cms URI
-// strings; Graph-fetched references come back as objects with _metadata.
-type MemberRef = string | { _metadata?: { key?: string | null } | null };
+// See TimelineBlock for the three shapes Graph returns for contentReference
+// arrays. extractKey unifies them.
+type MemberRef =
+  | string
+  | { key?: string | null; _metadata?: { key?: string | null } | null };
 
 interface MemberData {
   __typename?: string;
@@ -47,7 +49,7 @@ function extractKey(ref: MemberRef | null | undefined): string | null {
     const m = /cms:\/\/content\/([a-f0-9-]+)/i.exec(ref);
     return m?.[1] ?? null;
   }
-  return ref._metadata?.key ?? null;
+  return ref.key ?? ref._metadata?.key ?? null;
 }
 
 type TeamGridBlockProps = TeamGridData & {

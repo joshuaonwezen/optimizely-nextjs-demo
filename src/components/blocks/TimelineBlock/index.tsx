@@ -20,10 +20,15 @@ export const TimelineBlockType = contentType({
   },
 });
 
-// Inline composition stores contentReference array items as the raw cms URI
-// string ("cms://content/<key>"). Graph-fetched references come back as
-// objects with _metadata. Accept both.
-type MilestoneRef = string | { _metadata?: { key?: string | null } | null };
+// The Graph returns contentReference array items in three different shapes
+// depending on the query path:
+//   1. As objects with a top-level `key` (inline composition reads)
+//   2. As objects with `_metadata.key` (explicit Graph fragment reads)
+//   3. As raw "cms://content/<key>" URI strings (some seed payloads)
+// extractKey handles all three so this block works wherever it's rendered.
+type MilestoneRef =
+  | string
+  | { key?: string | null; _metadata?: { key?: string | null } | null };
 
 interface MilestoneData {
   __typename?: string;
@@ -46,7 +51,7 @@ function extractKey(ref: MilestoneRef | null | undefined): string | null {
     const m = /cms:\/\/content\/([a-f0-9-]+)/i.exec(ref);
     return m?.[1] ?? null;
   }
-  return ref._metadata?.key ?? null;
+  return ref.key ?? ref._metadata?.key ?? null;
 }
 
 type TimelineBlockProps = TimelineData & {
