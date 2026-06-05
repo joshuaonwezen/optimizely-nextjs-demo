@@ -420,27 +420,74 @@ export default function CachingDemoPage() {
         {/* Flow diagram */}
         <section id="revalidate-flow">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Publish → Revalidate Flow <a href="#revalidate-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            How Publish → Cache Invalidation Works <a href="#revalidate-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
-          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            When an editor publishes content, Next.js ISR caches are invalidated
-            automatically via webhooks — no redeploy, no manual cache flush.
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            When an editor publishes, the ISR cache is invalidated automatically — no redeploy, no manual flush.
+            Here&apos;s what actually happens, step by step.
           </p>
-          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 overflow-x-auto">
-            <pre className="text-xs font-mono text-on-surface-variant leading-relaxed">{`Editor publishes in CMS
-        │
-        ├─→ CMS fires POST /api/publish  (x-revalidate-secret header)
-        │       └─→ revalidatePath("/", "layout")  — all pages marked stale
-        │
-        └─→ Optimizely Graph syncs content
-                └─→ Graph fires POST /api/webhooks  (bulk.completed / doc.updated)
-                        ├─→ revalidatePath("/", "layout")
-                        └─→ revalidateTag("navigation")
 
-Next visitor request
-        └─→ Stale page detected → Next.js serves cached version immediately
-                └─→ Background: server re-renders page with fresh Graph data
-                        └─→ Subsequent requests get the freshly generated version`}</pre>
+          <div className="space-y-2 mb-8">
+            {[
+              {
+                n: "1", color: "bg-red-500", label: "Editor hits Publish in the CMS",
+                detail: "Content is saved and the CMS begins syncing it to Optimizely Graph.",
+              },
+              {
+                n: "2", color: "bg-orange-500", label: "Graph indexes the updated content",
+                detail: "Optimizely Graph processes the change and makes the new content queryable via its GraphQL API.",
+              },
+              {
+                n: "3", color: "bg-orange-500", label: "Graph sends a POST webhook to /api/webhooks",
+                detail: "Just a signal — a small JSON payload saying \"content changed\" (type: bulk.completed or doc.updated). No content is sent in the webhook itself.",
+              },
+              {
+                n: "4", color: "bg-green-600", label: "Next.js marks cached items as stale",
+                detail: "The webhook handler calls revalidateTag(\"navigation\"), revalidateTag(\"banner\"), and revalidatePath(\"/\", \"layout\"). Nothing is deleted or re-rendered yet — just flagged.",
+              },
+              {
+                n: "5", color: "bg-purple-600", label: "Next visitor arrives — gets the old cached version instantly",
+                detail: "ISR always serves the existing cached version first, no matter what. The visitor doesn't wait for a re-render. This is what makes ISR fast.",
+              },
+              {
+                n: "6", color: "bg-purple-600", label: "Next.js re-renders in the background",
+                detail: "After serving the stale version, Next.js fetches fresh data from Graph and rebuilds the affected pages and layout components behind the scenes.",
+              },
+              {
+                n: "7", color: "bg-blue-600", label: "Every request after that gets the updated version",
+                detail: "The freshly rendered output is cached. Done — no redeploy needed.",
+              },
+            ].map(({ n, color, label, detail }) => (
+              <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
+                <div className={`shrink-0 w-7 h-7 rounded-full ${color} flex items-center justify-center`}>
+                  <span className="text-white text-xs font-bold">{n}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface mb-0.5">{label}</p>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="rounded-xl bg-amber-50 border border-amber-200 p-5">
+              <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider mb-2">Important — what ISR actually caches</p>
+              <p className="text-sm text-amber-900 leading-relaxed">
+                The <strong>page content itself</strong> (the CMS page body) is <code className="bg-amber-100 px-1 rounded font-mono text-xs">force-dynamic</code> —
+                it is <em>never</em> cached. Every request always gets a fresh server render.
+                The webhook only matters for layout components: <strong>navigation, banners, and referrals</strong>.
+                Those are the only things ISR actually caches here.
+              </p>
+            </div>
+            <div className="rounded-xl bg-blue-50 border border-blue-200 p-5">
+              <p className="text-xs font-semibold text-blue-800 uppercase tracking-wider mb-2">Stale-while-revalidate in plain English</p>
+              <p className="text-sm text-blue-900 leading-relaxed">
+                ISR never makes a visitor wait. When a cache is stale, the <em>first</em> person
+                after a publish sees the old nav/banner for one request. Everyone after sees the
+                updated version. For most content this is imperceptible — nav changes are low frequency.
+              </p>
+            </div>
           </div>
         </section>
 
