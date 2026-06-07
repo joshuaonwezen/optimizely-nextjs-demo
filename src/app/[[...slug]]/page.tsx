@@ -22,6 +22,17 @@ interface PageParams {
 
 const LOCALE_PREFIX_RE = /^[a-z]{2}(-[a-z]{2})?$/;
 
+const KEY_QUERY = /* GraphQL */ `
+  query FindPageKey($urls: [String]) {
+    _Page(
+      where: { _metadata: { url: { default: { in: $urls } } } }
+      limit: 10
+    ) {
+      items { _metadata { key version variation } }
+    }
+  }
+`;
+
 function buildUrlCandidates(slug?: string[]): string[] {
   // Root "/" — no slug — defaults to the English homepage
   if (!slug || slug.length === 0) {
@@ -35,7 +46,8 @@ function buildUrlCandidates(slug?: string[]): string[] {
     if (slug.length === 1) {
       // The English start page is stored at "/" in Graph (the CMS start page has no locale prefix).
       if (locale === "en") return [`/${path}/`, `/${path}/homepage/`, "/"];
-      return [`/${path}/`, `/${path}/homepage/`];
+      // Non-English locale homepage: try locale-specific first, fall back to English start page.
+      return [`/${path}/`, `/${path}/homepage/`, "/en/", "/en/homepage/", "/"];
     }
     // For locale + path (e.g. ["en", "savings"]), try the locale-prefixed URL first.
     // Also try the bare path because the CMS sometimes omits the locale prefix for English pages.
@@ -43,7 +55,8 @@ function buildUrlCandidates(slug?: string[]): string[] {
     if (locale === "en") {
       return [`/${path}/`, `/${rest}/`];
     }
-    return [`/${path}/`];
+    // Non-English: try locale URL first, then fall back to English equivalents.
+    return [`/${path}/`, `/en/${rest}/`, `/${rest}/`];
   }
   // Legacy English paths without locale prefix (e.g. /savings from generateStaticParams
   // stripping /en/ in earlier builds) — try both prefixed and bare.
@@ -98,16 +111,6 @@ async function CmsPage({
   // _Page.items has no such restriction — use it to find key+variation by name,
   // then fall back to the highest base version.
   if (!page) {
-    const KEY_QUERY = /* GraphQL */ `
-      query FindPageKey($urls: [String]) {
-        _Page(
-          where: { _metadata: { url: { default: { in: $urls } } } }
-          limit: 10
-        ) {
-          items { _metadata { key version variation } }
-        }
-      }
-    `;
     const keyResult = await graphqlFetch<{
       _Page: { items: Array<{ _metadata: { key: string; version: string | number; variation: string | null } }> };
     }>(KEY_QUERY, { urls }, { cache: "no-store" });

@@ -56,7 +56,7 @@ const COMPONENT_SNIPPET = `type HeroBlockProps = {
 };
 
 export default function HeroBlock({ content, displaySettings }: HeroBlockProps) {
-  const { pa } = getPreviewUtils(content);
+  const { pa, src } = getPreviewUtils(content); // src appends preview tokens to DAM image URLs
   const isTall      = displaySettings?.height === "tall";
   const showOverlay = displaySettings?.overlay === true;
 

@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
-import { cookies } from "next/headers";
 import NavigationHeader from "@/components/layout/NavigationHeader";
 import GlobalBanner from "@/components/layout/GlobalBanner";
 import Footer from "@/components/layout/Footer";
-import AudienceSwitcher from "@/components/demo/AudienceSwitcher";
+import DemoToolbar from "@/components/demo/DemoToolbar";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -30,13 +29,7 @@ export const metadata: Metadata = {
     "Personal, business, and mortgage banking — built around you.",
 };
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
-  const cookieStore = await cookies();
-  const initialPersona = cookieStore.get("demo_persona")?.value ?? "";
-  const initialBucketingId = cookieStore.get("demo_bucketing_id")?.value ?? "";
-  const initialLoggedIn = !!initialBucketingId;
-  const initialUserId = cookieStore.get("optimizelyEndUserId")?.value ?? "anonymous";
-
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body
@@ -46,7 +39,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <NavigationHeader />
         <main>{children}</main>
         <Footer />
-        <AudienceSwitcher initialPersona={initialPersona} initialLoggedIn={initialLoggedIn} initialUserId={initialUserId} initialBucketingId={initialBucketingId} />
+        <DemoToolbar />
       </body>
     </html>
   );

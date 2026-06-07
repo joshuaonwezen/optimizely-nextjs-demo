@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
+import { Callout } from "@/components/blocks/CalloutBlock";
 
 export const metadata: Metadata = {
   title: "Content Modelling Demo",
 };
 
-// ---------------------------------------------------------------------------
-// Code snippets
-// ---------------------------------------------------------------------------
 
 const ELEMENT_SNIPPET = `// src/components/blocks/StatsCounterBlock/index.tsx
 export const StatsCounterBlockType = contentType({
@@ -154,9 +152,6 @@ export { FEATURE_ITEM_FRAGMENT }      from "@/components/blocks/FeatureItemBlock
 // The page query spreads every fragment in one query — each block gets exactly
 // the fields it needs. Adding a new block means adding its fragment here only.`;
 
-// ---------------------------------------------------------------------------
-// Local sub-components
-// ---------------------------------------------------------------------------
 
 function SectionHeading({ id, children }: { id: string; children: React.ReactNode }) {
   return (
@@ -193,28 +188,6 @@ function Pre({ code, label }: { code: string; label?: string }) {
   );
 }
 
-function DoCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
-      <p className="text-xs font-semibold text-green-800 uppercase tracking-wider mb-2">
-        Do — {title}
-      </p>
-      <div className="text-sm text-green-900 leading-relaxed space-y-1">{children}</div>
-    </div>
-  );
-}
-
-function DontCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-      <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider mb-2">
-        Avoid — {title}
-      </p>
-      <div className="text-sm text-amber-900 leading-relaxed space-y-1">{children}</div>
-    </div>
-  );
-}
-
 function Pill({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono bg-brand/10 text-brand border border-brand/20">
@@ -223,28 +196,6 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
-function InfoBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
-      {children}
-    </div>
-  );
-}
-
-function GotchaBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-      <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider mb-2">
-        Gotcha
-      </p>
-      <div className="text-sm text-amber-900 leading-relaxed">{children}</div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 export default function ContentModellingPage() {
   return (
@@ -297,7 +248,7 @@ export default function ContentModellingPage() {
           </pre>
 
           <div className="grid md:grid-cols-3 gap-4">
-            <InfoBox>
+            <Callout>
               <p className="text-xs font-semibold text-on-surface mb-2">Experience</p>
               <p className="text-xs text-on-surface-variant leading-relaxed mb-3">
                 The page itself. Sets the URL, locale, SEO metadata, and overall
@@ -309,8 +260,8 @@ export default function ContentModellingPage() {
                 <Pill>DynamicExperience</Pill>{" "}
                 <Pill>LandingPage</Pill>
               </p>
-            </InfoBox>
-            <InfoBox>
+            </Callout>
+            <Callout>
               <p className="text-xs font-semibold text-on-surface mb-2">Section</p>
               <p className="text-xs text-on-surface-variant leading-relaxed mb-3">
                 A layout container inside the page. Groups elements into rows and
@@ -323,8 +274,8 @@ export default function ContentModellingPage() {
                 <Pill>FaqContainerBlock</Pill>{" "}
                 <Pill>LogoGridBlock</Pill>
               </p>
-            </InfoBox>
-            <InfoBox>
+            </Callout>
+            <Callout>
               <p className="text-xs font-semibold text-on-surface mb-2">Element</p>
               <p className="text-xs text-on-surface-variant leading-relaxed mb-3">
                 A leaf content block. Has no children. Placed inside sections by
@@ -336,7 +287,7 @@ export default function ContentModellingPage() {
                 <Pill>StatsCounterBlock</Pill>{" "}
                 <Pill>FeatureItemBlock</Pill>
               </p>
-            </InfoBox>
+            </Callout>
           </div>
         </section>
 
@@ -352,7 +303,7 @@ export default function ContentModellingPage() {
           </p>
 
           <div className="grid md:grid-cols-3 gap-4 mb-6">
-            <InfoBox>
+            <Callout>
               <p className="text-xs font-semibold text-on-surface mb-2">
                 <Code>[&quot;elementEnabled&quot;]</Code>
               </p>
@@ -361,8 +312,8 @@ export default function ContentModellingPage() {
                 content area property — the CMS will silently ignore it. Placed
                 inside sections by editors.
               </p>
-            </InfoBox>
-            <InfoBox>
+            </Callout>
+            <Callout>
               <p className="text-xs font-semibold text-on-surface mb-2">
                 <Code>[&quot;sectionEnabled&quot;]</Code>
               </p>
@@ -371,8 +322,8 @@ export default function ContentModellingPage() {
                 content areas. Cannot be placed inside another section. The SDK
                 dispatches child blocks via <Code>OptimizelyGridSection</Code>.
               </p>
-            </InfoBox>
-            <InfoBox>
+            </Callout>
+            <Callout>
               <p className="text-xs font-semibold text-on-surface mb-2">
                 <Code>[&quot;sectionEnabled&quot;, &quot;elementEnabled&quot;]</Code>
               </p>
@@ -381,7 +332,7 @@ export default function ContentModellingPage() {
                 works both standalone (e.g. a testimonial section) and inside a
                 grid (e.g. a testimonial card within a 3-col row).
               </p>
-            </InfoBox>
+            </Callout>
           </div>
 
           <p className="text-xs text-on-surface-variant mb-4 font-medium">
@@ -406,7 +357,7 @@ export default function ContentModellingPage() {
           </p>
 
           <div className="grid md:grid-cols-2 gap-4 mb-6">
-            <DoCard title="semantic names">
+            <Callout variant="do" label="Do — semantic names">
               <p>Name after the content&apos;s purpose or real-world concept.</p>
               <ul className="mt-2 space-y-1">
                 <li><Pill>TestimonialBlock</Pill> — a customer quote with attribution</li>
@@ -414,8 +365,8 @@ export default function ContentModellingPage() {
                 <li><Pill>SectionHeadingBlock</Pill> — a heading + optional subheading</li>
                 <li><Pill>HeroBlock</Pill> — the top-of-page primary message</li>
               </ul>
-            </DoCard>
-            <DontCard title="visual/presentation names">
+            </Callout>
+            <Callout variant="warning" label="Avoid — visual/presentation names">
               <p>Avoid names that describe the CSS or layout — they rot fast.</p>
               <ul className="mt-2 space-y-1">
                 <li><Pill>BlueCardBlock</Pill> — what if the colour changes?</li>
@@ -423,7 +374,7 @@ export default function ContentModellingPage() {
                 <li><Pill>ThreeColumnGrid</Pill> — column count is a layout concern</li>
                 <li><Pill>BigHeroWithOverlay</Pill> — the overlay is a display setting</li>
               </ul>
-            </DontCard>
+            </Callout>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -444,21 +395,21 @@ export default function ContentModellingPage() {
           </p>
 
           <div className="grid md:grid-cols-2 gap-4 mb-6">
-            <DoCard title="use a display template when">
+            <Callout variant="do" label="Do — use a display template when">
               <ul className="space-y-1.5">
                 <li>The fields are <strong>identical</strong> — only the visual style differs</li>
                 <li>An editor needs to pick a style without changing the content</li>
                 <li>Examples: same <Pill>TestimonialBlock</Pill> shown as a white card or dark blue card — same quote, same author, different background</li>
                 <li>Same <Pill>SectionHeadingBlock</Pill> shown left-aligned or centred</li>
               </ul>
-            </DoCard>
-            <DoCard title="create a new content type when">
+            </Callout>
+            <Callout variant="do" label="Do — create a new content type when">
               <ul className="space-y-1.5">
                 <li>The content has <strong>different fields</strong> — a Testimonial has quote + author; a Pricing Tier has price + features list</li>
                 <li>Editors need to search for or reuse this content independently across pages</li>
                 <li>The content makes semantic sense as its own thing, not just a styled version of another</li>
               </ul>
-            </DoCard>
+            </Callout>
           </div>
 
           <Pre code={DISPLAY_TEMPLATE_SNIPPET} label="one content type, two display templates" />
@@ -477,7 +428,7 @@ export default function ContentModellingPage() {
           </p>
 
           <div className="grid md:grid-cols-2 gap-4 mb-6">
-            <InfoBox>
+            <Callout>
               <p className="text-xs font-semibold text-on-surface mb-3">
                 Inline composition — <Code>type: &quot;array&quot;</Code>
               </p>
@@ -487,8 +438,8 @@ export default function ContentModellingPage() {
                 <li>Best for page-specific content: hero text, feature lists, stats grids</li>
                 <li>Examples: <Pill>FeatureItemBlock</Pill> inside a business banking page, <Pill>StatsCounterBlock</Pill> in a grid</li>
               </ul>
-            </InfoBox>
-            <InfoBox>
+            </Callout>
+            <Callout>
               <p className="text-xs font-semibold text-on-surface mb-3">
                 Referenced content — <Code>type: &quot;contentReference&quot;</Code>
               </p>
@@ -498,17 +449,17 @@ export default function ContentModellingPage() {
                 <li>Graph returns only base metadata for single references — full field data requires a self-fetch inside the component</li>
                 <li>Examples: <Pill>AuthorBlock</Pill> linked from 10 articles, <Pill>FaqContainerBlock</Pill> on the FAQ page</li>
               </ul>
-            </InfoBox>
+            </Callout>
           </div>
 
-          <GotchaBox>
+          <Callout variant="warning" label="Gotcha">
             <strong><Code>type: &quot;content&quot;</Code> single references return only base metadata from Graph</strong>{" "}
             — regardless of whether the field is set. Graph only inline-expands{" "}
             <Code>type: &quot;array&quot;</Code> content areas. For referenced blocks
             that need their own field data, use the self-fetching pattern: call{" "}
             <Code>graphqlFetch</Code> directly inside the component when the
             expected fields are absent.
-          </GotchaBox>
+          </Callout>
 
           <div className="grid md:grid-cols-2 gap-4 mt-4">
             <Pre code={INLINE_SNIPPET} label="inline — array content area (Graph auto-expands)" />
@@ -559,16 +510,15 @@ export default function ContentModellingPage() {
             </table>
           </div>
 
-          <div className="mb-4 bg-surface-lowest border border-ghost-border rounded-2xl p-5 max-w-3xl">
-            <p className="text-xs font-semibold text-on-surface mb-2">Indexing tip</p>
-            <p className="text-sm text-on-surface-variant leading-relaxed">
+          <Callout label="Indexing tip" className="mb-4 max-w-3xl">
+            <p>
               Add <Code>indexingType: &quot;searchable&quot;</Code> to <Code>string</Code> fields editors
               should be able to search via Graph (e.g. <Code>heading</Code>,{" "}
               <Code>quote</Code>). Use <Code>indexingType: &quot;disabled&quot;</Code> for{" "}
               <Code>contentReference</Code> image fields — Graph can&apos;t index
               binary content and will throw if you omit it.
             </p>
-          </div>
+          </Callout>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Pre code={PROPERTY_STRING} label="string" />
@@ -625,9 +575,8 @@ export default function ContentModellingPage() {
             <Pre code={FRAGMENT_BARREL}  label="src/lib/graphql/fragments/index.ts" />
           </div>
 
-          <div className="mt-4 bg-surface-lowest border border-ghost-border rounded-2xl p-5 max-w-3xl">
-            <p className="text-xs font-semibold text-on-surface mb-2">Why this scales</p>
-            <p className="text-sm text-on-surface-variant leading-relaxed">
+          <Callout label="Why this scales" className="mt-4 max-w-3xl">
+            <p>
               A team of 10 can each add a new block without ever touching a shared
               query file. Each block&apos;s fragment is co-located with its component —
               the same developer who writes the component writes the fragment.
@@ -635,7 +584,7 @@ export default function ContentModellingPage() {
               fragments, so the page route never needs to be updated when a new block
               is added.
             </p>
-          </div>
+          </Callout>
         </section>
 
       </div>

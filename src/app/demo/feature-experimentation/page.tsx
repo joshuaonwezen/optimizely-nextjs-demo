@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
@@ -7,6 +5,9 @@ import { type FxDecision } from "@/lib/optimizely/experimentation";
 import { getOptimizelyUser } from "@/lib/optimizely/user";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
 import SourcePanel from "@/components/demo/SourcePanel";
+import { Callout } from "@/components/blocks/CalloutBlock";
+
+export const dynamic = "force-dynamic";
 
 const userTs = fs.readFileSync(
   path.join(process.cwd(), "src/lib/optimizely/user.ts"),
@@ -17,9 +18,6 @@ export const metadata: Metadata = {
   title: "Feature Experimentation Demo",
 };
 
-// ---------------------------------------------------------------------------
-// Code snippets
-// ---------------------------------------------------------------------------
 
 const IMPRESSION_SNIPPET = `// src/app/[[...slug]]/page.tsx
 // After Graph returns the page, check whether it served a CMS variation.
@@ -33,7 +31,7 @@ if (servedVariation) {
     (d) => d.variationKey === servedVariation
   );
   if (exposedFlag) {
-    // Empty options → no DISABLE_DECISION_EVENT → impression fires to FX analytics
+    // Empty options → no DISABLE_DECISION_EVENT → impression fires to FX results
     // void discards the return value — we only care about the side effect here
     void user.decide(exposedFlag.flagKey, []);
   }
@@ -153,31 +151,62 @@ import { getOptimizelyClient } from "./experimentation";
 import { getVisitorContext } from "./visitor";
 
 // cache() scopes to a single HTTP request's render tree.
-// Each visitor's request gets its own completely isolated user context.
-// 1,000 concurrent visitors → 1,000 independent contexts. Nothing is shared.
+// Every component that calls getOptimizelyUser() shares one user context.
+// 1,000 concurrent visitors → 1,000 independent contexts, nothing shared.
 export const getOptimizelyUser = cache(async () => {
-  const [client, { userId, attributes }] = await Promise.all([
-    getOptimizelyClient(),
-    getVisitorContext(), // reads optimizelyEndUserId + UA header (device), demo_persona, demo_logged_in
+  const [client, { userId, attributes, bucketingId }] = await Promise.all([
+    getOptimizelyClient(), // one SDK instance per request (React cache() + 60s Next.js fetch cache)
+    getVisitorContext(),    // reads: optimizelyEndUserId cookie, User-Agent → device, demo cookies
   ]);
 
-  const ctx = client?.createUserContext(userId, attributes);
+  if (!client) return noOpUser; // FX unreachable → all decide() calls return { enabled: false }
+
+  const ctx = client.createUserContext(userId, attributes);
   return {
     userId,
-    // Default: DISABLE_DECISION_EVENT — evaluate without recording.
-    // Pass [] to fire the impression when the variation is actually rendered.
-    decide(flagKey: string, options = [OptimizelyDecideOption.DISABLE_DECISION_EVENT]) {
-      return ctx?.decide(flagKey, options);
-    },
-    decideAll() {
-      return ctx?.decideAll([OptimizelyDecideOption.DISABLE_DECISION_EVENT]) ?? {};
+    bucketingId,
+    //
+    // decide(flagKey)                → DISABLE_DECISION_EVENT: flag evaluated, no impression fired
+    // decide(flagKey, [])            → no options → impression fires, registers user in FX results
+    // decide(flagKey, {bucketingId}) → override bucketing ID for account-level experiments
+    // decide(flagKey, {attributes})  → merge extra attributes for this call only
+    //
+    decide(flagKey: string, opts?: OptimizelyDecideOption[] | DecideOpts): FxDecision { /* ... */ },
+    decideAll(): Record<string, FxDecision> {
+      // Always DISABLE_DECISION_EVENT — evaluate all flags without recording anything.
+      return ctx.decideAll([OptimizelyDecideOption.DISABLE_DECISION_EVENT]);
     },
   };
 });`;
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
+const WRAPPER_VS_SDK_SNIPPET = `// ❌ Using the FX SDK directly — don't do this in server components
+import { createInstance } from "@optimizely/optimizely-sdk";
+
+export default async function MyPage() {
+  const res = await fetch(DATAFILE_URL);         // fetched fresh every render
+  const client = createInstance({ datafile: await res.text() });
+  const ctx = client?.createUserContext(???);    // where does userId come from?
+  const decision = ctx?.decide("my_flag");       // no impression control
+}
+
+// ✅ Using the wrapper — one function call, everything resolved
+import { getOptimizelyUser } from "@/lib/optimizely/user";
+
+export default async function MyPage() {
+  const user = await getOptimizelyUser();
+
+  // userId + device + persona attributes come from cookies automatically.
+  // SDK instance is memoised per request — datafile not re-fetched.
+  // DISABLE_DECISION_EVENT by default — impression not fired yet.
+  const decision = user.decide("my_flag");
+  if (!decision.enabled) return null;
+
+  // Now the variation will be rendered — fire the impression.
+  void user.decide("my_flag", []);
+
+  return <Variant variables={decision.variables} />;
+}`;
+
 
 function FlagCard({ decision }: { decision: FxDecision }) {
   const hasVars = Object.keys(decision.variables).length > 0;
@@ -302,9 +331,6 @@ function Arrow() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 const BUCKETING_ID_SNIPPET = `import { getOptimizelyUser } from "@/lib/optimizely/user";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
@@ -391,7 +417,7 @@ export default async function FeatureFlagsDemoPage() {
               <div className="text-2xl mb-2">⚡</div>
               <p className="text-xs font-mono font-semibold text-on-surface mb-1">FX SDK (server)</p>
               <p className="text-xs text-on-surface-variant">
-                Calls <code className="bg-surface-low px-1 rounded">decide()</code> · returns <code className="bg-surface-low px-1 rounded">variationKey</code> + variables
+                Calls <code className="bg-surface-low px-1 rounded">decide()</code> with <code className="bg-surface-low px-1 rounded">DISABLE_DECISION_EVENT</code> — returns <code className="bg-surface-low px-1 rounded">variationKey</code>, no impression yet
               </p>
             </div>
             <Arrow />
@@ -457,7 +483,7 @@ export default async function FeatureFlagsDemoPage() {
                 After Graph confirms the CMS variation was served, a second{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">decide(flagKey, [])</code> fires without{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code>. This sends the impression
-                so FX analytics can track participants, measure lift, and declare a winner.
+                so the FX results page can track participants, measure lift, and declare a winner.
               </p>
             </div>
           </div>
@@ -685,18 +711,16 @@ export default async function FeatureFlagsDemoPage() {
             </div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-6">
-            <p className="text-sm text-amber-900 leading-relaxed">
-              <strong>CMS variations must be created in Visual Builder — the Management API cannot create them.</strong>{" "}
-              The <code className="bg-amber-100 px-1 rounded font-mono text-xs">variation</code> field
-              exists in Graph&apos;s schema but is silently ignored by the Management API on write.
-              However, once created in Visual Builder each variation becomes a new draft{" "}
-              <strong>version</strong> — you can discover the version number via{" "}
-              <code className="bg-amber-100 px-1 rounded font-mono text-xs">GET /content/{"{key}"}/versions</code>{" "}
-              and PATCH it with the correct composition + <code className="bg-amber-100 px-1 rounded font-mono text-xs">status: &quot;published&quot;</code>.
-              See <code className="bg-amber-100 px-1 rounded font-mono text-xs">scripts/update-homepage-variations.ts</code>.
-            </p>
-          </div>
+          <Callout variant="warning" className="mb-6">
+            <strong>CMS variations must be created in Visual Builder — the Management API cannot create them.</strong>{" "}
+            The <code className="bg-surface-low px-1 rounded font-mono text-xs">variation</code> field
+            exists in Graph&apos;s schema but is silently ignored by the Management API on write.
+            However, once created in Visual Builder each variation becomes a new draft{" "}
+            <strong>version</strong> — you can discover the version number via{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">GET /content/{"{key}"}/versions</code>{" "}
+            and PATCH it with the correct composition + <code className="bg-surface-low px-1 rounded font-mono text-xs">status: &quot;published&quot;</code>.
+            See <code className="bg-surface-low px-1 rounded font-mono text-xs">scripts/update-homepage-variations.ts</code>.
+          </Callout>
 
           {/* Current session's variation keys → Graph */}
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-6">
@@ -710,7 +734,7 @@ export default async function FeatureFlagsDemoPage() {
             <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
               <code>
                 {activeVariations.length === 0
-                  ? `// No active variation keys — all flags are off or returning "off"\n// Graph will return original content on all pages\nvariationOption = undefined`
+                  ? `// No active variation keys — flags disabled, or user not bucketed into\n// any active variation. The "off" delivery rule is excluded: it returns\n// variationKey: "off" but no CMS variation named "off" exists.\nvariationOption = undefined`
                   : `variationOption = {\n  variation: {\n    include: "SOME",\n    value: ${JSON.stringify(activeVariations)},\n    includeOriginal: true,\n  },\n}`}
               </code>
             </pre>
@@ -809,8 +833,10 @@ export default async function FeatureFlagsDemoPage() {
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
               <h3 className="font-display font-semibold text-on-surface mb-3">Adding Custom Attributes</h3>
               <p className="text-sm text-on-surface-variant mb-3 leading-relaxed">
-                Pass any key-value pairs as the second argument to{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">getAllDecisions</code>.
+                Spread the base visitor attributes from{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
+                and add your extras as the third argument to{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">getDecision()</code>.
                 Then define matching audience conditions in the FX dashboard.
               </p>
               <pre className="bg-surface-low rounded-xl p-3 text-xs font-mono text-on-surface-variant leading-relaxed">
@@ -872,13 +898,10 @@ await getDecision("my_flag", userId, {
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
               <h3 className="font-display font-semibold text-on-surface mb-3">Reading variables in code</h3>
               <pre className="bg-surface-low rounded-xl p-3 text-xs font-mono text-on-surface-variant leading-relaxed">
-                <code>{`const decision = await getDecision(
-  "subscribe_button",
-  userId,
-  { device, logged_in: false },
-);
+                <code>{`const user = await getOptimizelyUser();
+const decision = user.decide("subscribe_button");
 
-// Variables are Record<string, unknown>
+// decision.variables is Record<string, unknown>
 // Cast to the type you expect
 const title =
   decision.variables.subscribe_title as string;
@@ -925,6 +948,53 @@ const config =
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> — no impressions fired yet.
               </p>
               <CodeBlock code={USER_LIB_SNIPPET} label="src/lib/optimizely/user.ts" />
+            </div>
+
+            <div className="bg-surface-lowest border border-brand/20 rounded-2xl p-6">
+              <h3 className="font-display font-semibold text-on-surface mb-1">
+                Why a wrapper instead of calling the SDK directly?
+              </h3>
+              <p className="text-sm text-on-surface-variant mb-3 leading-relaxed">
+                Optimizely ships two SDKs. <code className="bg-surface-low px-1 rounded font-mono text-xs">@optimizely/react-sdk</code> is a
+                separate package that provides an <code className="bg-surface-low px-1 rounded font-mono text-xs">OptimizelyProvider</code> context
+                wrapper and a <code className="bg-surface-low px-1 rounded font-mono text-xs">useDecision()</code> hook — designed for client-side
+                React apps where a single SDK instance lives in the browser and flags are evaluated in the client. That SDK also has an{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">isServerSide</code> prop on{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">OptimizelyProvider</code> that disables background polling
+                and event batching during SSR so the SDK doesn&apos;t try to run browser-only logic — it was deprecated in react-sdk v4 in favour
+                of configuring a static per-request instance directly.
+              </p>
+              <p className="text-sm text-on-surface-variant mb-4 leading-relaxed">
+                This project uses <code className="bg-surface-low px-1 rounded font-mono text-xs">@optimizely/optimizely-sdk</code> directly
+                instead. Next.js App Router server components can&apos;t use React context or hooks, so{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">OptimizelyProvider</code> and{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">useDecision</code> don&apos;t apply. The wrapper{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">getOptimizelyUser()</code> fills the same role: it resolves the
+                stable <code className="bg-surface-low px-1 rounded font-mono text-xs">userId</code> and visitor attributes from cookies and
+                headers, creates one user context per request via React{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">cache()</code>, and defaults to{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> so routing passes don&apos;t
+                pollute the FX results page — you fire the impression with{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decide(flagKey, [])</code> only when the variation is
+                actually rendered.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4 mb-4 text-xs">
+                <div className="bg-surface-low rounded-xl p-4">
+                  <p className="font-semibold text-on-surface mb-2">Two-layer architecture</p>
+                  <div className="space-y-1 text-on-surface-variant">
+                    <p><code className="font-mono">getOptimizelyClient()</code> — SDK instance, cached 60s by Next.js fetch. One datafile download per minute regardless of traffic.</p>
+                    <p className="mt-2"><code className="font-mono">getOptimizelyUser()</code> — user context, scoped to the current HTTP request via React <code className="font-mono">cache()</code>. Isolated per visitor, never shared.</p>
+                  </div>
+                </div>
+                <div className="bg-surface-low rounded-xl p-4">
+                  <p className="font-semibold text-on-surface mb-2">When to use what</p>
+                  <div className="space-y-1 text-on-surface-variant">
+                    <p><code className="font-mono">user.decide(flagKey)</code> — preferred. Full visitor context already resolved. Supports <code className="font-mono">{"{ bucketingId }"}</code> and <code className="font-mono">{"{ attributes }"}</code> overrides.</p>
+                    <p className="mt-2"><code className="font-mono">getDecision(flagKey, userId, attrs)</code> — low-level, for standalone calls outside a component tree (e.g. middleware, API routes).</p>
+                  </div>
+                </div>
+              </div>
+              <CodeBlock code={WRAPPER_VS_SDK_SNIPPET} label="Why the wrapper exists" />
             </div>
 
             <div>

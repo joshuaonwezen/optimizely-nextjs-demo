@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { getReferrals, GET_REFERRALS_QUERY } from "@/lib/graphql/queries/GetReferrals";
+import { Callout } from "@/components/blocks/CalloutBlock";
 
 export const metadata: Metadata = {
   title: "External Content Sync Demo",
 };
 
-// ---------------------------------------------------------------------------
-// Code snippets
-// ---------------------------------------------------------------------------
 
 const ITEM_TYPE_SNIPPET = `PUT https://cg.optimizely.com/api/content/v3/types?id=rfl
 Content-Type: application/json
@@ -137,9 +135,6 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
   "_rbac": { "read": ["Everyone"] }
 }`;
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 export default async function ExternalContentPage() {
   const { items, fromGraph } = await getReferrals();
@@ -447,10 +442,10 @@ export default async function ExternalContentPage() {
                   <strong>Settings → Organization → Misc → Enable &amp; Sync</strong> button that
                   provisions the end-to-end OCP sync.
                 </div>
-                <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3 mt-auto">
-                  ⚠ CMP subscription required. Renditions are not supported in the CMS Browse DAM
+                <Callout variant="warning" className="mt-auto">
+                  CMP subscription required. Renditions are not supported in the CMS Browse DAM
                   action — only original assets.
-                </p>
+                </Callout>
               </div>
             </div>
 

@@ -1,16 +1,3 @@
-/**
- * GraphQL Client for Optimizely Graph.
- *
- * Uses native fetch (not Apollo) for zero-dependency GraphQL requests.
- * Supports two auth modes:
- *   - Published content: "epi-single {singleKey}" header
- *   - Draft/preview content: "Bearer {previewToken}" header (from CMS iframe)
- *
- * Next.js caching is applied automatically:
- *   - Published: ISR with 60s revalidation
- *   - Draft: no-store (always fresh)
- */
-
 const GRAPH_ENDPOINT =
   process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 
@@ -30,9 +17,6 @@ export interface GraphQLResponse<T> {
   errors?: Array<{ message: string; locations?: unknown; path?: unknown }>;
 }
 
-/**
- * Execute a typed GraphQL query against Optimizely Graph.
- */
 export async function graphqlFetch<T = unknown>(
   query: string,
   variables?: Record<string, unknown>,

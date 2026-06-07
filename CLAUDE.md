@@ -18,7 +18,25 @@ Do not try to detect whether a reference is set from its returned value — the 
 )}
 ```
 
-For components that need their own data, use a self-fetching pattern (call `graphqlFetch` inside the component when `!data.heading`). See `src/components/blocks/FaqContainerBlock/index.tsx`.
+For components that need their own data, two options:
+
+**Option A — self-fetching pattern** (call `graphqlFetch` inside the component when `!data.heading`). See `src/components/blocks/FaqContainerBlock/index.tsx`.
+
+**Option B — `getContent()` by key** (SDK 2.0.0+): the base metadata returned for a single reference includes `_metadata.key`. Use `getClient().getContent({ key })` to fetch the full item:
+
+```ts
+import { getClient } from "@optimizely/cms-sdk";
+
+export default async function FaqContainerBlock({ content }) {
+  let data = content;
+  if (!data.heading && data._metadata?.key) {
+    data = await getClient().getContent({ key: data._metadata.key });
+  }
+  // render...
+}
+```
+
+`getContent()` also accepts a `graph://` string from `_metadata.url.graph`, and an optional `{ previewToken }` option for preview mode.
 
 ### Content area arrays ARE inline-expanded
 `type: "array"` content areas (e.g., `faqItems`, `navItems`) return full typed fields from Graph. Use arrays when you need Graph to resolve referenced content.
@@ -102,6 +120,71 @@ TypeScript will surface this as: `Type '"FaqItemBlock"' is not assignable to typ
 
 Adding a content area to an `elementEnabled` block will be silently ignored or rejected by the CMS.
 
+### `contract()` — reusable property sets (SDK 2.0.0)
+Use `contract()` to define shared property groups (SEO fields, authoring metadata, etc.) that multiple content types can extend:
+
+```ts
+import { contract } from "@optimizely/cms-sdk";
+
+export const SEOContract = contract({
+  key: "seo",
+  displayName: "SEO Properties",
+  properties: {
+    metaTitle:       { type: "string", displayName: "Meta Title", maxLength: 60 },
+    metaDescription: { type: "string", displayName: "Meta Description", maxLength: 160 },
+    ogImage:         { type: "contentReference", allowedTypes: ["_image"] },
+  },
+});
+
+// Extend in a content type:
+export const ArticlePageType = contentType({
+  key: "ArticlePage",
+  baseType: "_page",
+  extends: SEOContract,  // single or array: extends: [SEOContract, AuthorContract]
+  properties: { heading: { type: "string" } },
+});
+```
+
+Register contracts in `initContentTypeRegistry` before the types that extend them.
+
+### `component` property type — inline embedded component
+```ts
+import { ButtonComponentType } from "@/components/blocks/ButtonBlock";
+
+cta: {
+  type: "component",
+  contentType: ButtonComponentType,
+  displayName: "CTA Button",
+}
+```
+Unlike `type: "content"` (a reference), `type: "component"` embeds the component inline. Access its fields directly (`content.cta.label`) with `pa("cta.label")` for nested preview attributes.
+
+### `mayContainTypes` — page/folder child constraints
+For `_page`, `_experience`, and `_folder` base types, restrict what content can be created as children:
+```ts
+export const BlogPageType = contentType({
+  key: "BlogPage",
+  baseType: "_page",
+  mayContainTypes: [ArticlePageType, "_self"],  // "_self" = same type
+  properties: { ... },
+});
+```
+
+### `RichText` component for richText properties
+```tsx
+import { RichText } from "@optimizely/cms-sdk/react/richText";
+
+// Prefer json for full control:
+<div {...pa("body")}>
+  <RichText content={content.body?.json} />
+</div>
+
+// Or raw HTML:
+<div {...pa("body")} dangerouslySetInnerHTML={{ __html: content.body?.html ?? "" }} />
+```
+
+Apply `pa("body")` to the wrapper `<div>`, NOT to the `<RichText>` component itself.
+
 ### `opti:push` requires explicit env var injection
 `.env.local` is not auto-loaded by `opti:push`:
 ```bash
@@ -110,6 +193,12 @@ OPTIMIZELY_CMS_CLIENT_ID=xxx OPTIMIZELY_CMS_CLIENT_SECRET=yyy npm run opti:push
 
 ### New blocks are auto-discovered
 `optimizely.config.mjs` globs `./src/components/**/*.tsx` — no manual config edit needed when adding a new block.
+
+### CLI 2.0.0 — new commands
+- `npm run opti:login` — verify credentials (`optimizely-cms-cli login`)
+- `npx optimizely-cms-cli config pull` — download existing CMS content types and generate TypeScript files (use `--output ./src/content-types --group` to organize by base type)
+- `npx optimizely-cms-cli content delete <Key>` — delete a single content type
+- `npx optimizely-cms-cli danger delete-all-content-types` — ⚠️ destructive, clears all user-defined types
 
 ---
 
@@ -156,6 +245,25 @@ Changes in the FX console take up to 60 seconds to propagate. Wait before conclu
 
 Use `graphqlFetch` from `src/lib/optimizely/client.ts` for all manual queries — it handles auth mode (published vs draft) automatically.
 
+### `_metadata.url.graph` — graph:// reference string
+Every content item's `_metadata.url` now includes a `graph` field (e.g. `graph://cms/Page/abc123?loc=en`). Pass it directly to `getClient().getContent(graphRef)` to fetch that item without constructing a `GraphReference` object manually.
+
+### `damAssets` — DAM image/video/file utilities (SDK 2.0.0)
+```ts
+import { damAssets } from "@optimizely/cms-sdk";
+
+const { getSrcset, getAlt, isDamImageAsset } = damAssets(content);
+// getSrcset(content.image) → responsive srcset string with preview tokens in edit mode
+// getAlt(content.image, "fallback") → AltText from DAM or fallback
+// isDamImageAsset / isDamVideoAsset / isDamRawFileAsset → TypeScript type guards
+```
+
+`getPreviewUtils` also now returns a `src(contentRef)` helper that appends the preview token to a single DAM image URL. Destructure it alongside `pa`:
+```ts
+const { pa, src } = getPreviewUtils(content);
+<Image src={src(content.backgroundImage)} />
+```
+
 ---
 
 ## External Content Sources (Content Source API)
@@ -197,12 +305,59 @@ scripts/
 
 ---
 
+## Code Style Anti-Patterns
+
+Do not introduce these patterns — they were cleaned up in a codebase pass and should not reappear.
+
+### `// ---` divider comments
+```ts
+// ---------------------------------------------------------------------------
+// Code snippets
+// ---------------------------------------------------------------------------
+```
+This is an AI code-generation artifact. File structure (constants → helpers → page export) is self-evident. Never use horizontal rule comments as section dividers.
+
+### Multi-line JSDoc file headers on utility modules
+```ts
+/**
+ * Optimizely Graph client.
+ *
+ * Provides a thin fetch wrapper for making authenticated GraphQL requests
+ * to the Optimizely Graph delivery API. Supports two authentication modes...
+ */
+```
+File names and exports already communicate purpose. Remove these on sight.
+
+### `export const dynamic` before imports
+```ts
+// WRONG — non-standard placement
+export const dynamic = "force-dynamic";
+
+import type { Metadata } from "next";
+```
+Route config exports (`dynamic`, `revalidate`) belong after imports, before the page function.
+
+### Module-level constants defined inside functions
+```ts
+// WRONG
+export default async function CmsPage() {
+  const KEY_QUERY = /* GraphQL */ `query FindPageKey(...) { ... }`;
+  // ...
+}
+```
+All query strings and constant data belong at module level so the file is scannable: constants at the top, logic in functions.
+
+---
+
 ## Adding a New Block — Checklist
 
 1. `src/components/blocks/<Name>/index.tsx` — export `NameType` (contentType) + default component
 2. `src/components/blocks/<Name>/Name.fragment.ts` — GraphQL fragment, export from `fragments/index.ts`
-3. `src/lib/optimizely/componentRegistry.ts` — `sdk.registerContentType(NameType)` + `sdk.registerComponent(Name, { contentType: NameType })`
-4. Run `opti:push` with credentials
+3. `src/lib/optimizely/componentRegistry.ts` — three edits:
+   - Import the block and its type
+   - Add `NameType` to `initContentTypeRegistry([...])` array
+   - Add `Name` to `initReactComponentRegistry({ resolver: { ... } })` object (use `{ default: Name, tags: { Variant: Name } }` pattern if display template variants exist)
+4. Run `npm run opti:push` with credentials injected
 
 ## Seed Script Checklist
 

@@ -7,7 +7,6 @@ import {
 } from "@optimizely/cms-sdk";
 import { initReactComponentRegistry } from "@optimizely/cms-sdk/react/server";
 
-// Components + their colocated content type definitions
 import HeroBlock, { HeroBlockType, HeroCenteredTemplate } from "@/components/blocks/HeroBlock";
 import CallToActionBlock, { CallToActionType, CallToActionOutlineTemplate, CallToActionSurfaceTemplate } from "@/components/blocks/CallToActionBlock";
 import TextBlock, { TextBlockType, TextBlockNarrowTemplate } from "@/components/blocks/RichTextBlock";
@@ -36,8 +35,8 @@ import TimelineBlock, { TimelineBlockType } from "@/components/blocks/TimelineBl
 import TeamMemberBlock, { TeamMemberBlockType } from "@/components/blocks/TeamMemberBlock";
 import TeamGridBlock, { TeamGridBlockType } from "@/components/blocks/TeamGridBlock";
 import ComparisonTableBlock, { ComparisonTableBlockType } from "@/components/blocks/ComparisonTableBlock";
+import CalloutBlock, { CalloutBlockType } from "@/components/blocks/CalloutBlock";
 
-// Experience and section components
 import DynamicExperience from "@/components/experience/DynamicExperience";
 import BlankExperience from "@/components/experience/BlankExperience";
 import BlankSection from "@/components/experience/BlankSection";
@@ -101,6 +100,7 @@ export function initComponentRegistry() {
     TeamMemberBlockType,
     TeamGridBlockType,
     ComparisonTableBlockType,
+    CalloutBlockType,
     ArticlePageType,
     CaseStudyPageType,
   ]);
@@ -215,6 +215,7 @@ export function initComponentRegistry() {
       TeamMemberBlock,
       TeamGridBlock,
       ComparisonTableBlock,
+      CalloutBlock,
       // Fallback: unknown types from the CMS (stale seeds, deleted types) — render nothing
       _Component: () => null,
     },

@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
 import SourcePanel from "@/components/demo/SourcePanel";
+import { Callout } from "@/components/blocks/CalloutBlock";
 
 export const metadata: Metadata = { title: "ISR Caching & Webhooks Demo" };
 
@@ -14,9 +15,6 @@ const clientTs = fs.readFileSync(
 // updates — proof that ISR is working without a full redeploy.
 export const revalidate = 30;
 
-// ---------------------------------------------------------------------------
-// Code snippets
-// ---------------------------------------------------------------------------
 
 const GRAPHQL_FETCH_SNIPPET = `// src/lib/optimizely/client.ts
 
@@ -123,9 +121,6 @@ export const dynamic = "force-dynamic";  // Layer 1: skip Next.js output cache
 await client.getContentByPath(url, { cache: false });  // Layer 2: skip Graph CDN cache
 // Result: every request gets the absolute latest content from Graph's data store.`;
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 const CACHE_TABLE = [
   { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "60s",        tag: "—",            revalidatedBy: "/api/revalidate or /api/webhooks" },
@@ -471,23 +466,17 @@ export default function CachingDemoPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-xl bg-amber-50 border border-amber-200 p-5">
-              <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider mb-2">Important — what ISR actually caches</p>
-              <p className="text-sm text-amber-900 leading-relaxed">
-                The <strong>page content itself</strong> (the CMS page body) is <code className="bg-amber-100 px-1 rounded font-mono text-xs">force-dynamic</code> —
-                it is <em>never</em> cached. Every request always gets a fresh server render.
-                The webhook only matters for layout components: <strong>navigation, banners, and referrals</strong>.
-                Those are the only things ISR actually caches here.
-              </p>
-            </div>
-            <div className="rounded-xl bg-blue-50 border border-blue-200 p-5">
-              <p className="text-xs font-semibold text-blue-800 uppercase tracking-wider mb-2">Stale-while-revalidate in plain English</p>
-              <p className="text-sm text-blue-900 leading-relaxed">
-                ISR never makes a visitor wait. When a cache is stale, the <em>first</em> person
-                after a publish sees the old nav/banner for one request. Everyone after sees the
-                updated version. For most content this is imperceptible — nav changes are low frequency.
-              </p>
-            </div>
+            <Callout variant="warning" label="Important — what ISR actually caches">
+              The <strong>page content itself</strong> (the CMS page body) is <code className="bg-surface-low px-1 rounded font-mono text-xs">force-dynamic</code> —
+              it is <em>never</em> cached. Every request always gets a fresh server render.
+              The webhook only matters for layout components: <strong>navigation, banners, and referrals</strong>.
+              Those are the only things ISR actually caches here.
+            </Callout>
+            <Callout label="Stale-while-revalidate in plain English">
+              ISR never makes a visitor wait. When a cache is stale, the <em>first</em> person
+              after a publish sees the old nav/banner for one request. Everyone after sees the
+              updated version. For most content this is imperceptible — nav changes are low frequency.
+            </Callout>
           </div>
         </section>
 

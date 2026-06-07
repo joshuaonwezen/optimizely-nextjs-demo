@@ -1,11 +1,12 @@
-export const dynamic = "force-dynamic";
-
 import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
 import SourcePanel from "@/components/demo/SourcePanel";
+import { Callout } from "@/components/blocks/CalloutBlock";
+
+export const dynamic = "force-dynamic";
 
 const userTs = fs.readFileSync(
   path.join(process.cwd(), "src/lib/optimizely/user.ts"),
@@ -245,15 +246,13 @@ const loggedIn =
             </div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-            <p className="text-sm text-amber-900 leading-relaxed">
-              <strong>The Audience Switcher is demo tooling only.</strong>{" "}
-              In production, replace the{" "}
-              <code className="bg-amber-100 px-1 rounded font-mono text-xs">demo_persona</code> cookie
-              with real audience signals — auth session data, CRM enrichment, or onboarding answers.
-              The FX audience conditions and targeting logic stay the same; only the attribute source changes.
-            </p>
-          </div>
+          <Callout variant="warning">
+            <strong>The Audience Switcher is demo tooling only.</strong>{" "}
+            In production, replace the{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_persona</code> cookie
+            with real audience signals — auth session data, CRM enrichment, or onboarding answers.
+            The FX audience conditions and targeting logic stay the same; only the attribute source changes.
+          </Callout>
         </section>
 
         {/* Your session */}

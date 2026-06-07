@@ -9,9 +9,6 @@ export const metadata: Metadata = {
   title: "Forms Demo",
 };
 
-// ---------------------------------------------------------------------------
-// Code snippets
-// ---------------------------------------------------------------------------
 
 const BLOCK_SCHEMA_SNIPPET = `// FormContainerBlock — heading, description, submitUrl, successMessage
 export const FormContainerBlockType = contentType({
@@ -97,9 +94,6 @@ const [page] = await client.getContentByPath(url, {
 //    specifically for logged-in / returning users
 return <OptimizelyComponent content={page} />;`;
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 export default function FormsPage() {
   return (

@@ -21,6 +21,7 @@ export const LandingPageType = contentType({
   key: "TraditionalPage",
   displayName: "Traditional Page",
   baseType: "_page",
+  mayContainTypes: ["_self"],
   properties: {
     heading:    { type: "string",   displayName: "Heading" },
     subheading: { type: "string",   displayName: "Subheading" },
@@ -29,6 +30,9 @@ export const LandingPageType = contentType({
     // The SDK auto-generates inline fragments for every registered component type,
     // so the full block data (all properties) is fetched and rendered directly.
     featuredBlock: { type: "content", displayName: "Featured Block", allowedTypes: ["_component"] },
+    includeInNavigation: { type: "boolean", displayName: "Include in Navigation", indexingType: "queryable" },
+    navLabel:            { type: "string",  displayName: "Navigation Label" },
+    navOrder:            { type: "integer", displayName: "Nav Order",         indexingType: "queryable" },
   },
 });
 

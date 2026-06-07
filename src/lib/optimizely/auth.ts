@@ -1,12 +1,3 @@
-/**
- * OAuth Token Utility for Optimizely CMS Management API.
- *
- * The Management API requires a short-lived JWT obtained via the
- * OAuth 2.0 client_credentials flow. Tokens expire after 300 seconds.
- * This module caches the token in-memory and refreshes it 30 seconds
- * before expiry to avoid mid-request failures.
- */
-
 interface TokenCache {
   token: string;
   expiresAt: number;
@@ -24,10 +15,6 @@ let tokenCache: TokenCache | null = null;
 const EXPIRY_BUFFER_MS = 30_000;
 const TOKEN_ENDPOINT = "https://api.cms.optimizely.com/oauth/token";
 
-/**
- * Fetch a management API token using client_credentials grant.
- * Returns a cached token if one exists and is still valid.
- */
 export async function getManagementToken(): Promise<string> {
   const now = Date.now();
 

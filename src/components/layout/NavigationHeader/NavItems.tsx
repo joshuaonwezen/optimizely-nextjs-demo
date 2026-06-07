@@ -3,18 +3,40 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { NavNode } from "@/lib/graphql/queries/GetNavigation";
 import type { DemoCategory } from "@/lib/getDemoLinks";
+import type { SupportedLocale } from "@/lib/graphql/queries/GetSupportedLocales";
 import SearchOverlay from "@/components/layout/SearchOverlay";
 
 interface Props {
   tree: NavNode[];
   demoCategories: DemoCategory[];
+  locales: SupportedLocale[];
 }
 
-export default function NavItems({ tree, demoCategories }: Props) {
+const LOCALE_RE = /^[a-z]{2}(-[a-z]{2})?$/;
+
+function getCurrentLocale(pathname: string): string {
+  const first = pathname.split("/").filter(Boolean)[0] ?? "";
+  return LOCALE_RE.test(first) ? first : "en";
+}
+
+function buildLocaleUrl(pathname: string, targetLocale: string): string {
+  const segments = pathname.split("/").filter(Boolean);
+  const hasPrefix = segments.length > 0 && LOCALE_RE.test(segments[0]);
+  const rest = hasPrefix ? segments.slice(1) : segments;
+  if (targetLocale === "en") {
+    return rest.length > 0 ? `/${rest.join("/")}` : "/";
+  }
+  return rest.length > 0 ? `/${targetLocale}/${rest.join("/")}` : `/${targetLocale}`;
+}
+
+export default function NavItems({ tree, demoCategories, locales }: Props) {
   const [activeKey,  setActiveKey]  = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const pathname = usePathname();
+  const currentLocale = getCurrentLocale(pathname);
 
   if (tree.length === 0) return null;
 
@@ -162,6 +184,46 @@ export default function NavItems({ tree, demoCategories }: Props) {
             </div>
           )}
         </div>
+
+        {/* Language switcher */}
+        {locales.length > 1 && (
+          <div
+            className="relative ml-2"
+            onMouseEnter={() => setActiveKey("__locale__")}
+            onMouseLeave={() => setActiveKey(null)}
+          >
+            <button
+              aria-label="Switch language"
+              className="flex items-center gap-1 px-2 py-2 rounded-lg text-sm font-medium text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.25" />
+                <ellipse cx="8" cy="8" rx="2.5" ry="6.5" stroke="currentColor" strokeWidth="1.25" />
+                <path d="M1.5 6h13M1.5 10h13" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+              </svg>
+              <span className="uppercase text-xs font-semibold tracking-wide">{currentLocale}</span>
+            </button>
+            {activeKey === "__locale__" && (
+              <div className="absolute top-full right-0 pt-2 z-50">
+                <div className="bg-surface-lowest border border-ghost-border rounded-xl shadow-lg py-2 min-w-[80px]">
+                  {locales.map((locale) => (
+                    <Link
+                      key={locale.code}
+                      href={buildLocaleUrl(pathname, locale.code)}
+                      className={`block px-4 py-1.5 text-sm transition-colors hover:bg-surface-low ${
+                        locale.code === currentLocale
+                          ? "text-brand font-semibold"
+                          : "text-on-surface-variant hover:text-brand"
+                      }`}
+                    >
+                      {locale.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Search icon */}
         <button

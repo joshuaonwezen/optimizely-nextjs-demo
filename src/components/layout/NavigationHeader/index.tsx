@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { getNavigation } from "@/lib/graphql/queries/GetNavigation";
 import { getDemoCategories } from "@/lib/getDemoLinks";
+import { getSupportedLocales } from "@/lib/graphql/queries/GetSupportedLocales";
 import NavItems from "./NavItems";
 
 export default async function NavigationHeader() {
-  const { tree } = await getNavigation();
+  const [{ tree }, locales] = await Promise.all([
+    getNavigation(),
+    getSupportedLocales(),
+  ]);
   const demoCategories = getDemoCategories();
 
   return (
@@ -16,7 +20,7 @@ export default async function NavigationHeader() {
         >
           Mosey Bank
         </Link>
-        <NavItems tree={tree} demoCategories={demoCategories} />
+        <NavItems tree={tree} demoCategories={demoCategories} locales={locales} />
       </nav>
     </header>
   );
