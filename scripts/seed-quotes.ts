@@ -42,7 +42,7 @@ async function registerContentType(): Promise<void> {
       },
     },
     preset: "next",
-    useTypedFieldNames: false,
+    useTypedFieldNames: true,
   };
 
   const res = await fetch(`${GRAPH_BASE}/api/content/v3/types?id=${SOURCE_ID}`, {
@@ -64,17 +64,17 @@ async function seedQuotes(): Promise<void> {
     lines.push(JSON.stringify({ index: { _id: q.id, language_routing: "en" } }));
     lines.push(JSON.stringify({
       _itemMetadata: {
-        key:         `qt-${q.id}`,
-        displayName: `Quote - ${q.author}`,
-        lastModified: new Date().toISOString(),
-        type:        "Quote",
+        key:                      `qt-${q.id}`,
+        displayName___searchable: `Quote - ${q.author}`,
+        lastModified:             new Date().toISOString(),
+        type:                     "Quote",
       },
-      author:              q.author,
-      text:                q.text,
-      ContentType:         ["Quote"],
-      Status:              "Published",
-      Language:            { DisplayName: "English", Name: "en" },
-      RolesWithReadAccess: "Everyone",
+      author:      q.author,
+      text:        q.text,
+      ContentType: ["Quote"],
+      Status:      "Published",
+      Language:    { DisplayName: "English", Name: "en" },
+      _rbac:       { read: ["Everyone"] },
     }));
   }
 
