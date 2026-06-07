@@ -83,7 +83,7 @@ import HeroBlock, { HeroBlockType, HeroCenteredTemplate } from "@/components/blo
 import DynamicExperience from "@/components/experience/DynamicExperience";
 import BlankSection     from "@/components/experience/BlankSection";
 
-// Configure Graph client once — all getClient() calls in page routes use this.
+// Configure Graph client once - all getClient() calls in page routes use this.
 config({ apiKey: process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "" });
 
 export function initComponentRegistry() {
@@ -96,7 +96,7 @@ export function initComponentRegistry() {
       DynamicExperience,
       BlankSection,
 
-      // Blocks — tags map displayTemplateKey → component variant
+      // Blocks - tags map displayTemplateKey → component variant
       HeroBlock: {
         default: HeroBlock,
         tags: { Centered: HeroCenteredTemplate }, // HeroCenteredTemplate.tag = "Centered"
@@ -114,7 +114,7 @@ initComponentRegistry(); // registers types + calls config()
 
 async function CmsPage({ params }) {
   const { slug } = await params;
-  const client = getClient(); // no env vars needed here — config() set them once
+  const client = getClient(); // no env vars needed here - config() set them once
 
   // SDK auto-generates the full GraphQL query from all registered content types.
   // One call fetches the page + every possible block type in a single round-trip.
@@ -122,7 +122,7 @@ async function CmsPage({ params }) {
 
   return <OptimizelyComponent content={page} />;
   // OptimizelyComponent reads page.__typename → dispatches to DynamicExperience
-  // or TraditionalPage via the resolver — no manual type switching needed.
+  // or TraditionalPage via the resolver - no manual type switching needed.
 }
 
 export default withAppContext(CmsPage);`;
@@ -212,7 +212,7 @@ async function PreviewPage({ searchParams }) {
       <Script src={\`\${process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL}/util/javascript/communicationinjector.js\`} />
       {/* SDK client component that receives live content-change events from the CMS. */}
       <PreviewComponent />
-      {/* Same dispatch path as the published page — no separate preview renderer needed. */}
+      {/* Same dispatch path as the published page - no separate preview renderer needed. */}
       <OptimizelyComponent content={content} />
     </>
   );
@@ -233,13 +233,13 @@ const BLOCKS = [
   { name: "ProductCardBlock",     templates: "ProductCardFeaturedTemplate (tag: Featured)" },
   { name: "FeatureItemBlock",     templates: "FeatureItemOutlinedTemplate, FeatureItemFlatTemplate" },
   { name: "TestimonialBlock",     templates: "TestimonialCardTemplate (tag: Card)" },
-  { name: "StatsCounterBlock",    templates: "—" },
+  { name: "StatsCounterBlock",    templates: "-" },
   { name: "ImageBlock",           templates: "ImageBlockRoundedTemplate (tag: Rounded)" },
-  { name: "FaqContainerBlock",    templates: "—" },
-  { name: "FaqItemBlock",         templates: "—" },
-  { name: "FeaturedContentBlock", templates: "—" },
-  { name: "LogoGridBlock",        templates: "—" },
-  { name: "FormContainerBlock",   templates: "—" },
+  { name: "FaqContainerBlock",    templates: "-" },
+  { name: "FaqItemBlock",         templates: "-" },
+  { name: "FeaturedContentBlock", templates: "-" },
+  { name: "LogoGridBlock",        templates: "-" },
+  { name: "FormContainerBlock",   templates: "-" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -260,7 +260,7 @@ export default function VisualBuilderPage() {
           </h1>
           <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
             How the Optimizely CMS SDK turns Visual Builder page compositions into
-            rendered React — using the SDK&apos;s built-in rendering pipeline instead
+            rendered React - using the SDK&apos;s built-in rendering pipeline instead
             of hand-written GraphQL queries or manual tree-walking.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
@@ -286,7 +286,7 @@ export default function VisualBuilderPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Visual Builder pages are a tree. The SDK flattens and dispatches that
-            tree through three components — one per level.
+            tree through three components - one per level.
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
 {`Experience (DynamicExperience)
@@ -321,7 +321,7 @@ export default function VisualBuilderPage() {
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             <code className="bg-surface-low px-1 rounded text-xs font-mono">config()</code> sets the
             Graph credentials once at module init. Every page route then calls{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">getClient()</code> — no env vars
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">getClient()</code> - no env vars
             threaded through props. The SDK auto-generates the full GraphQL query from all
             registered content types, so one{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">getContentByPath()</code> call
@@ -345,7 +345,7 @@ export default function VisualBuilderPage() {
             and registers all content types, display templates, and React components. Display template
             variants use the <code className="bg-surface-low px-1 rounded text-xs font-mono">tags</code> pattern
             so the SDK routes by <code className="bg-surface-low px-1 rounded text-xs font-mono">displayTemplateKey</code>{" "}
-            automatically — no manual <code className="bg-surface-low px-1 rounded text-xs font-mono">if/switch</code> on the template key in components.
+            automatically - no manual <code className="bg-surface-low px-1 rounded text-xs font-mono">if/switch</code> on the template key in components.
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
             <code>{REGISTRY_SNIPPET}</code>
@@ -360,13 +360,13 @@ export default function VisualBuilderPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             The SDK provides <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyComposition</code>{" "}
             and <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyGridSection</code> to walk
-            the composition tree. You only need to supply the layout components —
+            the composition tree. You only need to supply the layout components -
             the SDK handles all JSON traversal.
           </p>
           <div className="space-y-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
-                DynamicExperience — top-level composition entry point
+                DynamicExperience - top-level composition entry point
               </p>
               <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
                 <code>{EXPERIENCE_SNIPPET}</code>
@@ -374,7 +374,7 @@ export default function VisualBuilderPage() {
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
-                BlankSection — row/column grid rendering
+                BlankSection - row/column grid rendering
               </p>
               <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
                 <code>{SECTION_SNIPPET}</code>
@@ -394,12 +394,12 @@ export default function VisualBuilderPage() {
             <code className="bg-surface-low px-1 rounded text-xs font-mono">key</code>, and{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">ver</code> query params,
             fetches the draft content, and stores them in the{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">withAppContext</code> context — which{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">withAppContext</code> context - which{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">getPreviewUtils</code> reads to know
             whether to emit <code className="bg-surface-low px-1 rounded text-xs font-mono">data-epi-*</code> attributes.
             The rendered output goes through the exact same{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyComponent</code> path
-            as the published page — no separate preview renderer.
+            as the published page - no separate preview renderer.
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
             <code>{PREVIEW_SNIPPET}</code>
@@ -435,11 +435,11 @@ export default function VisualBuilderPage() {
             </div>
           </div>
           <div className="mt-6 bg-surface-low border border-ghost-border rounded-2xl p-5 max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-3">Checklist — adding a new block</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-3">Checklist - adding a new block</p>
             <ol className="text-sm text-on-surface-variant space-y-1.5 list-decimal list-inside leading-relaxed">
-              <li>Create <code className="bg-surface px-1 rounded text-xs font-mono">src/components/blocks/MyBlock/index.tsx</code> — export <code className="bg-surface px-1 rounded text-xs font-mono">MyBlockType</code> (contentType) and default component.</li>
+              <li>Create <code className="bg-surface px-1 rounded text-xs font-mono">src/components/blocks/MyBlock/index.tsx</code> - export <code className="bg-surface px-1 rounded text-xs font-mono">MyBlockType</code> (contentType) and default component.</li>
               <li>Add <code className="bg-surface px-1 rounded text-xs font-mono">MyBlockType</code> to <code className="bg-surface px-1 rounded text-xs font-mono">initContentTypeRegistry()</code> in <code className="bg-surface px-1 rounded text-xs font-mono">componentRegistry.ts</code>.</li>
-              <li>Add <code className="bg-surface px-1 rounded text-xs font-mono">MyBlock</code> to <code className="bg-surface px-1 rounded text-xs font-mono">initReactComponentRegistry()</code> resolver — use <code className="bg-surface px-1 rounded text-xs font-mono">{"{ default: MyBlock, tags: { Variant: MyBlockVariant } }"}</code> if you have display template variants.</li>
+              <li>Add <code className="bg-surface px-1 rounded text-xs font-mono">MyBlock</code> to <code className="bg-surface px-1 rounded text-xs font-mono">initReactComponentRegistry()</code> resolver - use <code className="bg-surface px-1 rounded text-xs font-mono">{"{ default: MyBlock, tags: { Variant: MyBlockVariant } }"}</code> if you have display template variants.</li>
               <li>Register display templates via <code className="bg-surface px-1 rounded text-xs font-mono">initDisplayTemplateRegistry()</code>.</li>
               <li>Push updated content types to CMS: <code className="bg-surface px-1 rounded text-xs font-mono">npm run opti:push</code></li>
             </ol>

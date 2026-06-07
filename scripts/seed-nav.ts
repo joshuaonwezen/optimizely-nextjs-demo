@@ -25,7 +25,7 @@ const API_BASE = "https://api.cms.optimizely.com";
 const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
-const CONTAINER = "43f936c99b234ea397b261c538ad07c9";
+const CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 // Sentinel name for the seeded Navigation block. The app queries by this name so
 // re-runs can delete the old block (soft-delete → Graph removes it) and POST a
 // fresh one with a new random key without conflicting with the Recycle Bin.

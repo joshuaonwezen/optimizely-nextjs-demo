@@ -26,9 +26,10 @@ export const GRAPH_ENDPOINT =
   process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 export const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 
-// Root container for all seeded content. This container must exist in the CMS
-// — it cannot be created via the Management API. See README setup notes.
-export const CONTAINER = "43f936c99b234ea397b261c538ad07c9";
+// Root container for all seeded content. This container must be created manually
+// in the CMS UI (the Management API cannot create containers). Copy its key from
+// the CMS and set OPTIMIZELY_ROOT_CONTAINER in .env.local before running seeds.
+export const CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 
 // ---------------------------------------------------------------------------
 // ID helpers

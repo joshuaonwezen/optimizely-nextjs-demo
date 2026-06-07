@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   title: "Navigation Strategies Demo",
 };
 
-const S1_CONTENT_TYPE_SNIPPET = `// NavigationItem — self-referential content area
+const S1_CONTENT_TYPE_SNIPPET = `// NavigationItem - self-referential content area
 export const NavigationItemType = contentType({
   key: "NavigationItem",
   baseType: "_component",
@@ -39,7 +39,7 @@ export const NavigationItemType = contentType({
   },
 });
 
-// NavigationRoot — singleton populated once by editors
+// NavigationRoot - singleton populated once by editors
 export const NavigationRootType = contentType({
   key: "NavigationRoot",
   baseType: "_component",
@@ -58,7 +58,7 @@ const S1_CMS_SETUP = `1. Create one "Navigation Root" item in the CMS (e.g. "Mai
 2. Open it and add NavigationItem entries to the "Top-level Items" content area.
    Each NavigationItem has a "Child Items" content area for the next level.
 
-3. Nest down to 5 levels — the @recursive directive handles any depth:
+3. Nest down to 5 levels - the @recursive directive handles any depth:
 
    NavigationRoot
    └── navItems  (content area)
@@ -69,7 +69,7 @@ const S1_CMS_SETUP = `1. Create one "Navigation Root" item in the CMS (e.g. "Mai
 4. Publish. The query fetches all levels in one round-trip.
    On-demand revalidation: revalidateTag("navigation") from a webhook.`;
 
-const S2_TREE_BUILDER_SNIPPET = `// Server-side tree builder — no extra queries needed.
+const S2_TREE_BUILDER_SNIPPET = `// Server-side tree builder - no extra queries needed.
 // All opted-in pages come back flat; parent = longest URL prefix match.
 function buildTree(items) {
   const sorted = items.sort((a, b) => a.href.length - b.href.length);
@@ -127,7 +127,7 @@ const parentKey = parent._Page.items[0]._metadata.key;
 const children = await graphqlFetch(GET_CHILDREN_BY_ANCESTOR_QUERY, { parentKey });
 // → returns Current Account, Savings, etc.`;
 
-const S4_HOW_IT_WORKS = `// Query ArticlePage directly — the content type IS the navigation scope.
+const S4_HOW_IT_WORKS = `// Query ArticlePage directly - the content type IS the navigation scope.
 // No flag, no hierarchy: every published ArticlePage is a nav candidate.
 // orderBy and limit control what surfaces.
 
@@ -199,7 +199,7 @@ export default async function NavigationDemoPage() {
             Navigation Strategies
           </h1>
           <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            Four ways to drive site navigation from Optimizely Graph — each with live
+            Four ways to drive site navigation from Optimizely Graph - each with live
             data fetched server-side so you can see exactly what each query returns.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
@@ -235,7 +235,7 @@ export default async function NavigationDemoPage() {
             fetches all 5 levels in one round-trip.
           </p>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand mb-6">
-            {s1FromCms ? "✓ Live from CMS" : "◎ Demo data — add a NavigationRoot in the CMS"}
+            {s1FromCms ? "✓ Live from CMS" : "◎ Demo data - add a NavigationRoot in the CMS"}
           </span>
 
           {/* Interactive tree */}
@@ -291,19 +291,19 @@ export default async function NavigationDemoPage() {
 
           <TradeOffs
             pros={[
-              "Full editorial control — reorder, rename, add non-page items (labels, external links)",
+              "Full editorial control - reorder, rename, add non-page items (labels, external links)",
               "Supports deep trees (up to depth 10 with @recursive)",
               "Navigation lifecycle is independent of page lifecycle",
               "One content item to cache and invalidate",
             ]}
             cons={[
-              "Editors maintain a second object — nav can drift from actual pages",
+              "Editors maintain a second object - nav can drift from actual pages",
               "New pages must be manually wired into the tree",
               "Setup cost: NavigationRoot and items must be seeded or built in the CMS UI",
             ]}
           />
           <p className="mt-4 text-xs text-on-surface-variant">
-            <strong>Best for:</strong> most production sites — when editors need precise control over labels,
+            <strong>Best for:</strong> most production sites - when editors need precise control over labels,
             ordering, and the ability to include items that don&apos;t map to real pages (e.g. external links, section headings).
           </p>
         </section>
@@ -321,7 +321,7 @@ export default async function NavigationDemoPage() {
             <code className="bg-surface-low px-1 rounded text-xs font-mono">includeInNavigation</code>,{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">navLabel</code>, and{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">navOrder</code>.
-            The query returns <em>all</em> opted-in pages in one round-trip — then a
+            The query returns <em>all</em> opted-in pages in one round-trip - then a
             URL-prefix tree builder groups children under their parents on the server.
             Any page that sets the flag, at any depth, is automatically nested under the
             nearest ancestor that also has the flag.
@@ -353,14 +353,14 @@ export default async function NavigationDemoPage() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-display text-base font-bold text-on-surface">Live result</h3>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-                  {s2FromCms ? "✓ Live from CMS" : "◎ Fallback data — run seed-nav-strategy-demo.ts"}
+                  {s2FromCms ? "✓ Live from CMS" : "◎ Fallback data - run seed-nav-strategy-demo.ts"}
                 </span>
               </div>
               <div className="bg-surface-lowest rounded-2xl border border-ghost-border p-4">
                 <NestedNavMenu tree={s2Tree} />
               </div>
               <p className="mt-3 text-xs text-on-surface-variant">
-                Tree built from URL prefixes server-side — no extra queries.
+                Tree built from URL prefixes server-side - no extra queries.
                 Child pages nest under whichever ancestor also has the flag set.
               </p>
             </div>
@@ -369,7 +369,7 @@ export default async function NavigationDemoPage() {
           <TradeOffs
             pros={[
               "Nav auto-syncs: publish a page with the flag → it appears in nav",
-              "Nested trees supported — child pages nest under opted-in parents automatically",
+              "Nested trees supported - child pages nest under opted-in parents automatically",
               "No separate navigation object to maintain",
               "Impossible for nav and page to get out of sync",
               "Easy to audit: filter pages by includeInNavigation in the CMS UI",
@@ -377,7 +377,7 @@ export default async function NavigationDemoPage() {
             cons={[
               "Cannot include non-page items (external links, section labels)",
               "Editors must set the flag on every page they want in the nav",
-              "Tree depth depends on URL structure — URL must mirror desired nesting",
+              "Tree depth depends on URL structure - URL must mirror desired nesting",
             ]}
           />
           <p className="mt-4 text-xs text-on-surface-variant">
@@ -423,10 +423,10 @@ export default async function NavigationDemoPage() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-display text-base font-bold text-on-surface">
-                  Live result — children of <em>{parentLabel}</em>
+                  Live result - children of <em>{parentLabel}</em>
                 </h3>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-                  {s3FromCms ? "✓ Live from CMS" : "◎ Fallback data — run seed-content.ts"}
+                  {s3FromCms ? "✓ Live from CMS" : "◎ Fallback data - run seed-content.ts"}
                 </span>
               </div>
               <div className="bg-surface-lowest rounded-2xl border border-ghost-border p-4">
@@ -446,12 +446,12 @@ export default async function NavigationDemoPage() {
 
           <TradeOffs
             pros={[
-              "Zero editorial overhead — create and publish a page → it appears in nav",
+              "Zero editorial overhead - create and publish a page → it appears in nav",
               "Navigation exactly mirrors URL/folder structure",
               "No extra fields or objects to maintain",
             ]}
             cons={[
-              "All published pages appear — no opt-out mechanism without additional filtering",
+              "All published pages appear - no opt-out mechanism without additional filtering",
               "Ordering follows CMS sort order, not editorial preference",
               "Cannot include non-page items or override labels",
               "Requires two serial Graph requests (parent key lookup + children query)",
@@ -472,7 +472,7 @@ export default async function NavigationDemoPage() {
             <a href="#strategy-4" className="text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            Query a specific content type directly — every published item of that type becomes a
+            Query a specific content type directly - every published item of that type becomes a
             nav candidate. Ideal for section menus like &quot;all articles&quot; or &quot;all case studies&quot; inside
             a larger manually-framed top nav. The scope is enforced by the type itself, not by flags or folder position.
           </p>
@@ -495,9 +495,9 @@ export default async function NavigationDemoPage() {
 
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-display text-base font-bold text-on-surface">Live result — ArticlePage items</h3>
+                <h3 className="font-display text-base font-bold text-on-surface">Live result - ArticlePage items</h3>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-                  {s4FromCms ? "✓ Live from CMS" : "◎ Fallback data — run seed-nav-strategy-demo.ts"}
+                  {s4FromCms ? "✓ Live from CMS" : "◎ Fallback data - run seed-nav-strategy-demo.ts"}
                 </span>
               </div>
               <div className="bg-surface-lowest rounded-2xl border border-ghost-border p-4">
@@ -512,13 +512,13 @@ export default async function NavigationDemoPage() {
 
           <TradeOffs
             pros={[
-              "Perfectly scoped — the content type boundary defines what appears",
+              "Perfectly scoped - the content type boundary defines what appears",
               "Great for megamenu section panels populated from real content",
               "No editorial overhead beyond authoring the pages themselves",
               "Supports rich filtering: by category, tag, date, or any queryable field",
             ]}
             cons={[
-              "Only items of that specific type appear — can't mix types in one query",
+              "Only items of that specific type appear - can't mix types in one query",
               "Requires a separate query per section type",
               "No override mechanism for labels or ordering without dedicated fields",
             ]}

@@ -104,7 +104,7 @@ query GetNavigation {
   }
 }`;
 
-const NAIVE_RECURSIVE_SNIPPET = `# Without @recursive — depth is hardcoded and the query grows fast.
+const NAIVE_RECURSIVE_SNIPPET = `# Without @recursive - depth is hardcoded and the query grows fast.
 # This handles 3 levels; adding a 4th means editing the query string.
 
 fragment NavItemFields on _IContent {
@@ -127,7 +127,7 @@ fragment NavItemFields on _IContent {
   }
 }`;
 
-const LAYOUT_SPLIT_SNIPPET = `// src/app/layout.tsx — these components self-fetch with ISR.
+const LAYOUT_SPLIT_SNIPPET = `// src/app/layout.tsx - these components self-fetch with ISR.
 // They are NOT inside the force-dynamic page route, so their fetches
 // are cached independently by Next.js and by Graph CDN.
 
@@ -138,7 +138,7 @@ export default function RootLayout({ children }) {
         <GlobalBanner />      {/* graphqlFetch, revalidate: 60  → cached */}
         <NavigationHeader />  {/* graphqlFetch, revalidate: 300 → cached */}
         <main>{children}</main>
-        <Footer />            {/* static — no fetch */}
+        <Footer />            {/* static - no fetch */}
       </body>
     </html>
   );
@@ -157,12 +157,12 @@ async function CmsPage() {
   return <OptimizelyComponent content={page} />;
 }
 
-// layout components are NOT affected by force-dynamic on the page —
+// layout components are NOT affected by force-dynamic on the page -
 // they run in their own render scope with their own cached fetches.`;
 
 const CONTENT_AREA_SNIPPET = `# type: "array" content area → Graph inline-expands all items.
 # FaqContainerBlock.faqItems is type: "array", so its children arrive in
-# the page response with full typed fields — no extra fetch needed.
+# the page response with full typed fields - no extra fetch needed.
 
 ... on FaqContainerBlock {
   heading
@@ -178,14 +178,14 @@ const CONTENT_AREA_SNIPPET = `# type: "array" content area → Graph inline-expa
 
 const SINGLE_REF_SNIPPET = `# type: "content" single reference → Graph returns metadata only.
 # TraditionalPage.featuredBlock is type: "content" (a single reference).
-# Graph never inline-expands it — you only get the key and URL back.
+# Graph never inline-expands it - you only get the key and URL back.
 
 ... on TraditionalPage {
   headline
   featuredBlock {
     __typename
     _metadata { key url { default } version }
-    # No typed fields here — Graph doesn't resolve the reference inline.
+    # No typed fields here - Graph doesn't resolve the reference inline.
     # The component must self-fetch using the key.
   }
 }`;
@@ -209,7 +209,7 @@ export default async function FaqContainerBlock(props) {
 
 const BATCH_KEY_SNIPPET = `// src/components/blocks/TeamGridBlock/index.tsx
 // The page query returns TeamGridBlock.members as an array of reference keys.
-// One batch query fetches all full member records — not one-per-key.
+// One batch query fetches all full member records - not one-per-key.
 
 const MEMBERS_BY_KEYS_QUERY = \`
   query TeamMembersByKeys($keys: [String!]) {
@@ -230,7 +230,7 @@ async function loadMembers(keys: string[]): Promise<MemberData[]> {
   return keys.map((k) => byKey.get(k)).filter(Boolean);
 }`;
 
-const NAIVE_LOOP_SNIPPET = `// ❌ Naive: N queries for N members — sequential, uncacheable per request.
+const NAIVE_LOOP_SNIPPET = `// ❌ Naive: N queries for N members - sequential, uncacheable per request.
 // 10 team members → 10 round-trips. Each fires independently,
 // each has its own cache entry keyed by a single member key.
 
@@ -245,10 +245,10 @@ async function loadMembers(keys: string[]) {
 const PREDICTABLE_SNIPPET = `// Graph CDN caches by (query string + variables).
 // Static element queries are always identical → perfect cache hit rate.
 
-// ✅ Navigation — same query, no variables → one CDN entry, shared by all visitors.
+// ✅ Navigation - same query, no variables → one CDN entry, shared by all visitors.
 graphqlFetch(GET_NAVIGATION_QUERY, {}, { next: { revalidate: 300 } });
 
-// ✅ Variation filter — structure is fixed; only value[] changes.
+// ✅ Variation filter - structure is fixed; only value[] changes.
 // Finite combinations ([], ["personal"], ["business"]) → Graph CDN caches each.
 getContentByPath(url, {
   variation: { include: "SOME", value: activeVariations, includeOriginal: true },
@@ -257,11 +257,11 @@ getContentByPath(url, {
 // ❌ Anti-pattern: per-visitor data inside variables → every request is unique.
 // Graph CDN can never cache this; every request hits the Graph backend.
 graphqlFetch(PAGE_QUERY, {
-  userId:    visitor.id,       // unique per visitor — cache miss every time
-  sessionId: req.sessionId,    // random — makes CDN useless
+  userId:    visitor.id,       // unique per visitor - cache miss every time
+  sessionId: req.sessionId,    // random - makes CDN useless
 });
 
-// On the CMS page route, cache: false bypasses Graph CDN intentionally —
+// On the CMS page route, cache: false bypasses Graph CDN intentionally -
 // the content is personalised and must be fresh on every request.
 getContentByPath(url, { ...variationFilter, cache: false });`;
 
@@ -332,7 +332,7 @@ export default function GraphQueriesDemoPage() {
             Graph Query Design
           </h1>
           <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            How this project talks to Optimizely Graph — the patterns that keep queries fast,
+            How this project talks to Optimizely Graph - the patterns that keep queries fast,
             cacheable, and free of N+1 problems.
           </p>
         </div>
@@ -343,7 +343,7 @@ export default function GraphQueriesDemoPage() {
         {/* ── SDK page query ── */}
         <section id="sdk-query">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            One request, all blocks — the SDK page query
+            One request, all blocks - the SDK page query
             <SectionAnchor id="sdk-query" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
@@ -352,18 +352,18 @@ export default function GraphQueriesDemoPage() {
             in <code className="bg-surface-low px-1 rounded font-mono text-xs">componentRegistry.ts</code> and
             generates an inline{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">{"... on BlockType { <fields> }"}</code>{" "}
-            spread for each one. This project registers ~32 block and page types — all their data arrives in one
+            spread for each one. This project registers ~32 block and page types - all their data arrives in one
             response with no per-block round-trips.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div>
               <p className="text-xs font-medium text-on-surface-variant mb-2">SDK-generated (one request)</p>
-              <CodeBlock code={SDK_PAGE_QUERY_SNIPPET} label="Theoretical GraphQL — generated by the SDK" />
+              <CodeBlock code={SDK_PAGE_QUERY_SNIPPET} label="Theoretical GraphQL - generated by the SDK" />
             </div>
             <div>
               <p className="text-xs font-medium text-on-surface-variant mb-2">Naive alternative (N+1)</p>
-              <CodeBlock code={NAIVE_PAGE_SNIPPET} label="Anti-pattern — one fetch per block" />
+              <CodeBlock code={NAIVE_PAGE_SNIPPET} label="Anti-pattern - one fetch per block" />
             </div>
           </div>
 
@@ -377,7 +377,7 @@ export default function GraphQueriesDemoPage() {
               {[
                 {
                   label: "Non-page data",
-                  desc: "Navigation trees, site banners, referral lists — data that exists independently of any page. These live in src/lib/graphql/queries/ and are called from layout components.",
+                  desc: "Navigation trees, site banners, quote lists - data that exists independently of any page. These live in src/lib/graphql/queries/ and are called from layout components.",
                 },
                 {
                   label: "Self-fetching components",
@@ -391,7 +391,7 @@ export default function GraphQueriesDemoPage() {
                 <div key={label} className="flex gap-3">
                   <span className="text-brand font-bold shrink-0">→</span>
                   <div>
-                    <span className="text-sm font-semibold text-on-surface">{label} — </span>
+                    <span className="text-sm font-semibold text-on-surface">{label} - </span>
                     <span className="text-sm text-on-surface-variant">{desc}</span>
                   </div>
                 </div>
@@ -400,9 +400,9 @@ export default function GraphQueriesDemoPage() {
             <p className="text-xs text-on-surface-variant mt-4 pt-4 border-t border-ghost-border">
               Always use the{" "}
               <code className="bg-surface-low px-1 rounded font-mono">graphqlFetch</code> wrapper from{" "}
-              <code className="bg-surface-low px-1 rounded font-mono">src/lib/optimizely/client.ts</code> — it
+              <code className="bg-surface-low px-1 rounded font-mono">src/lib/optimizely/client.ts</code> - it
               handles published vs. preview auth and ISR config automatically. Export query strings as named
-              constants, not anonymous inline literals — stable strings benefit from Graph CDN caching (see below).
+              constants, not anonymous inline literals - stable strings benefit from Graph CDN caching (see below).
             </p>
           </div>
         </section>
@@ -410,7 +410,7 @@ export default function GraphQueriesDemoPage() {
         {/* ── Static vs dynamic ── */}
         <section id="static-dynamic">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Static elements vs. dynamic content — don&apos;t pay twice
+            Static elements vs. dynamic content - don&apos;t pay twice
             <SectionAnchor id="static-dynamic" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
@@ -418,20 +418,20 @@ export default function GraphQueriesDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">GlobalBanner</code> and{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">NavigationHeader</code>. These
             self-fetch with ISR. The CMS page route exports{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">force-dynamic</code> — but that
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">force-dynamic</code> - but that
             only forces the page component to re-execute on every request. It does not affect the layout
             components&apos; fetches, which continue to use ISR and be served from Next.js data cache and
             Graph CDN. A visitor on any page pays nothing extra for nav and banner data after the first
             request in the cache window.
           </p>
 
-          <CodeBlock code={LAYOUT_SPLIT_SNIPPET} label="Layout separation — static ISR vs force-dynamic page" />
+          <CodeBlock code={LAYOUT_SPLIT_SNIPPET} label="Layout separation - static ISR vs force-dynamic page" />
 
           <div className="grid md:grid-cols-3 gap-4 mt-6">
             {[
               { label: "GlobalBanner", cache: "revalidate: 60", tag: "banner", note: "Same query for all visitors" },
               { label: "NavigationHeader", cache: "revalidate: 300", tag: "navigation", note: "Same query for all visitors" },
-              { label: "CMS page route", cache: "force-dynamic + cache: false", tag: "—", note: "Per-visitor, always fresh" },
+              { label: "CMS page route", cache: "force-dynamic + cache: false", tag: "-", note: "Per-visitor, always fresh" },
             ].map(({ label, cache, tag, note }) => (
               <div key={label} className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
                 <p className="text-xs font-mono font-semibold text-on-surface mb-2">{label}</p>
@@ -439,7 +439,7 @@ export default function GraphQueriesDemoPage() {
                   <span className="font-medium">Cache: </span>
                   <code className="bg-surface-low px-1 rounded font-mono">{cache}</code>
                 </p>
-                {tag !== "—" && (
+                {tag !== "-" && (
                   <p className="text-xs text-on-surface-variant mb-1">
                     <span className="font-medium">Tag: </span>
                     <code className="bg-surface-low px-1 rounded font-mono">{tag}</code>
@@ -454,30 +454,30 @@ export default function GraphQueriesDemoPage() {
         {/* ── @recursive ── */}
         <section id="recursive">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            @recursive — hierarchical data in one round-trip
+            @recursive - hierarchical data in one round-trip
             <SectionAnchor id="recursive" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             <code className="bg-surface-low px-1 rounded font-mono text-xs">@recursive(depth: N)</code> is an
             Optimizely Graph extension (not standard GraphQL). It tells Graph to apply the decorated fragment
-            to the items in a content area field at every nesting level up to the given depth — fetching
+            to the items in a content area field at every nesting level up to the given depth - fetching
             arbitrary tree depth in a single request. Without it, you manually nest inline fragments for each
             level and the depth limit is hardcoded in the query string.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <p className="text-xs font-medium text-on-surface-variant mb-2">With @recursive — one query, any depth</p>
+              <p className="text-xs font-medium text-on-surface-variant mb-2">With @recursive - one query, any depth</p>
               <CodeBlock code={RECURSIVE_SNIPPET} label="src/lib/graphql/queries/GetNavigation.ts" />
             </div>
             <div>
-              <p className="text-xs font-medium text-on-surface-variant mb-2">Without @recursive — manually nested, fixed depth</p>
+              <p className="text-xs font-medium text-on-surface-variant mb-2">Without @recursive - manually nested, fixed depth</p>
               <CodeBlock code={NAIVE_RECURSIVE_SNIPPET} label="Alternative without the directive" />
             </div>
           </div>
           <p className="text-xs text-on-surface-variant mt-4">
             The <code className="bg-surface-low px-1 rounded font-mono">depth</code> parameter is also a safety
-            cap — it prevents Graph from traversing an unbounded tree if content editors create deeply nested
+            cap - it prevents Graph from traversing an unbounded tree if content editors create deeply nested
             structures. This query supports up to 5 levels (Root → L1 → L2 → L3 → L4 → L5).
           </p>
         </section>
@@ -495,20 +495,20 @@ export default function GraphQueriesDemoPage() {
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div className="bg-surface-lowest border border-green-200 rounded-2xl p-5">
               <p className="text-xs font-semibold text-green-700 mb-3">
-                type: &quot;array&quot; — content area
+                type: &quot;array&quot; - content area
               </p>
               <p className="text-sm text-on-surface-variant mb-3 leading-relaxed">
-                Graph inline-expands all items. Typed field data arrives with the page response — no extra
+                Graph inline-expands all items. Typed field data arrives with the page response - no extra
                 fetch needed. Use for lists of blocks on a page.
               </p>
               <CodeBlock code={CONTENT_AREA_SNIPPET} />
             </div>
             <div className="bg-surface-lowest border border-orange-200 rounded-2xl p-5">
               <p className="text-xs font-semibold text-orange-700 mb-3">
-                type: &quot;content&quot; — single reference
+                type: &quot;content&quot; - single reference
               </p>
               <p className="text-sm text-on-surface-variant mb-3 leading-relaxed">
-                Graph returns only base metadata (key, url, version) — never the referenced item&apos;s
+                Graph returns only base metadata (key, url, version) - never the referenced item&apos;s
                 fields. The component must self-fetch if it needs real data.
               </p>
               <CodeBlock code={SINGLE_REF_SNIPPET} />
@@ -533,7 +533,7 @@ export default function GraphQueriesDemoPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Optimizely Graph has its own CDN caching layer, separate from Next.js&apos;s fetch data cache.
             It caches responses by <strong>query string + variables</strong>. If two requests send exactly
-            the same query with the same variables, the second is served from Graph&apos;s cache — no backend
+            the same query with the same variables, the second is served from Graph&apos;s cache - no backend
             computation. The key to making this work is keeping queries{" "}
             <strong>predictable and stable</strong>.
           </p>
@@ -578,7 +578,7 @@ export default function GraphQueriesDemoPage() {
         {/* ── Batch keys ── */}
         <section id="batch-keys">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Batch key queries — N items, 1 query
+            Batch key queries - N items, 1 query
             <SectionAnchor id="batch-keys" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
@@ -592,12 +592,12 @@ export default function GraphQueriesDemoPage() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <p className="text-xs font-medium text-on-surface-variant mb-2">Batch query — N keys, 1 request</p>
+              <p className="text-xs font-medium text-on-surface-variant mb-2">Batch query - N keys, 1 request</p>
               <CodeBlock code={BATCH_KEY_SNIPPET} label="src/components/blocks/TeamGridBlock/index.tsx" />
             </div>
             <div>
-              <p className="text-xs font-medium text-on-surface-variant mb-2">Naive loop — N keys, N requests</p>
-              <CodeBlock code={NAIVE_LOOP_SNIPPET} label="Anti-pattern — one fetch per key" />
+              <p className="text-xs font-medium text-on-surface-variant mb-2">Naive loop - N keys, N requests</p>
+              <CodeBlock code={NAIVE_LOOP_SNIPPET} label="Anti-pattern - one fetch per key" />
             </div>
           </div>
         </section>
@@ -611,7 +611,7 @@ export default function GraphQueriesDemoPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Some fields are declared with{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">indexingType: &quot;disabled&quot;</code>{" "}
-            in the content type definition. Graph does not index these fields — querying them in GraphQL
+            in the content type definition. Graph does not index these fields - querying them in GraphQL
             always returns <code className="bg-surface-low px-1 rounded font-mono text-xs">null</code>, even
             when the editor has set a value. The field data only exists in the Visual Builder composition
             snapshot. In this codebase,{" "}
@@ -619,7 +619,7 @@ export default function GraphQueriesDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">AuthorBlock.avatar</code> are both
             excluded from their fragments for this reason.
           </p>
-          <CodeBlock code={DISABLED_FIELD_SNIPPET} label="TestimonialBlock — indexingType: disabled field omitted from fragment" />
+          <CodeBlock code={DISABLED_FIELD_SNIPPET} label="TestimonialBlock - indexingType: disabled field omitted from fragment" />
         </section>
 
         {/* ── Key takeaways ── */}
@@ -632,11 +632,11 @@ export default function GraphQueriesDemoPage() {
             {[
               <><strong className="text-on-surface">One CMS page = one Graph request.</strong> The SDK auto-generates a query with all registered block type spreads. No per-block fetches at render time.</>,
               <><strong className="text-on-surface">Write custom queries only when needed:</strong> non-page data (nav, banner), self-fetching blocks that receive only a reference key, and batch reference resolution.</>,
-              <><strong className="text-on-surface">Always use the graphqlFetch wrapper</strong> — not raw fetch — so published/preview auth and ISR config are handled automatically.</>,
-              <><strong className="text-on-surface">Put static data in layout components with ISR.</strong> force-dynamic on the page route does not affect layout-level fetches — nav and banner stay cached.</>,
+              <><strong className="text-on-surface">Always use the graphqlFetch wrapper</strong> - not raw fetch - so published/preview auth and ISR config are handled automatically.</>,
+              <><strong className="text-on-surface">Put static data in layout components with ISR.</strong> force-dynamic on the page route does not affect layout-level fetches - nav and banner stay cached.</>,
               <><strong className="text-on-surface">Predictable query strings are Graph CDN-cacheable.</strong> Embedding per-user variables (userId, sessionId) makes every request a cache miss at the Graph layer.</>,
               <><strong className="text-on-surface">@recursive(depth: N)</strong> fetches arbitrary tree depth in one round-trip. The depth cap prevents unbounded traversal.</>,
-              <><strong className="text-on-surface">type: &quot;array&quot; content areas inline-expand;</strong> type: &quot;content&quot; single references return metadata only — self-fetch if you need the data.</>,
+              <><strong className="text-on-surface">type: &quot;array&quot; content areas inline-expand;</strong> type: &quot;content&quot; single references return metadata only - self-fetch if you need the data.</>,
               <><strong className="text-on-surface">indexingType: &quot;disabled&quot; fields return null in Graph.</strong> Omit them from fragments entirely; the data only exists in composition snapshots.</>,
             ].map((text, i) => (
               <li key={i} className="flex gap-2">

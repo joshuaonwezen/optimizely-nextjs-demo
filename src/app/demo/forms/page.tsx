@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 
-const BLOCK_SCHEMA_SNIPPET = `// FormContainerBlock — heading, description, submitUrl, successMessage
+const BLOCK_SCHEMA_SNIPPET = `// FormContainerBlock - heading, description, submitUrl, successMessage
 export const FormContainerBlockType = contentType({
   key: "FormContainerBlock",
   baseType: "_component",
@@ -23,13 +23,13 @@ export const FormContainerBlockType = contentType({
   },
 });
 
-// FormTextInput — label, placeholder, fieldName, inputType (text/email/tel), required
-// FormTextArea  — label, placeholder, fieldName, required
-// FormSelect    — label, fieldName, options (comma-separated string), required
-// FormSubmitButton — label`;
+// FormTextInput - label, placeholder, fieldName, inputType (text/email/tel), required
+// FormTextArea  - label, placeholder, fieldName, required
+// FormSelect    - label, fieldName, options (comma-separated string), required
+// FormSubmitButton - label`;
 
 const SUBMIT_SNIPPET = `// FormSubmitButton is a "use client" component.
-// Rather than wrapping all fields in a <form>, it scans the page scope —
+// Rather than wrapping all fields in a <form>, it scans the page scope -
 // this works because Visual Builder compositions are flat siblings, not nested.
 
 async function handleClick() {
@@ -108,7 +108,7 @@ export default function FormsPage() {
             Forms & Data Capture
           </h1>
           <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            CMS-managed forms built from composable blocks — editors configure fields
+            CMS-managed forms built from composable blocks - editors configure fields
             in Visual Builder, the submit handler captures data, and each submission
             feeds the personalization loop: capture → ODP profile → FX audience → targeted content.
           </p>
@@ -134,7 +134,7 @@ export default function FormsPage() {
             Live Form <a href="#live-form" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            The form below is assembled from the five form block components — the same
+            The form below is assembled from the five form block components - the same
             components an editor would drag into Visual Builder. Try submitting it
             and watch the network tab: it POSTs JSON to{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">/api/form-submit</code>.
@@ -181,7 +181,7 @@ export default function FormsPage() {
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             Form blocks are independent components that cooperate via the DOM rather
             than a shared React state tree. This makes them composable in Visual Builder
-            alongside any other block — a form can sit in any column, any section.
+            alongside any other block - a form can sit in any column, any section.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -192,7 +192,7 @@ export default function FormsPage() {
                   Renders the heading and description. Sets{" "}
                   <code className="bg-surface px-1 rounded font-mono">data-form-submit-url</code> and{" "}
                   <code className="bg-surface px-1 rounded font-mono">data-form-success-message</code> as
-                  data attributes — no React context needed.
+                  data attributes - no React context needed.
                 </p>
               </div>
               <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4">
@@ -226,7 +226,7 @@ export default function FormsPage() {
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Submit button — DOM-scoped collection</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Submit button - DOM-scoped collection</p>
               <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed h-full">
                 <code>{SUBMIT_SNIPPET}</code>
               </pre>
@@ -245,7 +245,7 @@ export default function FormsPage() {
             so editors can place them in any Visual Builder composition. The{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">submitUrl</code> on{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">FormContainerBlock</code> lets
-            editors point different forms at different endpoints — a contact form, a newsletter
+            editors point different forms at different endpoints - a contact form, a newsletter
             signup, and a demo request can all live in the same CMS with separate handlers.
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
@@ -260,7 +260,7 @@ export default function FormsPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             The route receives a flat JSON object keyed by field name. Swap the
-            console log for any integration — CRM, email service, or Optimizely Data Platform.
+            console log for any integration - CRM, email service, or Optimizely Data Platform.
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
             <code>{API_ROUTE_SNIPPET}</code>
@@ -275,7 +275,7 @@ export default function FormsPage() {
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             A form submission is the beginning of a customer profile, not the end.
             Connect the submit handler to Optimizely Data Platform (ODP) and the
-            submission feeds straight into Feature Experimentation audience conditions —
+            submission feeds straight into Feature Experimentation audience conditions -
             which the CMS page route already reads to serve targeted content variations.
           </p>
 
@@ -290,7 +290,7 @@ Next page request (same user, identified by cookie)
         └─→ FX evaluates "cms_personalization" flag
                 Audience: logged_in = true → variation "returning_users"
                 └─→ Graph returns the CMS variation built for returning users
-                        └─→ OptimizelyComponent renders it — zero extra code`}</pre>
+                        └─→ OptimizelyComponent renders it - zero extra code`}</pre>
           </div>
 
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">

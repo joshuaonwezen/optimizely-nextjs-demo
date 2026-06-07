@@ -11,11 +11,11 @@ const PREVIEW_PARAMS_SNIPPET = `// CMS is configured with Preview URL: https://y
 
 /preview?preview_token=<jwt>&key=<contentKey>&ctx=edit
 
-// preview_token  — short-lived JWT issued by the CMS for this editor session.
+// preview_token  - short-lived JWT issued by the CMS for this editor session.
 //                  Passed to Graph as "Authorization: Bearer <token>" to
 //                  fetch draft (unpublished) content instead of published.
-// key            — UUID of the content item being previewed.
-// ctx            — "edit" when opened inside the Visual Builder iframe;
+// key            - UUID of the content item being previewed.
+// ctx            - "edit" when opened inside the Visual Builder iframe;
 //                  omitted for plain content preview.
 
 `;
@@ -49,7 +49,7 @@ async function PreviewPage({ searchParams }) {
 
   // getPreviewContent reads preview_token, key, ver, ctx from query params,
   // fetches the draft version, and populates the withAppContext context store.
-  // OptimizelyComponent dispatches to the right component by __typename —
+  // OptimizelyComponent dispatches to the right component by __typename -
   // same path as the published page, no separate preview renderer needed.
   const content = await client.getPreviewContent(params as PreviewParams);
 
@@ -66,12 +66,12 @@ export default withAppContext(PreviewPage);`;
 
 const SHELL_SNIPPET = `// The preview shell injects two things:
 //
-// 1. communicationinjector.js — the bridge between this page and the CMS
+// 1. communicationinjector.js - the bridge between this page and the CMS
 //    iframe. Without it, click-to-edit events from the CMS never reach the
 //    page. It listens for postMessage events from the parent iframe and
 //    dispatches them as DOM events.
 //
-// 2. <PreviewComponent /> (from @optimizely/cms-sdk/react/client) — a
+// 2. <PreviewComponent /> (from @optimizely/cms-sdk/react/client) - a
 //    client component that sends real-time edit notifications back to the
 //    CMS so outline overlays update instantly as content is saved.
 
@@ -87,22 +87,22 @@ const shell = (children) => (
 );`;
 
 const EPI_BLOCK_SNIPPET = `// data-epi-block-id is the contract between the frontend and the CMS overlay.
-// The SDK's getPreviewUtils() handles this — pa(node) spreads data-epi-block-id
+// The SDK's getPreviewUtils() handles this - pa(node) spreads data-epi-block-id
 // onto structural wrappers, and pa("propertyName") adds data-epi-edit to leaf elements.
 
-// In BlankSection — pa(node) on row/column wrappers
+// In BlankSection - pa(node) on row/column wrappers
 function Row({ children, node }) {
   const { pa } = getPreviewUtils(node);
   return <div {...pa(node)}>{children}</div>;  // → data-epi-block-id={node.key}
 }
 
-// In DynamicExperience — ComponentWrapper wraps each composition component
+// In DynamicExperience - ComponentWrapper wraps each composition component
 function ComponentWrapper({ children, node }) {
   const { pa } = getPreviewUtils(node);
   return <div {...pa(node)}>{children}</div>;  // → data-epi-block-id={node.key}
 }
 
-// In block components — pa("propertyName") enables click-to-edit on fields
+// In block components - pa("propertyName") enables click-to-edit on fields
 export default function HeroBlock({ content }) {
   const { pa } = getPreviewUtils(content);
   return (
@@ -113,12 +113,12 @@ export default function HeroBlock({ content }) {
   );
 }
 
-// getPreviewUtils reads the withAppContext context — pa() only emits attributes
+// getPreviewUtils reads the withAppContext context - pa() only emits attributes
 // when the request was initiated via getPreviewContent() (i.e. in preview mode).
 // On published pages it returns empty objects, adding zero DOM overhead.`;
 
 const VB_LAYOUT_SNIPPET = `// communicationinjector.js is injected on the /preview route only.
-// The root layout (src/app/layout.tsx) does NOT inject it — the script is
+// The root layout (src/app/layout.tsx) does NOT inject it - the script is
 // only needed when the page is loaded inside the CMS editor iframe.
 
 // src/app/preview/page.tsx
@@ -150,8 +150,8 @@ export default function PreviewDemoPage() {
             Draft Mode &amp; Editorial Preview
           </h1>
           <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            Editors can preview unpublished content in the live app — including
-            in-context editing via Visual Builder — without affecting what visitors see.
+            Editors can preview unpublished content in the live app - including
+            in-context editing via Visual Builder - without affecting what visitors see.
             Two separate systems work together: Next.js draft mode for cache bypass,
             and Optimizely&apos;s communicationinjector for real-time edit events.
           </p>
@@ -192,7 +192,7 @@ export default function PreviewDemoPage() {
                 badgeColor: "bg-amber-100 text-amber-800",
                 auth: "Bearer {previewToken}",
                 cache: "cache: 'no-store'",
-                description: "Activated when the CMS calls /preview?preview_token=X&key=Y. getPreviewContent() fetches the latest draft version — unpublished changes visible only to the editor. The /preview route is force-dynamic and renders inside the CMS iframe when ctx=edit.",
+                description: "Activated when the CMS calls /preview?preview_token=X&key=Y. getPreviewContent() fetches the latest draft version - unpublished changes visible only to the editor. The /preview route is force-dynamic and renders inside the CMS iframe when ctx=edit.",
               },
             ].map(mode => (
               <div key={mode.label} className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex flex-col gap-3">
@@ -248,7 +248,7 @@ export default function PreviewDemoPage() {
               </pre>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">graphqlFetch — cache bypass with previewToken</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">graphqlFetch - cache bypass with previewToken</p>
               <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed h-full">
                 <code>{GRAPHQL_PREVIEW_SNIPPET}</code>
               </pre>
@@ -263,7 +263,7 @@ export default function PreviewDemoPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             <code className="bg-surface-low px-1 rounded text-xs font-mono">getPreviewContent()</code> handles
-            all content types — experience pages, traditional pages, and shared blocks — and returns
+            all content types - experience pages, traditional pages, and shared blocks - and returns
             the item directly. <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyComponent</code>{" "}
             dispatches to the right React component by <code className="bg-surface-low px-1 rounded text-xs font-mono">__typename</code>,
             exactly as the published page does. No separate preview renderer needed.
@@ -308,7 +308,7 @@ export default function PreviewDemoPage() {
             Where communicationinjector.js Lives <a href="#communication-injector" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            The script is injected on the <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code> route only —
+            The script is injected on the <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code> route only -
             not in the root layout. It is only needed when the page is rendered inside the
             CMS editor iframe, so keeping it scoped to <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code>{" "}
             avoids loading it on every visitor page.

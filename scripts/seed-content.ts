@@ -27,7 +27,7 @@ config({ path: ".env.local" });
 
 const API_BASE = "https://api.cms.optimizely.com";
 const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
-const CONTAINER = "43f936c99b234ea397b261c538ad07c9";
+const CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 
 // ---------------------------------------------------------------------------
 // Helpers

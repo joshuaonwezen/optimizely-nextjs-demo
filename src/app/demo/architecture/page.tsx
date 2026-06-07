@@ -72,7 +72,7 @@ export default function ArchitecturePage() {
             System Architecture
           </h1>
           <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            How Optimizely SaaS CMS, Graph, and Feature Experimentation connect to this Next.js app —
+            How Optimizely SaaS CMS, Graph, and Feature Experimentation connect to this Next.js app -
             request flow, content delivery, flag evaluation, and cache invalidation.
           </p>
         </div>
@@ -82,7 +82,7 @@ export default function ArchitecturePage() {
         <section>
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">Architecture Diagram</h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            Request flow left to right. CMS sits behind Graph — content syncs into Graph on publish,
+            Request flow left to right. CMS sits behind Graph - content syncs into Graph on publish,
             and Graph fires a webhook back to invalidate the ISR cache.
           </p>
 
@@ -107,35 +107,35 @@ export default function ArchitecturePage() {
 
               {/* ── Arrows (drawn first, behind boxes) ── */}
 
-              {/* 0. Next.js → Browser — HTML response (above request arrows, going left) */}
+              {/* 0. Next.js → Browser - HTML response (above request arrows, going left) */}
               <line x1={412} y1={150} x2={166} y2={150}
                 stroke="#60a5fa" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-lblue)" />
 
-              {/* 1. Browser → CDN — HTTPS request */}
+              {/* 1. Browser → CDN - HTTPS request */}
               <line x1={166} y1={197} x2={208} y2={197}
                 stroke="#3b82f6" strokeWidth={2} markerEnd="url(#arr-blue)" />
 
-              {/* 2. CDN → Next.js — cache miss / SSR */}
+              {/* 2. CDN → Next.js - cache miss / SSR */}
               <line x1={360} y1={197} x2={412} y2={197}
                 stroke="#9333ea" strokeWidth={2} markerEnd="url(#arr-purple)" />
 
-              {/* 3. Next.js → Graph — GraphQL query */}
+              {/* 3. Next.js → Graph - GraphQL query */}
               <path d="M 564,185 C 596,185 616,132 616,127"
                 fill="none" stroke="#f97316" strokeWidth={2} markerEnd="url(#arr-orange)" />
 
-              {/* 4. Graph → Next.js — content response (dashed) */}
+              {/* 4. Graph → Next.js - content response (dashed) */}
               <path d="M 616,142 C 610,165 596,207 564,207"
                 fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-orange)" />
 
-              {/* 5. Next.js → FX SDK — datafile fetch from cdn.optimizely.com */}
+              {/* 5. Next.js → FX SDK - datafile fetch from cdn.optimizely.com */}
               <path d="M 564,209 C 596,209 616,285 616,290"
                 fill="none" stroke="#0d9488" strokeWidth={2} markerEnd="url(#arr-teal)" />
 
-              {/* 6. CMS → Graph — content sync on publish */}
+              {/* 6. CMS → Graph - content sync on publish */}
               <line x1={836} y1={120} x2={768} y2={120}
                 stroke="#16a34a" strokeWidth={2} markerEnd="url(#arr-green)" />
 
-              {/* 7. Graph → Next.js — Graph webhook after content sync (dashed, routes right of FX SDK) */}
+              {/* 7. Graph → Next.js - Graph webhook after content sync (dashed, routes right of FX SDK) */}
               <path d="M 768,140 L 800,140 L 800,400 L 488,400 L 488,234"
                 fill="none" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-red)" />
 

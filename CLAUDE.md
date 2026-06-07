@@ -347,6 +347,9 @@ export default async function CmsPage() {
 ```
 All query strings and constant data belong at module level so the file is scannable: constants at the top, logic in functions.
 
+### Em dashes in prose and code comments
+Do not use em dashes (`—`) anywhere in the demo pages: prose, JSX text, code snippet strings, or code comments. Use a regular hyphen with spaces (` - `) instead. Em dashes read as an AI-generation artifact.
+
 ---
 
 ## Adding a New Block — Checklist

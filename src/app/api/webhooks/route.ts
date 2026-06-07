@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     revalidatePath("/", "layout");
     revalidateTag("navigation", "default");
     revalidateTag("banner", "default");
-    revalidateTag("referrals", "default");
+    revalidateTag("quotes", "default");
 
     return NextResponse.json({ received: true, timestamp: Date.now() });
   } catch {

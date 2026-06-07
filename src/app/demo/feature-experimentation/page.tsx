@@ -32,7 +32,7 @@ if (servedVariation) {
   );
   if (exposedFlag) {
     // Empty options → no DISABLE_DECISION_EVENT → impression fires to FX results
-    // void discards the return value — we only care about the side effect here
+    // void discards the return value - we only care about the side effect here
     void user.decide(exposedFlag.flagKey, []);
   }
 }`;
@@ -49,7 +49,7 @@ export default async function MyPage() {
   // Once you know the variation will be shown, fire the impression:
   void user.decide("subscribe_button", []);
 
-  // Variables come back typed — you cast to the type you expect
+  // Variables come back typed - you cast to the type you expect
   const title = decision.variables.subscribe_title as string;
   return <Banner title={title} variation={decision.variationKey} />;
 }`;
@@ -59,16 +59,16 @@ import { getOptimizelyUser } from "@/lib/optimizely/user";
 import { getClient } from "@optimizely/cms-sdk";
 
 async function CmsPage({ params }) {
-  // Step 1 — evaluate all FX flags (userId + attributes from cookies automatically)
+  // Step 1 - evaluate all FX flags (userId + attributes from cookies automatically)
   const user = await getOptimizelyUser();
   const decisions = user.decideAll();
 
-  // Step 2 — collect active variation keys (skip "off")
+  // Step 2 - collect active variation keys (skip "off")
   const activeVariations = Object.values(decisions)
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
     .map((d) => d.variationKey as string);
 
-  // Step 3 — pass them to Graph as a variation filter
+  // Step 3 - pass them to Graph as a variation filter
   //   includeOriginal: true → users NOT in an experiment still see original content
   const variationOption = activeVariations.length > 0
     ? {
@@ -80,7 +80,7 @@ async function CmsPage({ params }) {
       }
     : undefined;
 
-  // Step 4 — Graph returns the CMS variant whose key matches, or falls back
+  // Step 4 - Graph returns the CMS variant whose key matches, or falls back
   const client = getClient();
   const [page] = await client.getContentByPath(\`/en/\${slug}/\`, variationOption);
   return <OptimizelyComponent content={page} />;
@@ -97,7 +97,7 @@ query {
     variation: {
       include: SOME
       value: ["personal"]
-      includeOriginal: true   # always include the base — safe fallback for non-experiment users
+      includeOriginal: true   # always include the base - safe fallback for non-experiment users
     }
     limit: 10
   ) {
@@ -121,7 +121,7 @@ query {
 #
 # The code picks items[1] because it matches activeVariations.
 # If no matching CMS variation exists, includeOriginal: true ensures
-# items[0] (the base) is returned — experiment is safe to deploy before
+# items[0] (the base) is returned - experiment is safe to deploy before
 # editors create any CMS variations.`;
 
 const MIDDLEWARE_SNIPPET = `// src/middleware.ts
@@ -131,7 +131,7 @@ import type { NextRequest } from "next/server";
 export function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
-  // Only one cookie — a stable visitor ID for consistent bucketing.
+  // Only one cookie - a stable visitor ID for consistent bucketing.
   // Device type is read from the User-Agent header server-side (no cookie = GDPR safe).
   if (!req.cookies.get("optimizelyEndUserId")) {
     res.cookies.set("optimizelyEndUserId", crypto.randomUUID(), {
@@ -173,13 +173,13 @@ export const getOptimizelyUser = cache(async () => {
     //
     decide(flagKey: string, opts?: OptimizelyDecideOption[] | DecideOpts): FxDecision { /* ... */ },
     decideAll(): Record<string, FxDecision> {
-      // Always DISABLE_DECISION_EVENT — evaluate all flags without recording anything.
+      // Always DISABLE_DECISION_EVENT - evaluate all flags without recording anything.
       return ctx.decideAll([OptimizelyDecideOption.DISABLE_DECISION_EVENT]);
     },
   };
 });`;
 
-const WRAPPER_VS_SDK_SNIPPET = `// ❌ Using the FX SDK directly — don't do this in server components
+const WRAPPER_VS_SDK_SNIPPET = `// ❌ Using the FX SDK directly - don't do this in server components
 import { createInstance } from "@optimizely/optimizely-sdk";
 
 export default async function MyPage() {
@@ -189,19 +189,19 @@ export default async function MyPage() {
   const decision = ctx?.decide("my_flag");       // no impression control
 }
 
-// ✅ Using the wrapper — one function call, everything resolved
+// ✅ Using the wrapper - one function call, everything resolved
 import { getOptimizelyUser } from "@/lib/optimizely/user";
 
 export default async function MyPage() {
   const user = await getOptimizelyUser();
 
   // userId + device + persona attributes come from cookies automatically.
-  // SDK instance is memoised per request — datafile not re-fetched.
-  // DISABLE_DECISION_EVENT by default — impression not fired yet.
+  // SDK instance is memoised per request - datafile not re-fetched.
+  // DISABLE_DECISION_EVENT by default - impression not fired yet.
   const decision = user.decide("my_flag");
   if (!decision.enabled) return null;
 
-  // Now the variation will be rendered — fire the impression.
+  // Now the variation will be rendered - fire the impression.
   void user.decide("my_flag", []);
 
   return <Variant variables={decision.variables} />;
@@ -246,7 +246,7 @@ function SubscribeDemo({ decision }: { decision: FxDecision | undefined }) {
       <div className="rounded-2xl border border-dashed border-ghost-border bg-surface-lowest p-8 text-center">
         <p className="text-sm font-mono text-on-surface-variant mb-1">subscribe_button</p>
         <p className="text-on-surface-variant text-sm">
-          Flag is <strong>off</strong> — enable it in the FX dashboard to see the live subscribe CTA.
+          Flag is <strong>off</strong> - enable it in the FX dashboard to see the live subscribe CTA.
         </p>
       </div>
     );
@@ -339,10 +339,10 @@ export default async function MyPage() {
   const user = await getOptimizelyUser();
   const { bucketingId } = await getVisitorContext();
 
-  // Normal decision — bucketed by the visitor's stable userId
+  // Normal decision - bucketed by the visitor's stable userId
   const decision = user.decide("subscribe_button");
 
-  // Account-level decision — when logged in, bucket by account ID instead.
+  // Account-level decision - when logged in, bucket by account ID instead.
   // All seats on the same account see the same variation.
   // userId is still used for analytics; only bucketing is overridden.
   const accountDecision = bucketingId
@@ -379,7 +379,7 @@ export default async function FeatureFlagsDemoPage() {
           </h1>
           <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
             Optimizely Feature Experimentation runs alongside SaaS CMS on the same platform.
-            Flag decisions are evaluated server-side in React Server Components — no client JS,
+            Flag decisions are evaluated server-side in React Server Components - no client JS,
             no layout shift. Variation keys from FX drive which CMS content variant Graph returns,
             connecting A/B experiments directly to editor-created content variations.
           </p>
@@ -402,7 +402,7 @@ export default async function FeatureFlagsDemoPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Four steps happen on every page request. The browser never touches the SDK
-            or runs an experiment script — all decisions happen server-side before HTML is streamed.
+            or runs an experiment script - all decisions happen server-side before HTML is streamed.
           </p>
 
           {/* Architecture flow */}
@@ -417,7 +417,7 @@ export default async function FeatureFlagsDemoPage() {
               <div className="text-2xl mb-2">⚡</div>
               <p className="text-xs font-mono font-semibold text-on-surface mb-1">FX SDK (server)</p>
               <p className="text-xs text-on-surface-variant">
-                Calls <code className="bg-surface-low px-1 rounded">decide()</code> with <code className="bg-surface-low px-1 rounded">DISABLE_DECISION_EVENT</code> — returns <code className="bg-surface-low px-1 rounded">variationKey</code>, no impression yet
+                Calls <code className="bg-surface-low px-1 rounded">decide()</code> with <code className="bg-surface-low px-1 rounded">DISABLE_DECISION_EVENT</code> - returns <code className="bg-surface-low px-1 rounded">variationKey</code>, no impression yet
               </p>
             </div>
             <Arrow />
@@ -433,7 +433,7 @@ export default async function FeatureFlagsDemoPage() {
               <div className="text-2xl mb-2">📊</div>
               <p className="text-xs font-mono font-semibold text-on-surface mb-1">Bucket the user</p>
               <p className="text-xs text-on-surface-variant">
-                Fire <code className="bg-surface-low px-1 rounded">decide()</code> again — records user in experiment results
+                Fire <code className="bg-surface-low px-1 rounded">decide()</code> again - records user in experiment results
               </p>
             </div>
           </div>
@@ -446,7 +446,7 @@ export default async function FeatureFlagsDemoPage() {
               <h3 className="font-display font-semibold text-on-surface mb-2">Middleware sets a stable ID</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 On first visit, Next.js middleware writes an <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> UUID
-                cookie (1 year TTL). It&apos;s the only cookie set —{" "}
+                cookie (1 year TTL). It&apos;s the only cookie set -{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">device</code> is derived from the User-Agent header server-side (no cookie stored).
               </p>
             </div>
@@ -457,7 +457,7 @@ export default async function FeatureFlagsDemoPage() {
               <h3 className="font-display font-semibold text-on-surface mb-2">FX SDK evaluates flags server-side</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">getOptimizelyUser()</code> reads the{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> cookie — it has an expiration
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> cookie - it has an expiration
                 date, so the same visitor gets the same bucket across return visits. React{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">cache()</code> deduplicates within a single page load.
                 The datafile is refreshed every 60 seconds.
@@ -471,7 +471,7 @@ export default async function FeatureFlagsDemoPage() {
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 Active variation keys are passed to <code className="bg-surface-low px-1 rounded font-mono text-xs">getContentByPath</code> as
                 a <code className="bg-surface-low px-1 rounded font-mono text-xs">{"{ include: 'SOME', value: [...keys] }"}</code> filter.
-                Graph serves the CMS content variant whose key matches — or the original if none exists.
+                Graph serves the CMS content variant whose key matches - or the original if none exists.
               </p>
             </div>
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
@@ -494,7 +494,7 @@ export default async function FeatureFlagsDemoPage() {
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">Your Session <a href="#your-session" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a></h2>
           <p className="text-sm text-on-surface-variant mb-6">
             A stable <code className="bg-surface-low px-1 rounded text-xs font-mono">optimizelyEndUserId</code> cookie
-            is set by Next.js middleware on first visit. Flag decisions below are bucketed to this ID —
+            is set by Next.js middleware on first visit. Flag decisions below are bucketed to this ID -
             reload and you always land in the same variation.
           </p>
 
@@ -512,7 +512,7 @@ export default async function FeatureFlagsDemoPage() {
             <div className={`rounded-xl px-5 py-4 flex flex-col gap-1 border ${bucketingId ? "bg-emerald-50 border-emerald-200" : "bg-surface-lowest border-ghost-border"}`}>
               <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider">Bucketing ID</span>
               <span className={`text-sm font-mono ${bucketingId ? "text-emerald-700" : "text-on-surface-variant"}`}>
-                {bucketingId ?? "—"}
+                {bucketingId ?? "-"}
               </span>
               <span className="text-xs text-on-surface-variant">
                 {bucketingId ? "overrides bucketing (not analytics)" : "sign in via Audience Switcher to set"}
@@ -536,7 +536,7 @@ export default async function FeatureFlagsDemoPage() {
           {Object.keys(decisions).length === 0 ? (
             <div className="rounded-2xl border border-dashed border-ghost-border bg-surface-lowest p-8 text-center">
               <p className="text-on-surface-variant text-sm">
-                No flags found — check that{" "}
+                No flags found - check that{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">OPTIMIZELY_FX_SDK_KEY</code>{" "}
                 is set in <code className="bg-surface-low px-1 rounded font-mono text-xs">.env.local</code>.
               </p>
@@ -581,7 +581,7 @@ export default async function FeatureFlagsDemoPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             By default the FX SDK buckets users by their <code className="bg-surface-low px-1 rounded font-mono text-xs">userId</code>.
             Setting the reserved <code className="bg-surface-low px-1 rounded font-mono text-xs">$opt_bucketing_id</code> attribute
-            overrides <em>which</em> ID drives bucketing — while keeping the original <code className="bg-surface-low px-1 rounded font-mono text-xs">userId</code> for
+            overrides <em>which</em> ID drives bucketing - while keeping the original <code className="bg-surface-low px-1 rounded font-mono text-xs">userId</code> for
             analytics. This means all users sharing the same bucketing ID land in the same variation,
             regardless of their individual user IDs.
           </p>
@@ -594,7 +594,7 @@ export default async function FeatureFlagsDemoPage() {
               },
               {
                 title: "Family plans & shared subscriptions",
-                body: "Households or linked accounts that share access should have a consistent experience — buck by the primary account ID, not by each individual member.",
+                body: "Households or linked accounts that share access should have a consistent experience - buck by the primary account ID, not by each individual member.",
               },
               {
                 title: "Gradual rollouts to accounts",
@@ -612,16 +612,16 @@ export default async function FeatureFlagsDemoPage() {
 
           {/* Live comparison */}
           <div className="mt-8">
-            <h3 className="font-display font-semibold text-on-surface mb-1">Live comparison — <code className="font-mono font-semibold">subscribe_button</code></h3>
+            <h3 className="font-display font-semibold text-on-surface mb-1">Live comparison - <code className="font-mono font-semibold">subscribe_button</code></h3>
             <p className="text-sm text-on-surface-variant mb-5">
               {bucketingId
-                ? `Signed in as ${bucketingId}. The two decisions below may land in different variations — the normal decision is bucketed by your browser's stable userId, the account decision by the login ID.`
+                ? `Signed in as ${bucketingId}. The two decisions below may land in different variations - the normal decision is bucketed by your browser's stable userId, the account decision by the login ID.`
                 : "Sign in via the Audience Switcher (bottom-right) to see the account-level decision alongside your normal decision."}
             </p>
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-3">
-                  Normal — bucketed by userId
+                  Normal - bucketed by userId
                 </p>
                 <SubscribeDemo decision={subscribeDecision} />
                 {subscribeDecision && (
@@ -632,7 +632,7 @@ export default async function FeatureFlagsDemoPage() {
               </div>
               <div>
                 <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-3">
-                  Account — bucketed by{" "}
+                  Account - bucketed by{" "}
                   <span className={bucketingId ? "text-emerald-600" : "text-on-surface-variant"}>
                     {bucketingId ? `$opt_bucketing_id: "${bucketingId}"` : "not set"}
                   </span>
@@ -656,22 +656,22 @@ export default async function FeatureFlagsDemoPage() {
           </div>
         </section>
 
-        {/* ── CMS Variations — the connection ── */}
+        {/* ── CMS Variations - the connection ── */}
         <section id="cms-variations">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            CMS Variations — Connecting FX to Content <a href="#cms-variations" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            CMS Variations - Connecting FX to Content <a href="#cms-variations" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             FX variation keys and CMS content variations share a single string contract.
             When Graph receives an active variation key, it looks for a CMS content variant
             with the same name and returns it. Editors create the variant in Visual Builder;
-            the SDK wires it at request time — no code change required after initial setup.
+            the SDK wires it at request time - no code change required after initial setup.
           </p>
 
           {/* Flow diagram */}
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-6">
             <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
-              Request flow — this demo&apos;s homepage_audience experiment
+              Request flow - this demo&apos;s homepage_audience experiment
             </p>
             <div className="flex flex-wrap items-start gap-3">
               <div className="text-center">
@@ -712,11 +712,11 @@ export default async function FeatureFlagsDemoPage() {
           </div>
 
           <Callout variant="warning" className="mb-6">
-            <strong>CMS variations must be created in Visual Builder — the Management API cannot create them.</strong>{" "}
+            <strong>CMS variations must be created in Visual Builder - the Management API cannot create them.</strong>{" "}
             The <code className="bg-surface-low px-1 rounded font-mono text-xs">variation</code> field
             exists in Graph&apos;s schema but is silently ignored by the Management API on write.
             However, once created in Visual Builder each variation becomes a new draft{" "}
-            <strong>version</strong> — you can discover the version number via{" "}
+            <strong>version</strong> - you can discover the version number via{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">GET /content/{"{key}"}/versions</code>{" "}
             and PATCH it with the correct composition + <code className="bg-surface-low px-1 rounded font-mono text-xs">status: &quot;published&quot;</code>.
             See <code className="bg-surface-low px-1 rounded font-mono text-xs">scripts/update-homepage-variations.ts</code>.
@@ -734,13 +734,13 @@ export default async function FeatureFlagsDemoPage() {
             <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
               <code>
                 {activeVariations.length === 0
-                  ? `// No active variation keys — flags disabled, or user not bucketed into\n// any active variation. The "off" delivery rule is excluded: it returns\n// variationKey: "off" but no CMS variation named "off" exists.\nvariationOption = undefined`
+                  ? `// No active variation keys - flags disabled, or user not bucketed into\n// any active variation. The "off" delivery rule is excluded: it returns\n// variationKey: "off" but no CMS variation named "off" exists.\nvariationOption = undefined`
                   : `variationOption = {\n  variation: {\n    include: "SOME",\n    value: ${JSON.stringify(activeVariations)},\n    includeOriginal: true,\n  },\n}`}
               </code>
             </pre>
             {activeVariations.length === 0 && (
               <p className="text-xs text-on-surface-variant mt-3">
-                Enable a flag and run an experiment in the FX dashboard, then reload — your variation key will appear above and start influencing CMS content delivery.
+                Enable a flag and run an experiment in the FX dashboard, then reload - your variation key will appear above and start influencing CMS content delivery.
               </p>
             )}
           </div>
@@ -749,7 +749,7 @@ export default async function FeatureFlagsDemoPage() {
         {/* ── Setup guide ── */}
         <section id="setup-guide">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Setting Up CMS Variations — Step by Step <a href="#setup-guide" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            Setting Up CMS Variations - Step by Step <a href="#setup-guide" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Once the integration code is in place (see below), editors can set up any number of
@@ -774,14 +774,14 @@ export default async function FeatureFlagsDemoPage() {
               <strong>Add variation</strong>. Create two variations named exactly{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code> and{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code>{" "}
-              (case-sensitive — must match the FX variation keys exactly). Each becomes a new draft version in the CMS. Then run{" "}
+              (case-sensitive - must match the FX variation keys exactly). Each becomes a new draft version in the CMS. Then run{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">npx tsx scripts/update-homepage-variations.ts</code>{" "}
-              to PATCH those versions with the correct compositions and publish them — no manual composition
+              to PATCH those versions with the correct compositions and publish them - no manual composition
               editing in the UI needed.
             </Step>
 
             <Step number={3} title="Validate with the Audience Switcher">
-              Use the floating pill in the bottom-right corner to preview each variation instantly —
+              Use the floating pill in the bottom-right corner to preview each variation instantly -
               no waiting for FX bucketing. Select <strong>Business Customer</strong>; the homepage should
               show &ldquo;Banking built for business&rdquo; once the CMS variation exists.
             </Step>
@@ -789,11 +789,11 @@ export default async function FeatureFlagsDemoPage() {
             <Step number={4} title="Enable the flag and start the experiment">
               Turn on the flag and launch the experiment in the FX dashboard. FX handles traffic
               allocation and bucketing; Graph handles content delivery. Analytics, winner declaration,
-              and rollout happen entirely in the FX dashboard — no code changes needed.
+              and rollout happen entirely in the FX dashboard - no code changes needed.
             </Step>
 
             <Step number={5} title="Validate with this page">
-              Reload this page — your current variation key will appear in the{" "}
+              Reload this page - your current variation key will appear in the{" "}
               <strong>Flag Decisions</strong> grid above and in the <strong>Your Variation Keys → Graph Filter</strong>{" "}
               block. If the key matches a CMS variation, that page now serves the personalised variant.
             </Step>
@@ -807,7 +807,7 @@ export default async function FeatureFlagsDemoPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             FX attributes (like <code className="bg-surface-low px-1 rounded font-mono text-xs">device</code>) are matched
-            against audiences defined in the FX dashboard. Targeting happens on the server — the
+            against audiences defined in the FX dashboard. Targeting happens on the server - the
             browser never knows which audience it was matched to.
           </p>
 
@@ -816,7 +816,7 @@ export default async function FeatureFlagsDemoPage() {
               <h3 className="font-display font-semibold text-on-surface mb-3">Built-in Attributes</h3>
               <div className="space-y-3">
                 {[
-                  { key: "device", value: device, note: "read from User-Agent header server-side (no cookie — GDPR safe)" },
+                  { key: "device", value: device, note: "read from User-Agent header server-side (no cookie - GDPR safe)" },
                   { key: "logged_in", value: String(attributes.logged_in), note: "from demo_logged_in cookie (Audience Switcher)" },
                 ].map(({ key, value, note }) => (
                   <div key={key} className="flex items-start justify-between gap-4 pb-3 border-b border-ghost-border last:border-0">
@@ -859,7 +859,7 @@ await getDecision("my_flag", userId, {
             Feature Variables <a href="#feature-variables" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            Each variation in a flag can carry typed variables — strings, booleans, numbers, or JSON.
+            Each variation in a flag can carry typed variables - strings, booleans, numbers, or JSON.
             Variables let editors control copy, configuration, and styling without code changes.
             The <code className="bg-surface-low px-1 rounded font-mono text-xs">subscribe_button</code> flag
             uses a <code className="bg-surface-low px-1 rounded font-mono text-xs">subscribe_title</code> string
@@ -926,7 +926,7 @@ const config =
           <div className="space-y-6">
             <div>
               <h3 className="font-display font-semibold text-on-surface mb-1">
-                1. Middleware — stable user ID + device detection
+                1. Middleware - stable user ID + device detection
               </h3>
               <p className="text-sm text-on-surface-variant mb-3">
                 Sets first-party cookies on every request. Runs at the edge before any page logic.
@@ -936,16 +936,16 @@ const config =
 
             <div>
               <h3 className="font-display font-semibold text-on-surface mb-1">
-                2. FX user helper — one user context per request
+                2. FX user helper - one user context per request
               </h3>
               <p className="text-sm text-on-surface-variant mb-3">
                 The <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> cookie has an expiration
-                date, so the same visitor always lands in the same bucket — across page loads and return visits. React{" "}
+                date, so the same visitor always lands in the same bucket - across page loads and return visits. React{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">cache()</code> deduplicates within a single render tree:
-                cookies are read once, the SDK context is created once, and concurrent visitors each get their own independent context —
+                cookies are read once, the SDK context is created once, and concurrent visitors each get their own independent context -
                 nothing shared across users. <code className="bg-surface-low px-1 rounded font-mono text-xs">decideAll()</code> evaluates
                 every flag for this visitor in one call with{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> — no impressions fired yet.
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> - no impressions fired yet.
               </p>
               <CodeBlock code={USER_LIB_SNIPPET} label="src/lib/optimizely/user.ts" />
             </div>
@@ -957,11 +957,11 @@ const config =
               <p className="text-sm text-on-surface-variant mb-3 leading-relaxed">
                 Optimizely ships two SDKs. <code className="bg-surface-low px-1 rounded font-mono text-xs">@optimizely/react-sdk</code> is a
                 separate package that provides an <code className="bg-surface-low px-1 rounded font-mono text-xs">OptimizelyProvider</code> context
-                wrapper and a <code className="bg-surface-low px-1 rounded font-mono text-xs">useDecision()</code> hook — designed for client-side
+                wrapper and a <code className="bg-surface-low px-1 rounded font-mono text-xs">useDecision()</code> hook - designed for client-side
                 React apps where a single SDK instance lives in the browser and flags are evaluated in the client. That SDK also has an{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">isServerSide</code> prop on{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">OptimizelyProvider</code> that disables background polling
-                and event batching during SSR so the SDK doesn&apos;t try to run browser-only logic — it was deprecated in react-sdk v4 in favour
+                and event batching during SSR so the SDK doesn&apos;t try to run browser-only logic - it was deprecated in react-sdk v4 in favour
                 of configuring a static per-request instance directly.
               </p>
               <p className="text-sm text-on-surface-variant mb-4 leading-relaxed">
@@ -974,7 +974,7 @@ const config =
                 headers, creates one user context per request via React{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">cache()</code>, and defaults to{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> so routing passes don&apos;t
-                pollute the FX results page — you fire the impression with{" "}
+                pollute the FX results page - you fire the impression with{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decide(flagKey, [])</code> only when the variation is
                 actually rendered.
               </p>
@@ -982,15 +982,15 @@ const config =
                 <div className="bg-surface-low rounded-xl p-4">
                   <p className="font-semibold text-on-surface mb-2">Two-layer architecture</p>
                   <div className="space-y-1 text-on-surface-variant">
-                    <p><code className="font-mono">getOptimizelyClient()</code> — SDK instance, cached 60s by Next.js fetch. One datafile download per minute regardless of traffic.</p>
-                    <p className="mt-2"><code className="font-mono">getOptimizelyUser()</code> — user context, scoped to the current HTTP request via React <code className="font-mono">cache()</code>. Isolated per visitor, never shared.</p>
+                    <p><code className="font-mono">getOptimizelyClient()</code> - SDK instance, cached 60s by Next.js fetch. One datafile download per minute regardless of traffic.</p>
+                    <p className="mt-2"><code className="font-mono">getOptimizelyUser()</code> - user context, scoped to the current HTTP request via React <code className="font-mono">cache()</code>. Isolated per visitor, never shared.</p>
                   </div>
                 </div>
                 <div className="bg-surface-low rounded-xl p-4">
                   <p className="font-semibold text-on-surface mb-2">When to use what</p>
                   <div className="space-y-1 text-on-surface-variant">
-                    <p><code className="font-mono">user.decide(flagKey)</code> — preferred. Full visitor context already resolved. Supports <code className="font-mono">{"{ bucketingId }"}</code> and <code className="font-mono">{"{ attributes }"}</code> overrides.</p>
-                    <p className="mt-2"><code className="font-mono">getDecision(flagKey, userId, attrs)</code> — low-level, for standalone calls outside a component tree (e.g. middleware, API routes).</p>
+                    <p><code className="font-mono">user.decide(flagKey)</code> - preferred. Full visitor context already resolved. Supports <code className="font-mono">{"{ bucketingId }"}</code> and <code className="font-mono">{"{ attributes }"}</code> overrides.</p>
+                    <p className="mt-2"><code className="font-mono">getDecision(flagKey, userId, attrs)</code> - low-level, for standalone calls outside a component tree (e.g. middleware, API routes).</p>
                   </div>
                 </div>
               </div>
@@ -999,7 +999,7 @@ const config =
 
             <div>
               <h3 className="font-display font-semibold text-on-surface mb-1">
-                3. CMS page route — flags → Graph variation filter
+                3. CMS page route - flags → Graph variation filter
               </h3>
               <p className="text-sm text-on-surface-variant mb-3">
                 The catch-all route evaluates all flags, collects active variation keys, and passes
@@ -1020,10 +1020,10 @@ const config =
               </h3>
               <p className="text-sm text-on-surface-variant mb-3">
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decideAll()</code> uses{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> — flags are evaluated
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> - flags are evaluated
                 without sending an impression. Once the variation is actually rendered, call{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decide(flagKey, [])</code> with an empty options
-                array to fire the impression. This is what registers the user on the experiment results page — without it,
+                array to fire the impression. This is what registers the user on the experiment results page - without it,
                 the results API sees zero participants even though content is being personalised.
               </p>
               <CodeBlock code={IMPRESSION_SNIPPET} label="src/app/[[...slug]]/page.tsx" />
@@ -1035,7 +1035,7 @@ const config =
               </h3>
               <p className="text-sm text-on-surface-variant mb-3">
                 For feature-gating or variable-driven UI outside the CMS page route. The same
-                impression rule applies — call <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decide(flagKey, [])</code>{" "}
+                impression rule applies - call <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decide(flagKey, [])</code>{" "}
                 when the variation is actually rendered to fire the impression.
               </p>
               <CodeBlock code={DECISION_SNIPPET} label="src/components/SubscribeBanner.tsx" />
@@ -1076,7 +1076,7 @@ const config =
               <span className="text-brand font-bold shrink-0">→</span>
               <span>
                 <strong className="text-on-surface">React cache() is scoped to a single HTTP request.</strong>{" "}
-                Any number of server components can call <code className="bg-surface-low px-1 rounded font-mono text-xs">getOptimizelyUser()</code> —
+                Any number of server components can call <code className="bg-surface-low px-1 rounded font-mono text-xs">getOptimizelyUser()</code> -
                 they all share one user context for that request. Concurrent visitors each get their own
                 completely isolated context; nothing is shared across users.
               </span>
@@ -1087,7 +1087,7 @@ const config =
                 <strong className="text-on-surface">DISABLE_DECISION_EVENT</strong> suppresses
                 impression events during the routing pass. Call{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decide(flagKey, [])</code>{" "}
-                only when the variation is actually rendered — the empty options array omits{" "}
+                only when the variation is actually rendered - the empty options array omits{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code>,
                 firing the impression and recording the user in FX experiment results.
               </span>
@@ -1095,7 +1095,7 @@ const config =
             <li className="flex gap-2">
               <span className="text-brand font-bold shrink-0">→</span>
               <span>
-                <strong className="text-on-surface">Variations work on any content type</strong> — pages,
+                <strong className="text-on-surface">Variations work on any content type</strong> - pages,
                 shared blocks, navigation. Wherever Graph accepts a variation filter, the SDK wires in
                 seamlessly.
               </span>
@@ -1105,7 +1105,7 @@ const config =
               <span>
                 <strong className="text-on-surface">CMS variations must be created in Visual Builder, but can then be updated via the Management API.</strong>{" "}
                 The REST API silently ignores the <code className="bg-surface-low px-1 rounded font-mono text-xs">variation</code> field
-                on <code className="bg-surface-low px-1 rounded font-mono text-xs">POST</code> — you cannot create a named variation programmatically.
+                on <code className="bg-surface-low px-1 rounded font-mono text-xs">POST</code> - you cannot create a named variation programmatically.
                 But creating one in the UI generates a new draft <strong>version</strong>; you can then
                 <code className="bg-surface-low px-1 rounded font-mono text-xs mx-1">PATCH /content/{"{key}"}/versions/{"{version}"}</code>
                 to set its composition and publish it programmatically.

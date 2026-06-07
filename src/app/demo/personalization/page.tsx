@@ -87,7 +87,7 @@ export default async function PersonalizationDemoPage() {
             Personalization &amp; Audiences
           </h1>
           <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            Know who your visitor is at request time — device, persona, auth state, geo —
+            Know who your visitor is at request time - device, persona, auth state, geo -
             before a single byte of HTML is streamed. All audience signals are collected
             server-side and fed into Feature Experimentation, which decides which content
             variant each segment receives.
@@ -117,7 +117,7 @@ export default async function PersonalizationDemoPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Before any component renders, three things happen in sequence. Every signal is
-            collected server-side — nothing is deferred to the browser.
+            collected server-side - nothing is deferred to the browser.
           </p>
 
           <div className="grid md:grid-cols-3 gap-4">
@@ -134,7 +134,7 @@ export default async function PersonalizationDemoPage() {
                 the User-Agent,{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code> and{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">logged_in</code> from
-                cookies, plus any signals you add — geo, auth session, query params.
+                cookies, plus any signals you add - geo, auth session, query params.
               </p>
             </div>
 
@@ -145,7 +145,7 @@ export default async function PersonalizationDemoPage() {
               <h3 className="font-display font-semibold text-on-surface mb-2">Classify against audiences</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 Feature Experimentation evaluates the attribute map against audience rules
-                you define in the FX dashboard — entirely server-side with no extra network call.
+                you define in the FX dashboard - entirely server-side with no extra network call.
                 A visitor matching{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">persona = "business"</code>{" "}
                 receives the{" "}
@@ -160,7 +160,7 @@ export default async function PersonalizationDemoPage() {
               </div>
               <h3 className="font-display font-semibold text-on-surface mb-2">Serve the right experience</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
-                The variation key drives what the visitor sees — a different CMS page composition,
+                The variation key drives what the visitor sees - a different CMS page composition,
                 different feature variable values, or a separate layout entirely. Editors manage
                 content variants in Visual Builder; the SDK wires audience targeting at request time
                 with no code change per experiment.
@@ -177,7 +177,7 @@ export default async function PersonalizationDemoPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             The floating pill in the bottom-right corner lets a presenter instantly switch
-            between audience segments without waiting for FX bucketing — useful for showing
+            between audience segments without waiting for FX bucketing - useful for showing
             clients exactly which content each segment sees.
           </p>
 
@@ -188,7 +188,7 @@ export default async function PersonalizationDemoPage() {
                 The switcher writes two cookies that{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
                 picks up on every subsequent server request. These map directly to FX audience conditions
-                — no client-side SDK involved.
+                - no client-side SDK involved.
               </p>
               <div className="space-y-4">
                 <div>
@@ -250,7 +250,7 @@ const loggedIn =
             <strong>The Audience Switcher is demo tooling only.</strong>{" "}
             In production, replace the{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_persona</code> cookie
-            with real audience signals — auth session data, CRM enrichment, or onboarding answers.
+            with real audience signals - auth session data, CRM enrichment, or onboarding answers.
             The FX audience conditions and targeting logic stay the same; only the attribute source changes.
           </Callout>
         </section>
@@ -265,7 +265,7 @@ const loggedIn =
             The attributes below are what{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
             resolved for your current request. These are passed to Feature Experimentation as your
-            audience attribute map on every page load — no round-trip, evaluated entirely in-process.
+            audience attribute map on every page load - no round-trip, evaluated entirely in-process.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -303,7 +303,7 @@ const loggedIn =
                   </div>
                 ) : (
                   <p className="text-xs text-on-surface-variant italic pt-1">
-                    No persona set — use the audience switcher to add one.
+                    No persona set - use the audience switcher to add one.
                   </p>
                 )}
               </div>
@@ -379,14 +379,14 @@ const loggedIn =
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             FX audiences are matched against the attributes you return from{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>.
-            Everything is evaluated server-side — headers, cookies, auth sessions, geo data, and
+            Everything is evaluated server-side - headers, cookies, auth sessions, geo data, and
             any database value are available before HTML is streamed. Below are practical
             patterns for the most common attribute sources.
           </p>
 
           <div className="space-y-8">
 
-            {/* 1 — Device / UA */}
+            {/* 1 - Device / UA */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">1</span>
@@ -395,7 +395,7 @@ const loggedIn =
               <div className="p-6 grid md:grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                    The User-Agent header is parsed server-side on every request — no cookie
+                    The User-Agent header is parsed server-side on every request - no cookie
                     stored (GDPR safe). Use the{" "}
                     <code className="bg-surface-low px-1 rounded font-mono text-xs">device</code>{" "}
                     attribute to target mobile vs desktop audiences in the FX dashboard.
@@ -407,7 +407,7 @@ const loggedIn =
                 </div>
                 <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
                   <code>{`// src/lib/optimizely/visitor.ts
-// No cookie — derived from headers() on every request
+// No cookie - derived from headers() on every request
 const ua = headerStore.get("user-agent") ?? "";
 const device = /mobile|android|iphone|ipad/i.test(ua)
   ? "mobile"
@@ -419,11 +419,11 @@ const device = /mobile|android|iphone|ipad/i.test(ua)
               </div>
             </div>
 
-            {/* 2 — Persona / audience switcher */}
+            {/* 2 - Persona / audience switcher */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">2</span>
-                <h3 className="font-display font-semibold text-on-surface">Persona (already live — set by the Audience Switcher)</h3>
+                <h3 className="font-display font-semibold text-on-surface">Persona (already live - set by the Audience Switcher)</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
                 <div>
@@ -433,7 +433,7 @@ const device = /mobile|android|iphone|ipad/i.test(ua)
                     cookie. <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
                     reads it and includes it in the attribute map as{" "}
                     <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code>.
-                    In production, replace the cookie with a real signal — segment from your CRM,
+                    In production, replace the cookie with a real signal - segment from your CRM,
                     onboarding answers, or account type from a database.
                   </p>
                   <p className="text-sm text-on-surface-variant leading-relaxed">
@@ -458,11 +458,11 @@ const persona = cookieStore.get("demo_persona")?.value;
               </div>
             </div>
 
-            {/* 3 — Auth / logged-in state */}
+            {/* 3 - Auth / logged-in state */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">3</span>
-                <h3 className="font-display font-semibold text-on-surface">Auth session (logged-in state — also live via the switcher)</h3>
+                <h3 className="font-display font-semibold text-on-surface">Auth session (logged-in state - also live via the switcher)</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
                 <div>
@@ -504,7 +504,7 @@ const decision = await getDecision("premium_feature", userId, {
               </div>
             </div>
 
-            {/* 4 — Geo */}
+            {/* 4 - Geo */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">4</span>
@@ -523,7 +523,7 @@ const decision = await getDecision("premium_feature", userId, {
                   </p>
                 </div>
                 <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                  <code>{`// src/lib/optimizely/visitor.ts — extend with geo
+                  <code>{`// src/lib/optimizely/visitor.ts - extend with geo
 import { headers } from "next/headers";
 
 const hdrs = await headers();
@@ -542,7 +542,7 @@ return {
               </div>
             </div>
 
-            {/* 5 — URL / query params */}
+            {/* 5 - URL / query params */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">5</span>
@@ -554,10 +554,10 @@ return {
                     Query params are available in Server Components via{" "}
                     <code className="bg-surface-low px-1 rounded font-mono text-xs">searchParams</code>.
                     Use them to target campaign traffic, enable QA force-bucketing, or segment by
-                    referral source — no cookie write required.
+                    referral source - no cookie write required.
                   </p>
                   <p className="text-sm text-on-surface-variant leading-relaxed">
-                    UTM parameters identify paid traffic — e.g. show a different hero to users
+                    UTM parameters identify paid traffic - e.g. show a different hero to users
                     arriving from a Google Ads campaign.
                   </p>
                 </div>
@@ -582,18 +582,18 @@ export default async function CmsPage({
               </div>
             </div>
 
-            {/* 6 — Combining attributes */}
+            {/* 6 - Combining attributes */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">6</span>
-                <h3 className="font-display font-semibold text-on-surface">Combining attributes — audience conditions in FX</h3>
+                <h3 className="font-display font-semibold text-on-surface">Combining attributes - audience conditions in FX</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
                     All attributes are available as conditions in the FX dashboard.
                     Combine them with AND/OR/NOT to create precise segments. The SDK evaluates
-                    conditions locally against the attribute map — no network call per decision.
+                    conditions locally against the attribute map - no network call per decision.
                   </p>
                   <ul className="space-y-1 text-sm text-on-surface-variant leading-relaxed">
                     <li>→ <strong className="text-on-surface">String match:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">persona = "business"</code></li>
@@ -638,7 +638,7 @@ const decision = await getDecision("homepage_audience", userId, {
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Audience attributes are the bridge between visitor identity and experiment bucketing.
             The signals you collect here flow directly into the FX SDK, which decides which
-            variation key a visitor receives — and that key determines which CMS content variant
+            variation key a visitor receives - and that key determines which CMS content variant
             Graph returns.
           </p>
 
@@ -694,7 +694,7 @@ const decision = await getDecision("homepage_audience", userId, {
               <ul className="space-y-2 text-sm text-on-surface-variant">
                 <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Collecting audience signals (device, persona, geo, auth)</li>
                 <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Extending <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code> with new attribute sources</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> FX audience condition types — string, boolean, numeric, substring</li>
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> FX audience condition types - string, boolean, numeric, substring</li>
                 <li className="flex gap-2"><span className="text-brand shrink-0">→</span> The Audience Switcher demo tool and the cookies it sets</li>
               </ul>
             </div>
@@ -713,7 +713,7 @@ const decision = await getDecision("homepage_audience", userId, {
               <ul className="space-y-2 text-sm text-on-surface-variant">
                 <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Creating flags, experiments, and variation keys in the FX dashboard</li>
                 <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Connecting FX variation keys to CMS content variations in Visual Builder</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Feature variables — typed values delivered per variation</li>
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Feature variables - typed values delivered per variation</li>
                 <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Impression events, experiment results, and winner declaration</li>
                 <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Your live flag decisions and active variation keys</li>
               </ul>
@@ -790,7 +790,7 @@ const decision = await getDecision("homepage_audience", userId, {
             <Step number={2} title="Register the attribute in the FX dashboard">
               In the Optimizely FX dashboard, go to <strong>Audiences &gt; Attributes</strong> and
               add the new attribute by name. The type (string, boolean, number) must match what
-              you return. No SDK version bump required — the datafile update propagates within
+              you return. No SDK version bump required - the datafile update propagates within
               60 seconds.
             </Step>
 
@@ -799,20 +799,20 @@ const decision = await getDecision("homepage_audience", userId, {
               (e.g.{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">country = "GB"</code>).
               Assign the audience to a delivery rule on any flag. The string between the FX
-              condition and your attribute key is the only coupling — it must match exactly
+              condition and your attribute key is the only coupling - it must match exactly
               (case-sensitive).
             </Step>
 
             <Step number={4} title="Test locally with the attribute set">
               For cookie-based attributes, set the cookie value directly in browser DevTools
-              and reload — the audience condition evaluates immediately on the next request.
+              and reload - the audience condition evaluates immediately on the next request.
               For header-based attributes like geo, mock the header in middleware during local
               development, or use a VPN/proxy.
             </Step>
 
             <Step number={5} title="Validate on the Feature Experimentation page">
               Once your audience matches, the variation key will appear in your live flag
-              decisions on the FX demo page — confirming the attribute is flowing correctly
+              decisions on the FX demo page - confirming the attribute is flowing correctly
               through to FX and the Graph variation filter.{" "}
               <Link
                 href="/demo/feature-experimentation#your-session"

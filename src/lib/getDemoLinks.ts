@@ -11,6 +11,14 @@ export function getDemoCategories(): DemoCategory[] {
         { href: "/demo/preview",           label: "Draft Mode & Preview", description: "In-context editing and draft content" },
         { href: "/demo/forms",             label: "Forms",                description: "CMS-managed form blocks and submissions" },
         { href: "/demo/navigation",        label: "Navigation",           description: "Recursive nav trees from the CMS" },
+        { href: "/demo/localization",      label: "Localization",         description: "Multi-language content, Graph locale filter, and Next.js routing" },
+        { href: "/demo/seo",               label: "SEO & Metadata",       description: "generateMetadata, sitemaps, JSON-LD, and image optimization" },
+        { href: "/demo/management-api",    label: "Management API",       description: "Programmatic content creation, seeding, and migrations" },
+        { href: "/demo/rich-text",         label: "Rich Text",            description: "richText property type, JSON vs HTML rendering, and embedded blocks" },
+        { href: "/demo/media",             label: "Media & Images",        description: "Image property modelling, Graph response shapes, next/image patterns, and damAssets" },
+        { href: "/demo/content-reuse",     label: "Content Reuse",        description: "Referenced vs embedded content - when one update should propagate everywhere" },
+        { href: "/demo/global-settings",   label: "Global Settings",      description: "Singleton content items for site-wide config, ISR cache strategy" },
+        { href: "/demo/content-lifecycle", label: "Content Lifecycle",    description: "Editorial states, scheduled publishing, and webhook events" },
       ],
     },
     {
@@ -22,16 +30,19 @@ export function getDemoCategories(): DemoCategory[] {
       ],
     },
     {
-      label: "Performance",
+      label: "Graph & Queries",
       links: [
-        { href: "/demo/caching", label: "Caching", description: "ISR, revalidation tags, and publish webhooks" },
-        { href: "/demo/graph-queries", label: "Graph Queries", description: "Efficient querying patterns, @recursive, and avoiding N+1" },
+        { href: "/demo/caching",      label: "Caching",         description: "ISR, revalidation tags, and publish webhooks" },
+        { href: "/demo/graph-queries", label: "Graph Queries",  description: "Efficient querying patterns, @recursive, and avoiding N+1" },
+        { href: "/demo/search",        label: "Search",          description: "Full-text and semantic search with Graph filtering and pagination" },
+        { href: "/demo/listing",       label: "Content Listing", description: "Paginated list pages with cursor pagination and sorting" },
       ],
     },
     {
       label: "Architecture",
       links: [
-        { href: "/demo/architecture", label: "System Overview", description: "How SaaS CMS, Graph, Next.js, and Feature Experimentation fit together" },
+        { href: "/demo/architecture",    label: "System Overview",  description: "How SaaS CMS, Graph, Next.js, and Feature Experimentation fit together" },
+        { href: "/demo/error-handling",  label: "Error Handling",   description: "Graceful degradation, notFound vs 500, error boundaries, and fallback data" },
       ],
     },
   ];

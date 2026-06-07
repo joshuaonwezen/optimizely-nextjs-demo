@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getReferrals, GET_REFERRALS_QUERY } from "@/lib/graphql/queries/GetReferrals";
+import { getQuotes, GET_QUOTES_QUERY } from "@/lib/graphql/queries/GetQuotes";
 import { Callout } from "@/components/blocks/CalloutBlock";
 
 export const metadata: Metadata = {
@@ -7,17 +7,17 @@ export const metadata: Metadata = {
 };
 
 
-const ITEM_TYPE_SNIPPET = `PUT https://cg.optimizely.com/api/content/v3/types?id=rfl
+const ITEM_TYPE_SNIPPET = `PUT https://cg.optimizely.com/api/content/v3/types?id=quot
 Content-Type: application/json
 Authorization: Basic <base64(APP_KEY:APP_SECRET)>
 
 {
   "contentTypes": {
-    "Referral": {
+    "Quote": {
       "contentType": ["_Item"],
       "properties": {
-        "name":    { "type": "String" },
-        "comment": { "type": "String" }
+        "author": { "type": "String" },
+        "text":   { "type": "String" }
       }
     }
   },
@@ -25,21 +25,21 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
   "useTypedFieldNames": true
 }`;
 
-const ITEM_DATA_SNIPPET = `POST https://cg.optimizely.com/api/content/v2/data?id=rfl
+const ITEM_DATA_SNIPPET = `POST https://cg.optimizely.com/api/content/v2/data?id=quot
 Content-Type: text/plain
 Authorization: Basic <base64(APP_KEY:APP_SECRET)>
 
 {"index": {"_id": 1, "language_routing": "en"}}
 {
   "_itemMetadata": {
-    "key": "ref-1",
-    "displayName___searchable": "Referral - Sarah Chen",
-    "lastModified": "2026-05-26T00:00:00.000Z",
-    "type": "Referral"
+    "key": "qt-1",
+    "displayName___searchable": "Quote - Sarah Chen",
+    "lastModified": "2026-06-07T00:00:00.000Z",
+    "type": "Quote"
   },
-  "name": "Sarah Chen",
-  "comment": "Switched our content team to Optimizely SaaS CMS...",
-  "ContentType": ["Referral"],
+  "author": "Sarah Chen",
+  "text": "I moved my savings to Mosey after seeing their 5.1% AER rate...",
+  "ContentType": ["Quote"],
   "Status": "Published",
   "Language": { "DisplayName": "English", "Name": "en" },
   "_rbac": { "read": ["Everyone"] }
@@ -137,7 +137,7 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
 
 
 export default async function ExternalContentPage() {
-  const { items, fromGraph } = await getReferrals();
+  const { items, fromGraph } = await getQuotes();
 
   return (
     <div className="min-h-screen bg-surface">
@@ -154,11 +154,11 @@ export default async function ExternalContentPage() {
             Push any external data source directly into Optimizely Graph without
             touching the CMS. Define a schema once via the Content Source sync API,
             send NdJSON over HTTP, and your data is instantly queryable alongside
-            CMS-managed content — same GraphQL endpoint, same ISR caching.
+            CMS-managed content - same GraphQL endpoint, same ISR caching.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-              {fromGraph ? "✓ Live from Graph" : "◎ Demo data — run npx tsx scripts/seed-referrals.ts"}
+              {fromGraph ? "✓ Live from Graph" : "◎ Demo data - run npx tsx scripts/seed-quotes.ts"}
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
               Graph Content Source API
@@ -175,28 +175,28 @@ export default async function ExternalContentPage() {
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
-        {/* Live referral cards */}
+        {/* Live quote cards */}
         <section id="live-example">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Live Example — Referrals <a href="#live-example" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            Live Example - Quotes <a href="#live-example" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            Each card is a <code className="bg-surface-low px-1 rounded text-xs font-mono">Referral</code> item
+            Each card is a <code className="bg-surface-low px-1 rounded text-xs font-mono">Quote</code> item
             synced from an external source via the{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">_Item</code> base type.
-            Custom properties (<code className="bg-surface-low px-1 rounded text-xs font-mono">name</code>,{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">comment</code>) hold
+            Custom properties (<code className="bg-surface-low px-1 rounded text-xs font-mono">author</code>,{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">text</code>) hold
             application data and are queried directly.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((ref) => (
+            {items.map((q) => (
               <div
-                key={ref.name}
+                key={q.author}
                 className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex flex-col gap-3"
               >
-                <span className="font-display font-semibold text-on-surface text-sm">{ref.name}</span>
+                <span className="font-display font-semibold text-on-surface text-sm">{q.author}</span>
                 <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
-                  &ldquo;{ref.comment}&rdquo;
+                  &ldquo;{q.text}&rdquo;
                 </p>
               </div>
             ))}
@@ -209,26 +209,26 @@ export default async function ExternalContentPage() {
             Querying External Content <a href="#querying" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
-            Once synced, external content is queried exactly like CMS-managed content —
+            Once synced, external content is queried exactly like CMS-managed content -
             same GraphQL endpoint, same ISR caching. Query your custom properties directly;{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">_itemMetadata</code> fields
             are search-indexed internals and return{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">null</code> at query time.
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{GET_REFERRALS_QUERY.trim()}</code>
+            <code>{GET_QUOTES_QUERY.trim()}</code>
           </pre>
         </section>
 
         {/* Sync paths */}
         <section id="sync-paths">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Sync Paths — Getting Data into Graph{" "}
+            Sync Paths - Getting Data into Graph{" "}
             <a href="#sync-paths" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Four paths exist for pushing external data into Optimizely Graph. All four end up in
-            the same place — data queryable via GraphQL alongside CMS content — but differ in
+            the same place - data queryable via GraphQL alongside CMS content - but differ in
             who owns the pipeline, whether scheduling is managed, and what third-party tooling
             is involved.
           </p>
@@ -240,7 +240,7 @@ export default async function ExternalContentPage() {
             </div>
             <div>
               <p className="font-display font-semibold text-on-surface text-sm mb-1">
-                Connecting to CMS — same step for every path
+                Connecting to CMS - same step for every path
               </p>
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 Once data is in Graph, wire it to CMS via{" "}
@@ -248,7 +248,7 @@ export default async function ExternalContentPage() {
                 Choose the source ID, schema, a CMS base type (Page, Component, Media, Image, or Video),
                 and the fields to use as the content ID and display name. CMS creates a read-only
                 connected content type editors can reference and browse in the Content Manager.
-                Note: the label is <em>Connect from Graph</em>, not "Import from Graph" — a common
+                Note: the label is <em>Connect from Graph</em>, not "Import from Graph" - a common
                 source of confusion in the UI.
               </p>
             </div>
@@ -263,7 +263,7 @@ export default async function ExternalContentPage() {
                 <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">1</span>
                 <div>
                   <h3 className="font-display font-semibold text-on-surface">Direct to Graph</h3>
-                  <p className="text-xs text-on-surface-variant">Content Source API — NdJSON over HTTP</p>
+                  <p className="text-xs text-on-surface-variant">Content Source API - NdJSON over HTTP</p>
                 </div>
               </div>
               <div className="p-6 flex flex-col gap-4 flex-1">
@@ -299,7 +299,7 @@ export default async function ExternalContentPage() {
                   <code className="bg-surface-low px-1 rounded font-mono">displayName___searchable</code>{" "}
                   in <code className="bg-surface-low px-1 rounded font-mono">_itemMetadata</code>.
                   See <a href="#base-types" className="text-brand hover:underline">Base Type Contracts ↓</a> for full examples.
-                  Additional sources may need to be enabled by Optimizely — contact support if the
+                  Additional sources may need to be enabled by Optimizely - contact support if the
                   types endpoint returns a source-limit error.
                 </p>
               </div>
@@ -310,13 +310,13 @@ export default async function ExternalContentPage() {
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">2</span>
                 <div>
-                  <h3 className="font-display font-semibold text-on-surface">OCP — Free Tier</h3>
+                  <h3 className="font-display font-semibold text-on-surface">OCP - Free Tier</h3>
                   <p className="text-xs text-on-surface-variant">Public apps + Custom Endpoints (real-time)</p>
                 </div>
               </div>
               <div className="p-6 flex flex-col gap-4 flex-1">
                 <p className="text-sm text-on-surface-variant leading-relaxed">
-                  Included with SaaS CMS. Ships with public apps for common platforms — each app
+                  Included with SaaS CMS. Ships with public apps for common platforms - each app
                   handles auth, schema registration, and field mapping automatically. If no public
                   app exists, Custom Endpoints (real-time) adds a field-mapping UI over what you&apos;d
                   build for Path 1.
@@ -346,7 +346,7 @@ export default async function ExternalContentPage() {
                 </div>
                 <div className="bg-surface-low rounded-xl p-3 text-xs text-on-surface-variant mt-auto">
                   <strong className="text-on-surface">Best for:</strong> Customers using a supported
-                  public app — this is the unambiguous recommendation for Bynder, Brandfolder, or
+                  public app - this is the unambiguous recommendation for Bynder, Brandfolder, or
                   Commercetools. For custom data with no matching app, the free tier adds little
                   over Path 1 and doesn&apos;t support scheduled syncs from your source.
                 </div>
@@ -358,7 +358,7 @@ export default async function ExternalContentPage() {
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">3</span>
                 <div>
-                  <h3 className="font-display font-semibold text-on-surface">OCP — Paid Tier</h3>
+                  <h3 className="font-display font-semibold text-on-surface">OCP - Paid Tier</h3>
                   <p className="text-xs text-on-surface-variant">Managed staging DB + scheduled syncs</p>
                 </div>
               </div>
@@ -366,14 +366,14 @@ export default async function ExternalContentPage() {
                 <p className="text-sm text-on-surface-variant leading-relaxed">
                   Unlocks the OCP database as a hosted staging layer and scheduled outbound syncs
                   to Graph via the Sync Manager. Data reaches OCP via S3 CSV, REST API, webhook, or
-                  an OCP app — from there OCP handles the sync to Graph on your chosen interval.
+                  an OCP app - from there OCP handles the sync to Graph on your chosen interval.
                 </p>
                 <div className="space-y-1.5 text-xs">
                   {[
                     ["Schema", "OCP database + Graph"],
                     ["Data", "S3 / API / app → OCP DB → Graph"],
                     ["Sync", "Scheduled or real-time (OCP managed)"],
-                    ["Infra you own", "Less — OCP hosts staging + intervals"],
+                    ["Infra you own", "Less - OCP hosts staging + intervals"],
                   ].map(([label, value]) => (
                     <div key={label} className="flex items-center gap-2">
                       <span className="text-on-surface-variant w-20 shrink-0">{label}</span>
@@ -388,7 +388,7 @@ export default async function ExternalContentPage() {
                 </div>
                 <div className="text-xs text-on-surface-variant mt-auto space-y-1">
                   <p>
-                    ⚠ <strong className="text-on-surface">Paid tier required</strong> — confirm pricing
+                    ⚠ <strong className="text-on-surface">Paid tier required</strong> - confirm pricing
                     with the CSM before scoping.
                   </p>
                   <p>
@@ -401,7 +401,7 @@ export default async function ExternalContentPage() {
                     >
                       joshuaonwezen/ocp-product-catalog
                     </a>
-                    {" "}— TypeScript app with KV store, REST API, and bulk + real-time Graph sync.
+                    {" "}- TypeScript app with KV store, REST API, and bulk + real-time Graph sync.
                   </p>
                 </div>
               </div>
@@ -427,7 +427,7 @@ export default async function ExternalContentPage() {
                     ["Schema", "CMP + Graph (via OCP)"],
                     ["Data", "CMP DAM → Graph (real-time)"],
                     ["Sync", "Real-time, OCP-managed"],
-                    ["Infra you own", "None — fully managed"],
+                    ["Infra you own", "None - fully managed"],
                   ].map(([label, value]) => (
                     <div key={label} className="flex items-center gap-2">
                       <span className="text-on-surface-variant w-20 shrink-0">{label}</span>
@@ -444,7 +444,7 @@ export default async function ExternalContentPage() {
                 </div>
                 <Callout variant="warning" className="mt-auto">
                   CMP subscription required. Renditions are not supported in the CMS Browse DAM
-                  action — only original assets.
+                  action - only original assets.
                 </Callout>
               </div>
             </div>
@@ -462,7 +462,7 @@ export default async function ExternalContentPage() {
                 ["Using Bynder, Brandfolder, Commercetools, Shopify, or WordPress", "Path 2", "Public app handles auth, schema, and field mapping"],
                 ["Already on CMP, want DAM assets in Graph and selectable in CMS", "Path 4", ""],
                 ["Want managed scheduling + staging layer, paid tier acceptable", "Path 3", "Confirm pricing with CSM before scoping"],
-                ["Free OCP tier + scheduled (not real-time) syncs from source", "Path 1 or 3", "Free tier only supports real-time push — scheduled source syncs are paid-only"],
+                ["Free OCP tier + scheduled (not real-time) syncs from source", "Path 1 or 3", "Free tier only supports real-time push - scheduled source syncs are paid-only"],
               ] as [string, string, string][]).map(([situation, path, note]) => (
                 <div key={situation} className="px-6 py-4 flex items-start justify-between gap-6">
                   <div className="flex-1">
@@ -486,7 +486,7 @@ export default async function ExternalContentPage() {
             </h2>
             <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
               Graph ships three built-in base type contracts. Inherit from one when registering
-              a content type — it adds the metadata property Graph needs to identify, index,
+              a content type - it adds the metadata property Graph needs to identify, index,
               and surface your items. All registrations require{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">"preset": "next"</code> and{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">"useTypedFieldNames": true</code>.
@@ -497,7 +497,7 @@ export default async function ExternalContentPage() {
               <code className="bg-surface-low px-1 rounded text-xs font-mono">displayName___searchable</code>.
               This is because <code className="bg-surface-low px-1 rounded text-xs font-mono">displayName</code> is
               marked <code className="bg-surface-low px-1 rounded text-xs font-mono">searchable: true</code> in
-              the contract definition — with <code className="bg-surface-low px-1 rounded text-xs font-mono">useTypedFieldNames</code> enabled,
+              the contract definition - with <code className="bg-surface-low px-1 rounded text-xs font-mono">useTypedFieldNames</code> enabled,
               Graph appends <code className="bg-surface-low px-1 rounded text-xs font-mono">___searchable</code> to
               distinguish full-text indexed fields from plain stored fields in the payload.
               Fields in <code className="bg-surface-low px-1 rounded text-xs font-mono">_assetMetadata</code> and{" "}
@@ -514,7 +514,7 @@ export default async function ExternalContentPage() {
             </div>
             <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
               The base contract for all external items. Use this for structured data without
-              a file attachment — testimonials, product catalog entries, CRM records, referrals.
+              a file attachment - testimonials, product catalog entries, CRM records, quotes.
             </p>
             <div className="grid md:grid-cols-2 gap-6">
               <div>
@@ -540,7 +540,7 @@ export default async function ExternalContentPage() {
             </div>
             <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
               Extends <code className="bg-surface-low px-1 rounded text-xs font-mono">_Item</code> with{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">_assetMetadata</code> — adds{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">_assetMetadata</code> - adds{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">fileSize</code>,{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">mimeType</code>, and{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">url</code>. Use for PDFs,
@@ -570,10 +570,10 @@ export default async function ExternalContentPage() {
             </div>
             <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
               Extends <code className="bg-surface-low px-1 rounded text-xs font-mono">_AssetItem</code> with{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">_imageMetadata</code> — adds{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">_imageMetadata</code> - adds{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">width</code> and{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">height</code>. Use for images
-              from a DAM or media library where you need dimensions queryable at render time —
+              from a DAM or media library where you need dimensions queryable at render time -
               for example to compute aspect ratios or avoid layout shift.
               All three metadata objects are required in the payload.
             </p>
