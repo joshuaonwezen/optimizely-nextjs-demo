@@ -6,8 +6,5 @@ export const TEAM_MEMBER_FRAGMENT = /* GraphQL */ `
     role
     bio
     linkedinUrl { default }
-    photo {
-      url { default }
-    }
   }
 `;
