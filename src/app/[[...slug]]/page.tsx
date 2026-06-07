@@ -5,16 +5,14 @@ import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/s
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
 import { graphqlFetch } from "@/lib/optimizely/client";
-import { getOptimizelyUser } from "@/lib/optimizely/user";
+import { VARIATION_MARKER, FLAG_VAR_SEP } from "@/middleware";
+import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 
 // Registers all content types, display templates, and React components.
 // Also calls config() so getClient() works throughout the app.
 initComponentRegistry();
 
-// Force SSR so Graph queries are always fresh and never served from a stale
-// build-time data cache. Without this, Next.js caches the first (possibly empty)
-// Graph response at build time and serves it on Vercel until a redeploy.
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 interface PageParams {
   slug?: string[];
@@ -32,6 +30,28 @@ const KEY_QUERY = /* GraphQL */ `
     }
   }
 `;
+
+interface FlagVariation { flagKey: string; variationKey: string }
+
+function extractVariations(slug?: string[]): {
+  cleanSlug?: string[];
+  activeVariations: string[];
+  flagVariations: FlagVariation[];
+} {
+  if (!slug) return { cleanSlug: undefined, activeVariations: [], flagVariations: [] };
+  const cleanSlug = slug.filter((s) => !s.startsWith(VARIATION_MARKER));
+  const flagVariations = slug
+    .filter((s) => s.startsWith(VARIATION_MARKER))
+    .map((s) => {
+      const [flagKey, variationKey] = s.slice(VARIATION_MARKER.length).split(FLAG_VAR_SEP);
+      return { flagKey, variationKey };
+    });
+  return {
+    cleanSlug: cleanSlug.length > 0 ? cleanSlug : undefined,
+    activeVariations: flagVariations.map((fv) => fv.variationKey),
+    flagVariations,
+  };
+}
 
 function buildUrlCandidates(slug?: string[]): string[] {
   // Root "/" — no slug — defaults to the English homepage
@@ -70,20 +90,13 @@ async function CmsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
-  const urls = buildUrlCandidates(slug);
-
-  const user = await getOptimizelyUser();
-  const fxDecisions = user.decideAll();
-
-  const activeVariations = Object.values(fxDecisions)
-    .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
-    .map((d) => d.variationKey as string);
+  const { cleanSlug, activeVariations, flagVariations } = extractVariations(slug);
+  const urls = buildUrlCandidates(cleanSlug);
 
   const client = getClient();
 
-  // When a persona is active, pass the variation names as a filter so Graph
-  // returns both the matching variation and the base (includeOriginal: true).
-  // We then prefer the variation item from the returned array.
+  // When variations are active (encoded in the URL path by middleware), pass them
+  // as a Graph filter so Graph returns the matching variation or base content.
   const variationFilter =
     activeVariations.length > 0
       ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
@@ -94,9 +107,11 @@ async function CmsPage({
   // Step 1: URL-based lookup. Graph returns one item for pages with a single
   // published version; for multi-version pages (e.g. homepage) it returns all
   // matching versions so we pick the variation match.
-  // cache: false bypasses Graph's own server-side CDN cache (?cache=false).
   for (const url of urls) {
-    const items = await client.getContentByPath(url, { ...variationFilter, cache: false });
+    const items = await client.getContentByPath(url, {
+      ...variationFilter,
+      next: { revalidate: 60, tags: ["page"] },
+    } as any);
     if (items.length > 0) {
       const variationMatch = variationFilter
         ? items.find((item: any) => activeVariations.includes(item._metadata?.variation))
@@ -113,7 +128,7 @@ async function CmsPage({
   if (!page) {
     const keyResult = await graphqlFetch<{
       _Page: { items: Array<{ _metadata: { key: string; version: string | number; variation: string | null } }> };
-    }>(KEY_QUERY, { urls }, { cache: "no-store" });
+    }>(KEY_QUERY, { urls }, { next: { revalidate: 60, tags: ["page"] } });
 
     const candidates = (keyResult.data?._Page?.items ?? [])
       .map((i) => i._metadata)
@@ -132,7 +147,7 @@ async function CmsPage({
     if (meta) {
       page = await client.getContent(
         { key: meta.key, version: String(meta.version) },
-        { cache: false }
+        { next: { revalidate: 60, tags: ["page"] } } as any
       );
     }
   }
@@ -141,18 +156,17 @@ async function CmsPage({
     return notFound();
   }
 
-  // Fire the real FX impression when Graph served a variation.
   const servedVariation: string | null = page._metadata?.variation ?? null;
-  if (servedVariation) {
-    const exposedFlag = Object.values(fxDecisions).find(
-      (d) => d.variationKey === servedVariation
-    );
-    if (exposedFlag) {
-      void user.decide(exposedFlag.flagKey, []);
-    }
-  }
+  const servedFlagKey = servedVariation
+    ? (flagVariations.find((fv) => fv.variationKey === servedVariation)?.flagKey ?? null)
+    : null;
 
-  return <OptimizelyComponent content={page} />;
+  return (
+    <>
+      <OptimizelyComponent content={page} />
+      {servedFlagKey && <FxBucketingEvent flagKey={servedFlagKey} />}
+    </>
+  );
 }
 
 export default withAppContext(CmsPage);
@@ -214,7 +228,9 @@ export async function generateMetadata({
   params: Promise<PageParams>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const urls = buildUrlCandidates(slug);
+  // Strip variation segments before looking up page metadata.
+  const { cleanSlug } = extractVariations(slug);
+  const urls = buildUrlCandidates(cleanSlug);
 
   const result = await graphqlFetch<any>(GET_PAGE_META_QUERY, { urls }, { next: { revalidate: 300 } });
   const page = result.data?._Page?.items?.[0];

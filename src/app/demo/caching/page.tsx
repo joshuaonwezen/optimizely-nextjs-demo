@@ -115,11 +115,13 @@ const client = getClient();
 await client.getContentByPath(url, { cache: false });
 await client.getContent({ key, version }, { cache: false });
 
-// The catch-all CMS page route (src/app/[[...slug]]/page.tsx) uses both:
-export const dynamic = "force-dynamic";  // Layer 1: skip Next.js output cache
-// ...
-await client.getContentByPath(url, { cache: false });  // Layer 2: skip Graph CDN cache
-// Result: every request gets the absolute latest content from Graph's data store.`;
+// The catch-all CMS page route (src/app/[[...slug]]/page.tsx) uses ISR:
+export const revalidate = 60;  // Layer 1: ISR - cache page output for 60s
+// Middleware rewrites each visitor's URL with their FX variation:
+//   /savings           → base users (no active variation)
+//   /savings/__v_variation_1 → users in "variation_1"
+// Each rewritten path is a separate ISR cache entry at the CDN.
+// Graph data fetches use next: { revalidate: 60, tags: ["page"] }.`;
 
 
 const CACHE_TABLE = [
@@ -466,11 +468,11 @@ export default function CachingDemoPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-            <Callout variant="warning" label="Important - what ISR actually caches">
-              The <strong>page content itself</strong> (the CMS page body) is <code className="bg-surface-low px-1 rounded font-mono text-xs">force-dynamic</code> -
-              it is <em>never</em> cached. Every request always gets a fresh server render.
-              The webhook only matters for layout components: <strong>navigation, banners, and quotes</strong>.
-              Those are the only things ISR actually caches here.
+            <Callout label="CMS page content is ISR-cached per variation">
+              Edge middleware rewrites each visitor&apos;s URL with their active FX variation key
+              (e.g. <code className="bg-surface-low px-1 rounded font-mono text-xs">/savings/__v_variation_1</code>).
+              Each rewritten URL is its own 60-second ISR cache entry - base users and every variation
+              are cached independently. The publish webhook marks all of them stale at once.
             </Callout>
             <Callout label="Stale-while-revalidate in plain English">
               ISR never makes a visitor wait. When a cache is stale, the <em>first</em> person

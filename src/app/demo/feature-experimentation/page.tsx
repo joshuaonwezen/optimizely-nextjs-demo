@@ -19,22 +19,76 @@ export const metadata: Metadata = {
 };
 
 
-const IMPRESSION_SNIPPET = `// src/app/[[...slug]]/page.tsx
-// After Graph returns the page, check whether it served a CMS variation.
-// If it did, call decide() with an empty options array so FX records the user
-// in experiment results. The first decideAll() was routing-only (DISABLE_DECISION_EVENT).
+const BUCKETING_SNIPPET = `// src/components/FxBucketingEvent.tsx
+// flagKey is passed in from the page — it was encoded in the URL by middleware:
+//   /savings → /savings/__v_homepage_audience--variation_1
+// extractVariations() in page.tsx parses it back out.
+// No decideAll() here — the flagKey is already known from the route.
 
+"use client";
+export function FxBucketingEvent({ flagKey }: { flagKey: string }) {
+  useEffect(() => {
+    const userId = getCookie("optimizelyEndUserId");
+    if (!userId) return;
+    void getOptimizelyBrowserClient().then((client) => {
+      if (!client) return;
+      const ctx = client.createUserContext(userId, { device, ... });
+      ctx?.decide(flagKey, []); // fire bucketing event for this flag only
+    });
+  }, [flagKey]);
+  return null;
+}
+
+// src/app/[[...slug]]/page.tsx
+// flagKey comes from the URL segment, not from a client-side SDK call.
+// flagVariations = [{ flagKey: "homepage_audience", variationKey: "variation_1" }]
+const { cleanSlug, activeVariations, flagVariations } = extractVariations(slug);
 const servedVariation = page._metadata?.variation ?? null;
+const servedFlagKey = flagVariations.find((fv) => fv.variationKey === servedVariation)?.flagKey ?? null;
 
-if (servedVariation) {
-  const exposedFlag = Object.values(decisions).find(
-    (d) => d.variationKey === servedVariation
-  );
-  if (exposedFlag) {
-    // Empty options → no DISABLE_DECISION_EVENT → impression fires to FX results
-    // void discards the return value - we only care about the side effect here
-    void user.decide(exposedFlag.flagKey, []);
+return (
+  <>
+    <OptimizelyComponent content={page} />
+    {servedFlagKey && <FxBucketingEvent flagKey={servedFlagKey} />}
+  </>
+);`;
+
+const FORCE_DYNAMIC_SNIPPET = `// src/app/[[...slug]]/page.tsx — Approach B: force-dynamic SSR
+// Simpler: everything happens server-side. No middleware changes, no client component.
+// Trade-off: every CMS page request hits the origin server — no CDN caching.
+
+import { getOptimizelyUser } from "@/lib/optimizely/user";
+import { getClient } from "@optimizely/cms-sdk";
+
+export const dynamic = "force-dynamic"; // cookies() in getOptimizelyUser() requires this
+
+async function CmsPage({ params }) {
+  const { slug } = await params;
+
+  // Reads optimizelyEndUserId + demo_persona cookies — opts route into dynamic rendering
+  const user = await getOptimizelyUser();
+  const decisions = user.decideAll(); // no impression yet
+
+  const activeVariations = Object.values(decisions)
+    .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
+    .map((d) => d.variationKey as string);
+
+  const variationFilter = activeVariations.length > 0
+    ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
+    : undefined;
+
+  const client = getClient();
+  const items = await client.getContentByPath(\`/\${slug.join("/")}/\`, { ...variationFilter, cache: false });
+  const page = items.find((i) => activeVariations.includes(i._metadata?.variation)) ?? items[0];
+
+  // Fire the bucketing event server-side — no client component needed
+  const servedVariation = page._metadata?.variation ?? null;
+  if (servedVariation) {
+    const match = Object.values(decisions).find((d) => d.variationKey === servedVariation);
+    if (match) void user.decide(match.flagKey, []);
   }
+
+  return <OptimizelyComponent content={page} />;
 }`;
 
 const DECISION_SNIPPET = `import { getOptimizelyUser } from "@/lib/optimizely/user";
@@ -55,35 +109,50 @@ export default async function MyPage() {
 }`;
 
 const VARIATIONS_SNIPPET = `// src/app/[[...slug]]/page.tsx
-import { getOptimizelyUser } from "@/lib/optimizely/user";
-import { getClient } from "@optimizely/cms-sdk";
+// Middleware rewrites: /savings → /savings/__v_homepage_audience--variation_1
+//   VARIATION_MARKER = "__v_"   FLAG_VAR_SEP = "--"
+// Both flagKey and variationKey are encoded in the URL segment so the page
+// knows which flag to fire the bucketing event for - no extra SDK call needed.
+import { VARIATION_MARKER, FLAG_VAR_SEP } from "@/middleware";
+
+function extractVariations(slug) {
+  const cleanSlug = slug?.filter((s) => !s.startsWith(VARIATION_MARKER));
+  const flagVariations = slug
+    ?.filter((s) => s.startsWith(VARIATION_MARKER))
+    .map((s) => {
+      const [flagKey, variationKey] = s.slice(VARIATION_MARKER.length).split(FLAG_VAR_SEP);
+      return { flagKey, variationKey };
+    }) ?? [];
+  return {
+    cleanSlug,
+    activeVariations: flagVariations.map((fv) => fv.variationKey), // for Graph filter
+    flagVariations,                                                  // for bucketing event
+  };
+}
 
 async function CmsPage({ params }) {
-  // Step 1 - evaluate all FX flags (userId + attributes from cookies automatically)
-  const user = await getOptimizelyUser();
-  const decisions = user.decideAll();
+  const { slug } = await params;
+  const { cleanSlug, activeVariations, flagVariations } = extractVariations(slug);
 
-  // Step 2 - collect active variation keys (skip "off")
-  const activeVariations = Object.values(decisions)
-    .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
-    .map((d) => d.variationKey as string);
-
-  // Step 3 - pass them to Graph as a variation filter
-  //   includeOriginal: true → users NOT in an experiment still see original content
+  // Pass variation keys to Graph - same filter as always, now sourced from URL not cookies
   const variationOption = activeVariations.length > 0
-    ? {
-        variation: {
-          include: "SOME" as const,
-          value: activeVariations,   // e.g. ["banner1", "contribute"]
-          includeOriginal: true,
-        },
-      }
+    ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
     : undefined;
 
-  // Step 4 - Graph returns the CMS variant whose key matches, or falls back
   const client = getClient();
-  const [page] = await client.getContentByPath(\`/en/\${slug}/\`, variationOption);
-  return <OptimizelyComponent content={page} />;
+  const items = await client.getContentByPath(\`/\${cleanSlug.join("/")}/\`, variationOption);
+  const page = items.find((i) => activeVariations.includes(i._metadata?.variation)) ?? items[0];
+
+  // Look up flagKey by the variationKey Graph actually served
+  const servedVariation = page._metadata?.variation ?? null;
+  const servedFlagKey = flagVariations.find((fv) => fv.variationKey === servedVariation)?.flagKey ?? null;
+
+  return (
+    <>
+      <OptimizelyComponent content={page} />
+      {servedFlagKey && <FxBucketingEvent flagKey={servedFlagKey} />}
+    </>
+  );
 }`;
 
 const GRAPH_QUERY_SNIPPET = `# Theoretical GraphQL generated by getContentByPath("/en/", variationFilter)
@@ -125,23 +194,51 @@ query {
 # editors create any CMS variations.`;
 
 const MIDDLEWARE_SNIPPET = `// src/middleware.ts
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { createInstance, createStaticProjectConfigManager, OptimizelyDecideOption }
+  from "@optimizely/optimizely-sdk/universal";
 
-export function middleware(req: NextRequest) {
-  const res = NextResponse.next();
+export const VARIATION_MARKER = "__v_";
 
-  // Only one cookie - a stable visitor ID for consistent bucketing.
-  // Device type is read from the User-Agent header server-side (no cookie = GDPR safe).
-  if (!req.cookies.get("optimizelyEndUserId")) {
-    res.cookies.set("optimizelyEndUserId", crypto.randomUUID(), {
-      maxAge: 60 * 60 * 24 * 365, // 1 year
-      httpOnly: true,
-      sameSite: "lax",
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next();
+
+  // Set a stable visitor ID (not httpOnly - browser SDK reads it for bucketing events).
+  const userId = request.cookies.get("optimizelyEndUserId")?.value ?? crypto.randomUUID();
+  if (!request.cookies.get("optimizelyEndUserId")) {
+    response.cookies.set("optimizelyEndUserId", userId, {
+      maxAge: 60 * 60 * 24 * 365, sameSite: "lax", path: "/",
     });
   }
 
-  return res;
+  // Skip API routes and already-rewritten paths.
+  if (request.nextUrl.pathname.startsWith("/api/")) return response;
+  if (request.nextUrl.pathname.includes(VARIATION_MARKER)) return response;
+
+  // Fetch datafile with 60s edge cache (Vercel CDN caches this automatically).
+  const datafile = await fetch(DATAFILE_URL, { next: { revalidate: 60 } }).then((r) => r.text());
+
+  const client = createInstance({
+    projectConfigManager: createStaticProjectConfigManager({ datafile }),
+    requestHandler: noOpRequestHandler, // no HTTP needed - static config only
+  });
+
+  const ctx = client.createUserContext(userId, { device, persona, ... });
+  const decisions = ctx.decideAll([OptimizelyDecideOption.DISABLE_DECISION_EVENT]);
+
+  // Collect active variation keys (sorted for a stable cache key).
+  const activeVariations = Object.values(decisions)
+    .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
+    .map((d) => d.variationKey)
+    .sort();
+
+  if (activeVariations.length === 0) return response;
+
+  // Rewrite URL: /savings → /savings/__v_variation_1
+  // The user sees /savings in the browser - the rewrite is transparent.
+  // Next.js catches /savings/__v_variation_1 as a separate ISR cache entry.
+  const url = request.nextUrl.clone();
+  url.pathname += "/" + activeVariations.map((v) => \`__v_\${v}\`).join("/");
+  return NextResponse.rewrite(url, { headers: response.headers });
 }`;
 
 const USER_LIB_SNIPPET = `// src/lib/optimizely/user.ts
@@ -379,9 +476,10 @@ export default async function FeatureFlagsDemoPage() {
           </h1>
           <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
             Optimizely Feature Experimentation runs alongside SaaS CMS on the same platform.
-            Flag decisions are evaluated server-side in React Server Components - no client JS,
-            no layout shift. Variation keys from FX drive which CMS content variant Graph returns,
-            connecting A/B experiments directly to editor-created content variations.
+            Flag decisions are evaluated in edge middleware - the URL is rewritten with the variation
+            key before the page renders, enabling full ISR caching per variation. Bucketing events
+            fire client-side after the user sees the variation, connecting A/B experiments directly
+            to editor-created content variations.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
             {["✓ Server-side decisions", "Feature flags · Experiments", "Audience targeting", "Variable delivery", "CMS Variations integration"].map((t) => (
@@ -401,8 +499,9 @@ export default async function FeatureFlagsDemoPage() {
             How It All Fits Together <a href="#how-it-works" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            Four steps happen on every page request. The browser never touches the SDK
-            or runs an experiment script - all decisions happen server-side before HTML is streamed.
+            Four steps happen on every page request. FX bucketing runs in edge middleware
+            and the ISR cache serves warm responses at CDN speed. A small client component
+            fires the bucketing event after the variation renders.
           </p>
 
           {/* Architecture flow */}
@@ -415,9 +514,9 @@ export default async function FeatureFlagsDemoPage() {
             <Arrow />
             <div className="bg-surface-lowest border border-brand/30 rounded-2xl p-5 text-center">
               <div className="text-2xl mb-2">⚡</div>
-              <p className="text-xs font-mono font-semibold text-on-surface mb-1">FX SDK (server)</p>
+              <p className="text-xs font-mono font-semibold text-on-surface mb-1">Middleware (edge)</p>
               <p className="text-xs text-on-surface-variant">
-                Calls <code className="bg-surface-low px-1 rounded">decide()</code> with <code className="bg-surface-low px-1 rounded">DISABLE_DECISION_EVENT</code> - returns <code className="bg-surface-low px-1 rounded">variationKey</code>, no impression yet
+                Runs <code className="bg-surface-low px-1 rounded">decideAll()</code> with <code className="bg-surface-low px-1 rounded">DISABLE_DECISION_EVENT</code> - rewrites URL with <code className="bg-surface-low px-1 rounded">__v_</code> variation segments
               </p>
             </div>
             <Arrow />
@@ -431,9 +530,9 @@ export default async function FeatureFlagsDemoPage() {
             <Arrow />
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 text-center">
               <div className="text-2xl mb-2">📊</div>
-              <p className="text-xs font-mono font-semibold text-on-surface mb-1">Bucket the user</p>
+              <p className="text-xs font-mono font-semibold text-on-surface mb-1">Browser SDK</p>
               <p className="text-xs text-on-surface-variant">
-                Fire <code className="bg-surface-low px-1 rounded">decide()</code> again - records user in experiment results
+                <code className="bg-surface-low px-1 rounded">FxBucketingEvent</code> mounts client-side - calls <code className="bg-surface-low px-1 rounded">decideAll([])</code> to record user in experiment results
               </p>
             </div>
           </div>
@@ -443,24 +542,29 @@ export default async function FeatureFlagsDemoPage() {
               <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center mb-4">
                 <span className="text-brand font-bold font-mono text-sm">1</span>
               </div>
-              <h3 className="font-display font-semibold text-on-surface mb-2">Middleware sets a stable ID</h3>
+              <h3 className="font-display font-semibold text-on-surface mb-2">Middleware evaluates flags + rewrites URL</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
-                On first visit, Next.js middleware writes an <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> UUID
-                cookie (1 year TTL). It&apos;s the only cookie set -{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">device</code> is derived from the User-Agent header server-side (no cookie stored).
+                Edge middleware sets the stable{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> cookie, fetches the
+                FX datafile (60s edge cache), and runs{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">decideAll([DISABLE_DECISION_EVENT])</code>.
+                Active variation keys are appended to the URL path as{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">__v_</code> segments via a transparent{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">NextResponse.rewrite()</code>.
               </p>
             </div>
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
               <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center mb-4">
                 <span className="text-brand font-bold font-mono text-sm">2</span>
               </div>
-              <h3 className="font-display font-semibold text-on-surface mb-2">FX SDK evaluates flags server-side</h3>
+              <h3 className="font-display font-semibold text-on-surface mb-2">Page decodes variation from URL params</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">getOptimizelyUser()</code> reads the{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> cookie - it has an expiration
-                date, so the same visitor gets the same bucket across return visits. React{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">cache()</code> deduplicates within a single page load.
-                The datafile is refreshed every 60 seconds.
+                The catch-all route receives{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">slug = ["savings", "__v_variation_1"]</code>.
+                <code className="bg-surface-low px-1 rounded font-mono text-xs"> extractVariations(slug)</code> strips the{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">__v_</code> segments back out and returns the
+                clean path + active variation keys. No <code className="bg-surface-low px-1 rounded font-mono text-xs">cookies()</code> call
+                means ISR is not blocked - the page renders statically.
               </p>
             </div>
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
@@ -478,12 +582,16 @@ export default async function FeatureFlagsDemoPage() {
               <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center mb-4">
                 <span className="text-brand font-bold font-mono text-sm">4</span>
               </div>
-              <h3 className="font-display font-semibold text-on-surface mb-2">Impression recorded in FX</h3>
+              <h3 className="font-display font-semibold text-on-surface mb-2">Bucketing event fires in the browser</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
-                After Graph confirms the CMS variation was served, a second{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">decide(flagKey, [])</code> fires without{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code>. This sends the impression
-                so the FX results page can track participants, measure lift, and declare a winner.
+                When Graph serves a CMS variation, the page looks up{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey</code>{" "}
+                from the URL segment already decoded by{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">extractVariations()</code> - no extra SDK call.{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<FxBucketingEvent flagKey={...} />"}</code>{" "}
+                mounts client-side and calls{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">decide(flagKey, [])</code>{" "}
+                for that flag only - only the experiment the user saw records a participant.
               </p>
             </div>
           </div>
@@ -917,19 +1025,108 @@ const config =
           </div>
         </section>
 
+        {/* ── Approach comparison ── */}
+        <section id="approaches">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Choosing an Approach <a href="#approaches" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            There are three ways to integrate Feature Experimentation with a Next.js CMS page route.
+            The right choice depends on whether CDN caching matters for your traffic profile.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-4 mb-10">
+            {/* Approach A */}
+            <div className="bg-surface-lowest border-2 border-brand/40 rounded-2xl p-6 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-semibold text-brand uppercase tracking-wider">A - This demo</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium">ISR</span>
+              </div>
+              <h3 className="font-display font-semibold text-on-surface">Edge Middleware + URL rewrite</h3>
+              <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
+                Middleware evaluates FX and rewrites the URL with{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">__v_flagKey--variationKey</code>.
+                The page reads variation from{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">params</code> (no{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">cookies()</code>) so
+                ISR works. Each variation URL is a separate CDN cache entry.
+                A small client component fires the bucketing event after render.
+              </p>
+              <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">~10-50ms TTFB on cached requests</span></div>
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">CDN serves warm requests — server load scales down</span></div>
+                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Bucketing event fires after page load (CSR)</span></div>
+                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">More moving parts (middleware + browser SDK)</span></div>
+              </div>
+            </div>
+
+            {/* Approach B */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-semibold text-on-surface-variant uppercase tracking-wider">B</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-surface-low text-on-surface-variant font-medium">SSR</span>
+              </div>
+              <h3 className="font-display font-semibold text-on-surface">force-dynamic SSR</h3>
+              <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">getOptimizelyUser()</code> reads
+                cookies in the page render.{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">decideAll()</code> runs server-side,
+                variation filter goes to Graph, and the bucketing event fires server-side too.
+                Simpler code - no middleware changes or client component needed.
+              </p>
+              <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Simplest - everything in one server component</span></div>
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Bucketing event fires synchronously before HTML</span></div>
+                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">~300-1000ms TTFB on every request (no caching)</span></div>
+                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">cookies() blocks ISR — force-dynamic is required</span></div>
+              </div>
+            </div>
+
+            {/* Approach C */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-semibold text-on-surface-variant uppercase tracking-wider">C - Not recommended</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">CSR</span>
+              </div>
+              <h3 className="font-display font-semibold text-on-surface">Client-side only</h3>
+              <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
+                Page renders base content from the server. After hydration, the browser SDK
+                evaluates flags and fetches the variation. Content swaps in after the
+                initial render - the user sees a flash of the base content before the
+                variation appears.
+              </p>
+              <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">No server changes required</span></div>
+                <div className="flex gap-2"><span className="text-red-500 font-bold shrink-0">-</span><span className="text-on-surface-variant">Visible flicker - base content shows for ~100-500ms</span></div>
+                <div className="flex gap-2"><span className="text-red-500 font-bold shrink-0">-</span><span className="text-on-surface-variant">Variation data in the waterfall — slower effective LCP</span></div>
+                <div className="flex gap-2"><span className="text-red-500 font-bold shrink-0">-</span><span className="text-on-surface-variant">CMS content fetched twice (base SSR + variation CSR)</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+              Approach B code - force-dynamic SSR (simpler, no CDN caching)
+            </p>
+            <CodeBlock code={FORCE_DYNAMIC_SNIPPET} label="src/app/[[...slug]]/page.tsx - force-dynamic" />
+          </div>
+        </section>
+
         {/* ── Code snippets ── */}
         <section id="integration-code">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-6">
-            Integration Code <a href="#integration-code" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            Integration Code (Approach A) <a href="#integration-code" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
 
           <div className="space-y-6">
             <div>
               <h3 className="font-display font-semibold text-on-surface mb-1">
-                1. Middleware - stable user ID + device detection
+                1. Middleware - FX bucketing + URL variation rewrite
               </h3>
               <p className="text-sm text-on-surface-variant mb-3">
-                Sets first-party cookies on every request. Runs at the edge before any page logic.
+                Runs at the edge on every request. Sets the stable visitor ID, fetches the FX datafile
+                (60s edge cache), evaluates all flags, and rewrites the URL with variation path segments.
+                The user&apos;s browser always sees the original URL - the rewrite is transparent.
               </p>
               <CodeBlock code={MIDDLEWARE_SNIPPET} label="src/middleware.ts" />
             </div>
@@ -1016,17 +1213,25 @@ const config =
 
             <div>
               <h3 className="font-display font-semibold text-on-surface mb-1">
-                4. Fire the impression when the variation is rendered
+                4. Fire the bucketing event when the variation is rendered
               </h3>
               <p className="text-sm text-on-surface-variant mb-3">
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decideAll()</code> uses{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> - flags are evaluated
-                without sending an impression. Once the variation is actually rendered, call{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decide(flagKey, [])</code> with an empty options
-                array to fire the impression. This is what registers the user on the experiment results page - without it,
-                the results API sees zero participants even though content is being personalised.
+                Middleware encoded{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey--variationKey</code>{" "}
+                into the URL. The page&apos;s{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">extractVariations(slug)</code>{" "}
+                parses it back out, so{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey</code>{" "}
+                is known without any SDK call. When Graph confirms a variation was served,
+                the page passes{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey</code>{" "}
+                to{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<FxBucketingEvent />"}</code>{" "}
+                which calls{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">decide(flagKey, [])</code>{" "}
+                client-side - one SDK call, for that flag only.
               </p>
-              <CodeBlock code={IMPRESSION_SNIPPET} label="src/app/[[...slug]]/page.tsx" />
+              <CodeBlock code={BUCKETING_SNIPPET} label="src/components/FxBucketingEvent.tsx" />
             </div>
 
             <div>
@@ -1085,11 +1290,13 @@ const config =
               <span className="text-brand font-bold shrink-0">→</span>
               <span>
                 <strong className="text-on-surface">DISABLE_DECISION_EVENT</strong> suppresses
-                impression events during the routing pass. Call{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decide(flagKey, [])</code>{" "}
-                only when the variation is actually rendered - the empty options array omits{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code>,
-                firing the impression and recording the user in FX experiment results.
+                bucketing events during the middleware routing pass. Once the variation is rendered,{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<FxBucketingEvent servedVariation={...} />"}</code>{" "}
+                mounts client-side. It calls{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">decideAll([DISABLE_DECISION_EVENT])</code>{" "}
+                to find the matching flag, then{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">decide(flagKey, [])</code>{" "}
+                for that flag only - recording the user only in the experiment they actually saw.
               </span>
             </li>
             <li className="flex gap-2">
