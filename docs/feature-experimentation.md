@@ -11,7 +11,7 @@ Browser request
   │
   ▼
 Middleware (src/middleware.ts)
-  │  Sets fx_user_id + fx_device cookies on first visit
+  │  Sets optimizelyEndUserId cookie on first visit
   ▼
 CmsPage server component (src/app/[[...slug]]/page.tsx)
   │  1. Reads cookies
@@ -29,14 +29,13 @@ Component-level flags (GlobalBanner, ProductHeroBlock) follow a simpler pattern:
 
 ## Cookies
 
-`src/middleware.ts` sets two cookies on every request (once per browser, 1-year TTL):
+`src/middleware.ts` sets one cookie on every request (once per browser, 1-year TTL):
 
 | Cookie | Value | Purpose |
 |---|---|---|
-| `fx_user_id` | UUID | Stable user identity for consistent bucketing across requests |
-| `fx_device` | `mobile` \| `desktop` | Derived from User-Agent; maps to the Desktop/Mobile FX audiences |
+| `optimizelyEndUserId` | UUID | Stable user identity for consistent bucketing across requests |
 
-Both are `httpOnly` and `sameSite: lax`. The `fx_user_id` is never exposed to client JS.
+The cookie is `httpOnly` and `sameSite: lax`. Device type (`mobile` | `desktop`) is not stored as a cookie — it is derived from the `User-Agent` header server-side in `getVisitorContext()`, which keeps it GDPR-safe and always current.
 
 ---
 

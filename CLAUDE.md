@@ -205,7 +205,7 @@ OPTIMIZELY_CMS_CLIENT_ID=xxx OPTIMIZELY_CMS_CLIENT_SECRET=yyy npm run opti:push
 ## Feature Experimentation (FX)
 
 ### Primary API: `getOptimizelyUser()`
-Use `getOptimizelyUser()` from `src/lib/optimizely/user.ts` in server components. It reads cookies (`optimizelyEndUserId`, `demo_persona`, `demo_logged_in`) plus the `User-Agent` header for `device`, and creates the SDK user context once per request via React `cache()`. Call `user.decide(flagKey)` or `user.decideAll()` — no userId or attributes to thread through manually.
+Use `getOptimizelyUser()` from `src/lib/optimizely/user.ts` in server components. It reads cookies (`optimizelyEndUserId`, `demo_persona`, `demo_bucketing_id`) plus the `User-Agent` header for `device`, and creates the SDK user context once per request via React `cache()`. Call `user.decide(flagKey)` or `user.decideAll()` — no userId or attributes to thread through manually.
 
 ```ts
 const user = await getOptimizelyUser();
@@ -292,7 +292,7 @@ src/
     client.ts          — graphqlFetch wrapper (handles published vs draft auth)
     auth.ts            — OAuth token cache for Management API
     experimentation.ts — FX SDK wrapper (low-level: getOptimizelyClient, getDecision, etc.)
-    visitor.ts         — getVisitorContext() — reads fx_user_id, fx_device, demo_* cookies
+    visitor.ts         — getVisitorContext() — reads optimizelyEndUserId, demo_persona, demo_bucketing_id cookies; derives device from User-Agent
     user.ts            — getOptimizelyUser() — combines visitor context + SDK into one cached helper
     componentRegistry.ts — registers all content types + React components
   lib/graphql/

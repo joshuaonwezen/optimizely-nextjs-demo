@@ -153,7 +153,6 @@ export function initComponentRegistry() {
           Surface: CallToActionBlock,
         },
       },
-      CallToActionBlock: CallToActionBlock,
       TextBlock: {
         default: TextBlock,
         tags: { Narrow: TextBlock },

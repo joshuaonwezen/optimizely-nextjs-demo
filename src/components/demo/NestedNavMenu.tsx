@@ -30,9 +30,6 @@ function maxDepth(nodes: NavNode[], depth = 0): number {
   return nodes.reduce((max, n) => Math.max(max, maxDepth(n.children, depth + 1)), depth);
 }
 
-// ---------------------------------------------------------------------------
-// Depth styling — each level gets progressively lighter treatment
-// ---------------------------------------------------------------------------
 const DEPTH_LABEL: Record<number, string> = {
   0: "text-sm font-semibold text-on-surface",
   1: "text-sm font-medium text-on-surface",
@@ -55,9 +52,6 @@ function depthBadge(depth: number) {
   return DEPTH_BADGE[Math.min(depth, 4)];
 }
 
-// ---------------------------------------------------------------------------
-// NavItem
-// ---------------------------------------------------------------------------
 interface NavItemProps {
   node: NavNode;
   depth: number;
@@ -130,9 +124,6 @@ function NavItem({ node, depth, openKeys, onToggle }: NavItemProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// NavList
-// ---------------------------------------------------------------------------
 interface NavListProps {
   nodes: NavNode[];
   depth: number;
@@ -150,9 +141,6 @@ function NavList({ nodes, depth, openKeys, onToggle }: NavListProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// NestedNavMenu — exported component
-// ---------------------------------------------------------------------------
 export default function NestedNavMenu({ tree }: Props) {
   const [openKeys, setOpenKeys] = useState<Set<string>>(() => getAllExpandableKeys(tree));
 
