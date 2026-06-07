@@ -4,12 +4,6 @@ export type DemoCategory = { label: string; links: DemoLink[] };
 export function getDemoCategories(): DemoCategory[] {
   return [
     {
-      label: "Architecture",
-      links: [
-        { href: "/demo/architecture", label: "System Overview", description: "How SaaS CMS, Graph, Next.js, and Feature Experimentation fit together" },
-      ],
-    },
-    {
       label: "CMS",
       links: [
         { href: "/demo/visual-builder",    label: "Visual Builder",       description: "Page composition, blocks, and display templates" },
@@ -32,6 +26,12 @@ export function getDemoCategories(): DemoCategory[] {
       links: [
         { href: "/demo/caching", label: "Caching", description: "ISR, revalidation tags, and publish webhooks" },
         { href: "/demo/graph-queries", label: "Graph Queries", description: "Efficient querying patterns, @recursive, and avoiding N+1" },
+      ],
+    },
+    {
+      label: "Architecture",
+      links: [
+        { href: "/demo/architecture", label: "System Overview", description: "How SaaS CMS, Graph, Next.js, and Feature Experimentation fit together" },
       ],
     },
   ];
