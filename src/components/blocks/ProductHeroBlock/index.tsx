@@ -86,7 +86,7 @@ export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
 
   return (
     <section
-      className={`bg-gradient-brand ${isCompact ? "py-16 md:py-20" : "py-28 md:py-36"}`}
+      className={`w-screen ml-[calc(50%-50vw)] bg-gradient-brand ${isCompact ? "py-16 md:py-20" : "py-28 md:py-36"}`}
     >
       <div className={`max-w-7xl mx-auto px-8 ${isCentered ? "text-center" : ""}`}>
         <div className={isCentered ? "max-w-3xl mx-auto" : "max-w-3xl"}>

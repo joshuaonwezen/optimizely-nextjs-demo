@@ -78,7 +78,7 @@ export default function HeroBlock(props: HeroBlockProps) {
 
   return (
     <section
-      className={`bg-gradient-brand relative w-full flex items-center overflow-hidden ${isTall ? "min-h-screen" : "min-h-[640px]"}`}
+      className={`w-screen ml-[calc(50%-50vw)] bg-gradient-brand relative flex items-center overflow-hidden ${isTall ? "min-h-screen" : "min-h-[640px]"}`}
     >
       {bgUrl && (
         <Image

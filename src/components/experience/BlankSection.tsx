@@ -41,7 +41,8 @@ function Row({ children, node, displaySettings }: StructureContainerProps) {
   const valign = VALIGN[ds?.verticalAlign as string] ?? "";
 
   const className = [
-    count > 1 ? `max-w-7xl mx-auto px-8 grid grid-cols-1 ${gridCols}` : undefined,
+    "max-w-7xl mx-auto px-8",
+    count > 1 ? `grid grid-cols-1 ${gridCols}` : undefined,
     gap,
     valign,
   ]
