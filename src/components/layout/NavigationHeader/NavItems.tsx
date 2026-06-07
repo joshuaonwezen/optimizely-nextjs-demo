@@ -140,9 +140,9 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
 
           {demoActive && (
             <div className="absolute top-full right-0 pt-2 z-50">
-              <div className="bg-surface-lowest border border-ghost-border rounded-2xl shadow-xl p-5 w-[580px]">
+              <div className="bg-surface-lowest border border-ghost-border rounded-2xl shadow-xl p-5 w-[780px]">
 
-                {/* View all link */}
+                {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-xs font-semibold text-on-surface">Developer demos</p>
                   <Link
@@ -153,32 +153,63 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
                   </Link>
                 </div>
 
-                {/* Three-column category grid */}
-                <div className="grid grid-cols-3 gap-x-6">
-                  {demoCategories.map((category) => (
-                    <div key={category.label}>
+                {/* Two-panel layout: CMS (2-col) | divider | stacked smaller categories */}
+                <div className="flex gap-6">
+                  {/* Left: CMS — 2-column link grid */}
+                  {demoCategories[0] && (
+                    <div className="flex-1 min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
-                        {category.label}
+                        {demoCategories[0].label}
                       </p>
-                      <ul className="space-y-0.5">
-                        {category.links.map((link) => (
-                          <li key={link.href}>
-                            <Link
-                              href={link.href}
-                              className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
-                            >
-                              <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
-                                {link.label}
-                              </span>
-                              <span className="block text-xs text-on-surface-variant leading-snug mt-0.5">
-                                {link.description}
-                              </span>
-                            </Link>
-                          </li>
+                      <div className="grid grid-cols-2 gap-x-3">
+                        {demoCategories[0].links.map((link) => (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
+                          >
+                            <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
+                              {link.label}
+                            </span>
+                            <span className="block text-xs text-on-surface-variant leading-snug mt-0.5">
+                              {link.description}
+                            </span>
+                          </Link>
                         ))}
-                      </ul>
+                      </div>
                     </div>
-                  ))}
+                  )}
+
+                  {/* Divider */}
+                  <div className="w-px bg-ghost-border flex-shrink-0" />
+
+                  {/* Right: Integrations, Graph & Queries, Architecture stacked */}
+                  <div className="w-[220px] flex-shrink-0 flex flex-col gap-5">
+                    {demoCategories.slice(1).map((category) => (
+                      <div key={category.label}>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
+                          {category.label}
+                        </p>
+                        <ul className="space-y-0.5">
+                          {category.links.map((link) => (
+                            <li key={link.href}>
+                              <Link
+                                href={link.href}
+                                className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
+                              >
+                                <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
+                                  {link.label}
+                                </span>
+                                <span className="block text-xs text-on-surface-variant leading-snug mt-0.5">
+                                  {link.description}
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
