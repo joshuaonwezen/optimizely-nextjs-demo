@@ -11,20 +11,15 @@ const PERSONAS = [
 
 const DEMO_ACCOUNT = "demo-account@mosey.bank";
 
-export default function AudienceSwitcher({
-  initialPersona,
-  initialLoggedIn,
-  initialUserId,
-  initialBucketingId,
-}: {
-  initialPersona: string;
-  initialLoggedIn: boolean;
-  initialUserId: string;
-  initialBucketingId: string;
-}) {
-  const [current, setCurrent] = useState(initialPersona);
-  const [loggedIn, setLoggedIn] = useState(initialLoggedIn);
-  const [bucketingId, setBucketingId] = useState(initialBucketingId);
+function getCookie(name: string): string {
+  return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1] ?? "";
+}
+
+export default function AudienceSwitcher() {
+  const [current, setCurrent] = useState("");
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [bucketingId, setBucketingId] = useState("");
+  const [userId, setUserId] = useState("anonymous");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -33,6 +28,12 @@ export default function AudienceSwitcher({
   const currentLabel = PERSONAS.find((p) => p.key === current)?.label ?? "Default";
 
   useEffect(() => {
+    setCurrent(getCookie("demo_persona"));
+    const bid = getCookie("demo_bucketing_id");
+    setBucketingId(bid);
+    setLoggedIn(!!bid);
+    setUserId(getCookie("optimizelyEndUserId") || "anonymous");
+
     function handleOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
@@ -119,7 +120,7 @@ export default function AudienceSwitcher({
           <div className="px-4 py-3 border-t border-outline-variant space-y-1.5">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-xs font-mono text-on-surface-variant shrink-0">visitor_id</span>
-              <span className="text-xs font-mono text-on-surface truncate text-right">{initialUserId === "anonymous" ? "anonymous" : `${initialUserId.slice(0, 8)}…${initialUserId.slice(-4)}`}</span>
+              <span className="text-xs font-mono text-on-surface truncate text-right">{userId === "anonymous" ? "anonymous" : `${userId.slice(0, 8)}…${userId.slice(-4)}`}</span>
             </div>
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-xs font-mono text-on-surface-variant shrink-0">bucketing_id</span>
