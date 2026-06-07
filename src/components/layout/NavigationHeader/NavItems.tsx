@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,6 +8,7 @@ import type { NavNode } from "@/lib/graphql/queries/GetNavigation";
 import type { DemoCategory } from "@/lib/getDemoLinks";
 import type { SupportedLocale } from "@/lib/graphql/queries/GetSupportedLocales";
 import SearchOverlay from "@/components/layout/SearchOverlay";
+import MoseyBankLogo from "@/components/MoseyBankLogo";
 
 interface Props {
   tree: NavNode[];
@@ -32,20 +33,223 @@ function buildLocaleUrl(pathname: string, targetLocale: string): string {
   return rest.length > 0 ? `/${targetLocale}/${rest.join("/")}` : `/${targetLocale}`;
 }
 
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="10" height="6" viewBox="0 0 10 6" fill="none"
+      className={`flex-shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+    >
+      <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M12.5 12.5L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function NavItems({ tree, demoCategories, locales }: Props) {
-  const [activeKey,  setActiveKey]  = useState<string | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeKey,     setActiveKey]     = useState<string | null>(null);
+  const [searchOpen,    setSearchOpen]    = useState(false);
+  const [mobileOpen,    setMobileOpen]    = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const pathname = usePathname();
   const currentLocale = getCurrentLocale(pathname);
 
+  // Close drawer on navigation
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
+
+  // Lock vertical scroll while drawer is open
+  useEffect(() => {
+    document.body.style.overflowY = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflowY = ""; };
+  }, [mobileOpen]);
+
   if (tree.length === 0) return null;
 
-  const demoActive = activeKey === "__demo__";
+  function toggleMobile(key: string) {
+    setMobileExpanded(prev => prev === key ? null : key);
+  }
 
   return (
     <>
-      {searchOpen && createPortal(<SearchOverlay onClose={() => setSearchOpen(false)} />, document.body)}
-      <div className="flex items-center gap-1">
+      {searchOpen && createPortal(
+        <SearchOverlay onClose={() => setSearchOpen(false)} />,
+        document.body
+      )}
+
+      {/* ── Mobile drawer ─────────────────────────────────── */}
+      {mobileOpen && createPortal(
+        <div className="md:hidden fixed inset-0 z-[60] flex flex-col bg-surface-lowest">
+
+          {/* Drawer header */}
+          <div className="flex items-center justify-between px-5 h-16 border-b border-ghost-border flex-shrink-0">
+            <Link href="/" aria-label="Mosey Bank home" onClick={() => setMobileOpen(false)}>
+              <MoseyBankLogo />
+            </Link>
+            <button
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close menu"
+              className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-low transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M4 4L16 16M16 4L4 16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto">
+
+            {/* CMS nav tree */}
+            <div className="px-4 py-4 space-y-0.5">
+              {tree.map((node) => {
+                const isExpanded = mobileExpanded === node.key;
+                if (!node.children.length) {
+                  return (
+                    <Link
+                      key={node.key}
+                      href={node.href}
+                      target={node.openInNewTab ? "_blank" : undefined}
+                      rel={node.openInNewTab ? "noopener noreferrer" : undefined}
+                      className="block px-3 py-3 rounded-lg text-base font-medium text-on-surface-variant hover:bg-surface-low hover:text-brand transition-colors"
+                    >
+                      {node.label}
+                    </Link>
+                  );
+                }
+                return (
+                  <div key={node.key}>
+                    <button
+                      onClick={() => toggleMobile(node.key)}
+                      className="w-full flex items-center justify-between px-3 py-3 rounded-lg text-base font-medium text-on-surface-variant hover:bg-surface-low transition-colors"
+                    >
+                      {node.label}
+                      <Chevron open={isExpanded} />
+                    </button>
+                    {isExpanded && (
+                      <div className="ml-3 pl-3 border-l-2 border-ghost-border space-y-0.5 mb-1">
+                        {node.children.map((child) =>
+                          child.children.length > 0 ? (
+                            <div key={child.key} className="mb-1">
+                              <Link
+                                href={child.href}
+                                className="block py-1.5 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-brand transition-colors"
+                              >
+                                {child.label}
+                              </Link>
+                              {child.children.map((grandchild) => (
+                                <Link
+                                  key={grandchild.key}
+                                  href={grandchild.href}
+                                  className="block py-2 text-sm text-on-surface-variant hover:text-brand transition-colors"
+                                >
+                                  {grandchild.label}
+                                </Link>
+                              ))}
+                            </div>
+                          ) : (
+                            <Link
+                              key={child.key}
+                              href={child.href}
+                              className="block py-2 text-sm text-on-surface-variant hover:text-brand transition-colors"
+                            >
+                              {child.label}
+                            </Link>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="border-t border-ghost-border mx-4" />
+
+            {/* Developer section */}
+            <div className="px-4 py-4">
+              <button
+                onClick={() => toggleMobile("__demo__")}
+                className="w-full flex items-center justify-between px-3 py-3 rounded-lg"
+              >
+                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-brand text-on-brand">
+                  Developer
+                </span>
+                <Chevron open={mobileExpanded === "__demo__"} />
+              </button>
+              {mobileExpanded === "__demo__" && (
+                <div className="mt-3 space-y-5 px-3">
+                  {demoCategories.map((category) => (
+                    <div key={category.label}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
+                        {category.label}
+                      </p>
+                      <ul className="space-y-0.5">
+                        {category.links.map((link) => (
+                          <li key={link.href}>
+                            <Link
+                              href={link.href}
+                              className="block py-1.5 text-sm font-medium text-on-surface hover:text-brand transition-colors"
+                            >
+                              {link.label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                  <Link href="/demo" className="text-sm text-brand hover:underline font-medium">
+                    View all demos →
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Locale switcher */}
+            {locales.length > 1 && (
+              <>
+                <div className="border-t border-ghost-border mx-4" />
+                <div className="px-7 py-4 flex flex-wrap gap-2">
+                  {locales.map((locale) => (
+                    <Link
+                      key={locale.code}
+                      href={buildLocaleUrl(pathname, locale.code)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        locale.code === currentLocale
+                          ? "bg-brand text-on-brand"
+                          : "text-on-surface-variant hover:bg-surface-low hover:text-brand"
+                      }`}
+                    >
+                      {locale.label}
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Drawer footer: search */}
+          <div className="border-t border-ghost-border px-5 py-4 flex-shrink-0">
+            <button
+              onClick={() => { setMobileOpen(false); setSearchOpen(true); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-low text-on-surface-variant hover:text-brand transition-colors"
+            >
+              <SearchIcon />
+              <span className="text-sm font-medium">Search</span>
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── Desktop nav (md+) ─────────────────────────────── */}
+      <div className="hidden md:flex items-center gap-1">
 
         {/* CMS nav tree */}
         {tree.map((node) => {
@@ -62,9 +266,7 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
               {hasChildren ? (
                 <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors font-body ${isActive ? "text-brand" : "text-on-surface-variant hover:text-brand"}`}>
                   {node.label}
-                  <svg width="10" height="6" viewBox="0 0 10 6" className={`transition-transform duration-150 ${isActive ? "rotate-180" : ""}`} fill="none">
-                    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <Chevron open={isActive} />
                 </button>
               ) : (
                 <Link
@@ -130,32 +332,22 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
         >
           <Link
             href="/demo"
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold font-body transition-colors bg-brand text-on-brand hover:bg-brand-dim`}
+            className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold font-body transition-colors bg-brand text-on-brand hover:bg-brand-dim"
           >
             Developer
-            <svg width="10" height="6" viewBox="0 0 10 6" className={`transition-transform duration-150 ${demoActive ? "rotate-180" : ""}`} fill="none">
-              <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <Chevron open={activeKey === "__demo__"} />
           </Link>
 
-          {demoActive && (
+          {activeKey === "__demo__" && (
             <div className="absolute top-full right-0 pt-2 z-50">
               <div className="bg-surface-lowest border border-ghost-border rounded-2xl shadow-xl p-5 w-[780px]">
-
-                {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-xs font-semibold text-on-surface">Developer demos</p>
-                  <Link
-                    href="/demo"
-                    className="text-xs text-brand hover:underline font-medium"
-                  >
+                  <Link href="/demo" className="text-xs text-brand hover:underline font-medium">
                     View all →
                   </Link>
                 </div>
-
-                {/* Two-panel layout: CMS (2-col) | divider | stacked smaller categories */}
                 <div className="flex gap-6">
-                  {/* Left: CMS — 2-column link grid */}
                   {demoCategories[0] && (
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
@@ -179,11 +371,7 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
                       </div>
                     </div>
                   )}
-
-                  {/* Divider */}
                   <div className="w-px bg-ghost-border flex-shrink-0" />
-
-                  {/* Right: Integrations, Graph & Queries, Architecture stacked */}
                   <div className="w-[220px] flex-shrink-0 flex flex-col gap-5">
                     {demoCategories.slice(1).map((category) => (
                       <div key={category.label}>
@@ -256,15 +444,32 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
           </div>
         )}
 
-        {/* Search icon */}
+        {/* Search */}
         <button
           onClick={() => setSearchOpen(true)}
           aria-label="Search"
           className="ml-2 p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
         >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M12.5 12.5L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <SearchIcon />
+        </button>
+      </div>
+
+      {/* ── Mobile: search + hamburger ────────────────────── */}
+      <div className="flex md:hidden items-center gap-1">
+        <button
+          onClick={() => setSearchOpen(true)}
+          aria-label="Search"
+          className="p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
+        >
+          <SearchIcon />
+        </button>
+        <button
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          className="p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
+        >
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
           </svg>
         </button>
       </div>
