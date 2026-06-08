@@ -124,6 +124,54 @@ export const revalidate = 60;  // Layer 1: ISR - cache page output for 60s
 // Graph data fetches use next: { revalidate: 60, tags: ["page"] }.`;
 
 
+const NO_STORE_PATTERN = `// BAD - server component reads cookies → forces no-store on every page globally
+export default async function GlobalBanner() {
+  const user = await getOptimizelyUser(); // calls cookies() internally
+  const decision = user.decide("banner");
+  // ...
+}
+
+// GOOD - server component fetches only static data, passes it to a client component
+export default async function GlobalBanner() {
+  const banner = await getSiteBanner(); // plain graphqlFetch, no cookies
+  return <GlobalBannerClient cmsBanner={banner} />;
+}
+
+// GlobalBannerClient.tsx
+"use client";
+export function GlobalBannerClient({ cmsBanner }) {
+  const [banner, setBanner] = useState(() => cmsBannerToState(cmsBanner)); // initialise from props
+
+  useEffect(() => {
+    // FX decision runs client-side - no cookies() in the server render tree
+    const client = await getOptimizelyBrowserClient();
+    const decision = ctx.decide("banner", []); // fires bucketing event too
+    if (decision.enabled) setBanner(fxBannerState(decision));
+  }, []);
+
+  return banner ? <div>{banner.message}</div> : null;
+}`;
+
+const PREFETCH_SNIPPET = `// Next.js <Link> prefetch behaviour in App Router (production only):
+//
+// 1. When a <Link> enters the viewport, Next.js fetches the RSC payload
+//    for that route and caches it in the browser's router cache.
+// 2. Clicking the link navigates instantly - no round-trip needed.
+//
+// Implication: always-rendered links prefetch eagerly, even if the user
+// never clicks them. 20 footer links = 20 prefetch requests on every page load.
+
+// FIX for bulk always-visible links - disable prefetch
+<Link href="/demo/caching" prefetch={false}>Caching</Link>
+
+// Hover-triggered dropdowns are fine WITHOUT prefetch={false}:
+// Child <Link> elements only enter the DOM when the dropdown opens (hover).
+// At that moment Next.js prefetches them - which is exactly when the user
+// is most likely to click. Intentional and beneficial.
+{isDropdownOpen && (
+  <Link href="/en/investments">Investments</Link>  // prefetch fires on hover
+)}`;
+
 const CACHE_TABLE = [
   { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "60s",        tag: "-",            revalidatedBy: "/api/revalidate or /api/webhooks" },
   { data: "Navigation tree",   location: "getNavigation()",                ttl: "300s (5 min)", tag: "navigation",  revalidatedBy: "revalidateTag('navigation') in /api/webhooks" },
@@ -135,6 +183,7 @@ const CACHE_TABLE = [
   { data: "Search results",    location: "GET /api/search",                ttl: "no-store",     tag: "-",           revalidatedBy: "Always fresh - bypasses ISR" },
   { data: "Draft/preview",     location: "client.getPreviewContent()",     ttl: "no-store",  tag: "-",            revalidatedBy: "Always fresh - bypasses ISR" },
   { data: "Graph CDN cache",  location: "cg.optimizely.com/content/v2",   ttl: "Graph-managed", tag: "-",        revalidatedBy: "?cache=false on the request URL - see section below" },
+  { data: "Link prefetch (RSC payload)", location: "browser router cache", ttl: "30s (default)", tag: "-",       revalidatedBy: "Page navigation or 30s expiry" },
 ];
 
 export default function CachingDemoPage() {
@@ -411,6 +460,129 @@ export default function CachingDemoPage() {
                 </li>
               </ul>
             </div>
+          </div>
+        </section>
+
+        {/* What kills ISR */}
+        <section id="no-store-killers" className="space-y-8">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+              What kills ISR (and how to fix it){" "}
+              <a href="#no-store-killers" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            </h2>
+            <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
+              Next.js detects any call to{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">cookies()</code> or{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">headers()</code> from{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">next/headers</code>{" "}
+              during a render and forces{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">cache-control: no-store</code>{" "}
+              on the entire response - even if{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">export const revalidate = 60</code>{" "}
+              is set on the page. The call does not have to be in the page component itself; it kills ISR
+              if it is anywhere in the server render tree - including shared layout components.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              {
+                label: "Root layout components",
+                detail: "GlobalBanner and ProductHeroBlock originally called getOptimizelyUser(), which reads cookies() internally. Because both are in the root layout, every CMS page in the app was forced to no-store.",
+              },
+              {
+                label: "The call can be indirect",
+                detail: "getOptimizelyUser() calls getVisitorContext() which calls cookies(). You don't need to call cookies() directly - any function in the call chain that does it will trigger the same penalty.",
+              },
+              {
+                label: "The fix: push cookies to the client",
+                detail: "Server components fetch only static, cacheable data (CMS content, Graph queries). Pass that data as props to a \"use client\" component that reads cookies and makes personalisation decisions in useEffect.",
+              },
+            ].map(({ label, detail }) => (
+              <div key={label} className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+                <h3 className="font-display font-semibold text-on-surface mb-2 text-sm">{label}</h3>
+                <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+              Pattern - server fetches static data, client handles cookies
+            </p>
+            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+              <code>{NO_STORE_PATTERN}</code>
+            </pre>
+          </div>
+
+          <Callout label="FX banner and CTA button - how it works in this project">
+            GlobalBanner: the server component fetches the CMS banner from Graph (cacheable) and passes it
+            as props to <code className="bg-surface-low px-1 rounded font-mono text-xs">GlobalBannerClient</code>.
+            The client component initialises its state from those props so the CMS banner renders on first
+            paint with no layout shift. Then <code className="bg-surface-low px-1 rounded font-mono text-xs">useEffect</code> runs
+            the FX {'"banner"'} flag decision via the browser SDK and replaces the banner if the flag is enabled.
+            ProductHeroBlock uses the same pattern for its CTA button colour - the server renders the default
+            colour, the client component swaps to the FX colour after hydration.
+          </Callout>
+        </section>
+
+        {/* Link prefetching */}
+        <section id="link-prefetch" className="space-y-8">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+              Client-side Prefetching{" "}
+              <a href="#link-prefetch" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            </h2>
+            <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
+              In production, Next.js{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">&lt;Link&gt;</code>{" "}
+              automatically prefetches the RSC payload for every link that enters the viewport. The
+              prefetch is cached in the browser&apos;s router cache for ~30 seconds, making
+              subsequent navigation to that page instant. This is a browser-side cache - independent
+              of Vercel CDN or Next.js ISR.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 space-y-3">
+              <h3 className="font-display font-semibold text-on-surface text-sm">Hover-triggered dropdowns - prefetch is intentional</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                The nav dropdown children are conditionally rendered - they only enter the DOM when
+                the user hovers the parent. Next.js sees them enter the viewport at hover time and
+                immediately fires prefetch requests. This is the ideal moment: the user is about to
+                click, so having the RSC payload ready makes navigation feel instant.
+              </p>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Because the pages are ISR-cached at Vercel&apos;s CDN, these prefetch requests are
+                cheap CDN hits - not origin calls. Leaving default prefetch behaviour on nav dropdown
+                links is correct.
+              </p>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 space-y-3">
+              <h3 className="font-display font-semibold text-on-surface text-sm">Always-visible bulk links - use prefetch=false</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                The footer in this project renders 20 demo links on every page, always in the DOM.
+                With default prefetch behaviour, every page load fires 20 RSC prefetch requests
+                immediately - even if the user never scrolls to the footer.
+              </p>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Adding{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">prefetch={"{false}"}</code>{" "}
+                to those links eliminates the unnecessary requests. Navigation to footer links is
+                still fast because the ISR CDN cache is warm - the first click just fetches the RSC
+                payload at that moment rather than eagerly.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+              When to use prefetch={"{false}"}
+            </p>
+            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+              <code>{PREFETCH_SNIPPET}</code>
+            </pre>
           </div>
         </section>
 
