@@ -640,6 +640,7 @@ export default async function FeatureFlagsDemoPage() {
           <p className="text-sm text-on-surface-variant mb-5">
             Evaluated via <code className="bg-surface-low px-1 rounded text-xs font-mono">userContext.decideAll()</code>.
             Changes in the FX dashboard take effect within 60 seconds (datafile cache TTL).
+            Each decision includes a <code className="bg-surface-low px-1 rounded text-xs font-mono">variables</code> map of typed values (strings, booleans, numbers, JSON) that let you control copy or configuration per variation without code changes.
           </p>
           {Object.keys(decisions).length === 0 ? (
             <div className="rounded-2xl border border-dashed border-ghost-border bg-surface-lowest p-8 text-center">
@@ -701,8 +702,8 @@ export default async function FeatureFlagsDemoPage() {
                 body: "Every seat on the same company account sees the same variation. Avoids the awkward situation where user A sees Variation 1 and user B on the same account sees Variation 2 in the same meeting.",
               },
               {
-                title: "Family plans & shared subscriptions",
-                body: "Households or linked accounts that share access should have a consistent experience - buck by the primary account ID, not by each individual member.",
+                title: "Cross-device consistency",
+                body: "A logged-in user ID works as the bucketing ID - the same variation follows the user across their phone, tablet, and desktop, regardless of which device generated their anonymous visitor ID.",
               },
               {
                 title: "Gradual rollouts to accounts",
@@ -956,70 +957,6 @@ await getDecision("my_flag", userId, {
   plan: "premium",  // from your database
   country: "GB",    // from geo header
 });`}</code>
-              </pre>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Variables ── */}
-        <section id="feature-variables">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Feature Variables <a href="#feature-variables" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            Each variation in a flag can carry typed variables - strings, booleans, numbers, or JSON.
-            Variables let editors control copy, configuration, and styling without code changes.
-            The <code className="bg-surface-low px-1 rounded font-mono text-xs">subscribe_button</code> flag
-            uses a <code className="bg-surface-low px-1 rounded font-mono text-xs">subscribe_title</code> string
-            variable to drive the CTA text.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <h3 className="font-display font-semibold text-on-surface mb-3">What&apos;s available now</h3>
-              {Object.keys(decisions).length === 0 ? (
-                <p className="text-sm text-on-surface-variant italic">No flags found.</p>
-              ) : (
-                <div className="space-y-4">
-                  {Object.values(decisions).map((d) => {
-                    const hasVars = Object.keys(d.variables).length > 0;
-                    return (
-                      <div key={d.flagKey} className="pb-4 border-b border-ghost-border last:border-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <code className="text-xs font-mono font-semibold text-on-surface">{d.flagKey}</code>
-                          {d.variationKey && <Pill>{d.variationKey}</Pill>}
-                        </div>
-                        {hasVars ? (
-                          <pre className="bg-surface-low rounded-lg p-2 text-xs font-mono text-on-surface-variant">
-                            <code>{JSON.stringify(d.variables, null, 2)}</code>
-                          </pre>
-                        ) : (
-                          <p className="text-xs text-on-surface-variant italic">no variables defined</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <h3 className="font-display font-semibold text-on-surface mb-3">Reading variables in code</h3>
-              <pre className="bg-surface-low rounded-xl p-3 text-xs font-mono text-on-surface-variant leading-relaxed">
-                <code>{`const user = await getOptimizelyUser();
-const decision = user.decide("subscribe_button");
-
-// decision.variables is Record<string, unknown>
-// Cast to the type you expect
-const title =
-  decision.variables.subscribe_title as string;
-
-const config =
-  decision.variables.hero_config as {
-    headline: string;
-    cta: string;
-    theme: "light" | "dark";
-  };`}</code>
               </pre>
             </div>
           </div>
