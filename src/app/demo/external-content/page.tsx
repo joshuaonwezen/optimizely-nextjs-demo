@@ -337,7 +337,7 @@ export default async function ExternalContentPage() {
                 <div>
                   <p className="text-xs font-semibold text-on-surface mb-2">Public apps (free)</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {["Bynder", "Brandfolder", "Commercetools", "Shopify", "WordPress", "CMP"].map((app) => (
+                    {["Bynder", "Brandfolder", "Commercetools", "Shopify", "WordPress"].map((app) => (
                       <span key={app} className="inline-flex items-center px-2 py-0.5 rounded-md bg-brand/10 text-brand text-xs font-medium">
                         {app}
                       </span>
@@ -407,48 +407,6 @@ export default async function ExternalContentPage() {
               </div>
             </div>
 
-            {/* Path 4 */}
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden flex flex-col">
-              <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">4</span>
-                <div>
-                  <h3 className="font-display font-semibold text-on-surface">CMP DAM → Graph</h3>
-                  <p className="text-xs text-on-surface-variant">For existing CMP customers</p>
-                </div>
-              </div>
-              <div className="p-6 flex flex-col gap-4 flex-1">
-                <p className="text-sm text-on-surface-variant leading-relaxed">
-                  For customers already on Content Marketing Platform. CMP DAM assets sync to Graph
-                  in real-time via OCP, making them queryable via GraphQL and selectable in CMS via
-                  the Browse DAM action on content reference and image properties.
-                </p>
-                <div className="space-y-1.5 text-xs">
-                  {[
-                    ["Schema", "CMP + Graph (via OCP)"],
-                    ["Data", "CMP DAM → Graph (real-time)"],
-                    ["Sync", "Real-time, OCP-managed"],
-                    ["Infra you own", "None - fully managed"],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex items-center gap-2">
-                      <span className="text-on-surface-variant w-20 shrink-0">{label}</span>
-                      <span className="bg-surface-low rounded px-2 py-0.5 font-mono text-on-surface">{value}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-surface-low rounded-xl p-3 text-xs text-on-surface-variant">
-                  <strong className="text-on-surface">Best for:</strong> CMP customers who want DAM
-                  assets queryable in Graph and selectable in CMS without building a custom pipeline.
-                  CMP has a self-serve{" "}
-                  <strong>Settings → Organization → Misc → Enable &amp; Sync</strong> button that
-                  provisions the end-to-end OCP sync.
-                </div>
-                <Callout variant="warning" className="mt-auto">
-                  CMP subscription required. Renditions are not supported in the CMS Browse DAM
-                  action - only original assets.
-                </Callout>
-              </div>
-            </div>
-
           </div>
 
           {/* Recommendation matrix */}
@@ -460,8 +418,7 @@ export default async function ExternalContentPage() {
               {([
                 ["Custom data, full control, no managed layer needed", "Path 1", ""],
                 ["Using Bynder, Brandfolder, Commercetools, Shopify, or WordPress", "Path 2", "Public app handles auth, schema, and field mapping"],
-                ["Already on CMP, want DAM assets in Graph and selectable in CMS", "Path 4", ""],
-                ["Want managed scheduling + staging layer, paid tier acceptable", "Path 3", "Confirm pricing with CSM before scoping"],
+["Want managed scheduling + staging layer, paid tier acceptable", "Path 3", "Confirm pricing with CSM before scoping"],
                 ["Free OCP tier + scheduled (not real-time) syncs from source", "Path 1 or 3", "Free tier only supports real-time push - scheduled source syncs are paid-only"],
               ] as [string, string, string][]).map(([situation, path, note]) => (
                 <div key={situation} className="px-6 py-4 flex items-start justify-between gap-6">
