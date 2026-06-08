@@ -11,6 +11,14 @@ const PERSONAS = [
 
 const DEMO_ACCOUNT = "demo-account@mosey.bank";
 
+async function hashEmail(email: string): Promise<string> {
+  const data = new TextEncoder().encode(email.toLowerCase().trim());
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 function getCookie(name: string): string {
   return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1] ?? "";
 }
@@ -58,13 +66,14 @@ export default function AudienceSwitcher() {
   async function selectAuth(value: boolean) {
     if (value === loggedIn || loading) return;
     setLoading(true);
+    const hashedId = value ? await hashEmail(DEMO_ACCOUNT) : null;
     await fetch("/api/demo/set-bucketing-id", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bucketingId: value ? DEMO_ACCOUNT : null }),
+      body: JSON.stringify({ bucketingId: hashedId }),
     });
     setLoggedIn(value);
-    setBucketingId(value ? DEMO_ACCOUNT : "");
+    setBucketingId(hashedId ?? "");
     setLoading(false);
     router.refresh();
   }
@@ -124,7 +133,7 @@ export default function AudienceSwitcher() {
             </div>
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-xs font-mono text-on-surface-variant shrink-0">bucketing_id</span>
-              <span className={`text-xs font-mono truncate text-right ${bucketingId ? "text-emerald-600" : "text-on-surface-variant"}`}>{bucketingId || "—"}</span>
+              <span className={`text-xs font-mono truncate text-right ${bucketingId ? "text-emerald-600" : "text-on-surface-variant"}`}>{bucketingId ? `${bucketingId.slice(0, 8)}…` : "—"}</span>
             </div>
           </div>
         </div>
