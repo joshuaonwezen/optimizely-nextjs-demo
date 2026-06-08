@@ -1,5 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag as _revalidateTag } from "next/cache";
+
+// Next.js 16 requires a second `profile` arg in its types, but route handlers
+// have no valid profile to pass (updateTag is Server Actions only). Cast to the
+// single-arg overload so the runtime's immediate-invalidation path is used.
+const revalidateTag = _revalidateTag as (tag: string) => void;
 
 export async function GET() {
   return NextResponse.json({ ok: true });
