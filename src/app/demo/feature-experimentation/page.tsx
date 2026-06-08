@@ -620,10 +620,10 @@ export default async function FeatureFlagsDemoPage() {
             <div className={`rounded-xl px-5 py-4 flex flex-col gap-1 border ${bucketingId ? "bg-emerald-50 border-emerald-200" : "bg-surface-lowest border-ghost-border"}`}>
               <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider">Bucketing ID</span>
               <span className={`text-sm font-mono ${bucketingId ? "text-emerald-700" : "text-on-surface-variant"}`}>
-                {bucketingId ?? "-"}
+                {bucketingId ? `${bucketingId.slice(0, 8)}…${bucketingId.slice(-4)}` : "-"}
               </span>
               <span className="text-xs text-on-surface-variant">
-                {bucketingId ? "overrides bucketing (not analytics)" : "sign in via Audience Switcher to set"}
+                {bucketingId ? "SHA-256 hash - overrides bucketing (not analytics)" : "sign in via Audience Switcher to set"}
               </span>
             </div>
             <div className="bg-surface-lowest border border-ghost-border rounded-xl px-5 py-4 flex flex-col gap-1">
@@ -724,7 +724,7 @@ export default async function FeatureFlagsDemoPage() {
             <h3 className="font-display font-semibold text-on-surface mb-1">Live comparison - <code className="font-mono font-semibold">subscribe_button</code></h3>
             <p className="text-sm text-on-surface-variant mb-5">
               {bucketingId
-                ? `Signed in as ${bucketingId}. The two decisions below may land in different variations - the normal decision is bucketed by your browser's stable userId, the account decision by the login ID.`
+                ? `Bucketing ID active (SHA-256 of login email). The two decisions below may land in different variations - the normal decision is bucketed by your browser's stable userId, the account decision by the hashed login ID.`
                 : "Sign in via the Audience Switcher (bottom-right) to see the account-level decision alongside your normal decision."}
             </p>
             <div className="grid md:grid-cols-2 gap-6">
@@ -743,7 +743,7 @@ export default async function FeatureFlagsDemoPage() {
                 <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-3">
                   Account - bucketed by{" "}
                   <span className={bucketingId ? "text-emerald-600" : "text-on-surface-variant"}>
-                    {bucketingId ? `$opt_bucketing_id: "${bucketingId}"` : "not set"}
+                    {bucketingId ? `$opt_bucketing_id: "${bucketingId.slice(0, 8)}…"` : "not set"}
                   </span>
                 </p>
                 {bucketedDecision ? (
