@@ -17,6 +17,7 @@ export default function Footer() {
                   <Link
                     key={link.href}
                     href={link.href}
+                    prefetch={false}
                     className="text-xs text-on-surface-variant hover:text-brand transition-colors font-mono"
                   >
                     {link.label}
