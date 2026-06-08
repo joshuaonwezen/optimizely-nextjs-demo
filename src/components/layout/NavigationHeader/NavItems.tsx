@@ -9,6 +9,7 @@ import type { DemoCategory } from "@/lib/getDemoLinks";
 import type { SupportedLocale } from "@/lib/graphql/queries/GetSupportedLocales";
 import SearchOverlay from "@/components/layout/SearchOverlay";
 import MoseyBankLogo from "@/components/MoseyBankLogo";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface Props {
   tree: NavNode[];
@@ -234,15 +235,16 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
             )}
           </div>
 
-          {/* Drawer footer: search */}
-          <div className="border-t border-ghost-border px-5 py-4 flex-shrink-0">
+          {/* Drawer footer: search + theme toggle */}
+          <div className="border-t border-ghost-border px-5 py-4 flex-shrink-0 flex items-center gap-3">
             <button
               onClick={() => { setMobileOpen(false); setSearchOpen(true); }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-low text-on-surface-variant hover:text-brand transition-colors"
+              className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-low text-on-surface-variant hover:text-brand transition-colors"
             >
               <SearchIcon />
               <span className="text-sm font-medium">Search</span>
             </button>
+            <ThemeToggle />
           </div>
         </div>,
         document.body
@@ -444,11 +446,14 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
           </div>
         )}
 
+        {/* Theme toggle */}
+        <ThemeToggle />
+
         {/* Search */}
         <button
           onClick={() => setSearchOpen(true)}
           aria-label="Search"
-          className="ml-2 p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
+          className="p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
         >
           <SearchIcon />
         </button>
