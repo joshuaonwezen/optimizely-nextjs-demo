@@ -54,7 +54,7 @@ function Box({
 // Box positions (x, y, w, h):
 //   Browser:          x=14,  y=185, w=130 → cx=79,  cy=222, right=144, bottom=259
 //   Edge Middleware:  x=176, y=185, w=162 → cx=257, cy=222, right=338, bottom=259
-//   Vercel CDN:       x=370, y=185, w=148 → cx=444, cy=222, right=518, bottom=259
+//   Edge CDN:         x=370, y=185, w=148 → cx=444, cy=222, right=518, bottom=259
 //   Next.js:          x=550, y=185, w=152 → cx=626, cy=222, right=702, bottom=259
 //   Graph:            x=740, y=92,  w=158 → cx=819, cy=129, right=898, bottom=166
 //   CMS:              x=740, y=296, w=158 → cx=819, cy=333, right=898, top=296
@@ -113,8 +113,11 @@ export default function ArchitecturePage() {
 
               {/* ── Arrows (drawn first, behind boxes) ── */}
 
-              {/* HTML response - light blue dashed, above main flow, going left */}
-              <line x1={550} y1={170} x2={144} y2={170}
+              {/* HTML response - light blue dashed, above main flow, going left.
+                  Starts from Edge CDN center (444) not Next.js: the CDN is the
+                  actual responder in both cases (cache hit served directly;
+                  cache miss forwarded from Next.js and then cached + served). */}
+              <line x1={444} y1={170} x2={144} y2={170}
                 stroke="#60a5fa" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-lblue)" />
 
               {/* Browser → Edge Middleware - HTTPS */}
@@ -129,11 +132,11 @@ export default function ArchitecturePage() {
               <line x1={269} y1={330} x2={269} y2={259}
                 stroke="#0d9488" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-teal)" />
 
-              {/* Edge Middleware → Vercel CDN - rewritten __v_ URL */}
+              {/* Edge Middleware → Edge CDN - rewritten __v_ URL */}
               <line x1={338} y1={222} x2={370} y2={222}
                 stroke="#9333ea" strokeWidth={2} markerEnd="url(#arr-purple)" />
 
-              {/* Vercel CDN → Next.js - ISR miss */}
+              {/* Edge CDN → Next.js - ISR miss */}
               <line x1={518} y1={222} x2={550} y2={222}
                 stroke="#9333ea" strokeWidth={2} markerEnd="url(#arr-purple)" />
 
@@ -181,7 +184,7 @@ export default function ArchitecturePage() {
                 title="cdn.optimizely.com" sub={["FX datafile · 60s cache", "bucketing events API"]} />
 
               {/* ── Arrow labels (drawn last, on top) ── */}
-              <text x={347} y={163} textAnchor="middle" fill="#60a5fa" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">HTML response</text>
+              <text x={294} y={163} textAnchor="middle" fill="#60a5fa" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">HTML response</text>
               <text x={160} y={215} textAnchor="middle" fill="#3b82f6" fontSize={9} fontFamily="system-ui,sans-serif">HTTPS</text>
               <text x={210} y={297} textAnchor="end" fill="#0d9488" fontSize={9} fontFamily="system-ui,sans-serif">datafile</text>
               <text x={354} y={215} textAnchor="middle" fill="#9333ea" fontSize={9} fontFamily="system-ui,sans-serif">__v_ URL</text>
