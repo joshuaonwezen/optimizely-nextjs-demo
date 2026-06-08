@@ -130,9 +130,9 @@ npm run seed:modeling    # Seed content modeling demo (articles, case studies, t
 npm run seed:faqs        # FAQ blocks and container
 
 # Individual seed scripts (run with tsx directly)
-npx tsx scripts/seed-referrals.ts        # External referral data → Graph Content Source API
-npx tsx scripts/seed-fx-experiment.ts    # Feature Experimentation flag + variations
-npx tsx scripts/seed-homepage-variations.ts   # CMS homepage variations for FX demo
+npx tsx scripts/seed-quotes.ts              # External quote data → Graph Content Source API
+npx tsx scripts/seed-fx-experiment.ts       # Feature Experimentation flag + variations
+npx tsx scripts/seed-homepage-variations.ts # CMS homepage variations for FX demo
 npx tsx scripts/update-homepage-variations.ts # Update existing homepage variation compositions
 
 # Webhooks
@@ -154,7 +154,7 @@ src/
       webhooks/          Graph webhook receiver (revalidates ISR cache on content change)
       revalidate/        Manual ISR revalidation endpoint (path-specific or full-site)
       publish/           CMS publish event hook (full-site bust)
-      preview/           Draft preview mode toggle
+    preview/             Draft mode preview route
     demo/                22 annotated SDK demo pages (read-only, do not edit content)
 
   components/
@@ -171,18 +171,17 @@ src/
       componentRegistry.ts Registers all content types and React components with the CMS SDK
     graphql/
       queries/           Named Graph queries with ISR tags and fallback data
-      fragments/         Barrel export of all block GraphQL fragments
 
 scripts/
   seed-*.ts              Management API content creation scripts
-  seed-referrals.ts      Content Source API (external data sync, not Management API)
+  seed-quotes.ts         Content Source API (external data sync, not Management API)
   register-webhook.mjs   Registers /api/webhooks with the Graph webhook API
 ```
 
 ## Adding a new block
 
 1. `src/components/blocks/<Name>/index.tsx` - export `NameType` (contentType definition) + default React component
-2. `src/components/blocks/<Name>/Name.fragment.ts` - GraphQL fragment, export from `fragments/index.ts`
+2. `src/components/blocks/<Name>/Name.fragment.ts` - GraphQL fragment, co-located with the block component
 3. `src/lib/optimizely/componentRegistry.ts` - three edits: import the block and its type, add `NameType` to `initContentTypeRegistry([...])`, add `Name` to `initReactComponentRegistry({ resolver: { ... } })`
 4. `npm run opti:push` - push the updated schema to CMS
 

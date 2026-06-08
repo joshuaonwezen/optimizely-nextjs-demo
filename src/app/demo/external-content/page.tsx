@@ -227,7 +227,7 @@ export default async function ExternalContentPage() {
             <a href="#sync-paths" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            Four paths exist for pushing external data into Optimizely Graph. All four end up in
+            Three paths exist for pushing external data into Optimizely Graph. All three end up in
             the same place - data queryable via GraphQL alongside CMS content - but differ in
             who owns the pipeline, whether scheduling is managed, and what third-party tooling
             is involved.
@@ -254,7 +254,6 @@ export default async function ExternalContentPage() {
             </div>
           </div>
 
-          {/* 4 path cards */}
           <div className="grid md:grid-cols-2 gap-6 mb-10">
 
             {/* Path 1 */}

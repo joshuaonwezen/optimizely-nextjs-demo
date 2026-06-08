@@ -297,10 +297,9 @@ src/
     componentRegistry.ts — registers all content types + React components
   lib/graphql/
     queries/           — named Graph queries with fallback data
-    fragments/         — barrel export of all block fragments
 scripts/
   seed-*.ts            — Management API content creation scripts
-  seed-referrals.ts    — Content Source API (external data, not Management API)
+  seed-quotes.ts       — Content Source API (external data, not Management API)
 ```
 
 ---
@@ -355,7 +354,7 @@ Do not use em dashes (`—`) anywhere in the demo pages: prose, JSX text, code s
 ## Adding a New Block — Checklist
 
 1. `src/components/blocks/<Name>/index.tsx` — export `NameType` (contentType) + default component
-2. `src/components/blocks/<Name>/Name.fragment.ts` — GraphQL fragment, export from `fragments/index.ts`
+2. `src/components/blocks/<Name>/Name.fragment.ts` — GraphQL fragment, co-located with the block component
 3. `src/lib/optimizely/componentRegistry.ts` — three edits:
    - Import the block and its type
    - Add `NameType` to `initContentTypeRegistry([...])` array
