@@ -3,6 +3,7 @@ import path from "path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
+import { queryOdpSegments, resolveVariationKey, ODP_SEGMENT_TO_VARIATION } from "@/lib/optimizely/odp";
 import SourcePanel from "@/components/demo/SourcePanel";
 import { Callout } from "@/components/blocks/CalloutBlock";
 
@@ -74,6 +75,11 @@ export default async function PersonalizationDemoPage() {
   const device = attributes.device as string;
   const demoLoggedIn = attributes.logged_in as boolean;
   const demoPersona = attributes.persona as string | undefined;
+
+  const odpSegments = await queryOdpSegments(userId);
+  const odpVariationKey = resolveVariationKey(odpSegments);
+  const odpConfigured = !!process.env.OPTIMIZELY_ODP_API_KEY;
+  const mappingEntries = Object.entries(ODP_SEGMENT_TO_VARIATION);
 
   return (
     <div className="min-h-screen bg-surface">
@@ -822,6 +828,142 @@ const decision = await getDecision("homepage_audience", userId, {
               </Link>
             </Step>
           </div>
+        </section>
+
+        {/* ODP Direct Personalization */}
+        <section id="odp-personalization">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            ODP Direct Personalization{" "}
+            <a href="#odp-personalization" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            For pure personalization - no experiments, no hold-out groups - you can skip Feature
+            Experimentation entirely. Query ODP for the visitor&apos;s segments, map a segment name
+            to a CMS variation key, and pass it directly to Graph. Fewer moving parts, same result.
+          </p>
+
+          {/* Pipeline comparison */}
+          <div className="space-y-3 mb-8">
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">
+                Without FX - ODP direct
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                {[
+                  { label: "ODP segments API", sub: "queryOdpSegments(userId)" },
+                  { label: "Mapping config", sub: "ODP name → variation key" },
+                  { label: "Graph variation filter", sub: "getContentByPath()" },
+                  { label: "CMS variant", sub: "or original fallback", highlight: true },
+                ].map((step, i, arr) => (
+                  <div key={step.label} className="flex items-center gap-3">
+                    <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
+                      <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                      <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                    </div>
+                    {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 opacity-60">
+              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">
+                With FX - for experiments
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                {[
+                  { label: "Audience signals", sub: "getVisitorContext()" },
+                  { label: "FX SDK", sub: "audience evaluation → variationKey" },
+                  { label: "Graph variation filter", sub: "getContentByPath()" },
+                  { label: "CMS variant", sub: "or original fallback" },
+                ].map((step, i, arr) => (
+                  <div key={step.label} className="flex items-center gap-3">
+                    <div className="text-center bg-surface-low rounded-xl px-4 py-3 min-w-[130px]">
+                      <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                      <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                    </div>
+                    {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            {/* Your ODP segments */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
+              <h3 className="font-display font-semibold text-on-surface mb-1">Your ODP Segments</h3>
+              <p className="text-xs text-on-surface-variant mb-4">
+                Fetched server-side from ODP&apos;s GraphQL API using your{" "}
+                <code className="bg-surface-low px-1 rounded font-mono">optimizelyEndUserId</code>{" "}
+                as the visitor identifier.
+              </p>
+              {!odpConfigured ? (
+                <p className="text-xs text-on-surface-variant italic">
+                  ODP not configured - set{" "}
+                  <code className="bg-surface-low px-1 rounded font-mono">OPTIMIZELY_ODP_API_KEY</code>{" "}
+                  to enable.
+                </p>
+              ) : odpSegments.length === 0 ? (
+                <p className="text-xs text-on-surface-variant italic">
+                  No segments returned for this visitor.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {odpSegments.map((seg) => (
+                    <span
+                      key={seg}
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono font-medium ${
+                        ODP_SEGMENT_TO_VARIATION[seg]
+                          ? "bg-brand/10 text-brand border border-brand/20"
+                          : "bg-surface-low text-on-surface-variant"
+                      }`}
+                    >
+                      {seg}
+                      {ODP_SEGMENT_TO_VARIATION[seg] && (
+                        <span className="ml-1.5 text-brand/60">→ {ODP_SEGMENT_TO_VARIATION[seg]}</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 pt-4 border-t border-ghost-border">
+                <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-1">Resolved variation key</p>
+                {odpVariationKey ? (
+                  <code className="text-sm font-mono text-brand">&quot;{odpVariationKey}&quot;</code>
+                ) : (
+                  <span className="text-sm text-on-surface-variant italic">none - original content served</span>
+                )}
+              </div>
+            </div>
+
+            {/* Mapping config */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-ghost-border bg-surface-low">
+                <span className="text-xs font-mono text-on-surface-variant">src/lib/optimizely/odp.ts</span>
+              </div>
+              <pre className="p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
+                <code>{`// Decouples ODP segment names from CMS variation names.
+// Update this map when either side renames something —
+// no changes needed in FX dashboard or CMS UI.
+export const ODP_SEGMENT_TO_VARIATION = {
+${mappingEntries.length > 0
+  ? mappingEntries.map(([seg, v]) => `  "${seg}": "${v}",`).join("\n")
+  : `  // "high-value-customers": "business",
+  // "retail-consumer":      "personal",`}
+};`}</code>
+              </pre>
+            </div>
+          </div>
+
+          <Callout variant="note">
+            <strong>When to use ODP direct vs FX.</strong>{" "}
+            Use the ODP direct path when the goal is personalizing content for known segments - no
+            control group, no statistical test. Use the FX path when you need to run a real
+            experiment: split traffic, measure lift, and declare a winner with confidence. Both paths
+            feed the same Graph variation filter - only the decision layer differs.
+          </Callout>
         </section>
 
         <SourcePanel
