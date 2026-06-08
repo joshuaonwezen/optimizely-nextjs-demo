@@ -80,9 +80,11 @@ const WEBHOOKS_SNIPPET = `// POST /api/webhooks  (registered via: npm run webhoo
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  revalidatePath("/", "layout");
-  revalidateTag("navigation");          // navigation is the most time-sensitive
-  return NextResponse.json({ received: true });
+  revalidatePath("/", "layout");           // bust all ISR page cache entries
+  revalidateTag("navigation", "default"); // navigation tree (5 min TTL)
+  revalidateTag("banner", "default");     // site banner (60s TTL)
+  revalidateTag("quotes", "default");     // external quotes (60s TTL)
+  return NextResponse.json({ received: true, timestamp: Date.now() });
 }`;
 
 const PUBLISH_SNIPPET = `// POST /api/publish
@@ -117,39 +119,51 @@ await client.getContent({ key, version }, { cache: false });
 
 // The catch-all CMS page route (src/app/[[...slug]]/page.tsx) uses ISR:
 export const revalidate = 60;  // Layer 1: ISR - cache page output for 60s
-// Middleware rewrites each visitor's URL with their FX variation:
-//   /savings           → base users (no active variation)
-//   /savings/__v_variation_1 → users in "variation_1"
-// Each rewritten path is a separate ISR cache entry at the CDN.
+// Middleware rewrites each visitor's URL with active FX variation segments:
+//   /savings                                   → base users (no active variation)
+//   /savings/__v_homepage--variation_1         → one active flag
+//   /savings/__v_homepage--var1/__v_cta--on    → two active flags
+// Format: __v_{flagKey}--{variationKey} per segment, sorted for a stable cache key.
+// Each rewritten URL is a separate ISR cache entry at the CDN.
 // Graph data fetches use next: { revalidate: 60, tags: ["page"] }.`;
 
 
-const NO_STORE_PATTERN = `// BAD - server component reads cookies → forces no-store on every page globally
-export default async function GlobalBanner() {
-  const user = await getOptimizelyUser(); // calls cookies() internally
-  const decision = user.decide("banner");
-  // ...
+const NO_STORE_PATTERN = `// Pattern 1 - cookies() or headers() anywhere in the server render tree
+import { cookies } from "next/headers";
+
+export default async function AnyServerComponent() {
+  const session = cookies().get("session"); // forces no-store on entire response
+  // ...                                    // even if the page has revalidate = 60
 }
 
-// GOOD - server component fetches only static data, passes it to a client component
-export default async function GlobalBanner() {
-  const banner = await getSiteBanner(); // plain graphqlFetch, no cookies
-  return <GlobalBannerClient cmsBanner={banner} />;
+// Pattern 2 - explicit opt-out on the page or a parent layout
+export const dynamic = "force-dynamic";  // always SSR, never ISR-cached
+export const revalidate = 0;             // same effect
+
+// Pattern 3 - reading searchParams in a page component
+export default async function Page({ searchParams }) {
+  const q = searchParams.q; // searchParams is a dynamic API - opts page out of ISR
 }
 
-// GlobalBannerClient.tsx
+// Fix: server component fetches only static data; client component reads cookies
+// Server - no cookies(), no headers(), fully cacheable
+export default async function Banner() {
+  const data = await fetchStaticData(); // e.g. a CMS query with next: { revalidate: 60 }
+  return <BannerClient initialData={data} />;
+}
+
+// "use client" - cookie access stays out of the server render tree
 "use client";
-export function GlobalBannerClient({ cmsBanner }) {
-  const [banner, setBanner] = useState(() => cmsBannerToState(cmsBanner)); // initialise from props
+export function BannerClient({ initialData }) {
+  const [content, setContent] = useState(initialData); // renders from props on first paint
 
   useEffect(() => {
-    // FX decision runs client-side - no cookies() in the server render tree
-    const client = await getOptimizelyBrowserClient();
-    const decision = ctx.decide("banner", []); // fires bucketing event too
-    if (decision.enabled) setBanner(fxBannerState(decision));
-  }, []);
+    const userId = document.cookie.match(/userId=([^;]*)/)?.[1];
+    // personalise or A/B test here - runs after hydration, never blocks ISR
+    setContent(personalise(initialData, userId));
+  }, [initialData]);
 
-  return banner ? <div>{banner.message}</div> : null;
+  return content ? <div>{content.message}</div> : null;
 }`;
 
 const PREFETCH_SNIPPET = `// Next.js <Link> prefetch behaviour in App Router (production only):
@@ -175,11 +189,11 @@ const PREFETCH_SNIPPET = `// Next.js <Link> prefetch behaviour in App Router (pr
 const CACHE_TABLE = [
   { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "60s",        tag: "-",            revalidatedBy: "/api/revalidate or /api/webhooks" },
   { data: "Navigation tree",   location: "getNavigation()",                ttl: "300s (5 min)", tag: "navigation",  revalidatedBy: "revalidateTag('navigation') in /api/webhooks" },
-  { data: "Site banner",       location: "getSiteBanner()",                ttl: "60s",          tag: "banner",      revalidatedBy: "revalidateTag('banner') - manual" },
-  { data: "External quotes",    location: "getQuotes()",                    ttl: "60s",          tag: "quotes",      revalidatedBy: "revalidateTag('quotes') - manual" },
+  { data: "Site banner",       location: "getSiteBanner()",                ttl: "60s",          tag: "banner",      revalidatedBy: "revalidateTag('banner') in /api/webhooks" },
+  { data: "External quotes",   location: "getQuotes()",                    ttl: "60s",          tag: "quotes",      revalidatedBy: "revalidateTag('quotes') in /api/webhooks" },
   { data: "Page metadata",     location: "generateMetadata()",             ttl: "300s (5 min)", tag: "-",           revalidatedBy: "/api/revalidate" },
   { data: "Static page paths", location: "generateStaticParams()",         ttl: "3600s (1 hr)", tag: "-",           revalidatedBy: "Next.js build / deploy" },
-  { data: "FX datafile",       location: "buildClient() in experimentation.ts", ttl: "60s",   tag: "-",            revalidatedBy: "Automatic (fetch cache)" },
+  { data: "FX datafile",       location: "middleware.ts + experimentation.ts", ttl: "60s",    tag: "-",            revalidatedBy: "Automatic (fetch cache, next: { revalidate: 60 })" },
   { data: "Search results",    location: "GET /api/search",                ttl: "no-store",     tag: "-",           revalidatedBy: "Always fresh - bypasses ISR" },
   { data: "Draft/preview",     location: "client.getPreviewContent()",     ttl: "no-store",  tag: "-",            revalidatedBy: "Always fresh - bypasses ISR" },
   { data: "Graph CDN cache",  location: "cg.optimizely.com/content/v2",   ttl: "Graph-managed", tag: "-",        revalidatedBy: "?cache=false on the request URL - see section below" },
@@ -487,16 +501,16 @@ export default function CachingDemoPage() {
           <div className="grid md:grid-cols-3 gap-4">
             {[
               {
-                label: "Root layout components",
-                detail: "GlobalBanner and ProductHeroBlock originally called getOptimizelyUser(), which reads cookies() internally. Because both are in the root layout, every CMS page in the app was forced to no-store.",
+                label: "Dynamic APIs in server components",
+                detail: "cookies(), headers(), and searchParams are \"dynamic APIs\" in Next.js. Accessing any of them during a server render tells Next.js the response depends on the request - so it cannot be cached. The page is downgraded to SSR for that request.",
               },
               {
-                label: "The call can be indirect",
-                detail: "getOptimizelyUser() calls getVisitorContext() which calls cookies(). You don't need to call cookies() directly - any function in the call chain that does it will trigger the same penalty.",
+                label: "Layout components are shared",
+                detail: "The penalty applies to the entire response, not just the component that called cookies(). A single cookies() call in a shared header or footer forces no-store on every page that uses that layout - even pages that don't need any per-user data.",
               },
               {
-                label: "The fix: push cookies to the client",
-                detail: "Server components fetch only static, cacheable data (CMS content, Graph queries). Pass that data as props to a \"use client\" component that reads cookies and makes personalisation decisions in useEffect.",
+                label: "The fix: push dynamic reads client-side",
+                detail: "Server components should fetch only static, cacheable data. Pass that data as props to a \"use client\" component. The client component reads cookies in useEffect after hydration - completely outside the server render tree and therefore invisible to Next.js's cache rules.",
               },
             ].map(({ label, detail }) => (
               <div key={label} className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
@@ -515,14 +529,13 @@ export default function CachingDemoPage() {
             </pre>
           </div>
 
-          <Callout label="FX banner and CTA button - how it works in this project">
-            GlobalBanner: the server component fetches the CMS banner from Graph (cacheable) and passes it
-            as props to <code className="bg-surface-low px-1 rounded font-mono text-xs">GlobalBannerClient</code>.
-            The client component initialises its state from those props so the CMS banner renders on first
-            paint with no layout shift. Then <code className="bg-surface-low px-1 rounded font-mono text-xs">useEffect</code> runs
-            the FX {'"banner"'} flag decision via the browser SDK and replaces the banner if the flag is enabled.
-            ProductHeroBlock uses the same pattern for its CTA button colour - the server renders the default
-            colour, the client component swaps to the FX colour after hydration.
+          <Callout label="Initialise from props to avoid layout shift">
+            When a server component passes static data as props to a client component, initialise the
+            client component&apos;s state directly from those props. The server renders the static
+            version as HTML; the client hydrates with the same value; then{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">useEffect</code> runs
+            and overwrites with the personalised version if needed. No layout shift, no hydration
+            mismatch - the page looks correct on first paint and silently updates after hydration.
           </Callout>
         </section>
 
@@ -612,7 +625,7 @@ export default function CachingDemoPage() {
               },
               {
                 n: "4", color: "bg-green-600", label: "Next.js marks cached items as stale",
-                detail: "The webhook handler calls revalidateTag(\"navigation\"), revalidateTag(\"banner\"), and revalidatePath(\"/\", \"layout\"). Nothing is deleted or re-rendered yet - just flagged.",
+                detail: "The webhook handler calls revalidatePath(\"/\", \"layout\") and revalidateTag() for navigation, banner, and quotes. Nothing is deleted or re-rendered yet - just flagged as stale.",
               },
               {
                 n: "5", color: "bg-purple-600", label: "Next visitor arrives - gets the old cached version instantly",
