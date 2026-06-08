@@ -23,24 +23,36 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
       <path d="M7.5 10H10M10 10L12.5 5M10 10L12.5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   ),
-  Performance: (
+  "Graph & Queries": (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0">
-      <path d="M3 14l4-4 3 3 4-6 3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="4" cy="10" r="2" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="16" cy="4" r="2" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="16" cy="16" r="2" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="10" cy="10" r="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M6 10h2M12 10h2M14.59 5.41l-3.18 3.18M14.59 14.59l-3.18-3.18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  ),
+  Architecture: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0">
+      <rect x="3" y="13" width="14" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="5" y="8" width="10" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="7" y="3" width="6" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   ),
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  CMS:          "bg-brand/5 text-brand border-brand/10",
-  Integrations: "bg-tertiary/5 text-tertiary border-tertiary/10",
-  Performance:  "bg-emerald-50 text-emerald-700 border-emerald-100",
+  CMS:                "bg-brand/5 text-brand border-brand/10",
+  Integrations:       "bg-tertiary/5 text-tertiary border-tertiary/10",
+  "Graph & Queries":  "bg-cyan-50 text-cyan-700 border-cyan-100",
+  Architecture:       "bg-slate-100 text-slate-600 border-slate-200",
 };
 
 const LINK_HOVER: Record<string, string> = {
-  CMS:          "hover:border-brand/30 hover:bg-brand/5",
-  Integrations: "hover:border-tertiary/30 hover:bg-tertiary/5",
-  Performance:  "hover:border-emerald-200 hover:bg-emerald-50/50",
+  CMS:                "hover:border-brand/30 hover:bg-brand/5",
+  Integrations:       "hover:border-tertiary/30 hover:bg-tertiary/5",
+  "Graph & Queries":  "hover:border-cyan-200 hover:bg-cyan-50/50",
+  Architecture:       "hover:border-slate-300 hover:bg-slate-50/50",
 };
 
 export default function DemoIndexPage() {
