@@ -23,9 +23,10 @@ export async function POST(request: NextRequest) {
     console.log("[Optimizely Graph Webhook] Event received:", body);
 
     revalidatePath("/", "layout");
-    revalidateTag("navigation", "default");
-    revalidateTag("banner", "default");
-    revalidateTag("quotes", "default");
+    revalidateTag("page");
+    revalidateTag("navigation");
+    revalidateTag("banner");
+    revalidateTag("quotes");
 
     return NextResponse.json({ received: true, timestamp: Date.now() });
   } catch {

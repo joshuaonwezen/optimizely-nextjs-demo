@@ -80,10 +80,11 @@ const WEBHOOKS_SNIPPET = `// POST /api/webhooks  (registered via: npm run webhoo
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  revalidatePath("/", "layout");           // bust all ISR page cache entries
-  revalidateTag("navigation", "default"); // navigation tree (5 min TTL)
-  revalidateTag("banner", "default");     // site banner (60s TTL)
-  revalidateTag("quotes", "default");     // external quotes (60s TTL)
+  revalidatePath("/", "layout"); // bust ISR page output cache
+  revalidateTag("page");         // bust Graph fetch cache for CMS pages
+  revalidateTag("navigation");   // navigation tree (5 min TTL)
+  revalidateTag("banner");       // site banner (60s TTL)
+  revalidateTag("quotes");       // external quotes (60s TTL)
   return NextResponse.json({ received: true, timestamp: Date.now() });
 }`;
 
@@ -187,7 +188,7 @@ const PREFETCH_SNIPPET = `// Next.js <Link> prefetch behaviour in App Router (pr
 )}`;
 
 const CACHE_TABLE = [
-  { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "60s",        tag: "-",            revalidatedBy: "/api/revalidate or /api/webhooks" },
+  { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "60s",        tag: "page",         revalidatedBy: "revalidateTag('page') in /api/webhooks" },
   { data: "Navigation tree",   location: "getNavigation()",                ttl: "300s (5 min)", tag: "navigation",  revalidatedBy: "revalidateTag('navigation') in /api/webhooks" },
   { data: "Site banner",       location: "getSiteBanner()",                ttl: "60s",          tag: "banner",      revalidatedBy: "revalidateTag('banner') in /api/webhooks" },
   { data: "External quotes",   location: "getQuotes()",                    ttl: "60s",          tag: "quotes",      revalidatedBy: "revalidateTag('quotes') in /api/webhooks" },
