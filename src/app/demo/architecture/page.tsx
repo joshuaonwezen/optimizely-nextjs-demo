@@ -166,7 +166,7 @@ export default function ArchitecturePage() {
                 title="Edge Middleware" sub={["FX flag eval · decideAll()", "__v_ URL rewrite"]} />
 
               <Box x={370} y={185} w={148} hc="#7c3aed" bc="#f5f3ff" stroke="#ddd6fe"
-                title="Vercel CDN" sub={["ISR cache", "per-variation entry"]} />
+                title="Edge CDN" sub={["ISR cache", "per-variation entry"]} />
 
               <Box x={550} y={185} w={152} hc="#15803d" bc="#f0fdf4" stroke="#bbf7d0"
                 title="Next.js Server" sub={["App Router · RSC", "ISR · revalidate: 60"]} />
@@ -200,7 +200,7 @@ export default function ArchitecturePage() {
             {[
               { color: "#3b82f6", label: "HTTPS request",                              dashed: false },
               { color: "#60a5fa", label: "HTML response",                               dashed: true  },
-              { color: "#9333ea", label: "Rewritten URL · CDN miss forward to Next.js", dashed: false },
+              { color: "#9333ea", label: "Rewritten __v_ URL · CDN miss forward to Next.js", dashed: false },
               { color: "#f97316", label: "GraphQL query · content response",            dashed: true  },
               { color: "#0d9488", label: "FX datafile · bucketing event",               dashed: true  },
               { color: "#16a34a", label: "CMS content sync on publish",                 dashed: false },
@@ -216,6 +216,59 @@ export default function ArchitecturePage() {
                 <span>{label}</span>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Roles */}
+        <section id="roles">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Who Interacts and How{" "}
+            <a href="#roles" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            Two distinct actors drive the system - content editors on the authoring side, and visitors on the delivery side. They never share a runtime.
+          </p>
+          <div className="grid md:grid-cols-2 gap-5">
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+              <h3 className="font-display font-bold text-sm text-red-700 mb-1">Content Editor</h3>
+              <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                Works entirely inside Optimizely CMS. Never interacts with the Next.js app directly.
+              </p>
+              <ul className="space-y-1.5">
+                {[
+                  "Opens Visual Builder - edits page composition, block content, and navigation.",
+                  "Creates CMS Variations to match FX flag variation keys. The variation name must match exactly (case-sensitive).",
+                  "Clicks Publish. The CMS syncs the change to Optimizely Graph, which fires a POST webhook to /api/webhooks.",
+                  "The webhook marks the ISR cache as stale. The next visitor request triggers a background re-render. The editor does not wait for the CDN to clear.",
+                  "Preview mode bypasses the ISR cache entirely - the editor sees draft content via a previewToken that the app reads from the URL.",
+                ].map((p, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                    <span className="shrink-0 font-bold text-red-600">-</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+              <h3 className="font-display font-bold text-sm text-blue-700 mb-1">Visitor</h3>
+              <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                Makes an HTTPS request. Three execution environments run on their behalf in sequence.
+              </p>
+              <ul className="space-y-1.5">
+                {[
+                  "Request hits Edge Middleware first. A UUID cookie (optimizelyEndUserId) is set on first visit and persists for one year - this is the stable bucketing ID.",
+                  "Middleware rewrites the URL with variation segments and the CDN is checked. A warm cache hit returns the page in ~10-50ms with no server involvement.",
+                  "On a cache miss, the Next.js server renders the page from Graph data and caches the result. The visitor receives the same HTML either way.",
+                  "After the HTML arrives, React hydrates in the browser. Client components (banner, CTA button) read cookies and apply personalisation - no server round-trip.",
+                  "The browser SDK fires a bucketing event to cdn.optimizely.com for the active flag. This is the impression that appears in the FX Results tab.",
+                ].map((p, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                    <span className="shrink-0 font-bold text-blue-600">-</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </section>
 
@@ -242,7 +295,7 @@ export default function ArchitecturePage() {
               },
               {
                 n: "3", color: "bg-purple-600",
-                label: "Vercel CDN checks the ISR cache",
+                label: "Edge CDN checks the ISR cache",
                 detail: "The rewritten URL is looked up. Cache HIT: the ISR-cached page is returned to the browser in ~10-50ms. Cache MISS: the request is forwarded to the Next.js server.",
               },
               {
@@ -324,6 +377,90 @@ export default function ArchitecturePage() {
           </div>
         </section>
 
+        {/* Execution environments */}
+        <section id="execution-environments">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Execution Environments{" "}
+            <a href="#execution-environments" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            Three separate runtimes execute code on behalf of a visitor request. Each has a different set of APIs, a different view of the request, and a different relationship to the cache.
+          </p>
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              {
+                label: "Middleware",
+                subtitle: "Edge Runtime - every request",
+                color: "border-indigo-300 bg-indigo-50",
+                hcolor: "text-indigo-700",
+                rows: [
+                  { k: "When", v: "Every request, before the CDN cache is checked. Runs even on cache hits." },
+                  { k: "Where", v: "V8 isolate on CDN edge nodes. No Node.js APIs (no fs, no process.env at runtime). Cold starts in under 1ms." },
+                  { k: "Can read", v: "Cookies, User-Agent, full request URL. Cannot call cookies() or headers() from next/headers." },
+                  { k: "What it does", v: "Fetches the FX datafile, runs decideAll(), rewrites the URL with __v_ variation segments." },
+                  { k: "Optimizely SDK", v: "@optimizely/optimizely-sdk/universal - the Edge-compatible build with no Node.js dependencies." },
+                  { k: "Cache impact", v: "None. Middleware runs before the CDN cache lookup and does not write to it." },
+                ],
+              },
+              {
+                label: "Next.js Server",
+                subtitle: "Node.js - ISR miss only",
+                color: "border-green-300 bg-green-50",
+                hcolor: "text-green-700",
+                rows: [
+                  { k: "When", v: "Only on an ISR cache miss: the first request to a URL, or after a webhook marks it stale." },
+                  { k: "Where", v: "Node.js process (serverless function or long-running server). Full Node.js APIs available." },
+                  { k: "Can read", v: "URL params (the slug including __v_ segments). Must NOT call cookies() or headers() - any use in the render tree forces cache-control: no-store on the whole response." },
+                  { k: "What it does", v: "Calls extractVariations(slug) to recover the variation keys. Queries Optimizely Graph with a variation filter. Renders React Server Components to HTML." },
+                  { k: "Optimizely SDK", v: "None. The variation is already encoded in the URL from middleware - no SDK call needed server-side." },
+                  { k: "Cache impact", v: "Writes the rendered HTML to the CDN cache with a 60s TTL. All subsequent requests for that URL are served from the CDN." },
+                ],
+              },
+              {
+                label: "Browser",
+                subtitle: "Client-Side - after hydration",
+                color: "border-blue-300 bg-blue-50",
+                hcolor: "text-blue-700",
+                rows: [
+                  { k: "When", v: "After the browser receives HTML and React hydrates. Runs on every page load, including cache hits." },
+                  { k: "Where", v: "Visitor's browser. Full Web APIs available (fetch, document.cookie, localStorage)." },
+                  { k: "Can read", v: "document.cookie (optimizelyEndUserId, demo_persona). The cookie is intentionally NOT httpOnly so the browser SDK can read it for stable bucketing." },
+                  { k: "What it does", v: "UI personalisation (banner copy, CTA button color) via client components that read cookies in useEffect. Fires the FX bucketing event via decide(flagKey, [])." },
+                  { k: "Optimizely SDK", v: "@optimizely/optimizely-sdk (browser build, resolved automatically by the bundler). A module-level singleton so the datafile is fetched once per page load." },
+                  { k: "Cache impact", v: "None. CSR runs in the browser and does not affect the CDN cache or ISR state." },
+                ],
+              },
+            ].map(({ label, subtitle, color, hcolor, rows }) => (
+              <div key={label} className={`rounded-2xl border p-5 ${color}`}>
+                <h3 className={`font-display font-bold text-sm ${hcolor}`}>{label}</h3>
+                <p className={`text-[10px] font-semibold uppercase tracking-wider ${hcolor} opacity-60 mb-3`}>{subtitle}</p>
+                <dl className="space-y-2">
+                  {rows.map(({ k, v }) => (
+                    <div key={k}>
+                      <dt className={`text-[10px] font-bold uppercase tracking-wider ${hcolor} mb-0.5`}>{k}</dt>
+                      <dd className="text-xs text-on-surface-variant leading-relaxed">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-xl border border-ghost-border bg-surface-lowest p-5">
+            <h3 className="font-display font-semibold text-sm text-on-surface mb-2">CDN compatibility</h3>
+            <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl">
+              This demo deploys to Vercel, but the ISR-via-URL-rewrite pattern works with any CDN that supports path-based cache keys.
+              The constraint is simple: the CDN must treat{" "}
+              <span className="font-mono text-[10px]">/savings/__v_homepage--variation_1</span>{" "}
+              and{" "}
+              <span className="font-mono text-[10px]">/savings/</span>{" "}
+              as separate cache entries. That is standard behaviour - Netlify, AWS CloudFront, Cloudflare, Akamai, and Fastly all do this out of the box.
+              The reason the variation is encoded in the URL (not a cookie or a custom request header) is that most CDNs do not vary their cache by cookie or arbitrary header by default,
+              and configuring them to do so requires CDN-specific rules (e.g. Akamai vary-by-header, CloudFront cache policies). A URL-based key needs no CDN configuration at all.
+            </p>
+          </div>
+        </section>
+
         {/* Component reference */}
         <section id="components">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
@@ -340,19 +477,19 @@ export default function ArchitecturePage() {
                 color: "border-indigo-300 bg-indigo-50",
                 hcolor: "text-indigo-700",
                 points: [
-                  "Runs on Vercel's edge network before the CDN cache is checked.",
-                  "Fetches the Optimizely FX datafile (JSON) from cdn.optimizely.com. The fetch is edge-cached for 60s via next: { revalidate: 60 }.",
+                  "Runs at the CDN edge before the cache is checked - on Vercel this is the Edge Runtime (V8 isolate), on Cloudflare it would be a Worker, on Akamai an EdgeWorker.",
+                  "Fetches the Optimizely FX datafile (JSON) from cdn.optimizely.com. The fetch is edge-cached for 60s so each edge node only re-fetches the datafile once per minute.",
                   "Creates a user context from cookies (optimizelyEndUserId, demo_persona, demo_bucketing_id) and runs decideAll() with DISABLE_DECISION_EVENT - flag decisions only, no impression tracking yet.",
-                  "Rewrites the URL with one path segment per active flag: /path/__v_flagKey--variationKey. Segments are sorted so the same set of active flags always maps to the same URL.",
+                  "Rewrites the URL with one path segment per active flag: /path/__v_flagKey--variationKey. Segments are sorted so the same set of active flags always maps to the same URL and the same CDN cache entry.",
                 ],
               },
               {
-                label: "Vercel CDN / ISR Cache",
+                label: "Edge CDN / ISR Cache",
                 color: "border-purple-300 bg-purple-50",
                 hcolor: "text-purple-700",
                 points: [
                   "Each __v_-rewritten URL is a separate CDN cache entry. Base users and each variation are cached independently at the same path hierarchy.",
-                  "TTL: 60 seconds (set by export const revalidate = 60 in the catch-all route).",
+                  "TTL: 60 seconds (set by export const revalidate = 60 in the catch-all route). Any CDN that supports path-based caching can serve this - no custom cache configuration needed.",
                   "Busted on publish: the Graph webhook calls revalidatePath(\"/\", \"layout\") + revalidateTag(\"page\") which marks all entries as stale.",
                   "Warm cache hits are served in ~10-50ms from the edge - the Next.js server is not involved.",
                 ],
