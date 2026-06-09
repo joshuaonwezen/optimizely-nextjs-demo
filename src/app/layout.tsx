@@ -40,14 +40,14 @@ const odpInitScript = [
   "zaius.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);zaius.push(t);return zaius}};",
   "(function(){",
   "for(var i=0;i<zaius.methods.length;i++){var method=zaius.methods[i];zaius[method]=zaius.factory(method)}",
-  `var e=document.createElement('script');e.type='text/javascript';e.async=true;e.src=('https:'===document.location.protocol?'https://':'http://')+'d1igp3oop3iho5.cloudfront.net/v2/${process.env.NEXT_PUBLIC_OPTIMIZELY_ODP_TRACKER_ID ?? ""}/zaius-min.js';`,
+  `var e=document.createElement('script');e.type='text/javascript';e.async=true;e.src='https://d1igp3oop3iho5.cloudfront.net/v2/${process.env.NEXT_PUBLIC_OPTIMIZELY_ODP_TRACKER_ID ?? ""}/zaius-min.js';`,
   "var t=document.getElementsByTagName('script')[0];t.parentNode.insertBefore(e,t);",
   "})();",
 ].join("");
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: odpInitScript }} />
