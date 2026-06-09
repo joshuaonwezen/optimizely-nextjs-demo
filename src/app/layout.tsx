@@ -28,11 +28,6 @@ export const metadata: Metadata = {
   },
   description:
     "Personal, business, and mortgage banking — built around you.",
-  icons: {
-    icon: [{ url: "/icon", type: "image/png", sizes: "32x32" }],
-    shortcut: [{ url: "/icon", type: "image/png" }],
-    apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
-  },
 };
 
 const themeScript = `(function(){var t=localStorage.getItem('theme');var s=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t||s);})();`;
