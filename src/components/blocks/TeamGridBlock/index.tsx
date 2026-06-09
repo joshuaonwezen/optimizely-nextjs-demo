@@ -2,6 +2,7 @@ import { contentType } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import { TeamMemberBlockType } from "@/components/blocks/TeamMemberBlock";
+import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { TEAM_MEMBER_FRAGMENT } from "@/components/blocks/TeamMemberBlock/fragment";
 
 export const TeamGridBlockType = contentType({
@@ -106,7 +107,9 @@ export default async function TeamGridBlock(props: TeamGridBlockProps) {
       {members.length > 0 && (
         <div {...pa("members")} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {members.map((m, i) => (
-            <OptimizelyComponent key={i} content={m as any} />
+            <BlockErrorBoundary key={i}>
+              <OptimizelyComponent content={m as any} />
+            </BlockErrorBoundary>
           ))}
         </div>
       )}

@@ -1,16 +1,22 @@
-export const dynamic = "force-dynamic";
-
 import { getClient, type PreviewParams } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
 import { PreviewComponent } from "@optimizely/cms-sdk/react/client";
+import { redirect } from "next/navigation";
 import Script from "next/script";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
+
+export const dynamic = "force-dynamic";
 
 initComponentRegistry();
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
+
+function isTokenError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return msg.includes("401") || msg.includes("403") || msg.includes("unauthorized") || msg.includes("forbidden") || msg.includes("token") || msg.includes("expired");
+}
 
 async function PreviewPage({ searchParams }: Props) {
   const params = await searchParams;
@@ -20,8 +26,14 @@ async function PreviewPage({ searchParams }: Props) {
   let content = null;
   try {
     content = await client.getPreviewContent(params as PreviewParams);
-  } catch {
-    // Content not found in Graph (e.g. deleted or unpublished) — render the empty state below
+  } catch (error) {
+    if (isTokenError(error)) {
+      // Expired or invalid preview token - redirect to published version if URL is known
+      const publishedUrl = typeof params.url === "string" ? params.url : "/";
+      redirect(publishedUrl);
+    }
+    // Deleted or unpublished content - fall through to empty state below
+    console.error("[Preview] Content not found:", error);
   }
 
   return (

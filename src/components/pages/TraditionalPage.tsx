@@ -1,6 +1,7 @@
 import { RichText } from "@optimizely/cms-sdk/react/richText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import FaqContainerBlock from "@/components/blocks/FaqContainerBlock";
+import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 
 export default function TraditionalPage({ content }: { content: any }) {
   const { pa } = getPreviewUtils(content);
@@ -45,7 +46,9 @@ export default function TraditionalPage({ content }: { content: any }) {
           className="mt-16 border-t border-outline-variant pt-12"
           {...pa("featuredBlock")}
         >
-          <OptimizelyComponent content={content.featuredBlock} />
+          <BlockErrorBoundary>
+            <OptimizelyComponent content={content.featuredBlock} />
+          </BlockErrorBoundary>
         </div>
       )}
 

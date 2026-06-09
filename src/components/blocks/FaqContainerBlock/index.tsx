@@ -2,6 +2,7 @@ import { contentType } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import { FaqItemBlockType } from "@/components/blocks/FaqItemBlock";
+import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 
 export const FaqContainerBlockType = contentType({
   key: "FaqContainerBlock",
@@ -84,7 +85,9 @@ export default async function FaqContainerBlock(props: FaqContainerBlockProps) {
       {data.faqItems && data.faqItems.length > 0 && (
         <div {...pa("faqItems")} className="space-y-2">
           {data.faqItems.map((item, i) => (
-            <OptimizelyComponent key={i} content={item as any} />
+            <BlockErrorBoundary key={i}>
+              <OptimizelyComponent content={item as any} />
+            </BlockErrorBoundary>
           ))}
         </div>
       )}

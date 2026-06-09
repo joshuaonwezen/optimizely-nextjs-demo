@@ -36,6 +36,8 @@ export async function getSupportedLocales(): Promise<SupportedLocale[]> {
     if (langs.length > 0) {
       return langs.map((l) => ({ code: l.Name, label: l.DisplayName }));
     }
-  } catch {}
+  } catch {
+    // _SiteDefinition is not always available in all Graph deployments — use fallback silently
+  }
   return FALLBACK;
 }

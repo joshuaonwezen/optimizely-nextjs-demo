@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
       }));
 
     return NextResponse.json({ total: raw.total ?? items.length, items });
-  } catch {
+  } catch (error) {
+    console.error("[Search] Query failed:", error);
     return NextResponse.json({ error: "Search failed" }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { contentType } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
+import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { TIMELINE_MILESTONE_FRAGMENT } from "@/components/blocks/TimelineMilestoneBlock/fragment";
 
 export const TimelineBlockType = contentType({
@@ -112,7 +113,9 @@ export default async function TimelineBlock(props: TimelineBlockProps) {
       {milestones.length > 0 && (
         <ol {...pa("milestones")} className="list-none p-0">
           {milestones.map((m, i) => (
-            <OptimizelyComponent key={i} content={m as any} />
+            <BlockErrorBoundary key={i}>
+              <OptimizelyComponent content={m as any} />
+            </BlockErrorBoundary>
           ))}
         </ol>
       )}

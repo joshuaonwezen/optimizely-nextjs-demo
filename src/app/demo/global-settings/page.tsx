@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
+import Link from "next/link";
 import SourcePanel from "@/components/demo/SourcePanel";
 
 export const dynamic = "force-dynamic";
@@ -209,6 +210,15 @@ export default function GlobalSettingsDemoPage() {
             site settings, cookie consent text, footer content.
           </p>
           <CodeBlock code={SINGLETON_PATTERN_SNIPPET} label="Singleton content type + fetch function" />
+          <p className="mt-4 text-sm text-on-surface-variant">
+            The <code className="bg-surface-low px-1 rounded font-mono text-xs">defaultOgImage</code> field
+            on <code className="bg-surface-low px-1 rounded font-mono text-xs">SiteSettings</code> is read
+            by <code className="bg-surface-low px-1 rounded font-mono text-xs">generateMetadata()</code> as
+            the site-wide OG image fallback when a page has no image of its own.{" "}
+            <Link href="/demo/seo#metadata" className="text-brand hover:underline font-medium">
+              See how generateMetadata() uses it →
+            </Link>
+          </p>
         </section>
 
         <section id="query-patterns">

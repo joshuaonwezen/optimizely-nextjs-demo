@@ -39,6 +39,14 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
       <rect x="7" y="3" width="6" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   ),
+  AI: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0">
+      <path d="M10 2l1.5 4h4l-3.25 2.5 1.25 4L10 10l-3.5 2.5 1.25-4L4.5 6h4L10 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="3.5" cy="15.5" r="1" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="16.5" cy="15.5" r="1" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M4.5 15.5h4M11.5 15.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  ),
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -46,6 +54,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   Integrations:       "bg-tertiary/5 text-tertiary border-tertiary/10",
   "Graph & Queries":  "bg-cyan-50 text-cyan-700 border-cyan-100",
   Architecture:       "bg-slate-100 text-slate-600 border-slate-200",
+  AI:                 "bg-violet-50 text-violet-700 border-violet-100",
 };
 
 const LINK_HOVER: Record<string, string> = {
@@ -53,11 +62,22 @@ const LINK_HOVER: Record<string, string> = {
   Integrations:       "hover:border-tertiary/30 hover:bg-tertiary/5",
   "Graph & Queries":  "hover:border-cyan-200 hover:bg-cyan-50/50",
   Architecture:       "hover:border-slate-300 hover:bg-slate-50/50",
+  AI:                 "hover:border-violet-200 hover:bg-violet-50/50",
 };
 
-export default function DemoIndexPage() {
-  const categories = getDemoCategories();
-  const total = categories.reduce((n, c) => n + c.links.length, 0);
+export default async function DemoIndexPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const sp = await searchParams;
+  const activeCategory = typeof sp.category === "string" ? sp.category : null;
+
+  const allCategories = getDemoCategories();
+  const total = allCategories.reduce((n, c) => n + c.links.length, 0);
+  const categories = activeCategory
+    ? allCategories.filter((c) => c.label === activeCategory)
+    : allCategories;
 
   return (
     <div className="min-h-screen bg-surface">
@@ -77,7 +97,7 @@ export default function DemoIndexPage() {
             application.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
-            {categories.map((c) => (
+            {allCategories.map((c) => (
               <span
                 key={c.label}
                 className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand"
@@ -99,6 +119,41 @@ export default function DemoIndexPage() {
           </div>
         </div>
       </section>
+
+      {/* Filter bar */}
+      <div className="border-b border-ghost-border bg-surface sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-8">
+          <div className="flex items-center gap-2 py-3 overflow-x-auto">
+            <Link
+              href="/demo"
+              className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                !activeCategory
+                  ? "bg-brand text-on-brand border-brand"
+                  : "border-ghost-border text-on-surface-variant hover:bg-surface-low"
+              }`}
+            >
+              All · {total}
+            </Link>
+            {allCategories.map((c) => {
+              const isActive = activeCategory === c.label;
+              const href = isActive ? "/demo" : `/demo?category=${encodeURIComponent(c.label)}`;
+              return (
+                <Link
+                  key={c.label}
+                  href={href}
+                  className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                    isActive
+                      ? "bg-brand text-on-brand border-brand"
+                      : "border-ghost-border text-on-surface-variant hover:bg-surface-low"
+                  }`}
+                >
+                  {c.label} · {c.links.length}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
       {/* Categories */}
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-16">

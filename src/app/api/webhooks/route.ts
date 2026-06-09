@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
     revalidateTag("quotes");
 
     return NextResponse.json({ received: true, timestamp: Date.now() });
-  } catch {
+  } catch (error) {
+    console.error("[Webhook] Failed to parse body:", error);
     return NextResponse.json({ error: "Failed to parse body" }, { status: 400 });
   }
 }

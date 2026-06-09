@@ -342,48 +342,29 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
 
           {activeKey === "__demo__" && (
             <div className="absolute top-full right-0 pt-2 z-50">
-              <div className="bg-surface-lowest border border-ghost-border rounded-2xl shadow-xl p-5 w-[780px]">
+              <div className="bg-surface-lowest border border-ghost-border rounded-2xl shadow-xl p-5 w-[860px] max-h-[calc(100vh-5rem)] overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-xs font-semibold text-on-surface">Developer demos</p>
                   <Link href="/demo" className="text-xs text-brand hover:underline font-medium">
                     View all →
                   </Link>
                 </div>
-                <div className="flex gap-6">
-                  {demoCategories[0] && (
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
-                        {demoCategories[0].label}
-                      </p>
-                      <div className="grid grid-cols-2 gap-x-3">
-                        {demoCategories[0].links.map((link) => (
-                          <Link
-                            key={link.href}
-                            href={link.href}
-                            className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
-                          >
-                            <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
-                              {link.label}
-                            </span>
-                            <span className="block text-xs text-on-surface-variant leading-snug mt-0.5">
-                              {link.description}
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="w-px bg-ghost-border flex-shrink-0" />
-                  <div className="w-[220px] flex-shrink-0 flex flex-col gap-5">
-                    {demoCategories.slice(1).map((category) => (
-                      <div key={category.label}>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
-                          {category.label}
-                        </p>
-                        <ul className="space-y-0.5">
-                          {category.links.map((link) => (
-                            <li key={link.href}>
+                {(() => {
+                  const rest = demoCategories.slice(1);
+                  const mid = Math.ceil(rest.length / 2);
+                  const col2 = rest.slice(0, mid);
+                  const col3 = rest.slice(mid);
+                  return (
+                    <div className="flex gap-5">
+                      {demoCategories[0] && (
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
+                            {demoCategories[0].label}
+                          </p>
+                          <div className="grid grid-cols-2 gap-x-3">
+                            {demoCategories[0].links.map((link) => (
                               <Link
+                                key={link.href}
                                 href={link.href}
                                 className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
                               >
@@ -394,13 +375,67 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
                                   {link.description}
                                 </span>
                               </Link>
-                            </li>
-                          ))}
-                        </ul>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="w-px bg-ghost-border flex-shrink-0" />
+                      <div className="w-[180px] flex-shrink-0 flex flex-col gap-5">
+                        {col2.map((category) => (
+                          <div key={category.label}>
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
+                              {category.label}
+                            </p>
+                            <ul className="space-y-0.5">
+                              {category.links.map((link) => (
+                                <li key={link.href}>
+                                  <Link
+                                    href={link.href}
+                                    className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
+                                  >
+                                    <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
+                                      {link.label}
+                                    </span>
+                                    <span className="block text-xs text-on-surface-variant leading-snug mt-0.5">
+                                      {link.description}
+                                    </span>
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      <div className="w-px bg-ghost-border flex-shrink-0" />
+                      <div className="w-[180px] flex-shrink-0 flex flex-col gap-5">
+                        {col3.map((category) => (
+                          <div key={category.label}>
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
+                              {category.label}
+                            </p>
+                            <ul className="space-y-0.5">
+                              {category.links.map((link) => (
+                                <li key={link.href}>
+                                  <Link
+                                    href={link.href}
+                                    className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
+                                  >
+                                    <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
+                                      {link.label}
+                                    </span>
+                                    <span className="block text-xs text-on-surface-variant leading-snug mt-0.5">
+                                      {link.description}
+                                    </span>
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}

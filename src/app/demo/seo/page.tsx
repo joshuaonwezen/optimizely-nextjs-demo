@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Callout } from "@/components/blocks/CalloutBlock";
 
 export const metadata: Metadata = {
   title: "SEO & Metadata",
@@ -321,6 +323,35 @@ export default function SeoDemoPage() {
             metadata, not the full page composition.
           </p>
           <CodeBlock code={GENERATE_METADATA_SNIPPET} label="generateMetadata() reading CMS SEO fields" />
+
+          <div className="mt-6 bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex items-start gap-4">
+            <div className="shrink-0 w-9 h-9 rounded-lg bg-brand/10 flex items-center justify-center">
+              <span className="text-brand font-bold text-[10px] leading-none">AI</span>
+            </div>
+            <div>
+              <p className="font-display font-semibold text-on-surface mb-1">
+                Opal can audit and write these fields automatically
+              </p>
+              <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
+                The <strong className="text-on-surface">SEO Metadata Optimization Agent</strong> evaluates
+                live URLs for metadata gaps and scores each field against length, keyword density, and
+                click-through best practices. The{" "}
+                <strong className="text-on-surface">SEO Metadata Implementation Agent</strong> then takes
+                those recommendations and patches the CMS content item&apos;s{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">metaTitle</code> and{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">metaDescription</code>{" "}
+                fields directly via the Management API - the same fields{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">generateMetadata()</code>{" "}
+                reads above.
+              </p>
+              <Link
+                href="/demo/opal#seo-agents"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
+              >
+                See the SEO agents in action →
+              </Link>
+            </div>
+          </div>
         </section>
 
         <section id="sitemap">
@@ -358,6 +389,17 @@ export default function SeoDemoPage() {
             still validate CMS content before serializing.
           </p>
           <CodeBlock code={JSON_LD_SNIPPET} label="Article and Breadcrumb structured data from CMS fields" />
+
+          <Callout variant="note">
+            <strong>GEO Schema Optimization Agent.</strong>{" "}
+            Beyond traditional SEO, JSON-LD is increasingly important for AI-powered search engines
+            (ChatGPT, Perplexity, Google AI Overviews) - structured data helps LLMs cite your content
+            accurately. Opal&apos;s <strong>GEO Schema Optimization Agent</strong> analyzes your live pages,
+            identifies which Schema.org types apply, and recommends ready-to-paste JSON-LD snippets.{" "}
+            <Link href="/demo/opal#geo-seo-agents" className="text-brand hover:underline font-semibold">
+              Learn about GEO agents →
+            </Link>
+          </Callout>
         </section>
 
         <section id="images">
@@ -417,6 +459,78 @@ export default function SeoDemoPage() {
               </li>
             ))}
           </ul>
+        </section>
+
+        <section id="opal-automation">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Automate the SEO cycle with Opal
+            <a href="#opal-automation" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
+            Everything on this page - metadata fields, sitemap freshness, structured data, robots
+            rules - can be audited and updated automatically. Opal ships a set of specialized agents
+            that read your live site via Graph, surface issues, and write fixes back to the CMS via
+            the Management API.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            {[
+              {
+                name: "GEO Auditor Agent",
+                anchor: "geo-seo-agents",
+                what: "Checks AI crawler accessibility, Core Web Vitals, schema markup, citation readiness, and E-E-A-T signals - then outputs a prioritized action plan.",
+                tags: ["Crawler access", "Schema", "E-E-A-T"],
+              },
+              {
+                name: "SEO Metadata Optimization Agent",
+                anchor: "geo-seo-agents",
+                what: "Evaluates metaTitle, metaDescription, and OG fields for every URL - scores them and surfaces specific improvements ranked by impact.",
+                tags: ["Title / description", "OG tags", "Keyword density"],
+              },
+              {
+                name: "SEO Metadata Implementation Agent",
+                anchor: "geo-seo-agents",
+                what: "Takes the Optimization Agent's output and writes the improved metadata directly into the CMS content item via the Management API. No copy-paste.",
+                tags: ["Management API write", "Auto-publish", "Review queue"],
+              },
+            ].map(({ name, anchor, what, tags }) => (
+              <div key={name} className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex flex-col gap-4">
+                <div>
+                  <p className="font-display font-semibold text-on-surface mb-2">{name}</p>
+                  <p className="text-sm text-on-surface-variant leading-relaxed">{what}</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {tags.map((t) => (
+                    <span key={t} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-low text-on-surface-variant border border-ghost-border">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                <Link
+                  href={`/demo/opal#${anchor}`}
+                  className="mt-auto text-sm font-semibold text-brand hover:underline"
+                >
+                  See agent details →
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex items-center justify-between gap-6">
+            <div>
+              <p className="font-display font-semibold text-on-surface mb-1">Full Opal use-cases demo</p>
+              <p className="text-sm text-on-surface-variant leading-relaxed max-w-xl">
+                GEO/SEO agents, content creation and review workflows, workflow orchestration
+                triggers, and the developer SDK for building custom tools Opal can call.
+              </p>
+            </div>
+            <Link
+              href="/demo/opal"
+              className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold bg-brand text-on-brand hover:bg-brand-dim transition-colors"
+            >
+              Explore Opal demos →
+            </Link>
+          </div>
         </section>
 
       </div>

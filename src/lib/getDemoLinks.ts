@@ -45,6 +45,13 @@ export function getDemoCategories(): DemoCategory[] {
         { href: "/demo/error-handling",  label: "Error Handling",   description: "Graceful degradation, notFound vs 500, error boundaries, and fallback data" },
       ],
     },
+    {
+      label: "AI",
+      links: [
+        { href: "/demo/opal", label: "Opal AI Agents", description: "GEO, SEO, content review agents, workflow orchestration, and developer SDK" },
+        { href: "/demo/mcp-server", label: "CMS MCP Server", description: "Connect any MCP-compatible AI assistant to the CMS for natural language content authoring and querying" },
+      ],
+    },
   ];
 }
 
