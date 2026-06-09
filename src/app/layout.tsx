@@ -36,11 +36,13 @@ const themeScript = `(function(){var t=localStorage.getItem('theme');var s=windo
 // parsing — before React hydration, before any useEffect fires.
 const odpInitScript = [
   "var zaius=window['zaius']||(window['zaius']=[]);",
-  "zaius.methods=['initialize','entity','event','identify','consent','dispatch'];",
-  "zaius.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);zaius.push(t);return zaius;};};",
-  "for(var i=0;i<zaius.methods.length;i++){zaius[zaius.methods[i]]=zaius.factory(zaius.methods[i]);}",
-  "zaius.initialize=function(id){if(zaius.invoked)return;zaius.invoked=true;zaius.trackerId=id;var s=document.createElement('script');s.type='text/javascript';s.async=true;s.src='https://static.zaius.io/zaius.min.js';document.head.appendChild(s);};",
-  `zaius.initialize(${JSON.stringify(process.env.NEXT_PUBLIC_OPTIMIZELY_ODP_TRACKER_ID ?? "")});`,
+  "zaius.methods=['initialize','onload','customer','entity','event','subscribe','unsubscribe','consent','identify','anonymize','dispatch'];",
+  "zaius.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);zaius.push(t);return zaius}};",
+  "(function(){",
+  "for(var i=0;i<zaius.methods.length;i++){var method=zaius.methods[i];zaius[method]=zaius.factory(method)}",
+  `var e=document.createElement('script');e.type='text/javascript';e.async=true;e.src=('https:'===document.location.protocol?'https://':'http://')+'d1igp3oop3iho5.cloudfront.net/v2/${process.env.NEXT_PUBLIC_OPTIMIZELY_ODP_TRACKER_ID ?? ""}/zaius-min.js';`,
+  "var t=document.getElementsByTagName('script')[0];t.parentNode.insertBefore(e,t);",
+  "})();",
 ].join("");
 
 export default function RootLayout({ children }: { children: ReactNode }) {
