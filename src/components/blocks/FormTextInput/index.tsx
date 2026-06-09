@@ -35,7 +35,7 @@ export default function FormTextInput(props: FormTextInputProps) {
   const type = data.inputType ?? "text";
 
   return (
-    <div className="max-w-2xl mx-auto px-8 py-3">
+    <div data-component="FormTextInput" className="max-w-2xl mx-auto px-8 py-3">
       {data.label && (
         <FieldLabel htmlFor={name} label={data.label} required={data.required} pa={pa("label")} />
       )}

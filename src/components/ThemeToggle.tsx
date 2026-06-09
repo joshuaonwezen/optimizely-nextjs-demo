@@ -39,6 +39,7 @@ export default function ThemeToggle() {
 
   return (
     <button
+      data-component="ThemeToggle"
       onClick={toggle}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       className="p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"

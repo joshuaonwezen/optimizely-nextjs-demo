@@ -72,6 +72,7 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
 
   return (
     <div
+      data-component="StatsCounterBlock"
       className={`text-center p-8 ${isBrand ? "bg-gradient-brand rounded-xl" : ""}`}
     >
       {data.value && (

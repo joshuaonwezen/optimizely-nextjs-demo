@@ -57,7 +57,7 @@ export default function TeamMemberBlock(props: TeamMemberBlockProps) {
   const linkedinHref = resolveUrl(data.linkedinUrl);
 
   return (
-    <div className="rounded-2xl bg-surface-lowest border border-ghost-border p-6 text-center hover-ambient transition-shadow">
+    <div data-component="TeamMemberBlock" className="rounded-2xl bg-surface-lowest border border-ghost-border p-6 text-center hover-ambient transition-shadow">
       <div className="relative w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden bg-surface-low">
         {photoUrl ? (
           <Image

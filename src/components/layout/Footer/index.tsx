@@ -4,7 +4,7 @@ import { getDemoCategories } from "@/lib/getDemoLinks";
 export default function Footer() {
   const categories = getDemoCategories();
   return (
-    <footer className="py-16 bg-surface-low">
+    <footer data-component="Footer" className="py-16 bg-surface-low">
       <div className="max-w-7xl mx-auto px-8">
         <div className="flex flex-wrap justify-center gap-x-12 gap-y-6 mb-8">
           {categories.map((category) => (

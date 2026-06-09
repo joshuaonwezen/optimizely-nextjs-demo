@@ -61,7 +61,7 @@ export function ProductHeroCtaClient({ href, label, isEditMode, ctaUrlDisplay, p
   }, []);
 
   return (
-    <div>
+    <div data-component="ProductHeroCtaClient">
       <a href={isEditMode ? undefined : (href ?? undefined)} className={ctaClass}>
         <span {...paAttrs}>{label ?? "Learn More"}</span>
       </a>

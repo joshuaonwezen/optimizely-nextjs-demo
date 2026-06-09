@@ -232,6 +232,19 @@ Case-sensitive. If the FX flag has variation key `variation_1`, the CMS variatio
 ### FX datafile has 60s cache
 Changes in the FX console take up to 60 seconds to propagate. Wait before concluding a flag isn't working.
 
+### Middleware rewrite — non-CMS routes must be excluded
+The middleware appends variation segments to the URL path (e.g. `/savings/__v_homepage_audience--variation_1`) so each ISR cache key is stable per bucket. Any route that is NOT a CMS page must be excluded from this rewrite or it will 404: the rewritten path won't match its Next.js route and will fall through to the `[[...slug]]` catch-all, which calls `notFound()`.
+
+Current exclusions in `src/middleware.ts`:
+```ts
+if (request.nextUrl.pathname.startsWith("/api/")) return response;
+if (request.nextUrl.pathname.startsWith("/preview")) return response;
+if (/^\/demo(\/|$)/.test(request.nextUrl.pathname)) return response;
+if (request.nextUrl.pathname.includes(VARIATION_MARKER)) return response;
+```
+
+Add a similar early-return whenever a new non-CMS route is introduced (landing pages, auth flows, etc.).
+
 ---
 
 ## Graph Caching
@@ -346,6 +359,10 @@ export default async function CmsPage() {
 ```
 All query strings and constant data belong at module level so the file is scannable: constants at the top, logic in functions.
 
+### Missing `data-component` attribute
+
+Every component's outermost rendered element must have `data-component="ComponentName"` as its first attribute. This enables client-side scripts to target components reliably without coupling to class names (e.g. `document.querySelector('[data-component="HeroBlock"]')`). Apply it to all components in `src/components/` — blocks, layout, demo, pages, and experience. Skip components that render `null` or are effect-only.
+
 ### Em dashes in prose and code comments
 Do not use em dashes (`—`) anywhere in the demo pages: prose, JSX text, code snippet strings, or code comments. Use a regular hyphen with spaces (` - `) instead. Em dashes read as an AI-generation artifact.
 
@@ -353,7 +370,7 @@ Do not use em dashes (`—`) anywhere in the demo pages: prose, JSX text, code s
 
 ## Adding a New Block — Checklist
 
-1. `src/components/blocks/<Name>/index.tsx` — export `NameType` (contentType) + default component
+1. `src/components/blocks/<Name>/index.tsx` — export `NameType` (contentType) + default component. Add `data-component="Name"` as the first attribute on the outermost rendered element of the default export.
 2. `src/components/blocks/<Name>/Name.fragment.ts` — GraphQL fragment, co-located with the block component
 3. `src/lib/optimizely/componentRegistry.ts` — three edits:
    - Import the block and its type

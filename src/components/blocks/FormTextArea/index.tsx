@@ -32,7 +32,7 @@ export default function FormTextArea(props: FormTextAreaProps) {
   const name = fieldName(data.label, data.fieldName);
 
   return (
-    <div className="max-w-2xl mx-auto px-8 py-3">
+    <div data-component="FormTextArea" className="max-w-2xl mx-auto px-8 py-3">
       {data.label && (
         <FieldLabel htmlFor={name} label={data.label} required={data.required} pa={pa("label")} />
       )}

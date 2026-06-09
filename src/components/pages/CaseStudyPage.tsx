@@ -125,7 +125,7 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
   const related = (content.relatedCaseStudies ?? []).filter((r) => r?._metadata?.url?.default);
 
   return (
-    <article className="max-w-4xl mx-auto px-8 pt-16 pb-24">
+    <article data-component="CaseStudyPage" className="max-w-4xl mx-auto px-8 pt-16 pb-24">
       <header className="mb-12">
         <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-6">
           <span className="text-brand">Case Study</span>

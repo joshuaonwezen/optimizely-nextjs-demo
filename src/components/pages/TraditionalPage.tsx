@@ -7,7 +7,7 @@ export default function TraditionalPage({ content }: { content: any }) {
   const { pa } = getPreviewUtils(content);
 
   return (
-    <div className="max-w-4xl mx-auto px-8 py-24">
+    <div data-component="TraditionalPage" className="max-w-4xl mx-auto px-8 py-24">
       <div className="mb-12">
         {content.heading && (
           <h1

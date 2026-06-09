@@ -78,7 +78,7 @@ export default function BlankSection({ content }: { content: any }) {
   const nodes: any[] = content?.nodes ?? [];
 
   return (
-    <section {...pa(content)}>
+    <section data-component="BlankSection" {...pa(content)}>
       <OptimizelyGridSection nodes={nodes} row={Row} column={Column} />
     </section>
   );

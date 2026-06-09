@@ -46,7 +46,7 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   if (!pageTitle && !isDev) return null;
 
   return (
-    <section className="py-20">
+    <section data-component="FeaturedContentBlock" className="py-20">
       <div className="insight-rail max-w-2xl">
         {data.label && (
           <span

@@ -31,7 +31,7 @@ export default function OutcomeItemBlock(props: OutcomeItemBlockProps) {
   if (!data.stat && !data.label) return null;
 
   return (
-    <div className="text-center px-6 py-4">
+    <div data-component="OutcomeItemBlock" className="text-center px-6 py-4">
       <div className="flex items-baseline justify-center gap-1">
         {data.stat && (
           <span

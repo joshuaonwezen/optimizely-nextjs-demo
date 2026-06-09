@@ -43,7 +43,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
 
   if (isFlat) {
     return (
-      <div className="max-w-3xl mx-auto px-8">
+      <div data-component="FaqItemBlock" className="max-w-3xl mx-auto px-8">
         <details className="group border-b border-outline-variant">
           <summary
             {...pa("question")}
@@ -74,7 +74,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-8 mb-2">
+    <div data-component="FaqItemBlock" className="max-w-3xl mx-auto px-8 mb-2">
       <details className="group border border-ghost-border rounded-xl bg-surface-lowest overflow-hidden">
         <summary
           {...pa("question")}

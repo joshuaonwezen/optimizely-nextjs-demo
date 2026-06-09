@@ -34,6 +34,7 @@ export default function FormContainerBlock(props: FormContainerBlockProps) {
 
   return (
     <section
+      data-component="FormContainerBlock"
       className="py-16"
       data-form-submit-url={data.submitUrl?.default ?? "/api/form-submit"}
       data-form-success-message={data.successMessage ?? "Thank you! We'll be in touch soon."}

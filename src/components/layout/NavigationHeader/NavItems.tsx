@@ -251,7 +251,7 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
       )}
 
       {/* ── Desktop nav (md+) ─────────────────────────────── */}
-      <div className="hidden md:flex items-center gap-1">
+      <div data-component="NavItems" className="hidden md:flex items-center gap-1">
 
         {/* CMS nav tree */}
         {tree.map((node) => {

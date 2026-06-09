@@ -95,7 +95,7 @@ export default async function ArticlePage({ content }: { content: ArticleContent
   const related = (content.relatedArticles ?? []).filter((r) => r?._metadata?.url?.default);
 
   return (
-    <article className="max-w-3xl mx-auto px-8 pt-16 pb-24">
+    <article data-component="ArticlePage" className="max-w-3xl mx-auto px-8 pt-16 pb-24">
       <header className="mb-12">
         <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-6">
           {categoryLabel && (

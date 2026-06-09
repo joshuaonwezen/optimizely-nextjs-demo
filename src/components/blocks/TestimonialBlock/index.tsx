@@ -99,7 +99,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
   }
 
   return (
-    <div className={wrapperClass}>
+    <div data-component="TestimonialBlock" className={wrapperClass}>
       {data.quote && (
         <blockquote
           {...pa("quote")}

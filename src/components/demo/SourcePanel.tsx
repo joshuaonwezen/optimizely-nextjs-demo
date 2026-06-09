@@ -11,7 +11,7 @@ interface Props {
 
 export default function SourcePanel({ heading = "Source files", files }: Props) {
   return (
-    <details className="group mt-12 border border-ghost-border rounded-2xl overflow-hidden">
+    <details data-component="SourcePanel" className="group mt-12 border border-ghost-border rounded-2xl overflow-hidden">
       <summary className="flex items-center justify-between px-6 py-4 cursor-pointer bg-surface-low hover:bg-surface-low/80 transition-colors list-none select-none">
         <span className="flex items-center gap-2 text-sm font-semibold text-on-surface">
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none" className="text-brand shrink-0">

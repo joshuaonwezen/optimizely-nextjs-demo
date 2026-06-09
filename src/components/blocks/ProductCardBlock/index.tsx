@@ -90,6 +90,7 @@ export default function ProductCardBlock(props: ProductCardBlockProps) {
 
   return (
     <a
+      data-component="ProductCardBlock"
       href={href}
       className={`hover-ambient group flex flex-col h-full rounded-2xl p-8 bg-surface-lowest ${isFeatured ? "ring-2 ring-brand/20 shadow-ambient" : ""}`}
     >

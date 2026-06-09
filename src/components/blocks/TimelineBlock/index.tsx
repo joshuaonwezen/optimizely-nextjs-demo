@@ -93,7 +93,7 @@ export default async function TimelineBlock(props: TimelineBlockProps) {
   const milestones = await loadMilestones(keys);
 
   return (
-    <section className="py-20 max-w-3xl mx-auto px-8">
+    <section data-component="TimelineBlock" className="py-20 max-w-3xl mx-auto px-8">
       {data.heading && (
         <h2
           {...pa("heading")}

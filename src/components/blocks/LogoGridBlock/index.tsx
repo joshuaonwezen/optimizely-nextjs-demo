@@ -85,7 +85,7 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
   const showPlaceholders = logos.length === 0;
 
   return (
-    <section className="py-20 px-8 max-w-7xl mx-auto text-center">
+    <section data-component="LogoGridBlock" className="py-20 px-8 max-w-7xl mx-auto text-center">
       {data.heading && (
         <h2
           {...pa("heading")}

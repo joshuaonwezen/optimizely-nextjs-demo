@@ -50,7 +50,7 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
     : `${wrapperBase} bg-surface-lowest border-ghost-border hover-ambient`;
 
   return (
-    <div className={wrapperStyle}>
+    <div data-component="PricingTierBlock" className={wrapperStyle}>
       {data.highlighted && (
         <span className="inline-block text-xs font-bold uppercase tracking-widest opacity-80 mb-3">
           Recommended

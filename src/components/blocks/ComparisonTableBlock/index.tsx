@@ -62,7 +62,7 @@ export default function ComparisonTableBlock(props: ComparisonTableBlockProps) {
   if (columns.length === 0 || rows.length === 0) return null;
 
   return (
-    <section className="py-20 max-w-6xl mx-auto px-8">
+    <section data-component="ComparisonTableBlock" className="py-20 max-w-6xl mx-auto px-8">
       {data.heading && (
         <h2
           {...pa("heading")}

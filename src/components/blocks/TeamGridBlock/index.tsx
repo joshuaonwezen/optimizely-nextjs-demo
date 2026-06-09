@@ -91,7 +91,7 @@ export default async function TeamGridBlock(props: TeamGridBlockProps) {
   const members = await loadMembers(keys);
 
   return (
-    <section className="py-20 max-w-7xl mx-auto px-8">
+    <section data-component="TeamGridBlock" className="py-20 max-w-7xl mx-auto px-8">
       <div className="text-center mb-12 max-w-2xl mx-auto">
         {data.heading && (
           <h2 {...pa("heading")} className="font-display text-3xl md:text-4xl font-extrabold text-on-surface mb-3">

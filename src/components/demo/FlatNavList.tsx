@@ -9,12 +9,12 @@ interface NavItem {
 export default function FlatNavList({ items }: { items: NavItem[] }) {
   if (items.length === 0) {
     return (
-      <p className="text-xs text-on-surface-variant italic py-4">No items found.</p>
+      <p data-component="FlatNavList" className="text-xs text-on-surface-variant italic py-4">No items found.</p>
     );
   }
 
   return (
-    <ul className="divide-y divide-ghost-border">
+    <ul data-component="FlatNavList" className="divide-y divide-ghost-border">
       {items.map((item) => (
         <li
           key={item.href}

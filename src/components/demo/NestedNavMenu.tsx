@@ -156,7 +156,7 @@ export default function NestedNavMenu({ tree }: Props) {
   const depth = maxDepth(tree);
 
   return (
-    <div>
+    <div data-component="NestedNavMenu">
       {/* Stats bar */}
       <div className="flex items-center justify-between mb-4 px-2">
         <div className="flex gap-4 text-xs text-on-surface-variant font-mono">

@@ -33,7 +33,7 @@ export default function FormSelect(props: FormSelectProps) {
   const optionList = data.options?.split(",").map((o) => o.trim()).filter(Boolean) ?? [];
 
   return (
-    <div className="max-w-2xl mx-auto px-8 py-3">
+    <div data-component="FormSelect" className="max-w-2xl mx-auto px-8 py-3">
       {data.label && (
         <FieldLabel htmlFor={name} label={data.label} required={data.required} pa={pa("label")} />
       )}

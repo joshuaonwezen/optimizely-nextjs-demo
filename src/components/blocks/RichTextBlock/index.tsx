@@ -42,7 +42,7 @@ export default function TextBlock(props: TextBlockProps) {
   // Typed GraphQL query: body arrives as { json: richTextAst }
   if (data.body && typeof data.body === "object" && "json" in data.body && data.body.json) {
     return (
-      <div {...pa("body")} className={containerClass}>
+      <div data-component="TextBlock" {...pa("body")} className={containerClass}>
         <div className="text-base leading-relaxed space-y-6">
           <RichText content={data.body.json as RichTextProps["content"]} />
         </div>
@@ -54,6 +54,7 @@ export default function TextBlock(props: TextBlockProps) {
   if (typeof data.body === "string" && data.body) {
     return (
       <div
+        data-component="TextBlock"
         {...pa("body")}
         className={containerClass}
         dangerouslySetInnerHTML={{ __html: data.body }}

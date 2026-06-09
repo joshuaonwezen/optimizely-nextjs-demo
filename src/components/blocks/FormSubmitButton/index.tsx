@@ -88,7 +88,7 @@ export default function FormSubmitButton(props: FormSubmitButtonProps) {
 
   if (status === "success") {
     return (
-      <div ref={ref} className={`max-w-2xl mx-auto px-8 pt-4 pb-2 ${alignment}`}>
+      <div data-component="FormSubmitButton" ref={ref} className={`max-w-2xl mx-auto px-8 pt-4 pb-2 ${alignment}`}>
         <p className="text-base font-semibold text-brand">
           {successMessage}
         </p>
@@ -101,7 +101,7 @@ export default function FormSubmitButton(props: FormSubmitButtonProps) {
     : "hover-lift font-display inline-block px-10 py-4 rounded-lg font-semibold text-base text-on-brand bg-gradient-brand border-none cursor-pointer disabled:opacity-60";
 
   return (
-    <div ref={ref} className={`max-w-2xl mx-auto px-8 pt-4 pb-2 ${alignment}`}>
+    <div data-component="FormSubmitButton" ref={ref} className={`max-w-2xl mx-auto px-8 pt-4 pb-2 ${alignment}`}>
       <button
         type="button"
         onClick={handleClick}

@@ -79,7 +79,7 @@ export default function AudienceSwitcher() {
   }
 
   return (
-    <div ref={ref} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+    <div data-component="AudienceSwitcher" ref={ref} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
       {open && (
         <div className="bg-surface-lowest border border-outline-variant rounded-2xl shadow-xl overflow-hidden w-56">
 

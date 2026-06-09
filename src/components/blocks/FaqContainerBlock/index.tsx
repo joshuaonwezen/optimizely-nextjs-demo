@@ -65,7 +65,7 @@ export default async function FaqContainerBlock(props: FaqContainerBlockProps) {
   const { pa } = getPreviewUtils(data as any);
 
   return (
-    <div className="py-16 max-w-3xl mx-auto px-8">
+    <div data-component="FaqContainerBlock" className="py-16 max-w-3xl mx-auto px-8">
       {data.heading && (
         <h2
           {...pa("heading")}

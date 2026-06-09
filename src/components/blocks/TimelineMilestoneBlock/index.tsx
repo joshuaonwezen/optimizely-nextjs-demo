@@ -30,7 +30,7 @@ export default function TimelineMilestoneBlock(props: TimelineMilestoneBlockProp
   const { pa } = getPreviewUtils(data as any);
 
   return (
-    <li className="relative pl-10 pb-10 border-l-2 border-ghost-border last:pb-0">
+    <li data-component="TimelineMilestoneBlock" className="relative pl-10 pb-10 border-l-2 border-ghost-border last:pb-0">
       <span className="absolute -left-2 top-1 w-4 h-4 rounded-full bg-brand border-4 border-surface" />
       {data.date && (
         <p

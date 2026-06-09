@@ -85,7 +85,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
   if (isInline) {
     const showSocial = ds?.showSocial === true;
     return (
-      <div className="flex items-center gap-3">
+      <div data-component="AuthorBlock" className="flex items-center gap-3">
         {avatarUrl && (
           <Image
             src={avatarUrl}
@@ -125,7 +125,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
   }
 
   return (
-    <article className="max-w-2xl mx-auto px-8 py-12 rounded-2xl bg-surface-lowest border border-ghost-border">
+    <article data-component="AuthorBlock" className="max-w-2xl mx-auto px-8 py-12 rounded-2xl bg-surface-lowest border border-ghost-border">
       <div className="flex items-start gap-5">
         {avatarUrl && (
           <Image

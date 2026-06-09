@@ -32,16 +32,15 @@ const borderClass: Record<CalloutVariant, string> = {
   do:      "border-l-green-500",
 };
 
-interface CalloutProps {
+interface CalloutProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: CalloutVariant;
   label?: string;
-  className?: string;
   children: React.ReactNode;
 }
 
-export function Callout({ variant = "note", label, className, children }: CalloutProps) {
+export function Callout({ variant = "note", label, className, children, ...rest }: CalloutProps) {
   return (
-    <div className={`bg-surface-lowest rounded-lg border-l-4 p-4 ${borderClass[variant]}${className ? ` ${className}` : ""}`}>
+    <div className={`bg-surface-lowest rounded-lg border-l-4 p-4 ${borderClass[variant]}${className ? ` ${className}` : ""}`} {...rest}>
       {label && (
         <p className="text-xs font-semibold text-on-surface mb-1.5">{label}</p>
       )}
@@ -85,7 +84,7 @@ export default function CalloutBlock(props: CalloutBlockProps) {
   if (!bodyContent) return null;
 
   return (
-    <Callout variant={variant} label={data.label ?? undefined}>
+    <Callout data-component="CalloutBlock" variant={variant} label={data.label ?? undefined}>
       {bodyContent}
     </Callout>
   );

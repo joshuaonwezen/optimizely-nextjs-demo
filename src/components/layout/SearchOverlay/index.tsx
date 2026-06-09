@@ -69,6 +69,7 @@ export default function SearchOverlay({ onClose }: Props) {
 
   return (
     <div
+      data-component="SearchOverlay"
       className="fixed inset-0 z-[100] bg-black/50 flex items-start justify-center pt-24 px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
