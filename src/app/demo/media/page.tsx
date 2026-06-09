@@ -19,7 +19,7 @@ const logoGridTs = fs.readFileSync(
 );
 
 export const metadata: Metadata = {
-  title: "Media & Images",
+  title: "Media & DAM Assets",
 };
 
 const IMAGE_PROPERTY_SNIPPET = `// Single image field on a content type.
@@ -40,9 +40,11 @@ export const ImageBlockType = contentType({
 // Array of images (e.g. a logo grid):
 // Use type: "array" with items: { type: "content", allowedTypes: ["_image"] }
 // Graph inline-expands array items automatically - no extra fetch needed.
+// indexingType: "disabled" is required here too.
 logos: {
   type: "array",
   items: { type: "content", allowedTypes: ["_image"] },
+  indexingType: "disabled",
 }`;
 
 const GRAPH_SHAPES_SNIPPET = `// Graph returns image references in two different shapes depending on context.
@@ -88,7 +90,7 @@ const NEXT_IMAGE_PATTERNS_SNIPPET = `// Three Next.js <Image> usage patterns for
 // 2. Fixed size - for avatars and thumbnails where dimensions are known
 <Image src={avatarUrl} alt={name} width={72} height={72} className="rounded-full object-cover" />
 
-// 3. Natural editorial image - for article images where aspect ratio comes from the asset
+// 3. Natural editorial image - provide a maximum intrinsic size and let CSS flow the layout
 <Image src={imageUrl} alt={altText} width={1200} height={675} className="w-full h-auto" />
 
 // sizes prop - always provide it with fill to avoid downloading full-width images on mobile:
@@ -107,7 +109,11 @@ images: {
   remotePatterns: [
     {
       protocol: "https",
-      hostname: "**.cms.optimizely.com",  // CMS / DAM uploaded assets
+      hostname: "**.cms.optimizely.com",  // CMS-uploaded assets (globalassets, etc.)
+    },
+    {
+      protocol: "https",
+      hostname: "**.cmp.optimizely.com",  // DAM assets served from CMP (images1/2/3.cmp.optimizely.com)
     },
     {
       protocol: "https",
@@ -119,12 +125,34 @@ images: {
 // If editors can add external image URLs (e.g. a url property type), add those
 // domains too - or use loader: "custom" to proxy all images through your own origin.`;
 
+const IMAGE_PROXY_SNIPPET = `// src/app/api/image-proxy/route.ts
+// A simple Next.js route handler that fetches the image server-side and streams
+// it back. Validate the source hostname before fetching to prevent open-proxy abuse.
+
+const ALLOWED_HOSTS = [".cms.optimizely.com", ".cmp.optimizely.com"];
+
+export async function GET(req: Request) {
+  const src = new URL(req.url).searchParams.get("src") ?? "";
+  if (!ALLOWED_HOSTS.some((h) => src.includes(h))) {
+    return new Response("Forbidden", { status: 403 });
+  }
+  const upstream = await fetch(src);
+  return new Response(upstream.body, {
+    headers: {
+      "Content-Type": upstream.headers.get("Content-Type") ?? "image/jpeg",
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
+  });
+}
+
+// Then use the proxy URL as the src:
+// <Image src={\`/api/image-proxy?src=\${encodeURIComponent(damUrl)}\`} ... />`;
+
 const DAM_ASSETS_SNIPPET = `// damAssets() - SDK helper for responsive srcsets and DAM-stored alt text.
 // Use it when you want responsive images without manually building srcset strings,
 // or when alt text is stored in the DAM rather than as a separate CMS property.
 
 import { damAssets } from "@optimizely/cms-sdk";
-import Image from "next/image";
 
 export default function HeroBlock({ content }) {
   const { getSrcset, getAlt, isDamImageAsset } = damAssets(content);
@@ -153,6 +181,69 @@ export default function HeroBlock({ content }) {
 // Note: getSrcset returns a plain srcset string for <img>, not a Next.js <Image>.
 // Use Next.js <Image> with a fixed src when you want automatic format conversion (WebP/AVIF).`;
 
+const DAM_RENDITIONS_SNIPPET = `// DAM images in Graph expose named renditions via cmp_PublicImageAsset.
+// The content picker cannot select a specific rendition directly - use one of
+// two patterns depending on whether the author or the frontend should decide.
+
+// ------ Pattern 1: author picks the rendition from a dropdown ------
+// Add a string property alongside the image field. The enum is a hardcoded list
+// that matches the rendition names defined in your DAM instance.
+
+export const HeroBlockType = contentType({
+  key: "HeroBlock",
+  baseType: "_component",
+  properties: {
+    image: { type: "contentReference", allowedTypes: ["_image"], indexingType: "disabled" },
+    imageRendition: {
+      type: "string",
+      displayName: "Image Rendition",
+      enum: [
+        { value: "original",    displayName: "Original" },
+        { value: "thumbnail",   displayName: "Thumbnail" },
+        { value: "banner-wide", displayName: "Banner (wide)" },
+        { value: "square",      displayName: "Square" },
+      ],  // must match rendition names defined in your DAM instance exactly
+    },
+  },
+});
+
+// Request renditions on the image reference in your Graph fragment.
+// cmp_PublicImageAsset fields are PascalCase - Url, Renditions, Name, Width, Height:
+const HERO_FRAGMENT = gql\`
+  fragment HeroFields on HeroBlock {
+    image {
+      ... on cmp_PublicImageAsset {
+        Renditions { Name Url Width Height }
+        Url
+      }
+    }
+    imageRendition
+  }
+\`;
+
+// In the component, pick the selected rendition or fall back to the original URL.
+// Note: cmp_PublicImageAsset.Url is a plain string - no .default wrapper:
+const renditions = content.image?.Renditions ?? [];
+const rendition = renditions.find((r) => r.Name === content.imageRendition);
+const src = rendition?.Url ?? content.image?.Url;
+
+// ------ Pattern 2: frontend auto-selects based on breakpoint ------
+// No extra CMS property needed. The frontend maps screen sizes to known rendition names
+// and builds a srcset from the rendition URLs Graph returns.
+
+const RENDITION_WIDTHS: Record<string, number> = {
+  "thumbnail":  480,
+  "medium":     800,
+  "banner-wide": 1600,
+};
+
+const srcset = renditions
+  .filter((r) => r.Name in RENDITION_WIDTHS)
+  .map((r) => \`\${r.Url} \${RENDITION_WIDTHS[r.Name]}w\`)
+  .join(", ");
+
+// <img srcSet={srcset} sizes="100vw" alt={alt} />`;
+
 const INDEXING_SNIPPET = `// Always set indexingType: "disabled" on image and file reference fields.
 // Graph cannot index binary assets for text search. Without this, Optimizely
 // Graph attempts to process the reference during indexing and wastes cycles.
@@ -172,8 +263,8 @@ export default function MediaDemoPage() {
   return (
     <>
       <DemoHero
-        title="Media & Images"
-        description="How to model image properties, query them from Graph, and render them with Next.js Image - including the two different shapes Graph returns depending on context."
+        title="Media & DAM Assets"
+        description="How to model image properties, query them from Graph, and render them with Next.js Image - including DAM rendition patterns and the two different shapes Graph returns depending on context."
       />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
@@ -243,11 +334,36 @@ export default function MediaDemoPage() {
             Next.js <code className="bg-surface-low px-1 rounded font-mono text-xs">&lt;Image&gt;</code> blocks
             remote images from any domain not listed in <code className="bg-surface-low px-1 rounded font-mono text-xs">remotePatterns</code>.
             The error is a 400 at runtime, not a build-time failure - easy to miss locally if
-            the images happen to load from cache. Two patterns are needed: one for assets uploaded
-            to the Optimizely DAM (<code className="bg-surface-low px-1 rounded font-mono text-xs">**.cms.optimizely.com</code>)
+            the images happen to load from cache. Three patterns are needed: one for CMS-uploaded
+            assets (<code className="bg-surface-low px-1 rounded font-mono text-xs">**.cms.optimizely.com</code>),
+            one for DAM assets served by CMP (<code className="bg-surface-low px-1 rounded font-mono text-xs">**.cmp.optimizely.com</code> -
+            images are served from subdomains like <code className="bg-surface-low px-1 rounded font-mono text-xs">images1</code>,{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">images2</code>,{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">images3</code>),
             and one for Graph CDN delivery (<code className="bg-surface-low px-1 rounded font-mono text-xs">cg.optimizely.com</code>).
           </p>
           <CodeBlock code={REMOTE_PATTERNS_SNIPPET} label="next.config.ts - required remotePatterns" />
+
+        </section>
+
+        <section id="image-proxy">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Image proxying in production
+            <SectionAnchor id="image-proxy" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            For production sites, consider proxying DAM images through your own domain rather than
+            loading them directly from Optimizely CDN subdomains. This keeps asset URLs stable if
+            Optimizely&apos;s CDN hostnames change, lets you set your own{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">Cache-Control</code> headers,
+            and avoids exposing third-party hostnames in your page HTML.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            A minimal Next.js route handler fetches the image server-side and streams it back.
+            Always validate the source hostname before fetching - without it the route becomes
+            an open proxy that anyone can use to fetch arbitrary URLs through your origin.
+          </p>
+          <CodeBlock code={IMAGE_PROXY_SNIPPET} label="src/app/api/image-proxy/route.ts" />
         </section>
 
         <section id="next-image">
@@ -316,13 +432,50 @@ export default function MediaDemoPage() {
           </div>
         </section>
 
+        <section id="dam-renditions">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            DAM renditions
+            <SectionAnchor id="dam-renditions" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            The CMS content picker selects a DAM image asset but cannot select a specific rendition.
+            All rendition data is available in Graph via{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">cmp_PublicImageAsset</code>,
+            so the choice of which rendition to serve is handled in code. Two patterns cover the
+            main scenarios.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+              <p className="text-xs font-semibold text-on-surface mb-2">Pattern 1 - author picks the rendition</p>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Add a second property to the content type: a string enum whose values are a hardcoded
+                list of rendition names from your DAM instance. The author sets the image and then
+                picks the rendition from the dropdown. The frontend reads both fields from Graph and
+                selects the matching rendition URL.
+              </p>
+            </div>
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+              <p className="text-xs font-semibold text-on-surface mb-2">Pattern 2 - frontend auto-selects by breakpoint</p>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                No extra CMS property needed. The frontend maintains a mapping of screen sizes to
+                known rendition names (e.g. thumbnail for mobile, banner-wide for desktop) and builds
+                a srcset from the rendition URLs Graph returns. Authors only pick the image.
+              </p>
+            </div>
+          </div>
+
+          <CodeBlock code={DAM_RENDITIONS_SNIPPET} label="Author-selected rendition + auto-responsive srcset" />
+        </section>
+
         <KeyPoints points={[
           <><strong className="text-on-surface">Always set indexingType: &quot;disabled&quot; on image fields.</strong> Graph cannot index binary assets. Omitting it wastes indexing cycles on every publish and may cause schema warnings.</>,
           <><strong className="text-on-surface">Graph returns two different shapes for image references.</strong> Composition context gives <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata.url.default</code>; direct page queries give <code className="bg-surface-low px-1 rounded font-mono text-xs">url.default</code>. Write a defensive helper that checks both.</>,
-          <><strong className="text-on-surface">Allowlist both CMS domains in next.config before using &lt;Image&gt;.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">**.cms.optimizely.com</code> for DAM assets, <code className="bg-surface-low px-1 rounded font-mono text-xs">cg.optimizely.com</code> for Graph CDN. The error is a 400 at runtime - not caught at build time.</>,
+          <><strong className="text-on-surface">Allowlist all three Optimizely domains in next.config before using &lt;Image&gt;.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">**.cms.optimizely.com</code> for CMS assets, <code className="bg-surface-low px-1 rounded font-mono text-xs">**.cmp.optimizely.com</code> for DAM assets from CMP, and <code className="bg-surface-low px-1 rounded font-mono text-xs">cg.optimizely.com</code> for Graph CDN. Missing any one causes a 400 at runtime - not caught at build time.</>,
           <><strong className="text-on-surface">Always provide a sizes prop when using fill.</strong> Without it Next.js defaults to 100vw, causing the browser to download a full-width image even on mobile devices.</>,
           <><strong className="text-on-surface">Image arrays use type: &quot;array&quot; with items: type: &quot;content&quot;.</strong> Graph inline-expands these automatically - all <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata</code> fields arrive with the page query, no extra fetch needed.</>,
           <><strong className="text-on-surface">damAssets() handles preview token injection automatically.</strong> If you pass a DAM image ref through <code className="bg-surface-low px-1 rounded font-mono text-xs">getSrcset()</code> in edit mode, the helper appends the preview token so the image loads correctly in Visual Builder.</>,
+          <><strong className="text-on-surface">The content picker cannot select a DAM rendition - serve it from code.</strong> All rendition data is available in Graph under <code className="bg-surface-low px-1 rounded font-mono text-xs">cmp_PublicImageAsset.renditions</code>. Either let the author pick a rendition name from a dropdown property, or have the frontend map breakpoints to known rendition names automatically.</>,
         ]} />
 
         <SourcePanel

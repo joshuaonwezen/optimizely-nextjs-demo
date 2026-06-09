@@ -15,7 +15,7 @@ export function getDemoCategories(): DemoCategory[] {
         { href: "/demo/seo",               label: "SEO & Metadata",       description: "generateMetadata, sitemaps, JSON-LD, and image optimization" },
         { href: "/demo/management-api",    label: "Management API",       description: "Programmatic content creation, seeding, and migrations" },
         { href: "/demo/rich-text",         label: "Rich Text",            description: "richText property type, JSON vs HTML rendering, and embedded blocks" },
-        { href: "/demo/media",             label: "Media & Images",        description: "Image property modelling, Graph response shapes, next/image patterns, and damAssets" },
+        { href: "/demo/media",             label: "Media & DAM Assets",    description: "Image property modelling, DAM rendition patterns, Graph response shapes, and next/image" },
         { href: "/demo/content-reuse",     label: "Content Reuse",        description: "Referenced vs embedded content - when one update should propagate everywhere" },
         { href: "/demo/global-settings",   label: "Global Settings",      description: "Singleton content items for site-wide config, ISR cache strategy" },
         { href: "/demo/content-lifecycle", label: "Content Lifecycle",    description: "Editorial states, scheduled publishing, and webhook events" },

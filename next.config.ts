@@ -36,6 +36,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "**.cmp.optimizely.com",
+      },
+      {
+        protocol: "https",
         hostname: "cg.optimizely.com",
       },
     ],
