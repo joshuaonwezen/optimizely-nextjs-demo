@@ -180,10 +180,10 @@ export default function McpServerDemoPage() {
         <section id="content-type-exploration">
           <SectionHeading id="content-type-exploration">Content Type Exploration</SectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            Understand a project&apos;s data model without opening the CMS UI or reading source files.
-            Useful when onboarding to an existing project, debugging a Graph query that returns
-            unexpected fields, or figuring out what properties are available before writing a
-            seed script.
+            Auditing content types in the CMS UI means navigating menus for each type individually.
+            With MCP it is a single natural-language query. Useful when onboarding to an existing
+            project, debugging a Graph query that returns unexpected fields, or figuring out what
+            properties are available before writing a seed script.
           </p>
           <div className="grid md:grid-cols-2 gap-6">
             <ExampleCard
@@ -330,6 +330,16 @@ export default function McpServerDemoPage() {
                 "Can be followed up with: 'Add a node under Insights for the new Savings hub'",
               ]}
             />
+            <ExampleCard
+              title="Plan a type deprecation"
+              prompt="We are deprecating LegacyBannerBlock. Find every page that still has it in a content area and give me a list of URLs and edit links."
+              steps={[
+                "MCP queries Graph for all content items whose composition includes LegacyBannerBlock",
+                "Returns parent page keys, titles, and CMS edit links for each affected item",
+                "Surfaces draft and published pages separately so the migration can be phased",
+                "Immediately actionable - follow up with 'Replace each one with HeroBlock using the same heading and image'",
+              ]}
+            />
           </div>
         </section>
 
@@ -338,7 +348,9 @@ export default function McpServerDemoPage() {
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The MCP server fits into common development tasks - not just one-off content
             operations. These examples show how it speeds up the feedback loop when building
-            new content types, writing seed scripts, or debugging Graph query issues.
+            new content types, writing seed scripts, or debugging Graph query issues. It also
+            helps when onboarding new developers - instead of learning the CMS UI to understand
+            the content model, they can ask the MCP server directly.
           </p>
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <ExampleCard
@@ -379,6 +391,16 @@ export default function McpServerDemoPage() {
                 "Sorts by _metadata.created descending to identify the newest item",
                 "Calls the Management API delete endpoint for each duplicate key",
                 "Confirms deletion by re-querying and returning the remaining item count",
+              ]}
+            />
+            <ExampleCard
+              title="Scaffold a block component from a content type"
+              prompt="Read the PricingTierBlock content type and generate a TypeScript React component that renders all its properties with the correct data-component attribute and preview utils."
+              steps={[
+                "MCP calls list_content_types and returns PricingTierBlock's full property schema",
+                "AI maps each property type to its rendering pattern - string to <p>, richText to <RichText />, contentReference to <Image />",
+                "Generates the component with correct TypeScript types, pa() preview attributes, and data-component",
+                "No need to open the CMS UI, copy field names by hand, or guess at property shapes",
               ]}
             />
           </div>
