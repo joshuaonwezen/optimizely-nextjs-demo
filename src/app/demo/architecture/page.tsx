@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import DemoHero from "@/components/demo/DemoHero";
 
 export const metadata: Metadata = {
   title: "System Architecture",
@@ -62,22 +63,12 @@ function Box({
 
 export default function ArchitecturePage() {
   return (
-    <div className="min-h-screen bg-surface">
+    <>
 
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            System Architecture
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            How Optimizely SaaS CMS, Graph, and Feature Experimentation connect to this Next.js app -
-            request flow, flag evaluation at the edge, per-variation ISR caching, and cache invalidation on publish.
-          </p>
-        </div>
-      </section>
+      <DemoHero
+        title="System Architecture"
+        description="How Optimizely SaaS CMS, Graph, and Feature Experimentation connect to this Next.js app - request flow, flag evaluation at the edge, per-variation ISR caching, and cache invalidation on publish."
+      />
 
       <div className="max-w-6xl mx-auto px-8 py-16 space-y-20">
 
@@ -581,6 +572,6 @@ export default function ArchitecturePage() {
         </section>
 
       </div>
-    </div>
+    </>
   );
 }

@@ -8,6 +8,7 @@ import { getNavigationFromFlags, GET_NAVIGATION_FROM_FLAGS_QUERY } from "@/lib/g
 import { getNavigationFromHierarchy, GET_CHILDREN_BY_ANCESTOR_QUERY } from "@/lib/graphql/queries/GetNavigationFromHierarchy";
 import { getNavigationFromContentType, GET_NAVIGATION_FROM_CONTENT_TYPE_QUERY } from "@/lib/graphql/queries/GetNavigationFromContentType";
 import SourcePanel from "@/components/demo/SourcePanel";
+import DemoHero from "@/components/demo/DemoHero";
 
 function readSource(relPath: string): string {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -188,34 +189,24 @@ export default async function NavigationDemoPage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Hero */}
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Navigation Strategies
-          </h1>
-          <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            Four ways to drive site navigation from Optimizely Graph - each with live
-            data fetched server-side so you can see exactly what each query returns.
-          </p>
-          <div className="flex flex-wrap gap-3 mt-8">
-            {[
-              "S1 · Manual block + @recursive",
-              "S2 · Include-in-nav flag",
-              "S3 · _ancestors hierarchy",
-              "S4 · Content type query",
-            ].map((label) => (
-              <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-                {label}
-              </span>
-            ))}
-          </div>
+    <>
+      <DemoHero
+        title="Navigation Strategies"
+        description="Four ways to drive site navigation from Optimizely Graph - each with live data fetched server-side so you can see exactly what each query returns."
+      >
+        <div className="flex flex-wrap gap-3 mt-8">
+          {[
+            "S1 · Manual block + @recursive",
+            "S2 · Include-in-nav flag",
+            "S3 · _ancestors hierarchy",
+            "S4 · Content type query",
+          ].map((label) => (
+            <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+              {label}
+            </span>
+          ))}
         </div>
-      </section>
+      </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -540,6 +531,6 @@ export default async function NavigationDemoPage() {
         />
 
       </div>
-    </div>
+    </>
   );
 }

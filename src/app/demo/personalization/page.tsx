@@ -6,6 +6,7 @@ import { getVisitorContext } from "@/lib/optimizely/visitor";
 import { queryOdpSegments, resolveVariationKey, ODP_SEGMENT_TO_VARIATION } from "@/lib/optimizely/odp";
 import SourcePanel from "@/components/demo/SourcePanel";
 import { Callout } from "@/components/blocks/CalloutBlock";
+import DemoHero from "@/components/demo/DemoHero";
 
 export const dynamic = "force-dynamic";
 
@@ -82,36 +83,23 @@ export default async function PersonalizationDemoPage() {
   const mappingEntries = Object.entries(ODP_SEGMENT_TO_VARIATION);
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Hero */}
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Personalization &amp; Audiences
-          </h1>
-          <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            Know who your visitor is at request time - device, persona, auth state, geo -
-            before a single byte of HTML is streamed. All audience signals are collected
-            server-side and fed into Feature Experimentation, which decides which content
-            variant each segment receives.
-          </p>
-
-          <div className="flex flex-wrap gap-3 mt-8">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-              ✓ Zero client JS
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              Server-side attribute collection
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              Feeds FX audience targeting
-            </span>
-          </div>
+    <>
+      <DemoHero
+        title="Personalization & Audiences"
+        description="Know who your visitor is at request time - device, persona, auth state, geo - before a single byte of HTML is streamed. All audience signals are collected server-side and fed into Feature Experimentation, which decides which content variant each segment receives."
+      >
+        <div className="flex flex-wrap gap-3 mt-8">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
+            ✓ Zero client JS
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            Server-side attribute collection
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            Feeds FX audience targeting
+          </span>
         </div>
-      </section>
+      </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-16">
 
@@ -983,6 +971,6 @@ ${mappingEntries.length > 0
         />
 
       </div>
-    </div>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import DemoHero from "@/components/demo/DemoHero";
 
 export const metadata: Metadata = { title: "Draft Mode & Preview Demo" };
 
@@ -139,31 +140,19 @@ return (
 
 export default function PreviewDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Hero */}
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Draft Mode &amp; Editorial Preview
-          </h1>
-          <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            Editors can preview unpublished content in the live app - including
-            in-context editing via Visual Builder - without affecting what visitors see.
-            Two separate systems work together: Next.js draft mode for cache bypass,
-            and Optimizely&apos;s communicationinjector for real-time edit events.
-          </p>
-          <div className="flex flex-wrap gap-3 mt-8">
-            {["force-dynamic /preview", "getPreviewContent()", "communicationinjector.js", "data-epi-block-id"].map(tag => (
-              <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-                {tag}
-              </span>
-            ))}
-          </div>
+    <>
+      <DemoHero
+        title="Draft Mode & Editorial Preview"
+        description="Editors can preview unpublished content in the live app - including in-context editing via Visual Builder - without affecting what visitors see. Two separate systems work together: Next.js draft mode for cache bypass, and Optimizely's communicationinjector for real-time edit events."
+      >
+        <div className="flex flex-wrap gap-3 mt-8">
+          {["force-dynamic /preview", "getPreviewContent()", "communicationinjector.js", "data-epi-block-id"].map(tag => (
+            <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+              {tag}
+            </span>
+          ))}
         </div>
-      </section>
+      </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -359,6 +348,6 @@ export default function PreviewDemoPage() {
         </section>
 
       </div>
-    </div>
+    </>
   );
 }

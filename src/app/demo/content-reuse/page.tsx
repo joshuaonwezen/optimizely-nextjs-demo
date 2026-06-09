@@ -1,6 +1,10 @@
 import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import SectionAnchor from "@/components/demo/SectionAnchor";
+import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 
 export const dynamic = "force-dynamic";
@@ -152,47 +156,13 @@ export default async function FeaturedBlock({ content }) {
 // Add previewToken for draft content:
 // data = await getClient().getContent({ key }, { previewToken: token });`;
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function SectionAnchor({ id, label }: { id: string; label: string }) {
-  return (
-    <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-      {label}
-    </a>
-  );
-}
-
 export default function ContentReuseDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Content Reuse
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            Referenced vs. embedded content - when one update should propagate everywhere,
-            when copies are intentional, and how Graph handles each in queries.
-          </p>
-        </div>
-      </section>
+    <>
+      <DemoHero
+        title="Content Reuse"
+        description="Referenced vs. embedded content - when one update should propagate everywhere, when copies are intentional, and how Graph handles each in queries."
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -671,29 +641,16 @@ export default function ContentReuseDemoPage() {
           </div>
         </section>
 
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know
-            <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            {[
-              <><strong className="text-on-surface">type: &quot;content&quot; standalone properties always return only _metadata from Graph.</strong> Fields like heading, body, and image are never inline-expanded regardless of allowedTypes or contentType. Self-fetch or use getContent() to get them.</>,
-              <><strong className="text-on-surface">type: &quot;contentReference&quot; with a specific contentType returns the full object from Graph.</strong> No self-fetch needed. With allowedTypes (multiple types), Graph returns only _metadata - same behavior as type: &quot;content&quot;.</>,
-              <><strong className="text-on-surface">type: &quot;array&quot; content areas ARE inline-expanded.</strong> All item fields arrive with the page query. Use <code className="bg-surface-low px-1 rounded font-mono text-xs">__typename</code> and <code className="bg-surface-low px-1 rounded font-mono text-xs">... on TypeName</code> inline fragments to access typed fields.</>,
-              <><strong className="text-on-surface">elementEnabled blocks can only use type: &quot;contentReference&quot; for content relationships.</strong> type: &quot;content&quot; and type: &quot;array&quot; are silently ignored on elements. The block must have sectionEnabled to support content areas.</>,
-              <><strong className="text-on-surface">Content Area Items can be inline or referenced - Graph treats them the same.</strong> An inline block (created in the area, no separate CMS record) and a referenced item (pulled from the content tree) both arrive as full typed objects in Graph. The difference is editorial lifecycle only.</>,
-              <><strong className="text-on-surface">Referenced content = single source of truth.</strong> Update the referenced item once - every page that points to it reflects the change on next ISR revalidation.</>,
-              <><strong className="text-on-surface">type: &quot;component&quot; copies data into the parent on save.</strong> Editing a component in one parent does not affect other parents. Use this for per-page configuration, not shared content.</>,
-              <><strong className="text-on-surface">getContent() accepts a graph:// URL directly.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata.url.graph</code> is always populated on references - pass it straight to getClient().getContent() without a separate key lookup.</>,
-            ].map((text, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-brand font-bold shrink-0">-</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">type: &quot;content&quot; standalone properties always return only _metadata from Graph.</strong> Fields like heading, body, and image are never inline-expanded regardless of allowedTypes or contentType. Self-fetch or use getContent() to get them.</>,
+          <><strong className="text-on-surface">type: &quot;contentReference&quot; with a specific contentType returns the full object from Graph.</strong> No self-fetch needed. With allowedTypes (multiple types), Graph returns only _metadata - same behavior as type: &quot;content&quot;.</>,
+          <><strong className="text-on-surface">type: &quot;array&quot; content areas ARE inline-expanded.</strong> All item fields arrive with the page query. Use <code className="bg-surface-low px-1 rounded font-mono text-xs">__typename</code> and <code className="bg-surface-low px-1 rounded font-mono text-xs">... on TypeName</code> inline fragments to access typed fields.</>,
+          <><strong className="text-on-surface">elementEnabled blocks can only use type: &quot;contentReference&quot; for content relationships.</strong> type: &quot;content&quot; and type: &quot;array&quot; are silently ignored on elements. The block must have sectionEnabled to support content areas.</>,
+          <><strong className="text-on-surface">Content Area Items can be inline or referenced - Graph treats them the same.</strong> An inline block (created in the area, no separate CMS record) and a referenced item (pulled from the content tree) both arrive as full typed objects in Graph. The difference is editorial lifecycle only.</>,
+          <><strong className="text-on-surface">Referenced content = single source of truth.</strong> Update the referenced item once - every page that points to it reflects the change on next ISR revalidation.</>,
+          <><strong className="text-on-surface">type: &quot;component&quot; copies data into the parent on save.</strong> Editing a component in one parent does not affect other parents. Use this for per-page configuration, not shared content.</>,
+          <><strong className="text-on-surface">getContent() accepts a graph:// URL directly.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata.url.graph</code> is always populated on references - pass it straight to getClient().getContent() without a separate key lookup.</>,
+        ]} />
 
         <SourcePanel
           heading="Source files"
@@ -703,6 +660,6 @@ export default function ContentReuseDemoPage() {
         />
 
       </div>
-    </div>
+    </>
   );
 }

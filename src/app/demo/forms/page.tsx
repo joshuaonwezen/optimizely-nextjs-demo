@@ -4,6 +4,7 @@ import FormTextInput from "@/components/blocks/FormTextInput";
 import FormTextArea from "@/components/blocks/FormTextArea";
 import FormSelect from "@/components/blocks/FormSelect";
 import FormSubmitButton from "@/components/blocks/FormSubmitButton";
+import DemoHero from "@/components/demo/DemoHero";
 
 export const metadata: Metadata = {
   title: "Forms Demo",
@@ -97,34 +98,23 @@ return <OptimizelyComponent content={page} />;`;
 
 export default function FormsPage() {
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Hero */}
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Forms & Data Capture
-          </h1>
-          <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            CMS-managed forms built from composable blocks - editors configure fields
-            in Visual Builder, the submit handler captures data, and each submission
-            feeds the personalization loop: capture → ODP profile → FX audience → targeted content.
-          </p>
-          <div className="flex flex-wrap gap-3 mt-8">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-              FormContainerBlock · FormTextInput · FormTextArea · FormSelect · FormSubmitButton
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              /api/form-submit
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              ODP · FX audience → CMS variation
-            </span>
-          </div>
+    <>
+      <DemoHero
+        title="Forms & Data Capture"
+        description="CMS-managed forms built from composable blocks - editors configure fields in Visual Builder, the submit handler captures data, and each submission feeds the personalization loop: capture → ODP profile → FX audience → targeted content."
+      >
+        <div className="flex flex-wrap gap-3 mt-8">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
+            FormContainerBlock · FormTextInput · FormTextArea · FormSelect · FormSubmitButton
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            /api/form-submit
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            ODP · FX audience → CMS variation
+          </span>
         </div>
-      </section>
+      </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -299,6 +289,6 @@ Next page request (same user, identified by cookie)
         </section>
 
       </div>
-    </div>
+    </>
   );
 }

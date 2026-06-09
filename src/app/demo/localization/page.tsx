@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import SectionAnchor from "@/components/demo/SectionAnchor";
+import KeyPoints from "@/components/demo/KeyPoints";
 
 export const metadata: Metadata = {
   title: "Localization & Multi-Language",
@@ -183,47 +187,13 @@ export async function generateStaticParams() {
     });
 }`;
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function SectionAnchor({ id, label }: { id: string; label: string }) {
-  return (
-    <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-      {label}
-    </a>
-  );
-}
-
 export default function LocalizationDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Localization &amp; Multi-Language
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            How Optimizely CMS stores content per locale, how Graph returns locale-specific
-            variants, and how Next.js routes requests to the right language.
-          </p>
-        </div>
-      </section>
+    <>
+      <DemoHero
+        title="Localization & Multi-Language"
+        description="How Optimizely CMS stores content per locale, how Graph returns locale-specific variants, and how Next.js routes requests to the right language."
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -335,29 +305,16 @@ export default function LocalizationDemoPage() {
           </div>
         </section>
 
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know
-            <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            {[
-              <><strong className="text-on-surface">Locale is a dimension, not a copy.</strong> The same content key has multiple locale variants. Editors translate in-place - no duplicate content items to keep in sync.</>,
-              <><strong className="text-on-surface">Always add a locale filter to Graph queries.</strong> Without it you get all locale variants in one response. Filter by <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata.locale</code> using the locale from the request.</>,
-              <><strong className="text-on-surface">Use an ordered fallback chain.</strong> Graph returns the first match from an <code className="bg-surface-low px-1 rounded font-mono text-xs">in:</code> array. Put the most specific locale first ("fr-CA"), then the language ("fr"), then the default ("en").</>,
-              <><strong className="text-on-surface">URL segment routing is simpler than subdomains.</strong> The lang param is available in server components without middleware header reads, and hreflang/canonical URLs are straightforward to generate.</>,
-              <><strong className="text-on-surface">Separate CMS content from UI strings.</strong> Body copy belongs in the CMS (translated by editors). Button labels and nav items belong in translation files (deployed with the app). Don&apos;t mix them.</>,
-              <><strong className="text-on-surface">Include locale in generateStaticParams</strong> to pre-render all language variants at build time. Each lang+slug combination is a separate static route.</>,
-            ].map((text, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-brand font-bold shrink-0">→</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">Locale is a dimension, not a copy.</strong> The same content key has multiple locale variants. Editors translate in-place - no duplicate content items to keep in sync.</>,
+          <><strong className="text-on-surface">Always add a locale filter to Graph queries.</strong> Without it you get all locale variants in one response. Filter by <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata.locale</code> using the locale from the request.</>,
+          <><strong className="text-on-surface">Use an ordered fallback chain.</strong> Graph returns the first match from an <code className="bg-surface-low px-1 rounded font-mono text-xs">in:</code> array. Put the most specific locale first ("fr-CA"), then the language ("fr"), then the default ("en").</>,
+          <><strong className="text-on-surface">URL segment routing is simpler than subdomains.</strong> The lang param is available in server components without middleware header reads, and hreflang/canonical URLs are straightforward to generate.</>,
+          <><strong className="text-on-surface">Separate CMS content from UI strings.</strong> Body copy belongs in the CMS (translated by editors). Button labels and nav items belong in translation files (deployed with the app). Don&apos;t mix them.</>,
+          <><strong className="text-on-surface">Include locale in generateStaticParams</strong> to pre-render all language variants at build time. Each lang+slug combination is a separate static route.</>,
+        ]} />
 
       </div>
-    </div>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getQuotes, GET_QUOTES_QUERY } from "@/lib/graphql/queries/GetQuotes";
 import { Callout } from "@/components/blocks/CalloutBlock";
+import DemoHero from "@/components/demo/DemoHero";
 
 export const metadata: Metadata = {
   title: "External Content Sync Demo",
@@ -140,38 +141,26 @@ export default async function ExternalContentPage() {
   const { items, fromGraph } = await getQuotes();
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Hero */}
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            External Content Sync
-          </h1>
-          <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            Push any external data source directly into Optimizely Graph without
-            touching the CMS. Define a schema once via the Content Source sync API,
-            send NdJSON over HTTP, and your data is instantly queryable alongside
-            CMS-managed content - same GraphQL endpoint, same ISR caching.
-          </p>
-          <div className="flex flex-wrap gap-3 mt-8">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-              {fromGraph ? "✓ Live from Graph" : "◎ Demo data - run npx tsx scripts/seed-quotes.ts"}
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              Graph Content Source API
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              NdJSON · PUT types · POST data
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              ISR · 60s + on-demand tag
-            </span>
-          </div>
+    <>
+      <DemoHero
+        title="External Content Sync"
+        description="Push any external data source directly into Optimizely Graph without touching the CMS. Define a schema once via the Content Source sync API, send NdJSON over HTTP, and your data is instantly queryable alongside CMS-managed content - same GraphQL endpoint, same ISR caching."
+      >
+        <div className="flex flex-wrap gap-3 mt-8">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
+            {fromGraph ? "✓ Live from Graph" : "◎ Demo data - run npx tsx scripts/seed-quotes.ts"}
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            Graph Content Source API
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            NdJSON · PUT types · POST data
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            ISR · 60s + on-demand tag
+          </span>
         </div>
-      </section>
+      </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -551,6 +540,6 @@ export default async function ExternalContentPage() {
         </section>
 
       </div>
-    </div>
+    </>
   );
 }

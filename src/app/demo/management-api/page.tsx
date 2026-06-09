@@ -1,6 +1,10 @@
 import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import SectionAnchor from "@/components/demo/SectionAnchor";
+import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 
 export const dynamic = "force-dynamic";
@@ -181,47 +185,13 @@ await fetch(\`\${CONTENT_ENDPOINT}/\${key}/versions/\${version}\`, {
   body: JSON.stringify({ locale: "en", status: "published" }),
 });`;
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function SectionAnchor({ id, label }: { id: string; label: string }) {
-  return (
-    <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-      {label}
-    </a>
-  );
-}
-
 export default function ManagementApiDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Management API &amp; Content Seeding
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            The write side of Optimizely CMS - creating content types and items programmatically
-            via the Management API. Used for migrations, seed scripts, and CI/CD automation.
-          </p>
-        </div>
-      </section>
+    <>
+      <DemoHero
+        title="Management API & Content Seeding"
+        description="The write side of Optimizely CMS - creating content types and items programmatically via the Management API. Used for migrations, seed scripts, and CI/CD automation."
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -399,27 +369,14 @@ export default function ManagementApiDemoPage() {
           </div>
         </section>
 
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know
-            <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            {[
-              <><strong className="text-on-surface">Graph = read, Management API = write.</strong> Use Graph for everything your Next.js app serves to visitors. Use the Management API only in scripts, webhooks, and migrations - never in the page render path.</>,
-              <><strong className="text-on-surface">getManagementToken() caches the OAuth2 token in memory.</strong> Call it at the top of every Management API script - it re-authenticates only when the cached token is about to expire.</>,
-              <><strong className="text-on-surface">Content area items must use &#123; reference: &quot;cms://content/key&quot; &#125;.</strong> Plain key strings or &#123; key: &quot;...&quot; &#125; formats will return a 400 error: &quot;A content component must have either reference or contentType set&quot;.</>,
-              <><strong className="text-on-surface">PUT /api/content/v3/types is idempotent.</strong> Run type registration in CI - re-running with the same payload is safe and doesn&apos;t reset existing content.</>,
-              <><strong className="text-on-surface">After writing via the Management API, wait for Graph to sync.</strong> There is a short delay (usually &lt;10s) before new or updated content is visible in Graph queries.</>,
-              <><strong className="text-on-surface">NdJSON (Content Source API) is for external data, not CMS pages.</strong> Use the Management API for pages and blocks that editors own. Use Content Source API for data that originates in external systems and is synced in bulk.</>,
-            ].map((text, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-brand font-bold shrink-0">→</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">Graph = read, Management API = write.</strong> Use Graph for everything your Next.js app serves to visitors. Use the Management API only in scripts, webhooks, and migrations - never in the page render path.</>,
+          <><strong className="text-on-surface">getManagementToken() caches the OAuth2 token in memory.</strong> Call it at the top of every Management API script - it re-authenticates only when the cached token is about to expire.</>,
+          <><strong className="text-on-surface">Content area items must use &#123; reference: &quot;cms://content/key&quot; &#125;.</strong> Plain key strings or &#123; key: &quot;...&quot; &#125; formats will return a 400 error: &quot;A content component must have either reference or contentType set&quot;.</>,
+          <><strong className="text-on-surface">PUT /api/content/v3/types is idempotent.</strong> Run type registration in CI - re-running with the same payload is safe and doesn&apos;t reset existing content.</>,
+          <><strong className="text-on-surface">After writing via the Management API, wait for Graph to sync.</strong> There is a short delay (usually &lt;10s) before new or updated content is visible in Graph queries.</>,
+          <><strong className="text-on-surface">NdJSON (Content Source API) is for external data, not CMS pages.</strong> Use the Management API for pages and blocks that editors own. Use Content Source API for data that originates in external systems and is synced in bulk.</>,
+        ]} />
 
         <SourcePanel
           heading="Source files"
@@ -429,6 +386,6 @@ export default function ManagementApiDemoPage() {
         />
 
       </div>
-    </div>
+    </>
   );
 }

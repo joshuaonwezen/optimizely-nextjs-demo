@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Callout } from "@/components/blocks/CalloutBlock";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import SectionAnchor from "@/components/demo/SectionAnchor";
+import KeyPoints from "@/components/demo/KeyPoints";
 
 export const metadata: Metadata = {
   title: "SEO & Metadata",
@@ -233,47 +237,13 @@ alternates: {
   },
 },`;
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function SectionAnchor({ id, label }: { id: string; label: string }) {
-  return (
-    <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-      {label}
-    </a>
-  );
-}
-
 export default function SeoDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            SEO &amp; Metadata
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            How a headless CMS shifts full SEO responsibility to the app layer - and how to implement
-            metadata, sitemaps, structured data, and optimized images in Next.js.
-          </p>
-        </div>
-      </section>
+    <>
+      <DemoHero
+        title="SEO & Metadata"
+        description="How a headless CMS shifts full SEO responsibility to the app layer - and how to implement metadata, sitemaps, structured data, and optimized images in Next.js."
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -439,27 +409,14 @@ export default function SeoDemoPage() {
           <CodeBlock code={ROBOTS_SNIPPET} label="src/app/robots.ts + canonical + hreflang" />
         </section>
 
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know
-            <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            {[
-              <><strong className="text-on-surface">Headless shifts all SEO work to the app layer.</strong> The CMS provides raw field data. generateMetadata(), sitemap.ts, and robots.ts are yours to implement - nothing is automatic.</>,
-              <><strong className="text-on-surface">Use a separate, small query in generateMetadata().</strong> Fetch only the SEO fields - don&apos;t reuse the full page composition query. This keeps the metadata fetch fast and independently cacheable.</>,
-              <><strong className="text-on-surface">Sitemap revalidate should be long (3600s+).</strong> Sitemaps are read infrequently by crawlers. Regenerating on every request wastes Graph quota with no SEO benefit.</>,
-              <><strong className="text-on-surface">Inject JSON-LD in the page component, not in generateMetadata.</strong> Next.js only writes standard meta tags from the Metadata object. Use a &lt;Script&gt; tag for structured data.</>,
-              <><strong className="text-on-surface">Allowlist CMS image domains in next.config before using &lt;Image&gt;.</strong> Missing domains cause a 400 error at runtime, not at build time - easy to miss in dev but visible in production.</>,
-              <><strong className="text-on-surface">Use _metadata.url.default as the canonical URL.</strong> This is the CMS&apos;s authoritative URL for the content. Don&apos;t reconstruct it from params - they can diverge if the CMS URL is updated.</>,
-            ].map((text, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-brand font-bold shrink-0">→</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">Headless shifts all SEO work to the app layer.</strong> The CMS provides raw field data. generateMetadata(), sitemap.ts, and robots.ts are yours to implement - nothing is automatic.</>,
+          <><strong className="text-on-surface">Use a separate, small query in generateMetadata().</strong> Fetch only the SEO fields - don&apos;t reuse the full page composition query. This keeps the metadata fetch fast and independently cacheable.</>,
+          <><strong className="text-on-surface">Sitemap revalidate should be long (3600s+).</strong> Sitemaps are read infrequently by crawlers. Regenerating on every request wastes Graph quota with no SEO benefit.</>,
+          <><strong className="text-on-surface">Inject JSON-LD in the page component, not in generateMetadata.</strong> Next.js only writes standard meta tags from the Metadata object. Use a &lt;Script&gt; tag for structured data.</>,
+          <><strong className="text-on-surface">Allowlist CMS image domains in next.config before using &lt;Image&gt;.</strong> Missing domains cause a 400 error at runtime, not at build time - easy to miss in dev but visible in production.</>,
+          <><strong className="text-on-surface">Use _metadata.url.default as the canonical URL.</strong> This is the CMS&apos;s authoritative URL for the content. Don&apos;t reconstruct it from params - they can diverge if the CMS URL is updated.</>,
+        ]} />
 
         <section id="opal-automation">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
@@ -534,6 +491,6 @@ export default function SeoDemoPage() {
         </section>
 
       </div>
-    </div>
+    </>
   );
 }

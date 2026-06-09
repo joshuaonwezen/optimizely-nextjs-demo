@@ -4,6 +4,9 @@ import type { Metadata } from "next";
 import { type FxDecision } from "@/lib/optimizely/experimentation";
 import { getOptimizelyUser } from "@/lib/optimizely/user";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 import { Callout } from "@/components/blocks/CalloutBlock";
 
@@ -399,20 +402,6 @@ function Step({ number, title, children }: { number: number; title: string; chil
   );
 }
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
 
 function Pill({ children }: { children: React.ReactNode }) {
   return (
@@ -463,33 +452,19 @@ export default async function FeatureFlagsDemoPage() {
     .map((d) => d.variationKey as string);
 
   return (
-    <div className="min-h-screen bg-surface">
-
-      {/* ── Hero ── */}
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Feature Experimentation
-          </h1>
-          <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            Optimizely Feature Experimentation runs alongside SaaS CMS on the same platform.
-            Flag decisions are evaluated in edge middleware - the URL is rewritten with the variation
-            key before the page renders, enabling full ISR caching per variation. Bucketing events
-            fire client-side after the user sees the variation, connecting A/B experiments directly
-            to editor-created content variations.
-          </p>
-          <div className="flex flex-wrap gap-3 mt-8">
-            {["✓ Server-side decisions", "Feature flags · Experiments", "Audience targeting", "Variable delivery", "CMS Variations integration"].map((t) => (
-              <span key={t} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-                {t}
-              </span>
-            ))}
-          </div>
+    <>
+      <DemoHero
+        title="Feature Experimentation"
+        description="Optimizely Feature Experimentation runs alongside SaaS CMS on the same platform. Flag decisions are evaluated in edge middleware - the URL is rewritten with the variation key before the page renders, enabling full ISR caching per variation. Bucketing events fire client-side after the user sees the variation, connecting A/B experiments directly to editor-created content variations."
+      >
+        <div className="flex flex-wrap gap-3 mt-8">
+          {["✓ Server-side decisions", "Feature flags · Experiments", "Audience targeting", "Variable delivery", "CMS Variations integration"].map((t) => (
+            <span key={t} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+              {t}
+            </span>
+          ))}
         </div>
-      </section>
+      </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -1185,78 +1160,15 @@ await getDecision("my_flag", userId, {
           </div>
         </section>
 
-        {/* ── Key points ── */}
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            <li className="flex gap-2">
-              <span className="text-brand font-bold shrink-0">→</span>
-              <span>
-                <strong className="text-on-surface">The variation key is the only contract</strong> between FX and the CMS.
-                The string must match exactly (case-sensitive) between the FX variation key and the CMS variation name.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-brand font-bold shrink-0">→</span>
-              <span>
-                <strong className="text-on-surface">includeOriginal: true</strong> means users outside
-                the experiment always get the original content. Safe to add the filter before any CMS
-                variations exist.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-brand font-bold shrink-0">→</span>
-              <span>
-                <strong className="text-on-surface">Datafile is cached for 60 seconds</strong> via
-                Next.js fetch revalidation. Changes in the FX dashboard propagate within one minute
-                with no server restart.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-brand font-bold shrink-0">→</span>
-              <span>
-                <strong className="text-on-surface">React cache() is scoped to a single HTTP request.</strong>{" "}
-                Any number of server components can call <code className="bg-surface-low px-1 rounded font-mono text-xs">getOptimizelyUser()</code> -
-                they all share one user context for that request. Concurrent visitors each get their own
-                completely isolated context; nothing is shared across users.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-brand font-bold shrink-0">→</span>
-              <span>
-                <strong className="text-on-surface">DISABLE_DECISION_EVENT</strong> suppresses
-                bucketing events during the middleware routing pass. Once the variation is rendered,{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<FxBucketingEvent servedVariation={...} />"}</code>{" "}
-                mounts client-side. It calls{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">decideAll([DISABLE_DECISION_EVENT])</code>{" "}
-                to find the matching flag, then{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">decide(flagKey, [])</code>{" "}
-                for that flag only - recording the user only in the experiment they actually saw.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-brand font-bold shrink-0">→</span>
-              <span>
-                <strong className="text-on-surface">Variations work on any content type</strong> - pages,
-                shared blocks, navigation. Wherever Graph accepts a variation filter, the SDK wires in
-                seamlessly.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-brand font-bold shrink-0">→</span>
-              <span>
-                <strong className="text-on-surface">CMS variations must be created in Visual Builder, but can then be updated via the Management API.</strong>{" "}
-                The REST API silently ignores the <code className="bg-surface-low px-1 rounded font-mono text-xs">variation</code> field
-                on <code className="bg-surface-low px-1 rounded font-mono text-xs">POST</code> - you cannot create a named variation programmatically.
-                But creating one in the UI generates a new draft <strong>version</strong>; you can then
-                <code className="bg-surface-low px-1 rounded font-mono text-xs mx-1">PATCH /content/{"{key}"}/versions/{"{version}"}</code>
-                to set its composition and publish it programmatically.
-              </span>
-            </li>
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">The variation key is the only contract</strong> between FX and the CMS. The string must match exactly (case-sensitive) between the FX variation key and the CMS variation name.</>,
+          <><strong className="text-on-surface">includeOriginal: true</strong> means users outside the experiment always get the original content. Safe to add the filter before any CMS variations exist.</>,
+          <><strong className="text-on-surface">Datafile is cached for 60 seconds</strong> via Next.js fetch revalidation. Changes in the FX dashboard propagate within one minute with no server restart.</>,
+          <><strong className="text-on-surface">React cache() is scoped to a single HTTP request.</strong> Any number of server components can call <code className="bg-surface-low px-1 rounded font-mono text-xs">getOptimizelyUser()</code> - they all share one user context for that request. Concurrent visitors each get their own completely isolated context; nothing is shared across users.</>,
+          <><strong className="text-on-surface">DISABLE_DECISION_EVENT</strong> suppresses bucketing events during the middleware routing pass. Once the variation is rendered, <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<FxBucketingEvent servedVariation={...} />"}</code> mounts client-side and fires the impression for that flag only.</>,
+          <><strong className="text-on-surface">Variations work on any content type</strong> - pages, shared blocks, navigation. Wherever Graph accepts a variation filter, the SDK wires in seamlessly.</>,
+          <><strong className="text-on-surface">CMS variations must be created in Visual Builder, but can then be updated via the Management API.</strong> The REST API silently ignores the <code className="bg-surface-low px-1 rounded font-mono text-xs">variation</code> field on <code className="bg-surface-low px-1 rounded font-mono text-xs">POST</code> - you cannot create a named variation programmatically. But creating one in the UI generates a new draft <strong>version</strong> that you can PATCH and publish.</>,
+        ]} />
 
         <SourcePanel
           heading="Source files"
@@ -1270,6 +1182,6 @@ await getDecision("my_flag", userId, {
         />
 
       </div>
-    </div>
+    </>
   );
 }

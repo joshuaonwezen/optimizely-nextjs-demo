@@ -3,6 +3,7 @@ import path from "path";
 import type { Metadata } from "next";
 import SourcePanel from "@/components/demo/SourcePanel";
 import { Callout } from "@/components/blocks/CalloutBlock";
+import DemoHero from "@/components/demo/DemoHero";
 
 export const metadata: Metadata = { title: "ISR Caching & Webhooks Demo" };
 
@@ -205,37 +206,26 @@ export default function CachingDemoPage() {
   const renderedAt = new Date().toISOString();
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Hero */}
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            ISR Caching &amp; Webhooks
-          </h1>
-          <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            Optimizely Graph + Next.js ISR gives you static-site performance with
-            CMS-speed updates. Pages are pre-rendered at build time and regenerated
-            in the background whenever content changes - no redeploy required.
-          </p>
-          <div className="flex flex-wrap gap-3 mt-8">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-              This page revalidates every 30s
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              Next.js ISR
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              revalidatePath · revalidateTag
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              3 webhook endpoints
-            </span>
-          </div>
+    <>
+      <DemoHero
+        title="ISR Caching & Webhooks"
+        description="Optimizely Graph + Next.js ISR gives you static-site performance with CMS-speed updates. Pages are pre-rendered at build time and regenerated in the background whenever content changes - no redeploy required."
+      >
+        <div className="flex flex-wrap gap-3 mt-8">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
+            This page revalidates every 30s
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            Next.js ISR
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            revalidatePath · revalidateTag
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            3 webhook endpoints
+          </span>
         </div>
-      </section>
+      </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -770,6 +760,6 @@ export default function CachingDemoPage() {
         />
 
       </div>
-    </div>
+    </>
   );
 }

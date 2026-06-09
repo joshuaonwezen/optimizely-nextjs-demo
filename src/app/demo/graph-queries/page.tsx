@@ -1,6 +1,10 @@
 import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import SectionAnchor from "@/components/demo/SectionAnchor";
+import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 
 export const dynamic = "force-dynamic";
@@ -295,48 +299,13 @@ export const TESTIMONIAL_FRAGMENT = \`
 \`;`;
 
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function SectionAnchor({ id, label }: { id: string; label: string }) {
-  return (
-    <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-      {label}
-    </a>
-  );
-}
-
 export default function GraphQueriesDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-
-      {/* ── Hero ── */}
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Graph Query Design
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            How this project talks to Optimizely Graph - the patterns that keep queries fast,
-            cacheable, and free of N+1 problems.
-          </p>
-        </div>
-      </section>
+    <>
+      <DemoHero
+        title="Graph Query Design"
+        description="How this project talks to Optimizely Graph - the patterns that keep queries fast, cacheable, and free of N+1 problems."
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -622,30 +591,16 @@ export default function GraphQueriesDemoPage() {
           <CodeBlock code={DISABLED_FIELD_SNIPPET} label="TestimonialBlock - indexingType: disabled field omitted from fragment" />
         </section>
 
-        {/* ── Key takeaways ── */}
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know
-            <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            {[
-              <><strong className="text-on-surface">One CMS page = one Graph request.</strong> The SDK auto-generates a query with all registered block type spreads. No per-block fetches at render time.</>,
-              <><strong className="text-on-surface">Write custom queries only when needed:</strong> non-page data (nav, banner), self-fetching blocks that receive only a reference key, and batch reference resolution.</>,
-              <><strong className="text-on-surface">Always use the graphqlFetch wrapper</strong> - not raw fetch - so published/preview auth and ISR config are handled automatically.</>,
-              <><strong className="text-on-surface">Put static data in layout components with ISR.</strong> force-dynamic on the page route does not affect layout-level fetches - nav and banner stay cached.</>,
-              <><strong className="text-on-surface">Predictable query strings are Graph CDN-cacheable.</strong> Embedding per-user variables (userId, sessionId) makes every request a cache miss at the Graph layer.</>,
-              <><strong className="text-on-surface">@recursive(depth: N)</strong> fetches arbitrary tree depth in one round-trip. The depth cap prevents unbounded traversal.</>,
-              <><strong className="text-on-surface">type: &quot;array&quot; content areas inline-expand;</strong> type: &quot;content&quot; single references return metadata only - self-fetch if you need the data.</>,
-              <><strong className="text-on-surface">indexingType: &quot;disabled&quot; fields return null in Graph.</strong> Omit them from fragments entirely; the data only exists in composition snapshots.</>,
-            ].map((text, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-brand font-bold shrink-0">→</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">One CMS page = one Graph request.</strong> The SDK auto-generates a query with all registered block type spreads. No per-block fetches at render time.</>,
+          <><strong className="text-on-surface">Write custom queries only when needed:</strong> non-page data (nav, banner), self-fetching blocks that receive only a reference key, and batch reference resolution.</>,
+          <><strong className="text-on-surface">Always use the graphqlFetch wrapper</strong> - not raw fetch - so published/preview auth and ISR config are handled automatically.</>,
+          <><strong className="text-on-surface">Put static data in layout components with ISR.</strong> force-dynamic on the page route does not affect layout-level fetches - nav and banner stay cached.</>,
+          <><strong className="text-on-surface">Predictable query strings are Graph CDN-cacheable.</strong> Embedding per-user variables (userId, sessionId) makes every request a cache miss at the Graph layer.</>,
+          <><strong className="text-on-surface">@recursive(depth: N)</strong> fetches arbitrary tree depth in one round-trip. The depth cap prevents unbounded traversal.</>,
+          <><strong className="text-on-surface">type: &quot;array&quot; content areas inline-expand;</strong> type: &quot;content&quot; single references return metadata only - self-fetch if you need the data.</>,
+          <><strong className="text-on-surface">indexingType: &quot;disabled&quot; fields return null in Graph.</strong> Omit them from fragments entirely; the data only exists in composition snapshots.</>,
+        ]} />
 
         <SourcePanel
           heading="Source files"
@@ -657,6 +612,6 @@ export default function GraphQueriesDemoPage() {
         />
 
       </div>
-    </div>
+    </>
   );
 }

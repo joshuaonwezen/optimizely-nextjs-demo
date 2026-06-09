@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import SectionAnchor from "@/components/demo/SectionAnchor";
+import KeyPoints from "@/components/demo/KeyPoints";
 
 export const metadata: Metadata = {
   title: "Content Lifecycle",
@@ -177,47 +181,13 @@ await fetch(\`\${ENDPOINT}/\${key}/versions/\${version}\`, {
   cache: "no-store",
 });`;
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function SectionAnchor({ id, label }: { id: string; label: string }) {
-  return (
-    <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-      {label}
-    </a>
-  );
-}
-
 export default function ContentLifecycleDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Content Lifecycle
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            The editorial state machine - Draft, Scheduled, Published, Expired - how each state
-            affects Graph queries, ISR caches, and what the app needs to handle.
-          </p>
-        </div>
-      </section>
+    <>
+      <DemoHero
+        title="Content Lifecycle"
+        description="The editorial state machine - Draft, Scheduled, Published, Expired - how each state affects Graph queries, ISR caches, and what the app needs to handle."
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -324,29 +294,16 @@ export default function ContentLifecycleDemoPage() {
           <CodeBlock code={VERSION_HISTORY_SNIPPET} label="List versions + publish an older version (rollback)" />
         </section>
 
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know
-            <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            {[
-              <><strong className="text-on-surface">Graph only returns Published items.</strong> Draft, Scheduled, In Review, Approved, and Expired content is invisible to public queries. No status filter needed - the CMS handles it.</>,
-              <><strong className="text-on-surface">startPublish and stopPublish are CMS-side fields.</strong> They are not queryable in Graph. Items simply appear or disappear from results when the dates arrive.</>,
-              <><strong className="text-on-surface">A Scheduled item returns 404 until its startPublish date.</strong> The URL doesn&apos;t exist in Graph yet. This is expected - don&apos;t treat it as an error.</>,
-              <><strong className="text-on-surface">The preview token bypasses the Published filter.</strong> It returns Draft, Scheduled, Approved content - use it to let editors review before going live.</>,
-              <><strong className="text-on-surface">doc.expired webhook fires when stopPublish is reached.</strong> Handle it by calling revalidatePath() for the expired URL to remove it from ISR caches.</>,
-              <><strong className="text-on-surface">Every save creates a version.</strong> The Management API lets you list versions and publish an older one - useful for quick rollbacks without re-editing in the CMS UI.</>,
-            ].map((text, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-brand font-bold shrink-0">→</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">Graph only returns Published items.</strong> Draft, Scheduled, In Review, Approved, and Expired content is invisible to public queries. No status filter needed - the CMS handles it.</>,
+          <><strong className="text-on-surface">startPublish and stopPublish are CMS-side fields.</strong> They are not queryable in Graph. Items simply appear or disappear from results when the dates arrive.</>,
+          <><strong className="text-on-surface">A Scheduled item returns 404 until its startPublish date.</strong> The URL doesn&apos;t exist in Graph yet. This is expected - don&apos;t treat it as an error.</>,
+          <><strong className="text-on-surface">The preview token bypasses the Published filter.</strong> It returns Draft, Scheduled, Approved content - use it to let editors review before going live.</>,
+          <><strong className="text-on-surface">doc.expired webhook fires when stopPublish is reached.</strong> Handle it by calling revalidatePath() for the expired URL to remove it from ISR caches.</>,
+          <><strong className="text-on-surface">Every save creates a version.</strong> The Management API lets you list versions and publish an older one - useful for quick rollbacks without re-editing in the CMS UI.</>,
+        ]} />
 
       </div>
-    </div>
+    </>
   );
 }

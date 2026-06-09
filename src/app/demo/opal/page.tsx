@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Callout } from "@/components/blocks/CalloutBlock";
+import DemoHero from "@/components/demo/DemoHero";
 
 export const metadata: Metadata = {
   title: "Opal AI Agents",
@@ -82,38 +83,26 @@ function Chip({ children }: { children: React.ReactNode }) {
 
 export default function OpalDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Hero */}
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Opal: AI Agent Platform
-          </h1>
-          <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            Opal is Optimizely&apos;s agent orchestration layer. It ships a library of pre-built
-            specialized agents for GEO, SEO, content review, and compliance - and lets you build
-            custom agents and multi-step automated workflows on top of your CMS, experimentation,
-            and data stack.
-          </p>
-          <div className="flex flex-wrap gap-3 mt-8">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-              Pre-built agent library
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              No-code workflow builder
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              Developer SDK
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              Privacy-first
-            </span>
-          </div>
+    <>
+      <DemoHero
+        title="Opal: AI Agent Platform"
+        description="Opal is Optimizely's agent orchestration layer. It ships a library of pre-built specialized agents for GEO, SEO, content review, and compliance - and lets you build custom agents and multi-step automated workflows on top of your CMS, experimentation, and data stack."
+      >
+        <div className="flex flex-wrap gap-3 mt-8">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
+            Pre-built agent library
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            No-code workflow builder
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            Developer SDK
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            Privacy-first
+          </span>
         </div>
-      </section>
+      </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-16">
 
@@ -617,6 +606,6 @@ app.listen(3001);`}</code>
         </section>
 
       </div>
-    </div>
+    </>
   );
 }

@@ -1,6 +1,10 @@
 import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import SectionAnchor from "@/components/demo/SectionAnchor";
+import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 import SearchDemo from "./SearchDemo";
 
@@ -131,48 +135,15 @@ const results = await graphqlFetch(SEARCH_QUERY, { query: q });
 // it's always the same query with no user-provided variables:
 graphqlFetch(GET_NAV_QUERY, {}, { next: { revalidate: 300, tags: ["navigation"] } });`;
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function SectionAnchor({ id, label }: { id: string; label: string }) {
-  return (
-    <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-      {label}
-    </a>
-  );
-}
-
 export default function SearchDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Search &amp; Filtering
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            Full-text and semantic search using Optimizely Graph&apos;s{" "}
+    <>
+      <DemoHero
+        title="Search & Filtering"
+        description={<>Full-text and semantic search using Optimizely Graph&apos;s{" "}
             <code className="bg-on-brand/10 px-1 rounded font-mono text-sm">_fulltext</code> operator -
-            with live results, ranking modes, and cursor pagination.
-          </p>
-        </div>
-      </section>
+            with live results, ranking modes, and cursor pagination.</>}
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -303,27 +274,14 @@ export default function SearchDemoPage() {
           <SearchDemo />
         </section>
 
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know
-            <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            {[
-              <><strong className="text-on-surface">_fulltext searches indexed text fields automatically.</strong> String properties are indexed by default. Opt out per-field with <code className="bg-surface-low px-1 rounded font-mono text-xs">indexingType: &quot;disabled&quot;</code>.</>,
-              <><strong className="text-on-surface">RELEVANCE = BM25 keyword matching.</strong> Fast, deterministic. SEMANTIC = vector similarity - slower but understands meaning and synonyms.</>,
-              <><strong className="text-on-surface">Combine _fulltext with any where clause</strong> to restrict by type, date, or tag. Filtering narrows the candidate set before ranking is applied.</>,
-              <><strong className="text-on-surface">Cursor pagination is stable;</strong> offset pagination shifts when new content is published. Always use the cursor returned by Graph, not a computed skip value.</>,
-              <><strong className="text-on-surface">Search queries must use cache: &quot;no-store&quot;.</strong> Every user query is unique - ISR would fill the data cache with one-time entries. Navigation queries are the opposite - same query for every visitor, perfect for ISR.</>,
-              <><strong className="text-on-surface">_score is a float between 0 and 1.</strong> Use it to show relevance indicators in the UI or to filter out low-confidence results below a threshold.</>,
-            ].map((text, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-brand font-bold shrink-0">→</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">_fulltext searches indexed text fields automatically.</strong> String properties are indexed by default. Opt out per-field with <code className="bg-surface-low px-1 rounded font-mono text-xs">indexingType: &quot;disabled&quot;</code>.</>,
+          <><strong className="text-on-surface">RELEVANCE = BM25 keyword matching.</strong> Fast, deterministic. SEMANTIC = vector similarity - slower but understands meaning and synonyms.</>,
+          <><strong className="text-on-surface">Combine _fulltext with any where clause</strong> to restrict by type, date, or tag. Filtering narrows the candidate set before ranking is applied.</>,
+          <><strong className="text-on-surface">Cursor pagination is stable;</strong> offset pagination shifts when new content is published. Always use the cursor returned by Graph, not a computed skip value.</>,
+          <><strong className="text-on-surface">Search queries must use cache: &quot;no-store&quot;.</strong> Every user query is unique - ISR would fill the data cache with one-time entries. Navigation queries are the opposite - same query for every visitor, perfect for ISR.</>,
+          <><strong className="text-on-surface">_score is a float between 0 and 1.</strong> Use it to show relevance indicators in the UI or to filter out low-confidence results below a threshold.</>,
+        ]} />
 
         <SourcePanel
           heading="Source files"
@@ -334,6 +292,6 @@ export default function SearchDemoPage() {
         />
 
       </div>
-    </div>
+    </>
   );
 }

@@ -2,6 +2,10 @@ import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
 import Link from "next/link";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import SectionAnchor from "@/components/demo/SectionAnchor";
+import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 
 export const dynamic = "force-dynamic";
@@ -151,49 +155,17 @@ export const SiteSettingsType = contentType({
 const settings = await getSiteSettings() ?? DEFAULT_SETTINGS;`;
 
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function SectionAnchor({ id, label }: { id: string; label: string }) {
-  return (
-    <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-      {label}
-    </a>
-  );
-}
 
 export default function GlobalSettingsDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Global Settings &amp; Singletons
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            How to model site-wide configuration as a singleton content item - queried once, cached
+    <>
+      <DemoHero
+        title="Global Settings & Singletons"
+        description={<>How to model site-wide configuration as a singleton content item - queried once, cached
             for all visitors, busted by webhook on publish. The{" "}
             <code className="bg-on-brand/10 px-1 rounded font-mono text-sm">GlobalBanner</code> at
-            the top of this page is a live example.
-          </p>
-        </div>
-      </section>
+            the top of this page is a live example.</>}
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -270,26 +242,13 @@ export default function GlobalSettingsDemoPage() {
           </div>
         </section>
 
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know
-            <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            {[
-              <><strong className="text-on-surface">Always query singletons with limit: 1.</strong> The CMS doesn&apos;t prevent editors from creating multiple items. Your query must be defensive.</>,
-              <><strong className="text-on-surface">Always wrap singleton fetches in try-catch.</strong> Singletons live in the root layout. An unhandled error here blanks every page on the site.</>,
-              <><strong className="text-on-surface">Use a named revalidation tag for targeted cache busting.</strong> revalidateTag(&quot;banner&quot;) only busts the banner - not the navigation, page content, or other ISR caches.</>,
-              <><strong className="text-on-surface">FX flag → CMS singleton is a clean layered pattern.</strong> Experiments run via FX; when disabled, editors own the content via CMS. No code deploy needed to switch between them.</>,
-              <><strong className="text-on-surface">Return a null/default when the singleton doesn&apos;t exist.</strong> Editors might not have created it yet. getSiteBanner() returns null - the component renders nothing rather than crashing.</>,
-            ].map((text, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-brand font-bold shrink-0">→</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">Always query singletons with limit: 1.</strong> The CMS doesn&apos;t prevent editors from creating multiple items. Your query must be defensive.</>,
+          <><strong className="text-on-surface">Always wrap singleton fetches in try-catch.</strong> Singletons live in the root layout. An unhandled error here blanks every page on the site.</>,
+          <><strong className="text-on-surface">Use a named revalidation tag for targeted cache busting.</strong> revalidateTag(&quot;banner&quot;) only busts the banner - not the navigation, page content, or other ISR caches.</>,
+          <><strong className="text-on-surface">FX flag → CMS singleton is a clean layered pattern.</strong> Experiments run via FX; when disabled, editors own the content via CMS. No code deploy needed to switch between them.</>,
+          <><strong className="text-on-surface">Return a null/default when the singleton doesn&apos;t exist.</strong> Editors might not have created it yet. getSiteBanner() returns null - the component renders nothing rather than crashing.</>,
+        ]} />
 
         <SourcePanel
           heading="Source files"
@@ -300,6 +259,6 @@ export default function GlobalSettingsDemoPage() {
         />
 
       </div>
-    </div>
+    </>
   );
 }

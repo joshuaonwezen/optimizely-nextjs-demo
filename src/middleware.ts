@@ -31,8 +31,9 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  // Skip API routes, demo pages, and already-rewritten variation paths.
+  // Skip API routes, preview, demo pages, and already-rewritten variation paths.
   if (request.nextUrl.pathname.startsWith("/api/")) return response;
+  if (request.nextUrl.pathname.startsWith("/preview")) return response;
   if (/^\/demo(\/|$)/.test(request.nextUrl.pathname)) return response;
   if (request.nextUrl.pathname.includes(VARIATION_MARKER)) return response;
 

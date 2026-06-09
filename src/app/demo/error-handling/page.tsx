@@ -1,6 +1,10 @@
 import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import SectionAnchor from "@/components/demo/SectionAnchor";
+import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 
 export const dynamic = "force-dynamic";
@@ -183,47 +187,13 @@ if (!content) {
 //    Published URL doesn't exist yet → redirect to CMS editor
 //    (you can detect this by checking if the published content exists)`;
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function SectionAnchor({ id, label }: { id: string; label: string }) {
-  return (
-    <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-      {label}
-    </a>
-  );
-}
-
 export default function ErrorHandlingDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Error Handling &amp; Graceful Degradation
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            How this project handles missing content, Graph failures, and block-level errors -
-            without blanking the page or surfacing stack traces to visitors.
-          </p>
-        </div>
-      </section>
+    <>
+      <DemoHero
+        title="Error Handling & Graceful Degradation"
+        description="How this project handles missing content, Graph failures, and block-level errors - without blanking the page or surfacing stack traces to visitors."
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -336,27 +306,14 @@ export default function ErrorHandlingDemoPage() {
           <CodeBlock code={PREVIEW_ERRORS_SNIPPET} label="Preview token expiry + deleted content handling" />
         </section>
 
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know
-            <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            {[
-              <><strong className="text-on-surface">graphqlFetch throws on HTTP errors, returns on GraphQL errors.</strong> HTTP errors (Graph down, rate limit) throw; GraphQL errors (bad field, permission) return <code className="bg-surface-low px-1 rounded font-mono text-xs">{"{ data: null, errors: [...] }"}</code>. Handle both paths.</>,
-              <><strong className="text-on-surface">notFound() is for missing content, not Graph errors.</strong> A 404 tells search engines the URL is gone. Don&apos;t call it in a catch block - let Graph errors become 500s.</>,
-              <><strong className="text-on-surface">Wrap layout component fetches in try-catch.</strong> An unhandled error in the root layout blanks every page on the site. Return null and let the component render nothing.</>,
-              <><strong className="text-on-surface">Use hardcoded fallbacks for navigation.</strong> Navigation is critical - if Graph is down, a minimal hardcoded nav keeps the site usable.</>,
-              <><strong className="text-on-surface">Error boundaries prevent one broken block from blanking the page.</strong> Wrap blocks in the composition renderer so render errors are isolated.</>,
-              <><strong className="text-on-surface">Preview failures should redirect, not 500.</strong> Expired token → redirect to published version. Deleted content → redirect to CMS editor. Never show a blank preview page.</>,
-            ].map((text, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-brand font-bold shrink-0">→</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">graphqlFetch throws on HTTP errors, returns on GraphQL errors.</strong> HTTP errors (Graph down, rate limit) throw; GraphQL errors (bad field, permission) return <code className="bg-surface-low px-1 rounded font-mono text-xs">{"{ data: null, errors: [...] }"}</code>. Handle both paths.</>,
+          <><strong className="text-on-surface">notFound() is for missing content, not Graph errors.</strong> A 404 tells search engines the URL is gone. Don&apos;t call it in a catch block - let Graph errors become 500s.</>,
+          <><strong className="text-on-surface">Wrap layout component fetches in try-catch.</strong> An unhandled error in the root layout blanks every page on the site. Return null and let the component render nothing.</>,
+          <><strong className="text-on-surface">Use hardcoded fallbacks for navigation.</strong> Navigation is critical - if Graph is down, a minimal hardcoded nav keeps the site usable.</>,
+          <><strong className="text-on-surface">Error boundaries prevent one broken block from blanking the page.</strong> Wrap blocks in the composition renderer so render errors are isolated.</>,
+          <><strong className="text-on-surface">Preview failures should redirect, not 500.</strong> Expired token → redirect to published version. Deleted content → redirect to CMS editor. Never show a blank preview page.</>,
+        ]} />
 
         <SourcePanel
           heading="Source files"
@@ -367,6 +324,6 @@ export default function ErrorHandlingDemoPage() {
         />
 
       </div>
-    </div>
+    </>
   );
 }

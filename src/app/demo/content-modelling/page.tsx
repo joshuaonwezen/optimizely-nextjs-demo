@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Callout } from "@/components/blocks/CalloutBlock";
+import DemoHero from "@/components/demo/DemoHero";
 
 export const metadata: Metadata = {
   title: "Content Modelling Demo",
@@ -199,34 +200,23 @@ function Pill({ children }: { children: React.ReactNode }) {
 
 export default function ContentModellingPage() {
   return (
-    <div className="min-h-screen bg-surface">
+    <>
 
-      {/* Hero */}
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Content Modelling
-          </h1>
-          <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            How to structure content in a headless CMS so editors can work
-            efficiently, developers can query predictably, and the design can
-            evolve without breaking everything.
-          </p>
-          <div className="flex flex-wrap gap-3 mt-8">
-            {["Composable", "Reusable", "Type-safe", "Graph-ready"].map((b) => (
-              <span
-                key={b}
-                className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand"
-              >
-                {b}
-              </span>
-            ))}
-          </div>
+      <DemoHero
+        title="Content Modelling"
+        description="How to structure content in a headless CMS so editors can work efficiently, developers can query predictably, and the design can evolve without breaking everything."
+      >
+        <div className="flex flex-wrap gap-3 mt-8">
+          {["Composable", "Reusable", "Type-safe", "Graph-ready"].map((b) => (
+            <span
+              key={b}
+              className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand"
+            >
+              {b}
+            </span>
+          ))}
         </div>
-      </section>
+      </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -588,6 +578,6 @@ export default function ContentModellingPage() {
         </section>
 
       </div>
-    </div>
+    </>
   );
 }

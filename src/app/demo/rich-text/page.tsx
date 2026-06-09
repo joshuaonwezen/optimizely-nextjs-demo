@@ -1,6 +1,10 @@
 import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import SectionAnchor from "@/components/demo/SectionAnchor";
+import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 
 export const dynamic = "force-dynamic";
@@ -179,48 +183,15 @@ query SearchArticles($q: String!) {
 body: { type: "richText", indexingType: "disabled" }
 //                         ↑ body content won't appear in _fulltext results`;
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function SectionAnchor({ id, label }: { id: string; label: string }) {
-  return (
-    <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-      {label}
-    </a>
-  );
-}
-
 export default function RichTextDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Rich Text
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            How the <code className="bg-on-brand/10 px-1 rounded font-mono text-sm">richText</code> property
+    <>
+      <DemoHero
+        title="Rich Text"
+        description={<>How the <code className="bg-on-brand/10 px-1 rounded font-mono text-sm">richText</code> property
             type works in Optimizely Graph - JSON vs HTML rendering, preview attribute placement,
-            embedded blocks, and when to use rich text vs. a content area.
-          </p>
-        </div>
-      </section>
+            embedded blocks, and when to use rich text vs. a content area.</>}
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -352,27 +323,14 @@ export default function RichTextDemoPage() {
           </div>
         </section>
 
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know
-            <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            {[
-              <><strong className="text-on-surface">richText returns an object, not a string.</strong> Request <code className="bg-surface-low px-1 rounded font-mono text-xs">body &#123; json &#125;</code> or <code className="bg-surface-low px-1 rounded font-mono text-xs">body &#123; html &#125;</code> in your fragment - not bare <code className="bg-surface-low px-1 rounded font-mono text-xs">body</code>.</>,
-              <><strong className="text-on-surface">Prefer body.json + &lt;RichText&gt; over body.html.</strong> JSON gives you customisable node renderers, embedded block support, and working preview attributes.</>,
-              <><strong className="text-on-surface">pa(&quot;body&quot;) goes on the wrapper div, not on &lt;RichText&gt;.</strong> Placing it on the component breaks Visual Builder&apos;s inline editing overlay.</>,
-              <><strong className="text-on-surface">Embedded blocks use optimizely-content-ref nodes in the AST.</strong> Handle them with a nodeRenderer that fetches the block by key and dispatches it through OptimizelyComponent.</>,
-              <><strong className="text-on-surface">richText body is indexed for _fulltext search by default.</strong> Opt out with <code className="bg-surface-low px-1 rounded font-mono text-xs">indexingType: &quot;disabled&quot;</code> if the content should not be searchable.</>,
-              <><strong className="text-on-surface">Use a content area instead of richText for layout sections.</strong> If editors need drag-to-reorder or display template switching, a content area is the right model.</>,
-            ].map((text, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-brand font-bold shrink-0">→</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">richText returns an object, not a string.</strong> Request <code className="bg-surface-low px-1 rounded font-mono text-xs">body &#123; json &#125;</code> or <code className="bg-surface-low px-1 rounded font-mono text-xs">body &#123; html &#125;</code> in your fragment - not bare <code className="bg-surface-low px-1 rounded font-mono text-xs">body</code>.</>,
+          <><strong className="text-on-surface">Prefer body.json + &lt;RichText&gt; over body.html.</strong> JSON gives you customisable node renderers, embedded block support, and working preview attributes.</>,
+          <><strong className="text-on-surface">pa(&quot;body&quot;) goes on the wrapper div, not on &lt;RichText&gt;.</strong> Placing it on the component breaks Visual Builder&apos;s inline editing overlay.</>,
+          <><strong className="text-on-surface">Embedded blocks use optimizely-content-ref nodes in the AST.</strong> Handle them with a nodeRenderer that fetches the block by key and dispatches it through OptimizelyComponent.</>,
+          <><strong className="text-on-surface">richText body is indexed for _fulltext search by default.</strong> Opt out with <code className="bg-surface-low px-1 rounded font-mono text-xs">indexingType: &quot;disabled&quot;</code> if the content should not be searchable.</>,
+          <><strong className="text-on-surface">Use a content area instead of richText for layout sections.</strong> If editors need drag-to-reorder or display template switching, a content area is the right model.</>,
+        ]} />
 
         <SourcePanel
           heading="Source files"
@@ -382,6 +340,6 @@ export default function RichTextDemoPage() {
         />
 
       </div>
-    </div>
+    </>
   );
 }

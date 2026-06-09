@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getArticles, type ArticleListItem, type ArticleFacetBucket, type ArticleListResult } from "@/lib/graphql/queries/GetArticles";
+import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
+import SectionAnchor from "@/components/demo/SectionAnchor";
+import LiveDemoShell from "@/components/demo/LiveDemoShell";
+import KeyPoints from "@/components/demo/KeyPoints";
 
 export const metadata: Metadata = {
   title: "Content Listing & Discovery",
@@ -278,41 +283,6 @@ function FacetSidebar({ facets, activeTag, activeSince }) {
   );
 }`;
 
-function CodeBlock({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-2xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-function SectionAnchor({ id, label }: { id: string; label: string }) {
-  return (
-    <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-      {label}
-    </a>
-  );
-}
-
-function LiveDemoShell({ children, label, action }: { children: React.ReactNode; label: string; action?: React.ReactNode }) {
-  return (
-    <div className="mt-8 rounded-2xl border border-brand/20 overflow-hidden">
-      <div className="bg-brand/5 border-b border-brand/20 px-5 py-3 flex items-center gap-3">
-        <span className="text-xs font-semibold uppercase tracking-widest text-brand">Live Demo</span>
-        <span className="text-xs text-on-surface-variant">{label}</span>
-        {action && <span className="ml-auto">{action}</span>}
-      </div>
-      <div className="p-6 bg-surface">{children}</div>
-    </div>
-  );
-}
 
 function ArticleCard({ item }: { item: ArticleListItem }) {
   const url = item._metadata?.url?.default ?? "#";
@@ -473,24 +443,14 @@ export default async function ListingDemoPage({
   const clearHref = `?#facets-demo`;
 
   return (
-    <div className="min-h-screen bg-surface">
-
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            Content Listing &amp; Discovery
-          </h1>
-          <p className="text-on-brand opacity-80 max-w-2xl text-lg leading-relaxed">
-            How to build article lists, filtered index pages, and faceted browsing interfaces
+    <>
+      <DemoHero
+        title="Content Listing & Discovery"
+        description={<>How to build article lists, filtered index pages, and faceted browsing interfaces
             using Graph queries, cursor pagination,{" "}
             <code className="bg-on-brand/10 px-1 rounded font-mono text-sm">where</code> conditions,
-            and facet aggregations.
-          </p>
-        </div>
-      </section>
+            and facet aggregations.</>}
+      />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
@@ -701,30 +661,17 @@ export default async function ListingDemoPage({
           </div>
         </section>
 
-        <section id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">
-            Key Things to Know
-            <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
-          </h2>
-          <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
-            {[
-              <><strong className="text-on-surface">List queries should fetch only metadata + summary fields.</strong> Avoid fetching composition, content areas, or block fragments - that data is for detail pages, not list cards.</>,
-              <><strong className="text-on-surface">Use the specific content type, not _Content,</strong> when you need custom fields (summary, category, heroImage). _Content only exposes base _metadata fields.</>,
-              <><strong className="text-on-surface">Cursor pagination is stable under concurrent publishes.</strong> Offset pagination re-numbers rows when new items are inserted - users on page 2 can see duplicates or miss items.</>,
-              <><strong className="text-on-surface">cursor: null means there are no more pages.</strong> Always check before rendering a "Load more" or "Next page" control.</>,
-              <><strong className="text-on-surface">Pre-render page 1 with generateStaticParams; leave pages 2+ on-demand.</strong> This gives the most-visited page zero TTFB without pre-building every paginated offset at deploy time.</>,
-              <><strong className="text-on-surface">_metadata.published is the canonical sort key for recency.</strong> It reflects the last publish date, not the creation date - republishing updates it, which is the right behaviour for editors who update old articles.</>,
-              <><strong className="text-on-surface">Facet counts are scoped to the active where clause.</strong> If a user has filtered by category, the date histogram counts only articles in that category - not the whole index. Request facets in the same query as items so you pay one round trip.</>,
-            ].map((text, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-brand font-bold shrink-0">→</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <KeyPoints points={[
+          <><strong className="text-on-surface">List queries should fetch only metadata + summary fields.</strong> Avoid fetching composition, content areas, or block fragments - that data is for detail pages, not list cards.</>,
+          <><strong className="text-on-surface">Use the specific content type, not _Content,</strong> when you need custom fields (summary, category, heroImage). _Content only exposes base _metadata fields.</>,
+          <><strong className="text-on-surface">Cursor pagination is stable under concurrent publishes.</strong> Offset pagination re-numbers rows when new items are inserted - users on page 2 can see duplicates or miss items.</>,
+          <><strong className="text-on-surface">cursor: null means there are no more pages.</strong> Always check before rendering a "Load more" or "Next page" control.</>,
+          <><strong className="text-on-surface">Pre-render page 1 with generateStaticParams; leave pages 2+ on-demand.</strong> This gives the most-visited page zero TTFB without pre-building every paginated offset at deploy time.</>,
+          <><strong className="text-on-surface">_metadata.published is the canonical sort key for recency.</strong> It reflects the last publish date, not the creation date - republishing updates it, which is the right behaviour for editors who update old articles.</>,
+          <><strong className="text-on-surface">Facet counts are scoped to the active where clause.</strong> If a user has filtered by category, the date histogram counts only articles in that category - not the whole index. Request facets in the same query as items so you pay one round trip.</>,
+        ]} />
 
       </div>
-    </div>
+    </>
   );
 }

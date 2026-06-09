@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Callout } from "@/components/blocks/CalloutBlock";
+import DemoHero from "@/components/demo/DemoHero";
 
 export const metadata: Metadata = {
   title: "CMS MCP Server",
@@ -88,36 +89,26 @@ function Chip({ children }: { children: React.ReactNode }) {
 
 export default function McpServerDemoPage() {
   return (
-    <div className="min-h-screen bg-surface">
-      <section className="bg-gradient-brand py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="font-body text-xs font-semibold uppercase tracking-widest mb-4 text-on-brand opacity-70">
-            Developer Demo
-          </p>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
-            CMS MCP Server
-          </h1>
-          <p className="text-lg text-on-brand-muted max-w-2xl leading-relaxed">
-            The Optimizely SaaS CMS ships a native Model Context Protocol server. Connect any
-            MCP-compatible AI assistant to your CMS and interact with content, schemas, and
-            navigation through natural language - no GraphQL or REST knowledge required.
-          </p>
-          <div className="flex flex-wrap gap-3 mt-8">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-              Zero boilerplate setup
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              Works with Claude, Cursor, Copilot
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              Reads Graph, writes Management API
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-              OAuth-authenticated
-            </span>
-          </div>
+    <>
+      <DemoHero
+        title="CMS MCP Server"
+        description="The Optimizely SaaS CMS ships a native Model Context Protocol server. Connect any MCP-compatible AI assistant to your CMS and interact with content, schemas, and navigation through natural language - no GraphQL or REST knowledge required."
+      >
+        <div className="flex flex-wrap gap-3 mt-8">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
+            Zero boilerplate setup
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            Works with Claude, Cursor, Copilot
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            Reads Graph, writes Management API
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            OAuth-authenticated
+          </span>
         </div>
-      </section>
+      </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-16">
 
@@ -461,6 +452,6 @@ export default function McpServerDemoPage() {
         </section>
 
       </div>
-    </div>
+    </>
   );
 }
