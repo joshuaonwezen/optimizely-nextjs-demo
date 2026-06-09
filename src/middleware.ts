@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365,
       sameSite: "lax",
       path: "/",
-      // not httpOnly — browser SDK reads this for client-side bucketing events
+      secure: false,  // must be readable over HTTP (localhost) and by browser JS
     });
   }
 
