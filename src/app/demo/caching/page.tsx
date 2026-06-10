@@ -99,6 +99,55 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ received: true, timestamp: Date.now() });
 }`;
 
+const SDK_REQUEST_SNIPPET = `// getClient().request() — the SDK's built-in raw query method
+// Its "cache" parameter appends ?cache=true/false to the Graph endpoint URL.
+// This controls Graph's own server-side CDN cache - NOT the Next.js fetch cache.
+
+async request(query, variables, previewToken, cache = true, slot) {
+  const url = new URL(this.graphUrl);
+  url.searchParams.append("cache", cache.toString()); // → ?cache=true appended to URL
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ query, variables }),
+    // ↑ No "next" property here. Next.js never sees this as an ISR fetch.
+  });
+}
+
+// Consequence: you cannot tag this fetch or give it a revalidate window.
+// revalidateTag("navigation") has no effect on a fetch made via request().
+
+// Use graphqlFetch instead when you need ISR:
+graphqlFetch(QUERY, vars, { next: { revalidate: 300, tags: ["navigation"] } });
+// ↑ Next.js registers this fetch in its data cache and respects the tags.`;
+
+const SDK_METHOD_COMPARISON = [
+  {
+    method: "getClient().getContent({ key })",
+    when: "Resolve a content reference by CMS key — the most common self-fetch pattern",
+    hasIsr: true,
+    isrNote: "Pass { next: { revalidate, tags } } as any in the options arg",
+  },
+  {
+    method: "getClient().getContentByPath(url)",
+    when: "Fetch the current published page by URL — used in the catch-all page route",
+    hasIsr: true,
+    isrNote: "Cast options to any — same as getContent()",
+  },
+  {
+    method: "getClient().request(query)",
+    when: "Custom GraphQL query where ISR tags are not needed (preview, no-store context)",
+    hasIsr: false,
+    isrNote: "cache param appends ?cache=true/false to the Graph URL — Next.js fetch cache never sees it",
+  },
+  {
+    method: "graphqlFetch(query)",
+    when: "Custom GraphQL query that must participate in Next.js ISR (nav, banner, etc.)",
+    hasIsr: true,
+    isrNote: "Full next: { revalidate, tags } support — wraps fetch() directly",
+  },
+];
+
 const GRAPH_CACHE_SNIPPET = `// Layer 2: Graph's own CDN cache at cg.optimizely.com
 // Bypassed by appending ?cache=false to the endpoint URL.
 // Setting cache: "no-store" in Next.js only skips Layer 1 - Graph can still
@@ -324,6 +373,91 @@ export default function CachingDemoPage() {
               </pre>
             </div>
           </div>
+        </section>
+
+        {/* graphqlFetch vs getClient().request() */}
+        <section id="sdk-vs-graphqlfetch" className="space-y-8">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+              graphqlFetch vs getClient().request(){" "}
+              <a href="#sdk-vs-graphqlfetch" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            </h2>
+            <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
+              The SDK exposes a{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">getClient().request()</code>{" "}
+              method for running arbitrary GraphQL queries. It looks like an alternative to{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">graphqlFetch()</code>,
+              but there is a critical difference: its{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">cache</code> parameter
+              controls <em>Graph&apos;s</em> CDN cache (by appending{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">?cache=false</code> to
+              the endpoint URL), not the Next.js fetch cache. The underlying{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">fetch()</code> call
+              inside <code className="bg-surface-low px-1 rounded text-xs font-mono">request()</code>{" "}
+              has no <code className="bg-surface-low px-1 rounded text-xs font-mono">next</code>{" "}
+              property at all — Next.js cannot register it for ISR revalidation.
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+              Why request() cannot participate in Next.js ISR
+            </p>
+            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+              <code>{SDK_REQUEST_SNIPPET}</code>
+            </pre>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-3">
+              Which method to use
+            </p>
+            <div className="overflow-x-auto rounded-2xl border border-ghost-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-surface-low border-b border-ghost-border">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Method</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">When to use</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">ISR / revalidate tags?</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-ghost-border">
+                  {SDK_METHOD_COMPARISON.map((row) => (
+                    <tr key={row.method} className="bg-surface-lowest hover:bg-surface-low transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-on-surface whitespace-nowrap">{row.method}</td>
+                      <td className="px-4 py-3 text-xs text-on-surface-variant">{row.when}</td>
+                      <td className="px-4 py-3 text-xs">
+                        <span className={`inline-block px-2 py-0.5 rounded-full font-mono font-medium ${
+                          row.hasIsr
+                            ? "bg-green-100 text-green-800"
+                            : "bg-amber-100 text-amber-800"
+                        }`}>
+                          {row.hasIsr ? "Yes" : "No"}
+                        </span>
+                        <span className="block mt-1 text-on-surface-variant">{row.isrNote}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <Callout label="SDK methods can still do ISR — with a cast">
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">getClient().getContent()</code>{" "}
+            and{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">getContentByPath()</code>{" "}
+            accept a second options argument. The SDK types it narrowly, but Next.js
+            fetch options (
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">next: {"{ revalidate, tags }"}</code>
+            ) pass through when cast:{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">
+              {"getClient().getContent({ key }, { next: { revalidate: 300 } } as any)"}
+            </code>
+            . Use this for content reference lookups in self-fetching blocks.{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">request()</code>{" "}
+            does not have this option — it bypasses Next.js&apos;s fetch layer entirely.
+          </Callout>
         </section>
 
         {/* Graph CDN cache */}
