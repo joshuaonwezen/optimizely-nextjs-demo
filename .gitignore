@@ -41,4 +41,4 @@ yarn-error.log*
 next-env.d.ts
 
 # claude
-.claude/commands
+.claude/openAPISpecs.json

@@ -14,6 +14,7 @@ export const LogoGridBlockType = contentType({
       type: "array",
       displayName: "Partner Logos",
       items: { type: "content", allowedTypes: ["_image"] },
+      indexingType: "disabled",
     },
   },
 });

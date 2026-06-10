@@ -102,6 +102,7 @@ export default function HeroBlock(props: HeroBlockProps) {
           src={bgUrl}
           alt={data.headline ?? ""}
           fill
+          sizes="100vw"
           className={`object-cover ${showOverlay ? "opacity-20" : "opacity-30"}`}
           priority
         />

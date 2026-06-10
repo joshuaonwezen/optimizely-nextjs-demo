@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { contentType } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
@@ -16,11 +15,10 @@ export const RenditionImageBlockType = contentType({
     },
     rendition: {
       type: "string",
-      displayName: "Rendition",
+      displayName: "Crop",
       enum: [
-        { value: "100px crop",   displayName: "Thumbnail (100px crop)" },
-        { value: "500x500 WEBP", displayName: "Medium (500x500 WEBP)" },
-        { value: "700px Crop",   displayName: "Large (700px crop)" },
+        { value: "portrait-crop",  displayName: "Portrait (cards, profile images)" },
+        { value: "landscape-crop", displayName: "Landscape (heroes, banners)" },
       ],
     },
     altText: { type: "string", displayName: "Alt Text" },
@@ -69,9 +67,6 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
 
   const renditions = data.image?.Renditions ?? [];
   const matched = renditions.find((r) => r.Name === data.rendition);
-  // Each rendition is a physically separate file at a different URL - the DAM
-  // serves them independently, so "thumbnail" and "banner-wide" resolve to
-  // different URLs, not just different query parameters on the same file.
   const src =
     matched?.Url ??
     data.image?.Url ??
@@ -82,13 +77,14 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
 
   return (
     <figure data-component="RenditionImageBlock" className="max-w-7xl mx-auto px-8 py-8">
-      <div {...pa("image")} className="relative overflow-hidden rounded-2xl">
-        <Image
+      <div {...pa("image")} className="overflow-hidden rounded-2xl">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={src}
+          width={matched?.Width ?? undefined}
+          height={matched?.Height ?? undefined}
           alt={data.altText ?? ""}
-          width={matched?.Width ?? 1200}
-          height={matched?.Height ?? 675}
-          className="w-full h-auto"
+          className="w-full h-auto block"
         />
       </div>
     </figure>
