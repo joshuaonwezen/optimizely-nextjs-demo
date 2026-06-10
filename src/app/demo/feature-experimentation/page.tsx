@@ -550,7 +550,8 @@ export default async function FeatureFlagsDemoPage() {
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 Active variation keys are passed to <code className="bg-surface-low px-1 rounded font-mono text-xs">getContentByPath</code> as
                 a <code className="bg-surface-low px-1 rounded font-mono text-xs">{"{ include: 'SOME', value: [...keys] }"}</code> filter.
-                Graph serves the CMS content variant whose key matches - or the original if none exists.
+                Graph serves the CMS content variant whose key matches - or the original if none exists.{" "}
+                <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
               </p>
             </div>
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">

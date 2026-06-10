@@ -236,7 +236,8 @@ export default function FormsPage() {
             <code className="bg-surface-low px-1 rounded text-xs font-mono">submitUrl</code> on{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">FormContainerBlock</code> lets
             editors point different forms at different endpoints - a contact form, a newsletter
-            signup, and a demo request can all live in the same CMS with separate handlers.
+            signup, and a demo request can all live in the same CMS with separate handlers.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
             <code>{BLOCK_SCHEMA_SNIPPET}</code>

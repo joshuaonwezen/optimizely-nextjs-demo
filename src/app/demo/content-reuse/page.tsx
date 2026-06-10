@@ -174,7 +174,8 @@ export default function ContentReuseDemoPage() {
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             The SDK offers four property types for attaching content to a parent. They differ in
             how tightly the child is coupled to its parent, how Graph resolves them in queries,
-            and whether editing the child affects every parent that uses it.
+            and whether editing the child affects every parent that uses it.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -544,7 +545,8 @@ export default function ContentReuseDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch</code>
             directly) and the{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">getContent()</code> SDK
-            method introduced in SDK 2.0.0.
+            method introduced in SDK 2.0.0.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 mb-4">

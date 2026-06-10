@@ -270,7 +270,8 @@ export default function ManagementApiDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">PUT /api/content/v3/types</code>{" "}
             endpoint is idempotent - running it twice with the same payload is safe. This is useful when
             types are generated dynamically from an external schema (e.g., Stripe product catalog → CMS
-            content type, Shopify collection → CMS block).
+            content type, Shopify collection → CMS block).{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/13-cli-commands.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <CodeBlock code={CREATE_TYPE_SNIPPET} label="PUT /api/content/v3/types - create or update a type" />
         </section>
@@ -289,7 +290,8 @@ export default function ManagementApiDemoPage() {
             the{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">&#123; reference: &quot;cms://content/key&quot; &#125;</code>{" "}
             format - plain key strings or{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">&#123; key: &quot;...&quot; &#125;</code> will error.
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">&#123; key: &quot;...&quot; &#125;</code> will error.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/4-create-content.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">

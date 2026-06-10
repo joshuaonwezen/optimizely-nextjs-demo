@@ -237,7 +237,8 @@ export default function LocalizationDemoPage() {
             to any query to get content in a specific language. Pass the locale from the request - URL
             segment, header, or cookie. Without a locale filter, Graph returns all locale variants for
             a given URL, which means you&apos;d get both the English and French version of a page in
-            one response.
+            one response.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <CodeBlock code={GRAPH_LOCALE_SNIPPET} label="Locale filter in a page query" />
         </section>

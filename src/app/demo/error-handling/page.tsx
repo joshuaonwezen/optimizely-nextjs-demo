@@ -209,7 +209,8 @@ export default function ErrorHandlingDemoPage() {
             A GraphQL error (200 OK with{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">errors[]</code> in the body)
             logs to console and returns the response - it does not throw. Callers must handle both
-            cases explicitly.
+            cases explicitly.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <CodeBlock code={GRAPHQL_FETCH_ERRORS_SNIPPET} label="src/lib/optimizely/client.ts - HTTP error vs GraphQL error" />

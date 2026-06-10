@@ -290,7 +290,8 @@ export default function SeoDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">params</code> and{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">searchParams</code> as the
             page and can fetch from Graph. Keep the query small - only fetch the fields you need for
-            metadata, not the full page composition.
+            metadata, not the full page composition.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <CodeBlock code={GENERATE_METADATA_SNIPPET} label="generateMetadata() reading CMS SEO fields" />
 

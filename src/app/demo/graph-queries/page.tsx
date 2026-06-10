@@ -314,7 +314,8 @@ export default function GraphQueriesDemoPage() {
             generates an inline{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">{"... on BlockType { <fields> }"}</code>{" "}
             spread for each one. This project registers ~32 block and page types - all their data arrives in one
-            response with no per-block round-trips.
+            response with no per-block round-trips.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 mb-6">

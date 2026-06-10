@@ -229,7 +229,8 @@ export default function ContentModellingPage() {
             Every piece of content in Visual Builder lives at one of three levels.
             Understanding this hierarchy determines what{" "}
             <Code>compositionBehaviors</Code> to assign and how editors build
-            pages - before writing a single line of component code.
+            pages - before writing a single line of component code.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           {/* Visual tree */}
@@ -324,7 +325,8 @@ export default function ContentModellingPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             <Code>compositionBehaviors</Code> is the single most important property
             on a content type. It controls where editors can place a block in Visual
-            Builder and whether it can contain other blocks.
+            Builder and whether it can contain other blocks.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/8-experience.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <div className="grid md:grid-cols-3 gap-4 mb-6">
@@ -416,7 +418,8 @@ export default function ContentModellingPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             The most common modelling decision: should a visual variation be a new
             content type or a display template on an existing one? The answer
-            hinges on whether the <em>fields</em> differ.
+            hinges on whether the <em>fields</em> differ.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/9-display-settings.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <div className="grid md:grid-cols-2 gap-4 mb-6">
@@ -449,7 +452,8 @@ export default function ContentModellingPage() {
             Blocks can be <em>composed inline</em> - created inside a page&apos;s
             Visual Builder session - or <em>referenced</em> - existing as
             independent CMS items linked from multiple pages. The choice affects
-            how Graph fetches the data and how editors manage it.
+            how Graph fetches the data and how editors manage it.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <div className="grid md:grid-cols-2 gap-4 mb-6">
@@ -647,7 +651,8 @@ export default function ContentModellingPage() {
             single <Code>type: &quot;contentReference&quot;</Code> properties - the component
             receives only base metadata (the item&apos;s key). To get full field data, call{" "}
             <Code>getClient().getContent(&#123; key &#125;)</Code> directly inside the
-            component. No GraphQL query, no fragment file needed.
+            component. No GraphQL query, no fragment file needed.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <div className="grid md:grid-cols-3 gap-5 mb-6">

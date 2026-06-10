@@ -467,7 +467,8 @@ export default async function ListingDemoPage({
             <code className="bg-surface-low px-1 rounded font-mono text-xs">ArticlePage</code>) instead of{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">_Content</code> so Graph
             can expose that type&apos;s own custom fields like{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">summary</code>.
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">summary</code>.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">

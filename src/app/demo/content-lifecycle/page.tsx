@@ -200,7 +200,8 @@ export default function ContentLifecycleDemoPage() {
             Content in Optimizely CMS moves through a series of states from creation to expiry.
             The state controls who can edit it, whether it appears in Graph queries, and what
             webhook events fire. From the app&apos;s perspective, only one state matters -{" "}
-            <strong>Published</strong>.
+            <strong>Published</strong>.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/4-create-content.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <CodeBlock code={STATE_MACHINE_SNIPPET} label="State transitions - only Published is visible in Graph" />
 
@@ -289,7 +290,8 @@ export default function ContentLifecycleDemoPage() {
             Every save creates a new version in the CMS. The Management API exposes the full version
             history for any content item - useful for rollback scripts and audit trails. Publish an
             older version by PATCHing it to{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">status: &quot;published&quot;</code>.
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">status: &quot;published&quot;</code>.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/13-cli-commands.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <CodeBlock code={VERSION_HISTORY_SNIPPET} label="List versions + publish an older version (rollback)" />
         </section>

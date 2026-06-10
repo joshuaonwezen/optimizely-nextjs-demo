@@ -359,7 +359,8 @@ export default function MediaDemoPage() {
             This restricts the CMS picker to image assets only. Always add{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">indexingType: &quot;disabled&quot;</code> - Graph
             cannot index binary assets for text search, and omitting it adds unnecessary indexing
-            overhead on every publish. The same applies to video and file references.
+            overhead on every publish. The same applies to video and file references.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <div className="grid md:grid-cols-2 gap-6">
             <CodeBlock code={IMAGE_PROPERTY_SNIPPET} label="Single image field + image array" />
@@ -415,7 +416,8 @@ export default function MediaDemoPage() {
             reads alt text stored in the DAM (rather than as a separate CMS property), and provides
             TypeScript type guards for distinguishing image, video, and raw file references.
             It also appends the preview token to image URLs automatically when rendering in edit mode,
-            so DAM images load correctly in the Visual Builder editor without extra code.
+            so DAM images load correctly in the Visual Builder editor without extra code.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/11-dam-assets.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <CodeBlock code={DAM_ASSETS_SNIPPET} label="damAssets - getSrcset, getAlt, isDamImageAsset" />

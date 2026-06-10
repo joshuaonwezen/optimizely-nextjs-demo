@@ -950,7 +950,8 @@ ${mappingEntries.length > 0
             Use the ODP direct path when the goal is personalizing content for known segments - no
             control group, no statistical test. Use the FX path when you need to run a real
             experiment: split traffic, measure lift, and declare a winner with confidence. Both paths
-            feed the same Graph variation filter - only the decision layer differs.
+            feed the same Graph variation filter - only the decision layer differs.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </Callout>
         </section>
 

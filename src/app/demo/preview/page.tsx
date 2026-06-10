@@ -255,7 +255,8 @@ export default function PreviewDemoPage() {
             all content types - experience pages, traditional pages, and shared blocks - and returns
             the item directly. <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyComponent</code>{" "}
             dispatches to the right React component by <code className="bg-surface-low px-1 rounded text-xs font-mono">__typename</code>,
-            exactly as the published page does. No separate preview renderer needed.
+            exactly as the published page does. No separate preview renderer needed.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/7-live-preview.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
             <code>{PREVIEW_PAGE_SNIPPET}</code>
@@ -283,7 +284,8 @@ export default function PreviewDemoPage() {
             <p className="text-sm text-on-surface-variant mb-4">
               The contract between the frontend and the CMS overlay. The CMS reads
               this attribute to know which content item to highlight and which
-              property panel to open when an editor clicks on the page.
+              property panel to open when an editor clicks on the page.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/7-live-preview.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
             </p>
             <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
               <code>{EPI_BLOCK_SNIPPET}</code>

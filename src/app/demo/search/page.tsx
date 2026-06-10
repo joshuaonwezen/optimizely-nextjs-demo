@@ -164,7 +164,8 @@ export default function SearchDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">_Content</code> (all types) or
             any specific type such as{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">_Page</code>,{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">ArticlePage</code>, etc.
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">ArticlePage</code>, etc.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <CodeBlock code={FULLTEXT_SNIPPET} label="Basic relevance search across all content" />
         </section>

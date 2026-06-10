@@ -204,7 +204,8 @@ export default function GlobalSettingsDemoPage() {
             know the CMS key at deploy time), or by{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata.url</code> (if the
             item has a canonical URL). The type-with-limit approach is the most flexible - no hardcoded
-            key needed, and it naturally returns nothing if the editor hasn&apos;t created the item yet.
+            key needed, and it naturally returns nothing if the editor hasn&apos;t created the item yet.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <CodeBlock code={THREE_QUERY_PATTERNS_SNIPPET} label="Singleton query options" />
         </section>

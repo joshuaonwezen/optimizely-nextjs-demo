@@ -456,7 +456,8 @@ export default function CachingDemoPage() {
             </code>
             . Use this for content reference lookups in self-fetching blocks.{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">request()</code>{" "}
-            does not have this option - it bypasses Next.js&apos;s fetch layer entirely.
+            does not have this option - it bypasses Next.js&apos;s fetch layer entirely.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </Callout>
         </section>
 

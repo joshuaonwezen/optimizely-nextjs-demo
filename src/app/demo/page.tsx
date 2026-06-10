@@ -116,6 +116,14 @@ export default async function DemoIndexPage({
               </svg>
               View on GitHub
             </a>
+            <a
+              href="https://github.com/episerver/content-js-sdk/tree/main/docs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-on-brand/10 text-on-brand hover:bg-on-brand/20 transition-colors"
+            >
+              SDK Docs ↗
+            </a>
           </div>
         </div>
       </section>

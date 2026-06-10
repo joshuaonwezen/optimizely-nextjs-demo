@@ -202,7 +202,8 @@ export default async function ExternalContentPage() {
             same GraphQL endpoint, same ISR caching. Query your custom properties directly;{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">_itemMetadata</code> fields
             are search-indexed internals and return{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">null</code> at query time.
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">null</code> at query time.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
             <code>{GET_QUOTES_QUERY.trim()}</code>

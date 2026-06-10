@@ -224,7 +224,8 @@ export default function RichTextDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">body.html</code> from Graph
             and inject it with{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">dangerouslySetInnerHTML</code>.
-            The JSON path is preferred - it supports preview attributes, custom node renderers, and embedded blocks.
+            The JSON path is preferred - it supports preview attributes, custom node renderers, and embedded blocks.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/10-richtext-component-react.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -278,7 +279,8 @@ export default function RichTextDemoPage() {
             wrapper <code className="bg-surface-low px-1 rounded font-mono text-xs">&lt;div&gt;</code> -
             never on{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">&lt;RichText&gt;</code> itself.
-            The component renders multiple DOM nodes and cannot receive spread attributes as a single root.
+            The component renders multiple DOM nodes and cannot receive spread attributes as a single root.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/7-live-preview.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <CodeBlock code={PA_PLACEMENT_SNIPPET} label="pa() placement - wrapper div, not RichText component" />
         </section>
@@ -298,7 +300,8 @@ export default function RichTextDemoPage() {
             map to{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">&lt;RichText&gt;</code> that
             fetches each referenced block and dispatches it through{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">OptimizelyComponent</code>.
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">OptimizelyComponent</code>.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/6-rendering-react.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <CodeBlock code={EMBEDDED_BLOCKS_SNIPPET} label="optimizely-content-ref node + custom nodeRenderer" />
         </section>

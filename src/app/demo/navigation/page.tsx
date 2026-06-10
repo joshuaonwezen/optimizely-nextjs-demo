@@ -263,7 +263,8 @@ export default async function NavigationDemoPage() {
               <p className="text-sm text-on-surface-variant mb-3">
                 <code className="bg-surface-low px-1 rounded text-xs font-mono">NavigationItem</code> uses{" "}
                 <code className="bg-surface-low px-1 rounded text-xs font-mono">allowedTypes: [&quot;_self&quot;]</code> so
-                only other NavigationItems can be nested inside it.
+                only other NavigationItems can be nested inside it.{" "}
+                <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
               </p>
               <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed max-h-72">
                 <code>{S1_CONTENT_TYPE_SNIPPET}</code>

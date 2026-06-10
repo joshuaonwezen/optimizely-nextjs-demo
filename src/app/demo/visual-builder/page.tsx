@@ -317,7 +317,8 @@ export default function VisualBuilderPage() {
             <code className="bg-surface-low px-1 rounded text-xs font-mono">getContentByPath()</code> call
             fetches the page and every possible block type in a single round-trip. The{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">withAppContext</code> HOC
-            initialises request-scoped context storage required for preview utilities.
+            initialises request-scoped context storage required for preview utilities.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
             <code>{SDK_QUERY_SNIPPET}</code>
@@ -335,7 +336,8 @@ export default function VisualBuilderPage() {
             and registers all content types, display templates, and React components. Display template
             variants use the <code className="bg-surface-low px-1 rounded text-xs font-mono">tags</code> pattern
             so the SDK routes by <code className="bg-surface-low px-1 rounded text-xs font-mono">displayTemplateKey</code>{" "}
-            automatically - no manual <code className="bg-surface-low px-1 rounded text-xs font-mono">if/switch</code> on the template key in components.
+            automatically - no manual <code className="bg-surface-low px-1 rounded text-xs font-mono">if/switch</code> on the template key in components.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/6-rendering-react.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
             <code>{REGISTRY_SNIPPET}</code>
@@ -351,7 +353,8 @@ export default function VisualBuilderPage() {
             The SDK provides <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyComposition</code>{" "}
             and <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyGridSection</code> to walk
             the composition tree. You only need to supply the layout components -
-            the SDK handles all JSON traversal.
+            the SDK handles all JSON traversal.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/8-experience.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <div className="space-y-6">
             <div>
@@ -389,7 +392,8 @@ export default function VisualBuilderPage() {
             whether to emit <code className="bg-surface-low px-1 rounded text-xs font-mono">data-epi-*</code> attributes.
             The rendered output goes through the exact same{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyComponent</code> path
-            as the published page - no separate preview renderer.
+            as the published page - no separate preview renderer.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/7-live-preview.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
             <code>{PREVIEW_SNIPPET}</code>
@@ -408,7 +412,8 @@ export default function VisualBuilderPage() {
             and the React component. The component receives typed{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">content</code> and{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">displaySettings</code> props;
-            the SDK dispatches the right variant via the <code className="bg-surface-low px-1 rounded text-xs font-mono">tags</code> registry entry.
+            the SDK dispatches the right variant via the <code className="bg-surface-low px-1 rounded text-xs font-mono">tags</code> registry entry.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <div className="grid md:grid-cols-2 gap-6">
             <div>

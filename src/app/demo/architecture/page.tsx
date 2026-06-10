@@ -80,7 +80,8 @@ export default function ArchitecturePage() {
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             Request flow left to right. Edge Middleware evaluates FX flags and rewrites the URL before
             the CDN cache is checked - each variation gets its own ISR cache entry. CMS publishes sync
-            into Graph, which fires a webhook to invalidate the ISR cache.
+            into Graph, which fires a webhook to invalidate the ISR cache.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/1-installation.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
           <div className="rounded-2xl border border-ghost-border bg-white p-4 overflow-x-auto">
@@ -273,7 +274,8 @@ export default function ArchitecturePage() {
             <a href="#request-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            What happens between a browser request and the page appearing, step by step.
+            What happens between a browser request and the page appearing, step by step.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <div className="space-y-2">
             {[
