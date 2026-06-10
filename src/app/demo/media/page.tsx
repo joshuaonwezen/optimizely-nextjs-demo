@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import Image from "next/image";
 import type { Metadata } from "next";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
@@ -192,6 +193,8 @@ const DAM_RENDITIONS_SNIPPET = `// DAM images in Graph expose named renditions v
 // ------ Pattern 1: author picks the rendition from a dropdown ------
 // RenditionImageBlock demonstrates this pattern. A rendition enum sits alongside
 // the image field - the author picks both in the CMS editor.
+// The enum values must match the rendition names defined in your DAM instance exactly.
+// This instance has three renditions: "100px crop", "500x500 WEBP", "700px Crop".
 
 export const RenditionImageBlockType = contentType({
   key: "RenditionImageBlock",
@@ -202,12 +205,10 @@ export const RenditionImageBlockType = contentType({
       type: "string",
       displayName: "Rendition",
       enum: [
-        { value: "original",    displayName: "Original" },
-        { value: "thumbnail",   displayName: "Thumbnail" },
-        { value: "medium",      displayName: "Medium" },
-        { value: "banner-wide", displayName: "Banner (wide)" },
-        { value: "square",      displayName: "Square" },
-      ],  // values must match rendition names defined in your DAM instance exactly
+        { value: "100px crop",   displayName: "Thumbnail (100px crop)" },
+        { value: "500x500 WEBP", displayName: "Medium (500x500 WEBP)" },
+        { value: "700px Crop",   displayName: "Large (700px crop)" },
+      ],
     },
     altText: { type: "string", displayName: "Alt Text" },
   },
@@ -216,7 +217,7 @@ export const RenditionImageBlockType = contentType({
 // Request Renditions on the image reference in your Graph fragment.
 // cmp_PublicImageAsset fields are PascalCase - Url, Renditions, Name, Width, Height.
 // Each Renditions entry resolves to a physically different file URL - selecting
-// "thumbnail" vs "banner-wide" gives a different image, not just a resize parameter:
+// "100px crop" vs "700px Crop" gives a different image, not just a resize parameter:
 fragment RenditionImageFields on RenditionImageBlock {
   image {
     ... on cmp_PublicImageAsset {
@@ -242,9 +243,9 @@ const src =
 // and builds a srcset from the rendition URLs Graph returns.
 
 const RENDITION_WIDTHS: Record<string, number> = {
-  "thumbnail":  480,
-  "medium":     800,
-  "banner-wide": 1600,
+  "100px crop":   100,
+  "500x500 WEBP": 500,
+  "700px Crop":   700,
 };
 
 const srcset = renditions
@@ -476,6 +477,32 @@ export default function MediaDemoPage() {
           </div>
 
           <CodeBlock code={DAM_RENDITIONS_SNIPPET} label="Author-selected rendition + auto-responsive srcset" />
+
+          <div className="mt-8">
+            <p className="text-xs font-semibold text-on-surface mb-1">Live example - Otters.jpg from this instance&apos;s DAM</p>
+            <p className="text-xs text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+              The same source asset served at each rendition. Each rendition is a distinct file at a
+              different URL - the DAM pre-generates them, so there is no runtime resize on delivery.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {([
+                { label: "Original", dims: "3402 × 3402", url: "https://images1.cmp.optimizely.com/assets/Otters.jpg/Zz04MDA4ZTA0YTViNDUxMWYwYTNlOGFhY2NkNjZhNDA3NA==" },
+                { label: "100px crop", dims: "100 × 100", url: "https://images1.cmp.optimizely.com/assets/Otters.jpg/dc450a30f77811f0b938e24c027d659d" },
+                { label: "500x500 WEBP", dims: "500 × 500", url: "https://images1.cmp.optimizely.com/assets/Otters.jpg/e5759a7ecef711f0b744d257d6f7b76d" },
+                { label: "700px Crop", dims: "700 × 700", url: "https://images1.cmp.optimizely.com/assets/Otters.jpg/c026d270f77811f09e96febb18003b5b" },
+              ] as const).map(({ label, dims, url }) => (
+                <div key={label} className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
+                  <div className="relative w-full aspect-square overflow-hidden bg-surface-low">
+                    <Image src={url} alt={label} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" unoptimized={label !== "Original"} />
+                  </div>
+                  <div className="px-3 py-2">
+                    <p className="text-xs font-semibold text-on-surface">{label}</p>
+                    <p className="text-xs font-mono text-on-surface-variant">{dims}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         <KeyPoints points={[

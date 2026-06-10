@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ received: true, timestamp: Date.now() });
 }`;
 
-const SDK_REQUEST_SNIPPET = `// getClient().request() — the SDK's built-in raw query method
+const SDK_REQUEST_SNIPPET = `// getClient().request() - the SDK's built-in raw query method
 // Its "cache" parameter appends ?cache=true/false to the Graph endpoint URL.
 // This controls Graph's own server-side CDN cache - NOT the Next.js fetch cache.
 
@@ -124,27 +124,27 @@ graphqlFetch(QUERY, vars, { next: { revalidate: 300, tags: ["navigation"] } });
 const SDK_METHOD_COMPARISON = [
   {
     method: "getClient().getContent({ key })",
-    when: "Resolve a content reference by CMS key — the most common self-fetch pattern",
+    when: "Resolve a content reference by CMS key - the most common self-fetch pattern",
     hasIsr: true,
     isrNote: "Pass { next: { revalidate, tags } } as any in the options arg",
   },
   {
     method: "getClient().getContentByPath(url)",
-    when: "Fetch the current published page by URL — used in the catch-all page route",
+    when: "Fetch the current published page by URL - used in the catch-all page route",
     hasIsr: true,
-    isrNote: "Cast options to any — same as getContent()",
+    isrNote: "Cast options to any - same as getContent()",
   },
   {
     method: "getClient().request(query)",
     when: "Custom GraphQL query where ISR tags are not needed (preview, no-store context)",
     hasIsr: false,
-    isrNote: "cache param appends ?cache=true/false to the Graph URL — Next.js fetch cache never sees it",
+    isrNote: "cache param appends ?cache=true/false to the Graph URL - Next.js fetch cache never sees it",
   },
   {
     method: "graphqlFetch(query)",
     when: "Custom GraphQL query that must participate in Next.js ISR (nav, banner, etc.)",
     hasIsr: true,
-    isrNote: "Full next: { revalidate, tags } support — wraps fetch() directly",
+    isrNote: "Full next: { revalidate, tags } support - wraps fetch() directly",
   },
 ];
 
@@ -395,7 +395,7 @@ export default function CachingDemoPage() {
               <code className="bg-surface-low px-1 rounded text-xs font-mono">fetch()</code> call
               inside <code className="bg-surface-low px-1 rounded text-xs font-mono">request()</code>{" "}
               has no <code className="bg-surface-low px-1 rounded text-xs font-mono">next</code>{" "}
-              property at all — Next.js cannot register it for ISR revalidation.
+              property at all - Next.js cannot register it for ISR revalidation.
             </p>
           </div>
 
@@ -443,7 +443,7 @@ export default function CachingDemoPage() {
             </div>
           </div>
 
-          <Callout label="SDK methods can still do ISR — with a cast">
+          <Callout label="SDK methods can still do ISR - with a cast">
             <code className="bg-surface-low px-1 rounded font-mono text-xs">getClient().getContent()</code>{" "}
             and{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">getContentByPath()</code>{" "}
@@ -456,7 +456,7 @@ export default function CachingDemoPage() {
             </code>
             . Use this for content reference lookups in self-fetching blocks.{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">request()</code>{" "}
-            does not have this option — it bypasses Next.js&apos;s fetch layer entirely.
+            does not have this option - it bypasses Next.js&apos;s fetch layer entirely.
           </Callout>
         </section>
 

@@ -56,9 +56,9 @@ return (
   </>
 );`;
 
-const FORCE_DYNAMIC_SNIPPET = `// src/app/[[...slug]]/page.tsx — Approach B: force-dynamic SSR
+const FORCE_DYNAMIC_SNIPPET = `// src/app/[[...slug]]/page.tsx - Approach B: force-dynamic SSR
 // Simpler: everything happens server-side. No middleware changes, no client component.
-// Trade-off: every CMS page request hits the origin server — no CDN caching.
+// Trade-off: every CMS page request hits the origin server - no CDN caching.
 
 import { getOptimizelyUser } from "@/lib/optimizely/user";
 import { getClient } from "@optimizely/cms-sdk";
@@ -68,7 +68,7 @@ export const dynamic = "force-dynamic"; // cookies() in getOptimizelyUser() requ
 async function CmsPage({ params }) {
   const { slug } = await params;
 
-  // Reads optimizelyEndUserId + demo_persona cookies — opts route into dynamic rendering
+  // Reads optimizelyEndUserId + demo_persona cookies - opts route into dynamic rendering
   const user = await getOptimizelyUser();
   const decisions = user.decideAll(); // no impression yet
 
@@ -84,7 +84,7 @@ async function CmsPage({ params }) {
   const items = await client.getContentByPath(\`/\${slug.join("/")}/\`, { ...variationFilter, cache: false });
   const page = items.find((i) => activeVariations.includes(i._metadata?.variation)) ?? items[0];
 
-  // Fire the bucketing event server-side — no client component needed
+  // Fire the bucketing event server-side - no client component needed
   const servedVariation = page._metadata?.variation ?? null;
   if (servedVariation) {
     const match = Object.values(decisions).find((d) => d.variationKey === servedVariation);
@@ -966,7 +966,7 @@ await getDecision("my_flag", userId, {
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
                 <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">~10-50ms TTFB on cached requests</span></div>
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">CDN serves warm requests — server load scales down</span></div>
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">CDN serves warm requests - server load scales down</span></div>
                 <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Bucketing event fires after page load (CSR)</span></div>
                 <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">More moving parts (middleware + browser SDK)</span></div>
               </div>
@@ -990,7 +990,7 @@ await getDecision("my_flag", userId, {
                 <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Simplest - everything in one server component</span></div>
                 <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Bucketing event fires synchronously before HTML</span></div>
                 <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">~300-1000ms TTFB on every request (no caching)</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">cookies() blocks ISR — force-dynamic is required</span></div>
+                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">cookies() blocks ISR - force-dynamic is required</span></div>
               </div>
             </div>
 
@@ -1010,7 +1010,7 @@ await getDecision("my_flag", userId, {
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
                 <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">No server changes required</span></div>
                 <div className="flex gap-2"><span className="text-red-500 font-bold shrink-0">-</span><span className="text-on-surface-variant">Visible flicker - base content shows for ~100-500ms</span></div>
-                <div className="flex gap-2"><span className="text-red-500 font-bold shrink-0">-</span><span className="text-on-surface-variant">Variation data in the waterfall — slower effective LCP</span></div>
+                <div className="flex gap-2"><span className="text-red-500 font-bold shrink-0">-</span><span className="text-on-surface-variant">Variation data in the waterfall - slower effective LCP</span></div>
                 <div className="flex gap-2"><span className="text-red-500 font-bold shrink-0">-</span><span className="text-on-surface-variant">CMS content fetched twice (base SSR + variation CSR)</span></div>
               </div>
             </div>
