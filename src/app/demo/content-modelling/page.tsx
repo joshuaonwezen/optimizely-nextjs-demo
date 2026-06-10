@@ -134,24 +134,26 @@ logos: {
   items: { type: "content", allowedTypes: ["_image"] },
 },`;
 
-const FRAGMENT_SNIPPET = `// src/components/blocks/SectionHeadingBlock/fragment.ts
-export const SECTION_HEADING_FRAGMENT = /* GraphQL */ \`
-  fragment SectionHeadingBlockData on SectionHeadingBlock {
-    __typename
-    _metadata { key version }
-    heading
-    subheading
-  }
-\`;`;
+const GET_CONTENT_SINGLE = `// src/components/pages/ArticlePage.tsx
+// The page receives an author contentReference - Graph returns only its key.
+// getClient().getContent() fetches the full item without writing a query.
+import { getClient } from "@optimizely/cms-sdk";
 
-const FRAGMENT_BARREL = `// src/lib/graphql/fragments/index.ts - barrel export
-export { SECTION_HEADING_FRAGMENT }   from "@/components/blocks/SectionHeadingBlock/fragment";
-export { HERO_BLOCK_FRAGMENT }        from "@/components/blocks/HeroBlock/fragment";
-export { FEATURE_ITEM_FRAGMENT }      from "@/components/blocks/FeatureItemBlock/fragment";
-// … one line per block
+const author = await getClient().getContent(
+  { key: content.author._metadata.key },
+  { next: { revalidate: 300 } }
+);`;
 
-// The page query spreads every fragment in one query - each block gets exactly
-// the fields it needs. Adding a new block means adding its fragment here only.`;
+const GET_CONTENT_ARRAY = `// src/components/blocks/TimelineBlock/index.tsx
+// milestones is a contentReference array - each item arrives as a key only.
+// Fetch all in parallel; order is preserved by Promise.all.
+import { getClient } from "@optimizely/cms-sdk";
+
+const milestones = await Promise.all(
+  keys.map((key) =>
+    getClient().getContent({ key }, { next: { revalidate: 300 } })
+  )
+);`;
 
 
 function SectionHeading({ id, children }: { id: string; children: React.ReactNode }) {
@@ -631,45 +633,39 @@ export default function ContentModellingPage() {
           </div>
         </section>
 
-        {/* 7. Fragment co-location */}
+        {/* 7. Fetching referenced content */}
         <section id="fragment-colocation">
-          <SectionHeading id="fragment-colocation">Fragment Co-location</SectionHeading>
+          <SectionHeading id="fragment-colocation">Fetching Referenced Content</SectionHeading>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            Every block in <Code>src/components/blocks/</Code> has a co-located{" "}
-            <Code>fragment.ts</Code> file next to it. This is a convention in this
-            demo, not something the SDK enforces.
-          </p>
-          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            The reason fragments exist at all: <Code>contentType()</Code> pushes a
-            schema <em>to</em> the CMS - it tells the CMS what fields this block has.
-            A GraphQL fragment does the opposite - it tells Graph which fields to send
-            back when you query. The SDK handles the push side automatically, but it
-            does not generate the fetch side for you. You have to declare what you
-            want back from Graph yourself.
+            For most blocks you do not write a GraphQL query at all.{" "}
+            <Code>client.getContentByPath()</Code> in the catch-all page route fetches
+            the full composition - every section, every inline element - in one
+            request automatically.
           </p>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            Co-locating the fragment with the component is just the organisational
-            choice for where that declaration lives. The block owns both its schema
-            and its query shape in one place, so there is no central file every
-            developer has to touch when adding a new block.
+            The exception is <em>referenced content</em>. Graph does not inline-expand
+            single <Code>type: &quot;contentReference&quot;</Code> properties - the component
+            receives only base metadata (the item&apos;s key). To get full field data, call{" "}
+            <Code>getClient().getContent(&#123; key &#125;)</Code> directly inside the
+            component. No GraphQL query, no fragment file needed.
           </p>
 
           <div className="grid md:grid-cols-3 gap-5 mb-6">
             {[
               {
                 step: "1",
-                title: "Content type defines the schema",
-                body: `contentType({ properties: { heading, subheading } }) in index.tsx - the single source of truth for field names and types.`,
+                title: "SDK fetches the page automatically",
+                body: "client.getContentByPath() retrieves the full composition. Inline blocks receive all their fields - no extra work required.",
               },
               {
                 step: "2",
-                title: "Fragment declares what to fetch",
-                body: "fragment.ts next to the component - lists only the fields this block needs. Graph fetches nothing extra.",
+                title: "Referenced content returns keys only",
+                body: "Single contentReference properties are not inline-expanded. The component receives base metadata - key, URL - not the full fields.",
               },
               {
                 step: "3",
-                title: "Barrel export wires it in",
-                body: "src/lib/graphql/fragments/index.ts exports every fragment. The page query spreads them all in a single request.",
+                title: "Call getContent() with the key",
+                body: "getClient().getContent({ key }) fetches the full item. No manual GraphQL query. Works for single references and reference arrays alike.",
               },
             ].map((s) => (
               <div key={s.step} className="flex gap-4">
@@ -685,19 +681,17 @@ export default function ContentModellingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-            <Pre code={FRAGMENT_SNIPPET} label="src/components/blocks/SectionHeadingBlock/fragment.ts" />
-            <Pre code={FRAGMENT_BARREL}  label="src/lib/graphql/fragments/index.ts" />
+            <Pre code={GET_CONTENT_SINGLE} label="single reference - ArticlePage fetching its author" />
+            <Pre code={GET_CONTENT_ARRAY}  label="reference array - TimelineBlock fetching its milestones" />
           </div>
 
-          <Callout label="How this works in this demo" className="mt-4 max-w-3xl">
+          <Callout label="Which blocks use this in this demo" className="mt-4 max-w-3xl">
             <p>
-              Each block&apos;s fragment is collected by the barrel file at{" "}
-              <Code>src/lib/graphql/fragments/index.ts</Code>. The page query spreads
-              every fragment in a single Graph request - each block gets exactly the
-              fields it declared. Adding a new block means writing its{" "}
-              <Code>fragment.ts</Code> and adding one export line to the barrel.
-              No other shared file needs to change. A team of 10 can each ship a
-              new block without co-ordinating on a central query.
+              <Code>TimelineBlock</Code>, <Code>TeamGridBlock</Code>,{" "}
+              <Code>ArticlePage</Code>, and <Code>CaseStudyPage</Code> all use{" "}
+              <Code>getClient().getContent()</Code> to fetch their referenced content.
+              Blocks whose content arrives fully inline-expanded via the page
+              composition (most blocks) need no self-fetch at all.
             </p>
           </Callout>
         </section>

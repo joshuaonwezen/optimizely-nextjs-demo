@@ -2,8 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { graphqlFetch } from "@/lib/optimizely/client";
-import { AUTHOR_FRAGMENT } from "@/components/blocks/AuthorBlock/fragment";
+import { getClient } from "@optimizely/cms-sdk";
 
 interface ImageRef {
   _metadata?: { url?: { default?: string | null } | null } | null;
@@ -55,25 +54,9 @@ const CATEGORY_LABEL: Record<string, string> = {
   "market-insights": "Market Insights",
 };
 
-const AUTHOR_BY_KEY_QUERY = /* GraphQL */ `
-  query AuthorByKey($key: String!) {
-    AuthorBlock(where: { _metadata: { key: { eq: $key } } }, limit: 1) {
-      items {
-        ...AuthorBlockData
-      }
-    }
-  }
-  ${AUTHOR_FRAGMENT}
-`;
-
 async function loadAuthor(key: string | null | undefined): Promise<AuthorData | null> {
   if (!key) return null;
-  const res = await graphqlFetch<{ AuthorBlock?: { items?: AuthorData[] } }>(
-    AUTHOR_BY_KEY_QUERY,
-    { key },
-    { next: { revalidate: 300 } }
-  );
-  return res.data?.AuthorBlock?.items?.[0] ?? null;
+  return getClient().getContent({ key }, { next: { revalidate: 300 } } as any).catch(() => null);
 }
 
 function formatDate(input: string | null | undefined): string | null {

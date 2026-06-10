@@ -2,9 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { graphqlFetch } from "@/lib/optimizely/client";
-import { OUTCOME_ITEM_FRAGMENT } from "@/components/blocks/OutcomeItemBlock/fragment";
-import { TESTIMONIAL_FRAGMENT } from "@/components/blocks/TestimonialBlock/fragment";
+import { getClient } from "@optimizely/cms-sdk";
 
 interface ImageRef {
   _metadata?: { url?: { default?: string | null } | null } | null;
@@ -68,45 +66,19 @@ const INDUSTRY_LABEL: Record<string, string> = {
   "market-insights": "Market Insights",
 };
 
-const OUTCOMES_BY_KEYS_QUERY = /* GraphQL */ `
-  query OutcomesByKeys($keys: [String!]) {
-    OutcomeItemBlock(where: { _metadata: { key: { in: $keys } } }) {
-      items { ...OutcomeItemBlockData }
-    }
-  }
-  ${OUTCOME_ITEM_FRAGMENT}
-`;
-
-const TESTIMONIAL_BY_KEY_QUERY = /* GraphQL */ `
-  query TestimonialByKey($key: String!) {
-    TestimonialBlock(where: { _metadata: { key: { eq: $key } } }, limit: 1) {
-      items { ...TestimonialBlockData }
-    }
-  }
-  ${TESTIMONIAL_FRAGMENT}
-`;
-
 async function loadOutcomes(keys: string[]): Promise<OutcomeData[]> {
   if (keys.length === 0) return [];
-  const res = await graphqlFetch<{ OutcomeItemBlock?: { items?: OutcomeData[] } }>(
-    OUTCOMES_BY_KEYS_QUERY,
-    { keys },
-    { next: { revalidate: 300 } }
+  const results = await Promise.all(
+    keys.map((key) =>
+      getClient().getContent({ key }, { next: { revalidate: 300 } } as any).catch(() => null)
+    )
   );
-  const items = res.data?.OutcomeItemBlock?.items ?? [];
-  // Preserve the original ordering by key
-  const byKey = new Map(items.map((i) => [i._metadata?.key, i]));
-  return keys.map((k) => byKey.get(k)).filter((i): i is OutcomeData => Boolean(i));
+  return results.filter((item): item is OutcomeData => Boolean(item));
 }
 
 async function loadTestimonial(key: string | null | undefined): Promise<TestimonialData | null> {
   if (!key) return null;
-  const res = await graphqlFetch<{ TestimonialBlock?: { items?: TestimonialData[] } }>(
-    TESTIMONIAL_BY_KEY_QUERY,
-    { key },
-    { next: { revalidate: 300 } }
-  );
-  return res.data?.TestimonialBlock?.items?.[0] ?? null;
+  return getClient().getContent({ key }, { next: { revalidate: 300 } } as any).catch(() => null);
 }
 
 export default async function CaseStudyPage({ content }: { content: CaseStudyContent }) {

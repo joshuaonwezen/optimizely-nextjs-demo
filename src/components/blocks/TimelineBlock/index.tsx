@@ -1,9 +1,7 @@
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { graphqlFetch } from "@/lib/optimizely/client";
 import { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
-import { TIMELINE_MILESTONE_FRAGMENT } from "@/components/blocks/TimelineMilestoneBlock/fragment";
 
 export const TimelineBlockType = contentType({
   key: "TimelineBlock",
@@ -60,27 +58,14 @@ type TimelineBlockProps = TimelineData & {
   displaySettings?: Record<string, string | boolean>;
 };
 
-const MILESTONES_BY_KEYS_QUERY = /* GraphQL */ `
-  query MilestonesByKeys($keys: [String!]) {
-    TimelineMilestoneBlock(where: { _metadata: { key: { in: $keys } } }) {
-      items { ...TimelineMilestoneBlockData }
-    }
-  }
-  ${TIMELINE_MILESTONE_FRAGMENT}
-`;
-
 async function loadMilestones(keys: string[]): Promise<MilestoneData[]> {
   if (keys.length === 0) return [];
-  const res = await graphqlFetch<{ TimelineMilestoneBlock?: { items?: MilestoneData[] } }>(
-    MILESTONES_BY_KEYS_QUERY,
-    { keys },
-    { next: { revalidate: 300 } }
+  const results = await Promise.all(
+    keys.map((key) =>
+      getClient().getContent({ key }, { next: { revalidate: 300 } } as any).catch(() => null)
+    )
   );
-  const items = res.data?.TimelineMilestoneBlock?.items ?? [];
-  const byKey = new Map(items.map((i) => [i._metadata?.key, i]));
-  return keys
-    .map((k) => byKey.get(k))
-    .filter((i): i is MilestoneData => Boolean(i));
+  return results.filter((item): item is MilestoneData => Boolean(item));
 }
 
 export default async function TimelineBlock(props: TimelineBlockProps) {

@@ -1,9 +1,7 @@
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { graphqlFetch } from "@/lib/optimizely/client";
 import { TeamMemberBlockType } from "@/components/blocks/TeamMemberBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
-import { TEAM_MEMBER_FRAGMENT } from "@/components/blocks/TeamMemberBlock/fragment";
 
 export const TeamGridBlockType = contentType({
   key: "TeamGridBlock",
@@ -58,27 +56,14 @@ type TeamGridBlockProps = TeamGridData & {
   displaySettings?: Record<string, string | boolean>;
 };
 
-const MEMBERS_BY_KEYS_QUERY = /* GraphQL */ `
-  query TeamMembersByKeys($keys: [String!]) {
-    TeamMemberBlock(where: { _metadata: { key: { in: $keys } } }) {
-      items { ...TeamMemberBlockData }
-    }
-  }
-  ${TEAM_MEMBER_FRAGMENT}
-`;
-
 async function loadMembers(keys: string[]): Promise<MemberData[]> {
   if (keys.length === 0) return [];
-  const res = await graphqlFetch<{ TeamMemberBlock?: { items?: MemberData[] } }>(
-    MEMBERS_BY_KEYS_QUERY,
-    { keys },
-    { next: { revalidate: 300 } }
+  const results = await Promise.all(
+    keys.map((key) =>
+      getClient().getContent({ key }, { next: { revalidate: 300 } } as any).catch(() => null)
+    )
   );
-  const items = res.data?.TeamMemberBlock?.items ?? [];
-  const byKey = new Map(items.map((i) => [i._metadata?.key, i]));
-  return keys
-    .map((k) => byKey.get(k))
-    .filter((i): i is MemberData => Boolean(i));
+  return results.filter((item): item is MemberData => Boolean(item));
 }
 
 export default async function TeamGridBlock(props: TeamGridBlockProps) {

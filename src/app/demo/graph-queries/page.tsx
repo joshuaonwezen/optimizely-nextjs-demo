@@ -271,7 +271,7 @@ getContentByPath(url, { ...variationFilter, cache: false });`;
 
 const DISABLED_FIELD_SNIPPET = `// src/components/blocks/TestimonialBlock/index.tsx
 // authorImage is declared with indexingType: "disabled".
-// Graph does not index this field → querying it always returns null.
+// Graph does not index this field - querying it always returns null.
 
 export const TestimonialBlockType = contentType({
   key: "TestimonialBlock",
@@ -284,19 +284,11 @@ export const TestimonialBlockType = contentType({
   },
 });
 
-// src/components/blocks/TestimonialBlock/fragment.ts
-// authorImage is intentionally omitted from the fragment.
-// Querying it would always return null, even when the editor has set it.
-export const TESTIMONIAL_FRAGMENT = \`
-  fragment TestimonialBlockData on TestimonialBlock {
-    __typename
-    _metadata { key version }
-    quote
-    authorName
-    authorRole
-    # authorImage ← omitted: indexingType: "disabled" means Graph returns null
-  }
-\`;`;
+// getClient().getContent() fetches via Graph - authorImage will always be null.
+// The value only exists in composition snapshots (when the block is placed
+// inline in Visual Builder). Do not try to render it from a self-fetched item.
+const testimonial = await getClient().getContent({ key });
+// testimonial.authorImage → null`;
 
 
 export default function GraphQueriesDemoPage() {
@@ -586,20 +578,20 @@ export default function GraphQueriesDemoPage() {
             snapshot. In this codebase,{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">TestimonialBlock.authorImage</code> and{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">AuthorBlock.avatar</code> are both
-            excluded from their fragments for this reason.
+            excluded from Graph queries for this reason.
           </p>
-          <CodeBlock code={DISABLED_FIELD_SNIPPET} label="TestimonialBlock - indexingType: disabled field omitted from fragment" />
+          <CodeBlock code={DISABLED_FIELD_SNIPPET} label="TestimonialBlock - indexingType: disabled field returns null from Graph" />
         </section>
 
         <KeyPoints points={[
-          <><strong className="text-on-surface">One CMS page = one Graph request.</strong> The SDK auto-generates a query with all registered block type spreads. No per-block fetches at render time.</>,
-          <><strong className="text-on-surface">Write custom queries only when needed:</strong> non-page data (nav, banner), self-fetching blocks that receive only a reference key, and batch reference resolution.</>,
+          <><strong className="text-on-surface">One CMS page = one Graph request.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">getContentByPath()</code> fetches the full composition automatically. Inline blocks need no additional queries.</>,
+          <><strong className="text-on-surface">For referenced content keys, use <code className="bg-surface-low px-1 rounded font-mono text-xs">getClient().getContent(&#123; key &#125;)</code></strong> - no manual GraphQL query needed. Write custom <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch</code> queries only for non-page data like navigation or content listings.</>,
           <><strong className="text-on-surface">Always use the graphqlFetch wrapper</strong> - not raw fetch - so published/preview auth and ISR config are handled automatically.</>,
           <><strong className="text-on-surface">Put static data in layout components with ISR.</strong> force-dynamic on the page route does not affect layout-level fetches - nav and banner stay cached.</>,
           <><strong className="text-on-surface">Predictable query strings are Graph CDN-cacheable.</strong> Embedding per-user variables (userId, sessionId) makes every request a cache miss at the Graph layer.</>,
           <><strong className="text-on-surface">@recursive(depth: N)</strong> fetches arbitrary tree depth in one round-trip. The depth cap prevents unbounded traversal.</>,
           <><strong className="text-on-surface">type: &quot;array&quot; content areas inline-expand;</strong> type: &quot;content&quot; single references return metadata only - self-fetch if you need the data.</>,
-          <><strong className="text-on-surface">indexingType: &quot;disabled&quot; fields return null in Graph.</strong> Omit them from fragments entirely; the data only exists in composition snapshots.</>,
+          <><strong className="text-on-surface">indexingType: &quot;disabled&quot; fields return null in Graph.</strong> Do not try to read them from <code className="bg-surface-low px-1 rounded font-mono text-xs">getContent()</code> - the value only exists in composition snapshots when the block is placed inline.</>,
         ]} />
 
         <SourcePanel
