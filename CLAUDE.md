@@ -6,6 +6,55 @@ This is a Next.js 16 + Optimizely SaaS CMS + Feature Experimentation demo projec
 
 ## Seeding Content
 
+### Before your first seed — prerequisites checklist
+
+Complete this once per instance before running the seed. Skip it and the seed will fail with credential or container errors.
+
+**Step 1 — Create a content API key in the CMS**
+
+CLI credentials (used by `opti:push`) cannot create content. You need a separate key with write access:
+1. CMS → Settings → API Keys → Create API Key
+2. CMS → Settings → Set Access Rights → grant the new key content read/write
+3. Copy the Client ID and Client Secret
+
+**Step 2 — Set up the root container (ONBOARDING only)**
+
+The seed needs a DynamicExperience set as the site start page. This must be created manually once:
+1. CMS → Visual Builder → New page → DynamicExperience → name it anything (e.g. "Site Root")
+2. CMS → Settings → Site → Start page → select the DynamicExperience you just created
+3. Note the content key from the CMS UI URL (the UUID in the address bar, without hyphens) — this is `OPTIMIZELY_ROOT_CONTAINER_ONBOARDING`
+
+You can skip step 3 — the seed auto-discovers the root container via `GET /v1/applications` and prints it on every run. Setting the env var is a convenience to avoid the API call.
+
+**Step 3 — Populate `.env.local`**
+
+The runner reads credentials from `.env.local`. For the `personal` instance use the base name; for `onboarding` append `_ONBOARDING`.
+
+| Variable | Required | Where to get it |
+|---|---|---|
+| `OPTIMIZELY_CMS_CLIENT_ID` | Yes | Step 1 above (API Key Client ID) |
+| `OPTIMIZELY_CMS_CLIENT_SECRET` | Yes | Step 1 above (API Key Client Secret) |
+| `OPTIMIZELY_GRAPH_SINGLE_KEY` | Yes | CMS → Settings → API Keys → existing Graph key |
+| `OPTIMIZELY_GRAPH_GATEWAY` | Yes | CMS → Settings → API Keys → Graph endpoint URL |
+| `OPTIMIZELY_CMS_URL` | Yes | `https://app-<slug>.cms.optimizely.com` |
+| `OPTIMIZELY_APP_KEY` | For webhooks only | Same API key, used for Basic auth on webhook registration |
+| `OPTIMIZELY_APP_SECRET` | For webhooks only | Same API key |
+| `OPTIMIZELY_ROOT_CONTAINER` | No — auto-discovered | UUID (no hyphens) of the root container; set to skip the discovery call |
+
+Suffix every variable name with `_ONBOARDING` for the onboarding instance. Example:
+```
+OPTIMIZELY_CMS_CLIENT_ID=abc123
+OPTIMIZELY_CMS_CLIENT_ID_ONBOARDING=xyz789
+```
+
+**Step 4 — Run the seed**
+
+```bash
+npx tsx scripts/seed-runner.ts --instance=onboarding
+```
+
+---
+
 ### How to seed
 
 Always use the seed runner — never call individual seed scripts directly:
@@ -26,15 +75,29 @@ npx tsx scripts/seed-runner.ts --instance=onboarding
 | Step | Script | Notes |
 |---|---|---|
 | 1 | `opti:push` | Pushes content type definitions to the CMS |
-| 2 | `seed-content.ts` | Creates all DynamicExperience pages with compositions |
-| 3 | `seed-nav.ts` | Creates navigation tree |
-| 4 | `seed-modeling.ts` | Authors, articles, case studies, milestones, team members |
-| 5 | `seed-faqs.ts` | FAQ items + FaqContainerBlock |
+| 2 | `seed-content.ts` | Creates 19 DynamicExperience/TraditionalPage pages + homepage |
+| 3 | `seed-nav.ts` | Creates NavigationItem tree + Navigation block |
+| 4 | `seed-modeling.ts` | Authors, articles, case studies, milestones, team members, hub pages, Phase D pages |
+| 5 | `seed-faqs.ts` | 6 FaqItemBlock items + FaqContainerBlock, wired to the FAQs page |
 | 6 | `seed-homepage-variations.ts` | Optional — needs Graph to have indexed the homepage (~60s lag) |
 | 7 | `seed-nav-strategy-demo.ts` | Optional — nav strategy demo pages |
 | 8 | `seed-quotes.ts` | Optional — quote content via Content Source API |
 
 Steps 6-8 are optional: if they fail (usually Graph lag on a fresh seed), the runner warns and continues. Re-run them individually after ~60s if needed.
+
+**seed-nav must run before seed-faqs** — seed-faqs Part 3 looks up the FAQs page in Graph to wire the FAQ container to it. The FAQs page is created by seed-nav. Running them out of order causes a warning ("FAQs page not found in Graph") and skips the wiring; re-run `npx tsx scripts/seed-faqs.ts` after seed-nav completes.
+
+### Expected warnings on a clean seed run
+
+These are normal — they are not failures:
+
+| Warning | Why | What to do |
+|---|---|---|
+| `[warn] PATCH /versions/1422: 400 Only versions in status 'draft' can be patched` | The ONBOARDING root container is a DynamicExperience set as the start page. It was created manually and is already published. The seed can't patch its composition. | A separate homepage page is created at route `/` as a sibling — that's what the app serves. Ignore this warning. |
+| `[warn] Could not patch homepage at key=... — update it manually in Visual Builder` | Same as above. | Ignore. The app uses the newly created homepage, not the container itself. |
+| `[warn] FAQs page not found in Graph — run seed:nav first, then re-run this script` | seed-faqs ran before Graph indexed the FAQs page created by seed-nav. | Re-run `npx tsx scripts/seed-faqs.ts` after the full seed completes. |
+| `[indexed sample] { "Quote": { "items": [] } }` | Graph hasn't indexed the quotes yet (10s polling started immediately after sync). | Wait 30-60s, then visit `/demo/content-source` to verify. |
+| `[attempt 1 failed] POST with variation field: 400 Variations can only be created from existing versions` | CMS variations can't be created via the API. | Create them manually in Visual Builder — seed-homepage-variations.ts prints exact instructions. |
 
 ### Scripts excluded from the runner
 
@@ -113,8 +176,38 @@ For content seeding you need a dedicated **API key** created in the CMS UI:
 
 For a second CMS instance, suffix both sets with `_ONBOARDING` (or another label) and the seed runner picks the right pair automatically.
 
-### v1 API endpoint and payload differences
-The current seed scripts use `/preview3/experimental/content`. The stable endpoint is `/v1/content`. The v1 API has a different payload shape — content version fields (`displayName`, `locale`, `composition`) are nested inside an `initialVersion` object, and `status` cannot be set at creation time (requires a separate publish call). Migration to v1 is pending.
+### v1 API — endpoint and payload rules
+
+All seed scripts use `https://api.cms.optimizely.com/v1/content`.
+
+**Payload shape:** content version fields (`displayName`, `locale`, `routeSegment`, `properties`, `composition`) go inside an `initialVersion` object. `status` is read-only on creation — publish separately via `POST /content/{key}/versions/{version}:publish`.
+
+**`PropertyData` format:** every property value must be wrapped as `{ value: <actual> }`. Use `wrapProps(properties)` from `scripts/_shared.ts` for all `component.properties` and `initialVersion.properties` objects. Forgetting this gives a 400 "The value did not match the expected type" error.
+
+**`richText` properties:** must be `{ html: "<p>...</p>" }` objects, not plain strings. After `wrapProps`, becomes `{ value: { html: "..." } }`.
+
+**201 with empty body:** v1 sometimes returns 201 with no response body. Always read the body with `.text()` first, then check `if (!text.trim())` before parsing JSON. If empty, do a `GET /content/{key}/versions?pageSize=1` to find the version ID for publishing.
+
+**Patching published versions:** `PATCH /content/{key}/versions/{version}` only works on draft versions. To update a published item, create it without publishing first (pass `{ skipPublish: true }` to `createContent()`), patch the draft, then let `patchContentProperties()` republish it.
+
+**DynamicExperience compositions:** the root experience node requires `layoutType: "outline"`. Missing this gives a 400 "The layout type '' is not of the required type 'outline'" error.
+
+**Content type keys in compositions:** `contentType` values inside composition nodes are validated against registered types. Use the registered key (e.g., `"HeroBlock"`) not a display name (e.g., `"Hero"`).
+
+### Seed script error troubleshooting
+
+| Error message | Cause | Fix |
+|---|---|---|
+| `"The value did not match the expected type." field: ...component.properties` | Inline composition node `component.properties` is a plain object, not `PropertyData` format | Wrap with `wrapProps({...})` from `_shared.ts` |
+| `"The value did not match the expected type." field: ...initialVersion.properties` | Top-level `properties` in the POST body are not wrapped | Pass properties through `createContent()` from `_shared.ts`, which calls `wrapProps` automatically |
+| `"Could not read value as 'RichText'. Expected object with an 'html' property."` | A `richText` typed property was set to a plain HTML string | Change to `{ html: "<p>...</p>" }` |
+| `"The layout type '' is not of the required type 'outline'."` field: `...composition.LayoutType` | A DynamicExperience composition root node is missing `layoutType` | Add `layoutType: "outline"` to the experience root node |
+| `"The specified content type '...' does not exist."` | A composition node `contentType` string doesn't match any registered type key | Check `optimizely.config.mjs` / `componentRegistry.ts` for the correct key (e.g. `"HeroBlock"` not `"Hero"`) |
+| `SyntaxError: Unexpected end of JSON input` after POST or PATCH | v1 API returned 201/200 with empty body; code called `.json()` on it | Read body with `.text()` first; if empty, do `GET /content/{key}/versions?pageSize=1` to find version ID |
+| `"Only versions in status 'draft' can be patched."` | Trying to PATCH a published version | Create item with `{ skipPublish: true }`, patch the draft, `patchContentProperties()` republishes automatically |
+| `"A content component must have either 'reference' or 'contentType' and 'properties' set"` | Content area array item is a plain string or `{ key: "..." }` instead of `{ reference: "cms://content/..." }` | Use `[{ reference: "cms://content/{key}" }]` format for array properties |
+| `403 Required access is 'create'` | Using CLI credentials for a content API call | Use the dedicated API key created in Settings → API Keys with content write scope |
+| `409` on POST | Trying to create content with a key that already exists | The item already exists; `createContent()` skips silently. If you need a fresh item, delete first or generate a new key |
 
 ---
 
@@ -171,7 +264,7 @@ variation: { include: "SOME", value: variationKeys, includeOriginal: true }
 ```
 
 ### CMS Variations cannot be CREATED via the API, but CAN be UPDATED once created in the UI
-The `variation` field exists on `ContentMetadata` in the Graph schema, and `_Page` accepts a `VariationInput` filter. But the Management API (`POST /preview3/experimental/content` and `POST /content/{key}/versions`) silently ignores the `variation` field on write — stored items always have `variation: null`.
+The `variation` field exists on `ContentMetadata` in the Graph schema, and `_Page` accepts a `VariationInput` filter. But the Management API (`POST /v1/content` and `POST /content/{key}/versions`) silently ignores the `variation` field on write — stored items always have `variation: null`.
 
 The error `"Variations can only be created from existing versions"` appears for some request shapes but no REST API path can create a named variation. **Creating** a CMS Variation for a DynamicExperience page must be done in the Visual Builder UI (open page → Add variation → name it to match the FX variation key exactly).
 
@@ -219,7 +312,7 @@ featuredBlock: { reference: "cms://content/abc123" }
 ```
 
 ### Management API base URL
-`${OPTIMIZELY_CMS_URL}/preview3/experimental/content`
+`https://api.cms.optimizely.com/v1/content`
 
 ---
 
@@ -501,9 +594,182 @@ Do not use em dashes (`—`) anywhere in the demo pages: prose, JSX text, code s
    - Add `Name` to `initReactComponentRegistry({ resolver: { ... } })` object (use `{ default: Name, tags: { Variant: Name } }` pattern if display template variants exist)
 4. Run `npm run opti:push` with credentials injected
 
-## Seed Script Checklist
+## Writing a New Seed Script — Step-by-Step
 
-1. Auth: `getAuthToken()` from `src/lib/optimizely/auth.ts`
-2. POST to `${OPTIMIZELY_CMS_URL}/preview3/experimental/content`
-3. Content area items: `{ reference: "cms://content/{key}" }` format
-4. Run with: `OPTIMIZELY_CMS_CLIENT_ID=xxx OPTIMIZELY_CMS_CLIENT_SECRET=yyy npx tsx scripts/seed-name.ts`
+### 1. Imports and setup
+
+```ts
+import { config } from "dotenv";
+import { randomUUID } from "crypto";
+import { getManagementToken } from "../src/lib/optimizely/auth";
+import { createContent, patchContentProperties, discoverRootContainer, wrapProps } from "./_shared";
+
+config({ path: ".env.local" });
+let CONTAINER = "";
+```
+
+Call `discoverRootContainer()` at the start of `main()` — it reads the root container key via the Management API so you don't need to hardcode it or read from env vars.
+
+### 2. Creating a simple content item
+
+Use `createContent()` from `_shared.ts` for all content creation. It handles: v1 payload shaping, `wrapProps` on properties, publishing, and the 201-empty-body quirk.
+
+```ts
+const key = randomUUID().replace(/-/g, "");
+
+await createContent({
+  key,
+  contentType: "ArticlePage",       // must match registered content type key exactly
+  locale: "en",
+  container: CONTAINER,
+  displayName: "My Article",
+  routeSegment: "my-article",
+  status: "published",              // ignored by createContent (it publishes separately)
+  properties: {
+    title: "My Article",
+    summary: "A short description.",
+    body: { html: "<p>First paragraph.</p>" },    // richText: always { html: "..." }
+    publishDate: "2026-06-10T09:00:00Z",
+  },
+}, "My Article");
+```
+
+**Property format rules:**
+- `createContent()` calls `wrapProps()` automatically on `properties` — pass plain values
+- For inline composition nodes, call `wrapProps({...})` yourself on `component.properties`
+- `richText` typed properties must be `{ html: "<p>...</p>" }` objects, not plain strings
+- Content area arrays: `[{ reference: "cms://content/{key}" }]`
+- Single content references: `"cms://content/{key}"` string directly
+
+### 3. Creating a DynamicExperience page with a composition
+
+DynamicExperience compositions must be **PATCHed separately** after creation — the POST body silently drops the `composition` field. `seed-content.ts` handles this via a dedicated PATCH step. Use `createContent()` for the POST, then PATCH manually:
+
+```ts
+const key = randomUUID().replace(/-/g, "");
+
+// Step 1: POST to create the page (composition field is ignored on POST)
+await createContent({
+  key,
+  contentType: "DynamicExperience",
+  locale: "en",
+  container: CONTAINER,
+  displayName: "My Page",
+  routeSegment: "my-page",
+}, "My Page");
+
+// Step 2: PATCH the composition onto the version
+const token = await getManagementToken();
+const vRes = await fetch(`https://api.cms.optimizely.com/v1/content/${key}/locales/en?pageSize=1`, {
+  headers: { Authorization: `Bearer ${token}` },
+});
+const { items } = await vRes.json();
+const version = items[0].version;
+
+await fetch(`https://api.cms.optimizely.com/v1/content/${key}/versions/${version}`, {
+  method: "PATCH",
+  headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/merge-patch+json" },
+  body: JSON.stringify({
+    composition: {
+      id: randomUUID().replace(/-/g, ""),
+      displayName: "Composition",
+      nodeType: "experience",
+      layoutType: "outline",          // required — missing this gives a 400 error
+      nodes: [
+        {
+          id: randomUUID().replace(/-/g, ""),
+          displayName: "My Heading",
+          nodeType: "component",
+          component: {
+            contentType: "SectionHeadingBlock",   // must be a registered content type key
+            properties: wrapProps({               // must call wrapProps on inline node properties
+              heading: "Hello World",
+              subheading: "A subtitle here.",
+            }),
+          },
+        },
+      ],
+    },
+  }),
+});
+
+// Step 3: Publish after patching
+await fetch(`https://api.cms.optimizely.com/v1/content/${key}/versions/${version}:publish`, {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}` },
+});
+```
+
+See `seed-content.ts` for the full working pattern with error handling.
+
+### 4. Two-pass pattern for circular cross-references
+
+When items reference each other (e.g. Article A relates to Article B, B relates to A), you can't include the references on creation because neither item exists yet when the other is created. Use a two-pass approach:
+
+```ts
+// Pass 1: create all items WITHOUT the cross-references, leave them as draft
+for (const item of ITEMS) {
+  await createContent({ key: item.key, ...propertiesWithoutCrossRefs }, item.name, { skipPublish: true });
+}
+
+// Pass 2: patch each draft to add cross-references, then patchContentProperties publishes it
+for (const item of ITEMS) {
+  if (item.relatedKeys.length === 0) continue;
+  await patchContentProperties(item.key, {
+    relatedItems: item.relatedKeys.map((k) => `cms://content/${k}`),
+  });
+}
+```
+
+`patchContentProperties()` from `_shared.ts` always republishes after patching, whether the item was draft or had been published.
+
+### 5. Adding a new script to the runner
+
+Edit [scripts/seed-runner.ts](scripts/seed-runner.ts). Scripts in `required[]` abort on failure; scripts in `optional[]` warn and continue:
+
+```ts
+const required: [string, string[]][] = [
+  // ... existing required steps
+  ["npx", ["tsx", "scripts/seed-my-new-script.ts"]],  // add here if required
+];
+
+const optional: [string, string[]][] = [
+  // ... existing optional steps
+  ["npx", ["tsx", "scripts/seed-my-new-script.ts"]],  // or here if optional
+];
+```
+
+Order matters — if your script needs content from another script (e.g. Graph-indexed pages), place it after that script. seed-nav must come before seed-faqs.
+
+### 6. Composition node structure reference
+
+```
+experience (root)
+  layoutType: "outline"         ← required
+  nodeType: "experience"
+  nodes: [
+    section
+      nodeType: "section"
+      layoutType: "grid"        ← required for grid sections
+      component: { contentType: "BlankSection", properties: {} }
+      nodes: [
+        row
+          nodeType: "row"
+          nodes: [
+            column
+              nodeType: "column"
+              nodes: [
+                component         ← leaf node with content
+                  nodeType: "component"
+                  component:
+                    contentType: "MyBlock"   ← must be a registered type key
+                    properties: wrapProps({ ... })  ← always call wrapProps here
+              ]
+          ]
+      ]
+
+    component               ← can also appear directly under experience root
+      nodeType: "component"
+      component: { contentType: "...", properties: wrapProps({...}) }
+  ]
+```

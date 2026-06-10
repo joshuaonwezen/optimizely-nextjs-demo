@@ -17,16 +17,18 @@
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import {
-  CONTAINER,
-  CONTENT_ENDPOINT,
   createContent,
   deleteContentByKey,
   deletePageByUrlIfExists,
+  discoverRootContainer,
   findItemsInContainerByName,
   findPageKeyByUrl,
   noHyphens,
   patchContentProperties,
+  wrapProps,
 } from "./_shared";
+
+let CONTAINER = "";
 
 config({ path: ".env.local" });
 
@@ -125,16 +127,18 @@ const MODELING_SENTINELS = [
 // containers (about, business, personal). Cleanup-by-URL because they can't
 // be reached by container-scoped name scanning from the root.
 const PHASE_D_PAGE_URLS = [
-  "/en/about/our-story/",
-  "/en/about/team/",
-  "/en/business/pricing/",
-  "/en/personal/compare-accounts/",
+  "/en/about/our-story/",  "/en/about/our-story",  "/about/our-story/",  "/about/our-story",
+  "/en/about/team/",       "/en/about/team",        "/about/team/",       "/about/team",
+  "/en/business/pricing/", "/en/business/pricing",  "/business/pricing/", "/business/pricing",
+  "/en/personal/compare-accounts/", "/en/personal/compare-accounts",
+  "/personal/compare-accounts/",    "/personal/compare-accounts",
 ];
 
 async function cleanupPreviousModelingContent(): Promise<void> {
   console.log("--- Cleaning previously seeded modeling content ---");
   const matches = await findItemsInContainerByName(
-    (displayName) => MODELING_SENTINELS.some((re) => re.test(displayName))
+    (displayName) => MODELING_SENTINELS.some((re) => re.test(displayName)),
+    CONTAINER
   );
   for (const item of matches) {
     await deleteContentByKey(item.key);
@@ -202,7 +206,7 @@ async function seedAuthors(): Promise<void> {
       properties: {
         name: author.name,
         role: author.role,
-        bio: author.bioHtml,
+        bio: { html: author.bioHtml },
         ...(author.linkedinUrl ? { linkedinUrl: author.linkedinUrl } : {}),
       },
     };
@@ -349,7 +353,7 @@ function singleSectionHeading(heading: string, subheading: string): CompNode[] {
                   nodeType: "component",
                   component: {
                     contentType: "SectionHeadingBlock",
-                    properties: { heading, subheading },
+                    properties: wrapProps({ heading, subheading }),
                   },
                 },
               ],
@@ -364,7 +368,6 @@ function singleSectionHeading(heading: string, subheading: string): CompNode[] {
 async function seedHubPages(): Promise<void> {
   console.log("\n--- Seeding hub pages (Insights URL hierarchy) ---");
 
-  // /en/insights/ — placeholder, enriched in Phase E
   await createContent(
     {
       key: HUB_KEYS.insights,
@@ -376,12 +379,88 @@ async function seedHubPages(): Promise<void> {
       routeSegment: "insights",
       composition: {
         id: uid(),
-        displayName: "Composition",
+        displayName: "Insights Hub",
         nodeType: "experience",
-        nodes: singleSectionHeading(
-          "Insights",
-          "Articles, case studies, and market commentary from Mosey Bank."
-        ),
+        layoutType: "outline",
+        nodes: [
+          ...singleSectionHeading(
+            "Insights",
+            "Articles, case studies, and market commentary from Mosey Bank."
+          ),
+          {
+            id: uid(),
+            displayName: "Content Stats",
+            nodeType: "section",
+            layoutType: "grid",
+            component: { contentType: "BlankSection", properties: {} },
+            nodes: [
+              {
+                id: uid(),
+                displayName: "Row",
+                nodeType: "row",
+                nodes: [
+                  {
+                    id: uid(),
+                    displayName: "Column",
+                    nodeType: "column",
+                    nodes: [
+                      {
+                        id: uid(),
+                        displayName: "Articles Published",
+                        nodeType: "component",
+                        component: {
+                          contentType: "StatsCounterBlock",
+                          properties: wrapProps({ value: "50", suffix: "+", label: "Articles published" }),
+                        },
+                      },
+                    ],
+                  },
+                  {
+                    id: uid(),
+                    displayName: "Column",
+                    nodeType: "column",
+                    nodes: [
+                      {
+                        id: uid(),
+                        displayName: "Customer Stories",
+                        nodeType: "component",
+                        component: {
+                          contentType: "StatsCounterBlock",
+                          properties: wrapProps({ value: "12", label: "Customer case studies" }),
+                        },
+                      },
+                    ],
+                  },
+                  {
+                    id: uid(),
+                    displayName: "Column",
+                    nodeType: "column",
+                    nodes: [
+                      {
+                        id: uid(),
+                        displayName: "Monthly Readers",
+                        nodeType: "component",
+                        component: {
+                          contentType: "StatsCounterBlock",
+                          properties: wrapProps({ value: "10", suffix: "K+", label: "Monthly readers" }),
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            id: uid(),
+            displayName: "Browse Articles CTA",
+            nodeType: "component",
+            component: {
+              contentType: "CallToAction",
+              properties: wrapProps({ label: "Browse all articles", link: "/en/insights/articles/" }),
+            },
+          },
+        ],
       },
     },
     "Insights Hub"
@@ -402,6 +481,7 @@ async function seedHubPages(): Promise<void> {
         id: uid(),
         displayName: "Composition",
         nodeType: "experience",
+        layoutType: "outline",
         nodes: singleSectionHeading(
           "Articles",
           "Plain-English guides on saving, investing, mortgages, and running a business."
@@ -426,6 +506,7 @@ async function seedHubPages(): Promise<void> {
         id: uid(),
         displayName: "Composition",
         nodeType: "experience",
+        layoutType: "outline",
         nodes: singleSectionHeading(
           "Case Studies",
           "How Mosey customers — families and small businesses — moved forward with us."
@@ -546,7 +627,7 @@ async function seedArticles(): Promise<void> {
       properties: {
         title:       a.title,
         summary:     a.summary,
-        body:        a.bodyHtml,
+        body:        { html: a.bodyHtml },
         author:      `cms://content/${a.authorKey}`,
         publishDate: a.publishDate,
         category:    a.category,
@@ -554,7 +635,7 @@ async function seedArticles(): Promise<void> {
         // relatedArticles wired up in pass 2 once all articles exist
       },
     };
-    const result = await createContent(payload, a.displayName);
+    const result = await createContent(payload, a.displayName, { skipPublish: true });
     if (result) console.log(`  [created] ${a.displayName} → /en/insights/articles/${a.routeSegment}/`);
   }
 
@@ -653,15 +734,15 @@ async function seedCaseStudies(): Promise<void> {
         clientName:  cs.clientName,
         industry:    cs.industry,
         summary:     cs.summary,
-        challenge:   cs.challengeHtml,
-        solution:    cs.solutionHtml,
+        challenge:   { html: cs.challengeHtml },
+        solution:    { html: cs.solutionHtml },
         outcomes:    cs.outcomeKeys.map((k) => `cms://content/${k}`),
         testimonial: `cms://content/${cs.testimonialKey}`,
         tags:        cs.tags,
         // relatedCaseStudies wired in pass 2
       },
     };
-    const result = await createContent(payload, cs.displayName);
+    const result = await createContent(payload, cs.displayName, { skipPublish: true });
     if (result) console.log(`  [created] ${cs.displayName} → /en/insights/case-studies/${cs.routeSegment}/`);
   }
 
@@ -780,12 +861,12 @@ async function seedOurStoryPage(parentKey: string): Promise<void> {
         nodeType: "component",
         component: {
           contentType: "TimelineBlock",
-          properties: {
+          properties: wrapProps({
             heading: "Our story",
             subheading:
               "A short walk through the milestones that shaped how Mosey banks today — from a single branch in Leeds to two million customers across the UK.",
             milestones: MILESTONES.map((m) => `cms://content/${m.key}`),
-          },
+          }),
         },
       },
     ],
@@ -821,12 +902,12 @@ async function seedTeamPage(parentKey: string): Promise<void> {
         nodeType: "component",
         component: {
           contentType: "TeamGridBlock",
-          properties: {
+          properties: wrapProps({
             heading: "The Mosey leadership team",
             subheading:
               "Six people who answer for everything from credit risk to your last app update. We list everyone here, including how to reach them.",
             members: TEAM_MEMBERS.map((t) => `cms://content/${t.key}`),
-          },
+          }),
         },
       },
     ],
@@ -874,7 +955,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
                 nodeType: "component",
                 component: {
                   contentType: "PricingTierBlock",
-                  properties: {
+                  properties: wrapProps({
                     name: "Starter",
                     price: "£0",
                     period: "/month",
@@ -888,7 +969,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
                     ],
                     ctaText: "Open a Starter account",
                     ctaLink: "/en/business/business-banking",
-                  },
+                  }),
                 },
               },
             ],
@@ -904,7 +985,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
                 nodeType: "component",
                 component: {
                   contentType: "PricingTierBlock",
-                  properties: {
+                  properties: wrapProps({
                     name: "Plus",
                     price: "£12",
                     period: "/month",
@@ -919,7 +1000,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
                     ],
                     ctaText: "Try Plus free for 30 days",
                     ctaLink: "/en/business/business-banking",
-                  },
+                  }),
                 },
               },
             ],
@@ -935,7 +1016,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
                 nodeType: "component",
                 component: {
                   contentType: "PricingTierBlock",
-                  properties: {
+                  properties: wrapProps({
                     name: "Pro",
                     price: "£35",
                     period: "/month",
@@ -950,7 +1031,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
                     ],
                     ctaText: "Talk to our team",
                     ctaLink: "/en/business/business-banking",
-                  },
+                  }),
                 },
               },
             ],
@@ -968,7 +1049,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
     nodeType: "component",
     component: {
       contentType: "ComparisonTableBlock",
-      properties: {
+      properties: wrapProps({
         heading: "Plan comparison",
         subheading: "Pick the plan that matches where your business is today. Switch up or down whenever — no contract.",
         columns: [
@@ -985,7 +1066,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
           { label: "API access",             values: ["—", "—", "Included"] },
           { label: "User seats",             values: ["1", "10", "50"] },
         ],
-      },
+      }),
     },
   };
 
@@ -1036,7 +1117,7 @@ async function seedCompareAccountsPage(parentKey: string): Promise<void> {
         nodeType: "component",
         component: {
           contentType: "ComparisonTableBlock",
-          properties: {
+          properties: wrapProps({
             heading: "Mosey current accounts",
             subheading: "The Everyday account suits most. Plus adds travel perks. Premier is for higher balances and dedicated support.",
             columns: [
@@ -1054,7 +1135,7 @@ async function seedCompareAccountsPage(parentKey: string): Promise<void> {
               { label: "Interest on credit balances", values: ["—",        "2.5% AER",   "3.5% AER (first £20k)"] },
               { label: "Best for",                   values: ["Day-to-day","Frequent travellers","Premium customers"] },
             ],
-          },
+          }),
         },
       },
     ],
@@ -1083,6 +1164,9 @@ async function seedCompareAccountsPage(parentKey: string): Promise<void> {
 async function main(): Promise<void> {
   console.log("=== Content Modeling Demo Seeding ===\n");
 
+  CONTAINER = await discoverRootContainer();
+  console.log(`  container: ${CONTAINER}\n`);
+
   await cleanupPreviousModelingContent();
 
   // Pause to let CMS release routeSegments from deleted pages.
@@ -1105,10 +1189,13 @@ async function main(): Promise<void> {
   await seedMilestones();
   await seedTeamMembers();
 
+  console.log("\n--- Waiting 60s for Graph to index pages from seed-content.ts ---");
+  await new Promise((r) => setTimeout(r, 60000));
+
   console.log("\n--- Resolving parent page keys for Phase D pages ---");
-  const aboutKey    = await findPageKeyByUrl(["/en/about/"]);
-  const businessKey = await findPageKeyByUrl(["/en/business/"]);
-  const personalKey = await findPageKeyByUrl(["/en/personal/"]);
+  const aboutKey    = await findPageKeyByUrl(["/en/about/", "/en/about", "/about/", "/about"]);
+  const businessKey = await findPageKeyByUrl(["/en/business/", "/en/business", "/business/", "/business"]);
+  const personalKey = await findPageKeyByUrl(["/en/personal/", "/en/personal", "/personal/", "/personal"]);
 
   if (aboutKey)    { await seedOurStoryPage(aboutKey); await seedTeamPage(aboutKey); }
   else             console.warn("  [warn] /en/about/ not found in Graph — skipping Our Story + Team pages. Run `npm run seed` first.");
@@ -1144,4 +1231,3 @@ main().catch((err) => {
   process.exit(1);
 });
 
-export { CONTAINER, CONTENT_ENDPOINT };

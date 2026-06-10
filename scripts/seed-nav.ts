@@ -14,6 +14,7 @@
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
+import { discoverRootContainer, wrapProps } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -22,10 +23,15 @@ config({ path: ".env.local" });
 // ---------------------------------------------------------------------------
 
 const API_BASE = "https://api.cms.optimizely.com";
-const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
+const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
-const CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
+let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
+// Optional: when set, seed-nav will delete this specific Navigation block and
+// recreate it in the same container with the correct navItems. If not set,
+// the script searches CONTAINER for an existing Navigation block or creates a
+// new one there.
+const NAV_BLOCK_KEY = (process.env.OPTIMIZELY_NAV_BLOCK_KEY ?? "").replace(/-/g, "");
 // Sentinel name for the seeded Navigation block. The app queries by this name so
 // re-runs can delete the old block (soft-delete → Graph removes it) and POST a
 // fresh one with a new random key without conflicting with the Recycle Bin.
@@ -50,7 +56,7 @@ interface CompNode {
 }
 
 function section(contentType: string, displayName: string, properties: Record<string, unknown>): CompNode {
-  return { id: uid(), displayName, nodeType: "component", component: { contentType, properties } };
+  return { id: uid(), displayName, nodeType: "component", component: { contentType, properties: wrapProps(properties) } };
 }
 
 function buildNavPageComposition(heading: string, subheading: string, ctaLabel: string, ctaLink: string): CompNode[] {
@@ -228,19 +234,20 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<{ ok: 
 }
 
 // ---------------------------------------------------------------------------
-// Cleanup: delete existing NavigationItem / Navigation items
+// Cleanup: delete existing NavigationItem / Navigation / stub page items
 // ---------------------------------------------------------------------------
 
 async function cleanupNavItems(): Promise<void> {
   console.log("--- Cleaning up existing Navigation / NavigationItem items ---");
   const { ok, body } = await apiFetch(`/${CONTAINER}/items`);
   if (!ok) { console.log("  [skip] Could not list container items"); return; }
-  const items = (body as { items?: Array<{ key: string; contentType?: string; locales?: Record<string, { displayName?: string; contentType?: string }> }> }).items ?? [];
+  // v1 GET /items returns ContentNode — has contentType directly (no locales wrapper)
+  const items = (body as { items?: Array<{ key: string; contentType?: string }> }).items ?? [];
   for (const item of items) {
-    const ct = item.contentType ?? item.locales?.en?.contentType ?? "";
+    const ct = item.contentType ?? "";
     if (ct === "NavigationItem" || ct === "Navigation" || ct === "LandingPage" || ct === "TraditionalPage") {
-      const del = await apiFetch(`/${item.key}?permanent=true`, { method: "DELETE" });
-      console.log(`  [deleted] ${item.locales?.en?.displayName ?? item.key} (${del.status})`);
+      const del = await apiFetch(`/${item.key}`, { method: "DELETE", headers: { "cms-permanent-delete": "true" } });
+      console.log(`  [deleted] ${item.key} (${del.status})`);
     }
   }
 }
@@ -249,7 +256,7 @@ async function cleanupNavItems(): Promise<void> {
 // Create a LandingPage — returns its CMS key
 // ---------------------------------------------------------------------------
 
-async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>, parentKey: string = CONTAINER): Promise<string | undefined> {
+async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>, parentKey = CONTAINER): Promise<string | undefined> {
   // Page already in Graph → reuse its key
   const existing = pageKeyMap.get(node.href);
   if (existing) {
@@ -270,22 +277,40 @@ async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>, pare
     body: JSON.stringify({
       key,
       contentType: "TraditionalPage",
-      locale: "en",
       container: parentKey,
-      status: "published",
-      displayName: node.label,
-      routeSegment: node.routeSegment,
-      properties: {
-        heading:    content.heading,
-        subheading: content.subheading,
-        body:       `<p>${content.subheading}</p>`,
+      initialVersion: {
+        locale: "en",
+        displayName: node.label,
+        routeSegment: node.routeSegment,
+        properties: wrapProps({
+          heading:    content.heading,
+          subheading: content.subheading,
+          body:       { html: `<p>${content.subheading}</p>` },
+        }),
       },
     }),
   });
   const respStr = JSON.stringify(resp);
-  if (!ok && !(status === 400 && respStr.includes("is already in use"))) {
+  if (!ok) {
+    if (status === 400 && respStr.includes("is already in use")) {
+      console.log(`  [page (skip)] ${node.label} → routeSegment already in use`);
+      return undefined;
+    }
+    if (status === 409) {
+      console.log(`  [page (skip)] ${node.label} → key already exists`);
+      return undefined;
+    }
     console.error(`  [ERROR] Page "${node.label}": ${status} ${respStr.slice(0, 200)}`);
     return undefined;
+  }
+  // Publish the newly-created draft (v1 API may return 201 with empty body)
+  let version = ((resp as Record<string, unknown>)?.initialVersion as Record<string, unknown> | undefined)?.version as string | undefined;
+  if (!version) {
+    const vRes = await apiFetch(`/${key}/versions?pageSize=1`);
+    version = ((vRes.body as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version;
+  }
+  if (version) {
+    await apiFetch(`/${key}/versions/${version}:publish`, { method: "POST" });
   }
   console.log(`  [page] ${node.label} → ${node.href}`);
   return key;
@@ -295,7 +320,7 @@ async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>, pare
 // Walk tree: resolve page keys for all nodes
 // ---------------------------------------------------------------------------
 
-async function resolvePageKeys(nodes: NavDef[], pageKeyMap: Map<string, string>, parentKey: string = CONTAINER): Promise<void> {
+async function resolvePageKeys(nodes: NavDef[], pageKeyMap: Map<string, string>, parentKey = CONTAINER): Promise<void> {
   for (const node of nodes) {
     if (node.external) {
       // no content reference for external links
@@ -327,35 +352,46 @@ async function createNavItem(node: NavDef): Promise<void> {
   const childRefs = node.children.map((c) => ({ reference: `cms://content/${c.key}` }));
   const hrefRef = node.pageKey ? `cms://content/${node.pageKey}` : null;
 
-  const body: Record<string, unknown> = {
+  const makeBody = (includeHref: boolean): Record<string, unknown> => ({
     key: node.key,
     contentType: "NavigationItem",
-    locale: "en",
     container: CONTAINER,
-    status: "published",
-    displayName: node.label,
-    properties: {
-      label: node.label,
-      ...(hrefRef ? { href: hrefRef } : {}),
-      description: node.description ?? null,
-      openInNewTab: node.openInNewTab ?? false,
-      children: childRefs,
+    initialVersion: {
+      locale: "en",
+      displayName: node.label,
+      properties: wrapProps({
+        label: node.label,
+        ...(includeHref && hrefRef ? { href: hrefRef } : {}),
+        description: node.description ?? null,
+        openInNewTab: node.openInNewTab ?? false,
+        children: childRefs,
+      }),
     },
-  };
+  });
 
-  let { ok, status, body: resp } = await apiFetch("", { method: "POST", body: JSON.stringify(body) });
+  let { ok, status, body: resp } = await apiFetch("", { method: "POST", body: JSON.stringify(makeBody(true)) });
 
   // If the href reference isn't committed yet, retry once without it
   if (!ok && hrefRef && JSON.stringify(resp).includes("does not exist")) {
     console.warn(`  [retry] ${node.label} — href not committed yet, creating without href`);
-    const bodyNoHref = { ...body, properties: { ...(body.properties as object), href: undefined } };
-    ({ ok, status, body: resp } = await apiFetch("", { method: "POST", body: JSON.stringify(bodyNoHref) }));
+    ({ ok, status, body: resp } = await apiFetch("", { method: "POST", body: JSON.stringify(makeBody(false)) }));
   }
 
   if (!ok) {
     console.error(`  [ERROR] NavItem "${node.label}": ${status} ${JSON.stringify(resp).slice(0, 400)}`);
     throw new Error(`NavItem creation failed for ${node.label}`);
   }
+
+  // Publish the draft (v1 API may return 201 with empty body)
+  let version = ((resp as Record<string, unknown>)?.initialVersion as Record<string, unknown> | undefined)?.version as string | undefined;
+  if (!version) {
+    const vRes = await apiFetch(`/${node.key}/versions?pageSize=1`);
+    version = ((vRes.body as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version;
+  }
+  if (version) {
+    await apiFetch(`/${node.key}/versions/${version}:publish`, { method: "POST" });
+  }
+
   const childCount = node.children.length;
   const hrefInfo = node.pageKey ? `→ cms://content/${node.pageKey.slice(0, 8)}…` : node.external ? "(external, no ref)" : "(no page)";
   console.log(`  [nav-item] ${node.label} ${hrefInfo} (${childCount} children)`);
@@ -374,24 +410,50 @@ async function createNavTree(nodes: NavDef[]): Promise<void> {
 
 async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
   const navItemRefs = topLevelNodes.map((n) => ({ reference: `cms://content/${n.key}` }));
+  let targetKey = noHyphens();
+  let targetContainer = CONTAINER;
 
-  // Optimizely Management API PATCH silently ignores content-area property updates.
-  // Reliable pattern: the cleanup step already soft-deleted the old Navigation block
-  // (which removes it from Graph). We POST a fresh one with a new random key.
-  // The app queries by NAV_BLOCK_NAME so the key doesn't need to be stable.
-  const newKey = noHyphens();
+  if (NAV_BLOCK_KEY) {
+    // Explicit override: look up this block's container, then delete it.
+    const { ok, body: existing } = await apiFetch(`/${NAV_BLOCK_KEY}`);
+    if (ok) {
+      const container = (existing as { container?: string }).container;
+      if (container) targetContainer = container;
+    }
+    await apiFetch(`/${NAV_BLOCK_KEY}`, { method: "DELETE", headers: { "cms-permanent-delete": "true" } });
+    console.log(`  [deleted] existing nav block ${NAV_BLOCK_KEY}`);
+    targetKey = NAV_BLOCK_KEY;
+    await new Promise((r) => setTimeout(r, 3000));
+  } else {
+    // Auto-discover: look for an existing Navigation block in CONTAINER.
+    const { ok, body: listBody } = await apiFetch(`/${CONTAINER}/items?contentTypes=Navigation`);
+    if (ok) {
+      const navItems = (listBody as { items?: Array<{ key: string; container?: string }> }).items ?? [];
+      if (navItems.length > 0) {
+        const found = navItems[0];
+        targetKey = found.key;
+        if (found.container) targetContainer = found.container;
+        await apiFetch(`/${found.key}`, { method: "DELETE", headers: { "cms-permanent-delete": "true" } });
+        console.log(`  [deleted] existing nav block ${found.key} (auto-discovered)`);
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+    }
+  }
+
+  // PATCH silently ignores content-area property updates — DELETE + POST is the reliable pattern.
   const { ok, status, body: resp } = await apiFetch("", {
     method: "POST",
     body: JSON.stringify({
-      key: newKey,
+      key: targetKey,
       contentType: "Navigation",
-      locale: "en",
-      container: CONTAINER,
-      status: "published",
-      displayName: NAV_BLOCK_NAME,
-      properties: {
-        name: NAV_BLOCK_NAME,
-        navItems: navItemRefs,
+      container: targetContainer,
+      initialVersion: {
+        locale: "en",
+        displayName: NAV_BLOCK_NAME,
+        properties: wrapProps({
+          name: NAV_BLOCK_NAME,
+          navItems: navItemRefs,
+        }),
       },
     }),
   });
@@ -399,7 +461,18 @@ async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
     console.error(`  [ERROR] Navigation block POST: ${status} ${JSON.stringify(resp).slice(0, 400)}`);
     throw new Error("Navigation block creation failed");
   }
-  console.log(`  [nav-block] Created "${NAV_BLOCK_NAME}" block (key ${newKey}) with ${topLevelNodes.length} top-level items`);
+
+  // Publish (v1 API may return 201 with empty body)
+  let navBlockVersion = ((resp as Record<string, unknown>)?.initialVersion as Record<string, unknown> | undefined)?.version as string | undefined;
+  if (!navBlockVersion) {
+    const vRes = await apiFetch(`/${targetKey}/versions?pageSize=1`);
+    navBlockVersion = ((vRes.body as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version;
+  }
+  if (navBlockVersion) {
+    await apiFetch(`/${targetKey}/versions/${navBlockVersion}:publish`, { method: "POST" });
+  }
+
+  console.log(`  [nav-block] Created "${NAV_BLOCK_NAME}" (key ${targetKey}) with ${topLevelNodes.length} top-level items`);
 }
 
 // ---------------------------------------------------------------------------
@@ -408,6 +481,10 @@ async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
 
 async function main() {
   console.log("=== Nav Seeding Script ===\n");
+
+  console.log("--- Discovering root container ---");
+  CONTAINER = await discoverRootContainer();
+  console.log(`  container: ${CONTAINER}`);
 
   await cleanupNavItems();
 

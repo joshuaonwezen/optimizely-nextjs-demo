@@ -11,6 +11,17 @@ export const HeroBlockType = contentType({
     headline: { type: "string", displayName: "Headline", indexingType: "searchable" },
     subheadline: { type: "string", displayName: "Subheadline", indexingType: "searchable" },
     backgroundImage: { type: "contentReference", displayName: "Background Image", allowedTypes: ["_image"], indexingType: "disabled" },
+    rendition: {
+      type: "string",
+      displayName: "Image Rendition",
+      enum: [
+        { value: "original",    displayName: "Original" },
+        { value: "thumbnail",   displayName: "Thumbnail" },
+        { value: "medium",      displayName: "Medium" },
+        { value: "banner-wide", displayName: "Banner (wide)" },
+        { value: "square",      displayName: "Square" },
+      ],
+    },
     ctaText: { type: "string", displayName: "CTA Text" },
     ctaLink: { type: "string", displayName: "CTA Link" },
   },
@@ -48,10 +59,11 @@ interface HeroBlockData {
   summary?: string | null;
   backgroundImage?: {
     _metadata?: { url?: { default?: string | null } | null } | null;
+    url?: { default?: string | null } | null;
+    Url?: string | null;
+    Renditions?: Array<{ Name?: string | null; Url?: string | null; Width?: number | null; Height?: number | null }> | null;
   } | null;
-  background?: {
-    _metadata?: { url?: { default?: string | null } | null } | null;
-  } | null;
+  rendition?: string | null;
   ctaText?: string | null;
   ctaLink?: string | null;
   __context?: { edit?: boolean } | null;
@@ -68,9 +80,13 @@ export default function HeroBlock(props: HeroBlockProps) {
   const { pa } = getPreviewUtils(data as any);
   const title = data.headline ?? data.heading;
   const subtitle = data.subheadline ?? data.summary;
+  const renditions = data.backgroundImage?.Renditions ?? [];
+  const matched = renditions.find((r) => r.Name === data.rendition);
   const bgUrl =
+    matched?.Url ??
+    data.backgroundImage?.Url ??
     data.backgroundImage?._metadata?.url?.default ??
-    data.background?._metadata?.url?.default;
+    data.backgroundImage?.url?.default;
 
   const isCentered = ds?.alignment === "center";
   const isTall = ds?.height === "tall";

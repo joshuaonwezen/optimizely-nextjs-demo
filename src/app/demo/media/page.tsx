@@ -17,6 +17,10 @@ const logoGridTs = fs.readFileSync(
   path.join(process.cwd(), "src/components/blocks/LogoGridBlock/index.tsx"),
   "utf8"
 );
+const renditionImageBlockTs = fs.readFileSync(
+  path.join(process.cwd(), "src/components/blocks/RenditionImageBlock/index.tsx"),
+  "utf8"
+);
 
 export const metadata: Metadata = {
   title: "Media & DAM Assets",
@@ -186,46 +190,52 @@ const DAM_RENDITIONS_SNIPPET = `// DAM images in Graph expose named renditions v
 // two patterns depending on whether the author or the frontend should decide.
 
 // ------ Pattern 1: author picks the rendition from a dropdown ------
-// Add a string property alongside the image field. The enum is a hardcoded list
-// that matches the rendition names defined in your DAM instance.
+// RenditionImageBlock demonstrates this pattern. A rendition enum sits alongside
+// the image field - the author picks both in the CMS editor.
 
-export const HeroBlockType = contentType({
-  key: "HeroBlock",
+export const RenditionImageBlockType = contentType({
+  key: "RenditionImageBlock",
   baseType: "_component",
   properties: {
     image: { type: "contentReference", allowedTypes: ["_image"], indexingType: "disabled" },
-    imageRendition: {
+    rendition: {
       type: "string",
-      displayName: "Image Rendition",
+      displayName: "Rendition",
       enum: [
         { value: "original",    displayName: "Original" },
         { value: "thumbnail",   displayName: "Thumbnail" },
+        { value: "medium",      displayName: "Medium" },
         { value: "banner-wide", displayName: "Banner (wide)" },
         { value: "square",      displayName: "Square" },
-      ],  // must match rendition names defined in your DAM instance exactly
+      ],  // values must match rendition names defined in your DAM instance exactly
     },
+    altText: { type: "string", displayName: "Alt Text" },
   },
 });
 
-// Request renditions on the image reference in your Graph fragment.
-// cmp_PublicImageAsset fields are PascalCase - Url, Renditions, Name, Width, Height:
-const HERO_FRAGMENT = gql\`
-  fragment HeroFields on HeroBlock {
-    image {
-      ... on cmp_PublicImageAsset {
-        Renditions { Name Url Width Height }
-        Url
-      }
+// Request Renditions on the image reference in your Graph fragment.
+// cmp_PublicImageAsset fields are PascalCase - Url, Renditions, Name, Width, Height.
+// Each Renditions entry resolves to a physically different file URL - selecting
+// "thumbnail" vs "banner-wide" gives a different image, not just a resize parameter:
+fragment RenditionImageFields on RenditionImageBlock {
+  image {
+    ... on cmp_PublicImageAsset {
+      Renditions { Name Url Width Height }
+      Url
     }
-    imageRendition
   }
-\`;
+  rendition
+  altText
+}
 
-// In the component, pick the selected rendition or fall back to the original URL.
-// Note: cmp_PublicImageAsset.Url is a plain string - no .default wrapper:
+// In the component, walk the Renditions array to match the author-selected name.
+// Fall back through the base DAM URL, then the composition-context URL shape:
 const renditions = content.image?.Renditions ?? [];
-const rendition = renditions.find((r) => r.Name === content.imageRendition);
-const src = rendition?.Url ?? content.image?.Url;
+const matched = renditions.find((r) => r.Name === content.rendition);
+const src =
+  matched?.Url ??               // rendition-specific file (different URL per choice)
+  content.image?.Url ??         // cmp_PublicImageAsset base URL (original)
+  content.image?._metadata?.url?.default;  // composition-context fallback
 
 // ------ Pattern 2: frontend auto-selects based on breakpoint ------
 // No extra CMS property needed. The frontend maps screen sizes to known rendition names
@@ -483,6 +493,7 @@ export default function MediaDemoPage() {
           files={[
             { label: "ImageBlock/index.tsx", path: "src/components/blocks/ImageBlock/index.tsx", content: imageBlockTs },
             { label: "LogoGridBlock/index.tsx", path: "src/components/blocks/LogoGridBlock/index.tsx", content: logoGridTs },
+            { label: "RenditionImageBlock/index.tsx", path: "src/components/blocks/RenditionImageBlock/index.tsx", content: renditionImageBlockTs },
           ]}
         />
 

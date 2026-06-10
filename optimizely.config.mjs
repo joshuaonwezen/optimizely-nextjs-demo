@@ -8,10 +8,14 @@ export const DynamicExperienceType = contentType({
   key: "DynamicExperience",
   displayName: "Dynamic Experience",
   baseType: "_experience",
-  // Allow nesting: child DynamicExperience pages (for URL hierarchy like
-  // /en/personal/savings/easy-access-savings/) and the new TraditionalPage
-  // subtypes (Article, Case Study) that live under /en/insights/articles/.
-  mayContainTypes: ["_self", "TraditionalPage", "ArticlePage", "CaseStudyPage"],
+  mayContainTypes: [
+    "_self",
+    "TraditionalPage", "ArticlePage", "CaseStudyPage",
+    "AuthorBlock", "OutcomeItemBlock", "TestimonialBlock",
+    "FaqItemBlock", "FaqContainerBlock",
+    "TimelineMilestoneBlock", "TeamMemberBlock",
+    "NavigationItem", "Navigation",
+  ],
   properties: {
     lastSync: { type: "dateTime", displayName: "Last Sync" },
   },

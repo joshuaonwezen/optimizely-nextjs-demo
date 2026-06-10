@@ -9,12 +9,13 @@
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
+import { discoverRootContainer, wrapProps } from "./_shared";
 
 config({ path: ".env.local" });
 
 const API_BASE = "https://api.cms.optimizely.com";
-const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
-const CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
+const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
+let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
@@ -105,18 +106,19 @@ async function createFaqItems(): Promise<void> {
   console.log("--- Part 1: Creating standalone FaqItemBlock content items ---");
 
   for (const item of FAQ_ITEMS) {
-    const { ok, status, text } = await apiFetch("", {
+    const { ok, status, text, json: result } = await apiFetch("", {
       method: "POST",
       body: JSON.stringify({
         key: item.key,
         contentType: "FaqItemBlock",
-        locale: "en",
         container: CONTAINER,
-        status: "published",
-        displayName: item.displayName,
-        properties: {
-          question: item.question,
-          answer: item.answer,
+        initialVersion: {
+          locale: "en",
+          displayName: item.displayName,
+          properties: wrapProps({
+            question: item.question,
+            answer: item.answer,
+          }),
         },
       }),
     });
@@ -124,6 +126,12 @@ async function createFaqItems(): Promise<void> {
       console.error(`  [ERROR] ${item.displayName}: ${status} ${text.slice(0, 200)}`);
       throw new Error("Failed to create FaqItemBlock");
     }
+    let version = ((result as Record<string, unknown>)?.initialVersion as Record<string, unknown> | undefined)?.version as string | undefined;
+    if (!version) {
+      const vRes = await apiFetch(`/${item.key}/versions?pageSize=1`);
+      version = ((vRes.json as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version;
+    }
+    if (version) await apiFetch(`/${item.key}/versions/${version}:publish`, { method: "POST" });
     console.log(`  [created] ${item.displayName} → key=${item.key}`);
   }
 }
@@ -139,19 +147,20 @@ async function createFaqContainer(): Promise<void> {
 
   const faqItemRefs = FAQ_ITEMS.map((item) => ({ reference: `cms://content/${item.key}` }));
 
-  const { ok, status, text } = await apiFetch("", {
+  const { ok, status, text, json: result } = await apiFetch("", {
     method: "POST",
     body: JSON.stringify({
       key: CONTAINER_KEY,
       contentType: "FaqContainerBlock",
-      locale: "en",
       container: CONTAINER,
-      status: "published",
-      displayName: "FAQs Container",
-      properties: {
-        heading: "Frequently asked questions",
-        subheading: "Quick answers to the things we hear most.",
-        faqItems: faqItemRefs,
+      initialVersion: {
+        locale: "en",
+        displayName: "FAQs Container",
+        properties: wrapProps({
+          heading: "Frequently asked questions",
+          subheading: "Quick answers to the things we hear most.",
+          faqItems: faqItemRefs,
+        }),
       },
     }),
   });
@@ -160,6 +169,12 @@ async function createFaqContainer(): Promise<void> {
     console.error(`  [ERROR] FaqContainerBlock: ${status} ${text.slice(0, 300)}`);
     throw new Error("Failed to create FaqContainerBlock");
   }
+  let version = ((result as Record<string, unknown>)?.initialVersion as Record<string, unknown> | undefined)?.version as string | undefined;
+  if (!version) {
+    const vRes = await apiFetch(`/${CONTAINER_KEY}/versions?pageSize=1`);
+    version = ((vRes.json as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version;
+  }
+  if (version) await apiFetch(`/${CONTAINER_KEY}/versions/${version}:publish`, { method: "POST" });
   console.log(`  [created] FaqContainerBlock → key=${CONTAINER_KEY}`);
   console.log(`  [linked] ${FAQ_ITEMS.length} FAQ items via content area`);
 }
@@ -172,7 +187,7 @@ async function wireFaqsPage(): Promise<void> {
   console.log("\n--- Part 3: Wiring FaqContainerBlock to FAQs page ---");
 
   // Find the FAQs page key from Graph
-  const query = `{ _Page(where:{_metadata:{url:{default:{in:["/en/faqs/","/faqs/"]}}}},limit:1) { items { _metadata { key displayName } } } }`;
+  const query = `{ _Page(where:{_metadata:{url:{default:{in:["/en/faqs/","/faqs/","/en/help/faqs/","/help/faqs/","/en/faqs","/faqs","/en/help/faqs","/help/faqs"]}}}},limit:1) { items { _metadata { key displayName } } } }`;
   const graphRes = await fetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
@@ -188,34 +203,37 @@ async function wireFaqsPage(): Promise<void> {
   }
   console.log(`  [found] FAQs page: "${faqsName}" (key=${faqsKey})`);
 
-  // PATCH the FAQs page's featuredBlock property to reference the FaqContainerBlock
-  const { ok, status, text } = await apiFetch(`/${faqsKey}/en`, {
+  // Find the latest version for this page, PATCH its properties, then republish.
+  const { ok: vOk, json: vData } = await apiFetch(`/${faqsKey}/locales/en?pageSize=1`);
+  const version = vOk
+    ? ((vData as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version
+    : undefined;
+
+  if (!version) {
+    console.error(`  [ERROR] Could not find a version for FAQs page key=${faqsKey}`);
+    return;
+  }
+
+  const { ok, status, text, json: patched } = await apiFetch(`/${faqsKey}/versions/${version}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/merge-patch+json" },
     body: JSON.stringify({
-      properties: {
+      properties: wrapProps({
         featuredBlock: `cms://content/${CONTAINER_KEY}`,
-      },
+      }),
     }),
   });
 
   if (!ok) {
-    // Fallback: try patching the base (non-locale) endpoint
-    const { ok: ok2, status: s2, text: t2 } = await apiFetch(`/${faqsKey}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/merge-patch+json" },
-      body: JSON.stringify({
-        properties: {
-          featuredBlock: `cms://content/${CONTAINER_KEY}`,
-        },
-      }),
-    });
-    if (!ok2) {
-      console.error(`  [ERROR] Could not patch FAQs page: ${s2} ${t2.slice(0, 200)}`);
-      return;
-    }
-    console.log(`  [patched] FAQs page featuredBlock (base) → FaqContainerBlock`);
+    console.error(`  [ERROR] Could not patch FAQs page: ${status} ${text.slice(0, 200)}`);
     return;
+  }
+
+  // Republish if PATCH moved the version to draft
+  const patchedStatus = (patched as Record<string, unknown>)?.status as string | undefined;
+  if (patchedStatus && patchedStatus !== "published") {
+    const newVersion = (patched as Record<string, unknown>)?.version as string | undefined;
+    await apiFetch(`/${faqsKey}/versions/${newVersion ?? version}:publish`, { method: "POST" });
   }
   console.log(`  [patched] FAQs page featuredBlock → FaqContainerBlock`);
 }
@@ -226,6 +244,8 @@ async function wireFaqsPage(): Promise<void> {
 
 async function main() {
   console.log("=== FAQ Content Area Seed Script ===\n");
+  CONTAINER = await discoverRootContainer();
+  console.log(`  container: ${CONTAINER}\n`);
   await createFaqItems();
   await createFaqContainer();
   await wireFaqsPage();

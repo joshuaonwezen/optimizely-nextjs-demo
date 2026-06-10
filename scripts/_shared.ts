@@ -21,14 +21,13 @@ export { getManagementToken };
 // ---------------------------------------------------------------------------
 
 export const API_BASE = "https://api.cms.optimizely.com";
-export const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
+export const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 export const GRAPH_ENDPOINT =
   process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 export const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 
-// Root container for all seeded content. This container must be created manually
-// in the CMS UI (the Management API cannot create containers). Copy its key from
-// the CMS and set OPTIMIZELY_ROOT_CONTAINER in .env.local before running seeds.
+// Root container for all seeded content. If this env var is not set, the seed
+// scripts call discoverRootContainer() to look it up via GET /v1/applications.
 export const CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 
 // ---------------------------------------------------------------------------
@@ -43,6 +42,23 @@ export function uid(): string {
 /** UUID without hyphens — used as content keys. */
 export function noHyphens(): string {
   return randomUUID().replace(/-/g, "");
+}
+
+/**
+ * Wraps every value in a flat properties object into the v1 PropertyData format.
+ *
+ * The v1 Management API requires each property value to be `{ value: <actual> }`
+ * rather than a bare value. This applies to both initialVersion.properties and
+ * inline composition component properties.
+ */
+export function wrapProps(
+  props: Record<string, unknown>
+): Record<string, { value: unknown }> {
+  const out: Record<string, { value: unknown }> = {};
+  for (const [k, v] of Object.entries(props)) {
+    out[k] = { value: v };
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +119,7 @@ export function elementComponent(
     id: uid(),
     displayName,
     nodeType: "component",
-    component: { contentType, properties },
+    component: { contentType, properties: wrapProps(properties) },
   };
 }
 
@@ -117,8 +133,49 @@ export function rootComponent(
     id: uid(),
     displayName,
     nodeType: "component",
-    component: { contentType, properties },
+    component: { contentType, properties: wrapProps(properties) },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Root container auto-discovery
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the root container key for the current CMS instance.
+ *
+ * Reads OPTIMIZELY_ROOT_CONTAINER from the environment first. If it is not
+ * set, calls GET /v1/applications to find the default application's start page
+ * (entryPoint URI) and extracts its content key.
+ */
+export async function discoverRootContainer(): Promise<string> {
+  const envKey = (process.env.OPTIMIZELY_ROOT_CONTAINER ?? "").replace(/-/g, "");
+  if (envKey) return envKey;
+
+  const token = await getManagementToken();
+  const res = await fetch(`${API_BASE}/v1/applications`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`GET /v1/applications failed: ${res.status} ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as {
+    items?: Array<{ isDefault?: boolean; entryPoint?: string }>;
+  };
+  const items = data.items ?? [];
+  if (items.length === 0) throw new Error("No applications found in CMS");
+
+  const app = items.find((a) => a.isDefault) ?? items[0];
+  if (!app.entryPoint) throw new Error("CMS application has no entryPoint URI");
+
+  // entryPoint format: "cms://content/{key}" — extract the last path segment.
+  const raw = app.entryPoint.split("/").pop() ?? "";
+  const key = raw.replace(/-/g, "");
+  if (!key) throw new Error(`Could not extract key from entryPoint: ${app.entryPoint}`);
+
+  console.log(`  [auto-discovered] root container: ${key} (from entryPoint: ${app.entryPoint})`);
+  return key;
 }
 
 // ---------------------------------------------------------------------------
@@ -126,38 +183,125 @@ export function rootComponent(
 // ---------------------------------------------------------------------------
 
 /**
- * POST a new content item.
- * Returns the parsed response on success or null if the API reports the
- * routeSegment is already in use (treated as a soft-skip for idempotency).
+ * POST a new content item using the v1 API.
+ *
+ * The payload uses the same field names as before (locale, displayName,
+ * routeSegment, properties, composition, status, etc.). This function
+ * re-maps them to the v1 NewContent shape:
+ *
+ *   { key, contentType, container, initialVersion: { locale, displayName, ... } }
+ *
+ * After creation the initial draft version is immediately published via
+ * POST /content/{key}/versions/{version}:publish.
+ *
+ * Returns the parsed NewContentNode on success, null on idempotent skip
+ * (routeSegment already in use, or 409 key conflict).
  */
 export async function createContent(
   payload: Record<string, unknown>,
-  context = "content item"
+  context = "content item",
+  options: { skipPublish?: boolean } = {}
 ): Promise<Record<string, unknown> | null> {
   const token = await getManagementToken();
+
+  // Split payload into outer NewContent fields and initialVersion fields.
+  const {
+    key, contentType, container, owner,
+    locale, displayName, routeSegment, simpleRoute,
+    variation, properties, composition, media, binding,
+    // status is readOnly in v1 — ignored here, published via :publish below
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    status: _status,
+    // Catch-all: any remaining fields are dropped (v1 additionalProperties: false)
+    ...rest
+  } = payload;
+
+  // Suppress TS warning for intentionally unused rest
+  void rest;
+
+  const initialVersion: Record<string, unknown> = {};
+  if (locale !== undefined)      initialVersion.locale      = locale;
+  if (displayName !== undefined) initialVersion.displayName = displayName;
+  if (routeSegment !== undefined) initialVersion.routeSegment = routeSegment;
+  if (simpleRoute !== undefined) initialVersion.simpleRoute = simpleRoute;
+  if (variation !== undefined)   initialVersion.variation   = variation;
+  if (properties !== undefined)  initialVersion.properties  = wrapProps(properties as Record<string, unknown>);
+  if (composition !== undefined) initialVersion.composition = composition;
+  if (media !== undefined)       initialVersion.media       = media;
+  if (binding !== undefined)     initialVersion.binding     = binding;
+
+  const body: Record<string, unknown> = { contentType, initialVersion };
+  if (key !== undefined)       body.key       = key;
+  if (container !== undefined) body.container = container;
+  if (owner !== undefined)     body.owner     = owner;
+
   const res = await fetch(CONTENT_ENDPOINT, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
   const text = await res.text();
+
   if (!res.ok) {
+    if (res.status === 409) {
+      console.log(`  [skipped] ${context} — key already exists (409)`);
+      return null;
+    }
     if (res.status === 400 && text.includes("is already in use")) {
       console.log(`  [skipped] ${context} — routeSegment already in use`);
       return null;
     }
-    throw new Error(`POST ${context} failed: ${res.status} ${text}`);
+    throw new Error(`POST ${context}: ${res.status} ${text.slice(0, 300)}`);
   }
-  return JSON.parse(text);
+
+  // v1 API sometimes returns 201 with no body — look up the version separately.
+  let result: Record<string, unknown>;
+  let contentKey: string;
+  let versionId: string | undefined;
+
+  if (!text.trim()) {
+    const inferredKey = body.key as string | undefined;
+    if (!inferredKey) throw new Error(`POST ${context}: 201 with empty body and no key in request`);
+    contentKey = inferredKey;
+    const vRes = await fetch(`${CONTENT_ENDPOINT}/${contentKey}/versions?pageSize=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (vRes.ok) {
+      const vData = (await vRes.json()) as { items?: Array<{ version?: string }> };
+      versionId = vData.items?.[0]?.version;
+    }
+    result = { key: contentKey };
+  } else {
+    result = JSON.parse(text) as Record<string, unknown>;
+    contentKey = result.key as string;
+    versionId = (result.initialVersion as Record<string, unknown> | undefined)
+      ?.version as string | undefined;
+  }
+
+  if (versionId && !options.skipPublish) {
+    const pubRes = await fetch(
+      `${CONTENT_ENDPOINT}/${contentKey}/versions/${versionId}:publish`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    if (!pubRes.ok) {
+      const pubText = await pubRes.text();
+      throw new Error(`Publish ${context}: ${pubRes.status} ${pubText.slice(0, 300)}`);
+    }
+  }
+
+  return result;
 }
 
 /**
  * Delete every content item directly under a container. Returns a map of
- * display name → key for items that could not be deleted (e.g. start pages
- * the CMS refuses to remove).
+ * key → key for items that could not be deleted (e.g. start pages the CMS
+ * refuses to remove).
  */
 export async function deleteAllInContainer(
   container: string = CONTAINER
@@ -170,15 +314,14 @@ export async function deleteAllInContainer(
   });
   if (!res.ok) return undeletable;
 
-  const data = (await res.json()) as { items?: Array<{ key: string; locales?: Record<string, { displayName?: string }> }> };
+  const data = (await res.json()) as { items?: Array<{ key: string }> };
   for (const item of data.items ?? []) {
-    const displayName = item.locales?.en?.displayName ?? item.key;
-    const delRes = await fetch(
-      `${CONTENT_ENDPOINT}/${item.key}?permanent=true`,
-      { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (!delRes.ok) undeletable.set(displayName, item.key);
-    console.log(`  [deleted] ${displayName} (${delRes.status})`);
+    const delRes = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
+    });
+    if (!delRes.ok) undeletable.set(item.key, item.key);
+    console.log(`  [deleted] ${item.key} (${delRes.status})`);
   }
   return undeletable;
 }
@@ -189,17 +332,18 @@ export async function deleteAllInContainer(
  */
 export async function deleteContentByKey(key: string): Promise<void> {
   const token = await getManagementToken();
-  await fetch(`${CONTENT_ENDPOINT}/${key}?permanent=true`, {
+  await fetch(`${CONTENT_ENDPOINT}/${key}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
   });
 }
 
 /**
  * PATCH an existing content item's properties. Uses merge-patch+json so only
- * the provided fields are touched. Tries multiple endpoint variants because
- * the right one depends on whether the item is draft-only or has a published
- * version. Mirrors the strategy in scripts/seed-faqs.ts and scripts/seed-content.ts.
+ * the provided fields are touched.
+ *
+ * Fetches the latest version for the given locale, PATCHes it, then
+ * re-publishes if the PATCH moved the version out of published state.
  */
 export async function patchContentProperties(
   key: string,
@@ -207,37 +351,62 @@ export async function patchContentProperties(
   locale = "en"
 ): Promise<void> {
   const token = await getManagementToken();
-  const body = JSON.stringify({ properties });
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/merge-patch+json",
-  };
 
-  // Try locale-scoped first, then bare key. The 404 happens when the content
-  // item has no draft for the current locale; the bare-key path resolves it.
-  const candidates = [
-    `${CONTENT_ENDPOINT}/${key}/${locale}`,
-    `${CONTENT_ENDPOINT}/${key}`,
-  ];
-
-  let lastStatus = 0;
-  let lastBody = "";
-  for (const url of candidates) {
-    const res = await fetch(url, { method: "PATCH", headers, body });
-    if (res.ok) return;
-    lastStatus = res.status;
-    lastBody = await res.text();
+  // Find the latest version for this locale (any status).
+  const vRes = await fetch(
+    `${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=1`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!vRes.ok) {
+    throw new Error(`GET locales/${locale} for ${key}: ${vRes.status}`);
   }
-  throw new Error(`PATCH ${key} failed: ${lastStatus} ${lastBody}`);
+  const vData = (await vRes.json()) as {
+    items?: Array<{ version?: string; status?: string }>;
+  };
+  const versionItem = vData.items?.[0];
+  if (!versionItem?.version) throw new Error(`No version for ${key}/${locale}`);
+
+  const { version } = versionItem;
+
+  const patchRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/merge-patch+json",
+    },
+    body: JSON.stringify({ properties: wrapProps(properties) }),
+  });
+  if (!patchRes.ok) {
+    const txt = await patchRes.text();
+    throw new Error(`PATCH ${key}/versions/${version}: ${patchRes.status} ${txt.slice(0, 200)}`);
+  }
+
+  const patchBody = await patchRes.text();
+  const patched = patchBody.trim()
+    ? (JSON.parse(patchBody) as { version?: string; status?: string })
+    : { version: undefined, status: undefined };
+
+  // Always republish after patching (original may have been draft or published).
+  if (patched.status !== "published") {
+    const vToPublish = patched.version ?? version;
+    const pubRes = await fetch(
+      `${CONTENT_ENDPOINT}/${key}/versions/${vToPublish}:publish`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    if (!pubRes.ok) {
+      console.warn(
+        `  [warn] republish ${key} after property patch: ${pubRes.status}`
+      );
+    }
+  }
 }
 
 /**
  * Look up the CMS key for a page by URL via Optimizely Graph. Returns null
  * if no page exists at any of the given URLs.
- *
- * Use this when seed scripts need to reference (or clean up) a page that was
- * created in an earlier script — keys aren't shared across script runs, but
- * URLs are stable.
  */
 export async function findPageKeyByUrl(urls: string[]): Promise<string | null> {
   if (urls.length === 0) return null;
@@ -262,9 +431,7 @@ export async function findPageKeyByUrl(urls: string[]): Promise<string | null> {
 }
 
 /**
- * If a page exists at any of the given URLs, delete it. Useful for idempotent
- * cleanup of pages created in other containers (where
- * `findItemsInContainerByName` against root can't reach them).
+ * If a page exists at any of the given URLs, delete it.
  */
 export async function deletePageByUrlIfExists(urls: string[]): Promise<void> {
   const key = await findPageKeyByUrl(urls);
@@ -273,7 +440,10 @@ export async function deletePageByUrlIfExists(urls: string[]): Promise<void> {
 
 /**
  * Find items in a container whose display name matches a predicate.
- * Useful for idempotent cleanup of named blocks/pages before re-seeding.
+ *
+ * In v1, GET /content/{key}/items returns ContentNode (no displayName).
+ * This function fetches the latest version for each item to get its display
+ * name, then filters by the predicate.
  */
 export async function findItemsInContainerByName(
   predicate: (displayName: string) => boolean,
@@ -284,11 +454,23 @@ export async function findItemsInContainerByName(
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return [];
-  const data = (await res.json()) as { items?: Array<{ key: string; locales?: Record<string, { displayName?: string }> }> };
-  return (data.items ?? [])
-    .map((item) => ({
-      key: item.key,
-      displayName: item.locales?.en?.displayName ?? item.key,
-    }))
-    .filter((item) => predicate(item.displayName));
+
+  const data = (await res.json()) as { items?: Array<{ key: string }> };
+  const result: Array<{ key: string; displayName: string }> = [];
+
+  for (const item of data.items ?? []) {
+    const vRes = await fetch(
+      `${CONTENT_ENDPOINT}/${item.key}/versions?pageSize=1`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    let displayName = item.key;
+    if (vRes.ok) {
+      const vData = (await vRes.json()) as {
+        items?: Array<{ displayName?: string }>;
+      };
+      displayName = vData.items?.[0]?.displayName ?? item.key;
+    }
+    if (predicate(displayName)) result.push({ key: item.key, displayName });
+  }
+  return result;
 }

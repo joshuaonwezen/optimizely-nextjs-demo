@@ -9,10 +9,11 @@
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
+import { wrapProps } from "./_shared";
 
 config({ path: ".env.local" });
 
-const CONTENT_ENDPOINT = "https://api.cms.optimizely.com/preview3/experimental/content";
+const CONTENT_ENDPOINT = "https://api.cms.optimizely.com/v1/content";
 const HOMEPAGE_KEY = "3525e1552b6f46158be2850ff6e6fb74";
 
 // ---------------------------------------------------------------------------
@@ -31,7 +32,7 @@ interface CompNode {
 function uid() { return randomUUID(); }
 
 function elementComponent(contentType: string, displayName: string, properties: Record<string, unknown>): CompNode {
-  return { id: uid(), displayName, nodeType: "component", component: { contentType, properties } };
+  return { id: uid(), displayName, nodeType: "component", component: { contentType, properties: wrapProps(properties) } };
 }
 
 function gridSection(displayName: string, items: CompNode[]): CompNode {
@@ -50,7 +51,7 @@ function sectionComponent(contentType: string, displayName: string, properties: 
 }
 
 function rootComponent(contentType: string, displayName: string, properties: Record<string, unknown>): CompNode {
-  return { id: uid(), displayName, nodeType: "component", component: { contentType, properties } };
+  return { id: uid(), displayName, nodeType: "component", component: { contentType, properties: wrapProps(properties) } };
 }
 
 // ---------------------------------------------------------------------------
@@ -265,20 +266,27 @@ async function patchVersion(token: string, version: string, variationLabel: stri
   const res = await fetch(`${CONTENT_ENDPOINT}/${HOMEPAGE_KEY}/versions/${version}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/merge-patch+json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ locale: "en", status: "published", composition }),
+    body: JSON.stringify({ composition }),
   });
   const text = await res.text();
-  if (res.ok) {
-    console.log(`[${variationLabel}] ✓ Patched and published (version ${version})`);
-  } else {
+  if (!res.ok) {
     console.error(`[${variationLabel}] ✗ ${res.status}: ${text.slice(0, 200)}`);
+    return;
   }
+  const patched = JSON.parse(text) as { version?: string; status?: string };
+  if (patched.status && patched.status !== "published") {
+    await fetch(`${CONTENT_ENDPOINT}/${HOMEPAGE_KEY}/versions/${patched.version ?? version}:publish`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+  console.log(`[${variationLabel}] ✓ Patched and published (version ${version})`);
 }
 
 async function deleteVersion(token: string, version: string) {
   const res = await fetch(`${CONTENT_ENDPOINT}/${HOMEPAGE_KEY}/versions/${version}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
   });
   const label = res.ok ? `✓ deleted (${res.status})` : `✗ ${res.status}`;
   console.log(`[v${version} cleanup] ${label}`);

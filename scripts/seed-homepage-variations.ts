@@ -21,12 +21,13 @@
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
+import { discoverRootContainer, wrapProps } from "./_shared";
 
 config({ path: ".env.local" });
 
 const API_BASE = "https://api.cms.optimizely.com";
-const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
-const CONTAINER = "43f936c99b234ea397b261c538ad07c9";
+const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
+let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
@@ -57,7 +58,7 @@ function elementComponent(
     id: uid(),
     displayName,
     nodeType: "component",
-    component: { contentType, properties },
+    component: { contentType, properties: wrapProps(properties) },
   };
 }
 
@@ -103,7 +104,7 @@ function rootComponent(
     id: uid(),
     displayName,
     nodeType: "component",
-    component: { contentType, properties },
+    component: { contentType, properties: wrapProps(properties) },
   };
 }
 
@@ -428,76 +429,73 @@ async function createVariation(
     nodes: variation.nodes,
   };
 
-  // Attempt 1: POST a new content item with variation field at top level
-  // (some versions of the Management API support this)
-  const attempt1Body = {
-    contentType: "DynamicExperience",
-    locale: "en",
-    container: CONTAINER,
-    status: "published",
-    displayName: variation.displayName,
-    variation: variation.variationKey,
-    composition,
-  };
-
+  // Attempt 1: POST a new content item with variation field inside initialVersion.
   const res1 = await fetch(CONTENT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(attempt1Body),
+    body: JSON.stringify({
+      contentType: "DynamicExperience",
+      container: CONTAINER,
+      initialVersion: {
+        locale: "en",
+        displayName: variation.displayName,
+        variation: variation.variationKey,
+        composition,
+      },
+    }),
   });
 
   if (res1.ok) {
-    const result = await res1.json();
-    console.log(`  [created] ${variation.displayName} → key=${result.key} (variation field on POST)`);
+    const result = await res1.json() as Record<string, unknown>;
+    const versionId = ((result.initialVersion as Record<string, unknown> | undefined)?.version) as string | undefined;
+    if (versionId) {
+      await fetch(`${CONTENT_ENDPOINT}/${result.key as string}/versions/${versionId}:publish`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+    console.log(`  [created] ${variation.displayName} → key=${result.key as string} (variation field on POST)`);
     return true;
   }
 
   const err1 = await res1.text();
   console.warn(`  [attempt 1 failed] POST with variation field: ${res1.status} ${err1.slice(0, 150)}`);
 
-  // Attempt 2: PATCH the existing homepage to add a named variant
-  const attempt2Body = {
-    locale: "en",
-    displayName: variation.displayName,
-    variation: variation.variationKey,
-    composition,
-  };
+  // Attempt 2: Find the latest version for the homepage and PATCH with the variation composition.
+  // This only works if the variation version already exists (created in Visual Builder) — use
+  // GET /locales/en to find it, then PATCH the version and republish.
+  const vRes = await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/locales/en?pageSize=1`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const versionId = vRes.ok
+    ? ((await vRes.json() as { items?: Array<{ version?: string }> }).items?.[0]?.version)
+    : undefined;
 
-  const res2 = await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/en`, {
+  if (!versionId) {
+    console.warn(`  [attempt 2 skipped] could not find a version for homepage key=${homepageKey}`);
+    return false;
+  }
+
+  const res2 = await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/versions/${versionId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/merge-patch+json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(attempt2Body),
+    body: JSON.stringify({ displayName: variation.displayName, composition }),
   });
 
   if (res2.ok) {
-    console.log(`  [patched] ${variation.displayName} → applied variation to key=${homepageKey}`);
+    const patched = await res2.json() as { version?: string; status?: string };
+    if (patched.status && patched.status !== "published") {
+      await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/versions/${patched.version ?? versionId}:publish`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+    console.log(`  [patched] ${variation.displayName} → applied composition to key=${homepageKey}`);
     return true;
   }
 
   const err2 = await res2.text();
-  console.warn(`  [attempt 2 failed] PATCH with variation field: ${res2.status} ${err2.slice(0, 150)}`);
-
-  // Attempt 3: POST to a variants sub-resource
-  const res3 = await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/variants`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      key: variation.variationKey,
-      displayName: variation.displayName,
-      locale: "en",
-      status: "published",
-      composition,
-    }),
-  });
-
-  if (res3.ok) {
-    const result = await res3.json();
-    console.log(`  [created] ${variation.displayName} via variants sub-resource → ${JSON.stringify(result).slice(0, 100)}`);
-    return true;
-  }
-
-  const err3 = await res3.text();
-  console.warn(`  [attempt 3 failed] POST to /variants: ${res3.status} ${err3.slice(0, 150)}`);
+  console.warn(`  [attempt 2 failed] PATCH version: ${res2.status} ${err2.slice(0, 150)}`);
 
   return false;
 }
@@ -508,6 +506,9 @@ async function createVariation(
 
 async function main() {
   console.log("=== Homepage Variation Seeding ===\n");
+
+  CONTAINER = await discoverRootContainer();
+  console.log(`  container: ${CONTAINER}\n`);
 
   console.log("[graph] Looking up homepage key…");
   const homepageKey = await findHomepageKey();

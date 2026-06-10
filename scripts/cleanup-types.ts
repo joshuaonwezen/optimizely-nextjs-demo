@@ -13,7 +13,7 @@ config({ path: ".env.local" });
 
 const API_BASE = "https://api.cms.optimizely.com";
 const TYPES_ENDPOINT = `${API_BASE}/v1/contenttypes`;
-const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
+const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 
 // ---------------------------------------------------------------------------
 // Content types actively used by this application — keep all of these.

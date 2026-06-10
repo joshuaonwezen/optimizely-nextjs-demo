@@ -18,6 +18,7 @@
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
+import { discoverRootContainer, wrapProps } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -26,8 +27,8 @@ config({ path: ".env.local" });
 // ---------------------------------------------------------------------------
 
 const API_BASE = "https://api.cms.optimizely.com";
-const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
-const CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
+const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
+let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -97,7 +98,7 @@ function elementComponent(
     id: uid(),
     displayName,
     nodeType: "component",
-    component: { contentType, properties },
+    component: { contentType, properties: wrapProps(properties) },
   };
 }
 
@@ -111,7 +112,7 @@ function rootComponent(
     id: uid(),
     displayName,
     nodeType: "component",
-    component: { contentType, properties },
+    component: { contentType, properties: wrapProps(properties) },
   };
 }
 
@@ -131,11 +132,10 @@ function buildCategoryPage(heading: string, subheading: string): CompNode[] {
 
 function buildHomepage(savingsKey: string | null): CompNode[] {
   return [
-    rootComponent("Hero", "Home Hero", {
-      heading: "Banking built around you",
-      summary:
+    rootComponent("HeroBlock", "Home Hero", {
+      headline: "Banking built around you",
+      subheadline:
         "Straightforward current accounts, competitive savings rates, and mortgages that move at your pace.",
-      theme: "dark",
     }),
     sectionComponent("SectionHeadingBlock", "Products Heading", {
       heading: "Our products",
@@ -176,6 +176,18 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
         linkText: "Open a business account →",
       }),
     ]),
+    sectionComponent("TestimonialBlock", "Homepage Testimonial", {
+      quote:
+        "Mosey made getting my mortgage so simple. The whole process was online and I had an offer within 48 hours. I couldn't believe how painless it was.",
+      authorName: "James Hartley",
+      authorRole: "Homeowner, Leeds",
+    }),
+    rootComponent("LogoGridBlock", "Trusted By", {
+      heading: "Trusted by 2 million customers across the UK",
+      subheading:
+        "From first current accounts to business banking — Mosey customers bank with confidence.",
+      logos: [],
+    }),
     gridSection("Bank Stats", [
       elementComponent("StatsCounterBlock", "Customers Stat", {
         value: "2",
@@ -198,18 +210,6 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
         label: "UK branches",
       }),
     ]),
-    sectionComponent("TestimonialBlock", "Homepage Testimonial", {
-      quote:
-        "Mosey made getting my mortgage so simple. The whole process was online and I had an offer within 48 hours. I couldn't believe how painless it was.",
-      authorName: "James Hartley",
-      authorRole: "Homeowner, Leeds",
-    }),
-    rootComponent("LogoGridBlock", "Trusted By", {
-      heading: "Trusted by 2 million customers across the UK",
-      subheading:
-        "From first current accounts to business banking — Mosey customers bank with confidence.",
-      logos: [],
-    }),
     ...(savingsKey ? [sectionComponent("FeaturedContentBlock", "Featured Savings", {
       label: "Our best rate",
       featuredPage: `cms://content/${savingsKey}`,
@@ -281,7 +281,7 @@ function buildProductPage(
       )
     ),
     sectionComponent("TextBlock", "Body Text", {
-      body: `<p>${bodyText}</p>`,
+      body: { html: `<p>${bodyText}</p>` },
     }),
     ...extras,
     sectionComponent("CallToAction", "Page CTA", {
@@ -745,7 +745,7 @@ const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 
 /** Find the CMS key of whichever DynamicExperience is served at the root URL. */
 async function findHomepageKey(): Promise<string | null> {
-  const query = `{ _Page(where:{_metadata:{url:{default:{in:["/"," /en/","/en/homepage/"]}}}},limit:3) { items { _metadata { key } } } }`;
+  const query = `{ _Page(where:{_metadata:{url:{default:{in:["/","/en/","/en/homepage/"]}}}},limit:3) { items { _metadata { key } } } }`;
   const res = await fetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
@@ -767,44 +767,64 @@ async function createPage(page: PageDef): Promise<void> {
     nodes: page.nodes,
   };
 
-  // Homepage is the undeletable start page — PATCH it in place instead of creating new.
-  const shouldPatch = !page.routeSegment && undeletableKeys.size > 0;
-  if (shouldPatch) {
-    const graphKey = await findHomepageKey();
+  // Homepage has no routeSegment — always try to patch the existing start page at /
+  // rather than creating a duplicate at /en/homepage/. CONTAINER itself may be the
+  // start page (e.g. ONBOARDING), so fall back to CONTAINER when Graph hasn't indexed
+  // the start page yet (Graph indexing lag of ~30-60s on fresh instances).
+  if (!page.routeSegment) {
+    const graphKey = (await findHomepageKey()) ?? (CONTAINER || null);
     if (graphKey) {
-      const patchBody = { status: "published", displayName: page.displayName, composition };
-      const putBody = { contentType: "DynamicExperience", locale: "en", status: "published", displayName: page.displayName, composition };
-      const attempts: Array<{ path: string; method: string; contentType: string; body: object }> = [
-        { path: `${CONTENT_ENDPOINT}/${graphKey}/en`, method: "PUT",   contentType: "application/json",             body: putBody },
-        { path: `${CONTENT_ENDPOINT}/${graphKey}/en`, method: "PATCH", contentType: "application/merge-patch+json", body: patchBody },
-        { path: `${CONTENT_ENDPOINT}/${graphKey}`,    method: "PATCH", contentType: "application/merge-patch+json", body: patchBody },
-      ];
-      for (const { path, method, contentType, body } of attempts) {
-        const res = await fetch(path, {
-          method,
-          headers: { "Content-Type": contentType, Authorization: `Bearer ${token}` },
-          body: JSON.stringify(body),
-        });
-        if (res.ok) {
-          console.log(`  [patched] ${page.displayName} → key=${graphKey} route=/ (${method} ${path.includes("/en") ? "locale" : "base"})`);
-          return;
+      const versionsRes = await fetch(`${CONTENT_ENDPOINT}/${graphKey}/versions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (versionsRes.ok) {
+        const versionsData = await versionsRes.json() as { items?: Array<{ version?: string }> };
+        const version = versionsData.items?.[0]?.version;
+        if (version) {
+          const patchRes = await fetch(`${CONTENT_ENDPOINT}/${graphKey}/versions/${version}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/merge-patch+json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ displayName: page.displayName, composition }),
+          });
+          if (patchRes.ok) {
+            // Republish after patch (PATCH on a published version may create a new draft)
+            // v1 API may return empty body on success — handle gracefully.
+            const patchBody = await patchRes.text();
+            let patchedVersion: string | undefined = version;
+            let patchedStatus: string | undefined;
+            if (patchBody.trim()) {
+              const patched = JSON.parse(patchBody) as { version?: string; status?: string };
+              patchedVersion = patched.version ?? version;
+              patchedStatus = patched.status;
+            }
+            if (!patchedStatus || patchedStatus !== "published") {
+              await fetch(`${CONTENT_ENDPOINT}/${graphKey}/versions/${patchedVersion}:publish`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+              });
+            }
+            console.log(`  [patched] ${page.displayName} → key=${graphKey} route=/ (version ${version})`);
+            return;
+          }
+          const patchText = await patchRes.text();
+          console.warn(`  [warn] PATCH /versions/${version}: ${patchRes.status} ${patchText.slice(0, 200)}`);
         }
-        const text = await res.text();
-        console.warn(`  [warn] ${method} ${path}: ${res.status} ${text.slice(0, 120)}`);
       }
-      console.warn(`  [warn] Could not patch homepage — update it manually in the CMS Visual Builder.`);
+      console.warn(`  [warn] Could not patch homepage at key=${graphKey} — update it manually in Visual Builder.`);
     }
   }
 
+  // Build NewContent body for v1 API: all content data goes in initialVersion.
   const body: Record<string, unknown> = {
     key: page.key,
     contentType: "DynamicExperience",
-    locale: "en",
     container: page.container ?? CONTAINER,
-    status: "published",
-    displayName: page.displayName,
-    ...(page.routeSegment ? { routeSegment: page.routeSegment } : {}),
-    composition,
+    initialVersion: {
+      locale: "en",
+      displayName: page.displayName,
+      ...(page.routeSegment ? { routeSegment: page.routeSegment } : {}),
+      composition,
+    },
   };
 
   const res = await fetch(CONTENT_ENDPOINT, {
@@ -818,18 +838,49 @@ async function createPage(page: PageDef): Promise<void> {
 
   const text = await res.text();
   if (!res.ok) {
+    if (res.status === 409) {
+      console.log(`  [skipped] ${page.displayName} — key already exists (409)`);
+      return;
+    }
     if (res.status === 400 && text.includes("is already in use")) {
       console.log(`  [skipped] ${page.displayName} — routeSegment already in use (existing start page)`);
       return;
     }
-    console.error(`  [ERROR] ${page.displayName}: ${res.status} ${text}`);
+    console.error(`  [ERROR] ${page.displayName}: ${res.status} ${text.slice(0, 400)}`);
     throw new Error(`Create page failed: ${res.status}`);
   }
 
-  const result = JSON.parse(text);
-  console.log(
-    `  [created] ${page.displayName} → key=${result.key} route=${result.routeSegment ?? "/"}`
-  );
+  let contentKey: string = page.key;
+  let versionId: string | undefined;
+
+  if (!text.trim()) {
+    // v1 API returns 201 with no body for some content types — look up the version separately.
+    const vRes = await fetch(`${CONTENT_ENDPOINT}/${page.key}/versions?pageSize=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (vRes.ok) {
+      const vData = await vRes.json() as { items?: Array<{ version?: string }> };
+      versionId = vData.items?.[0]?.version;
+    }
+  } else {
+    const result = JSON.parse(text) as Record<string, unknown>;
+    contentKey = result.key as string ?? page.key;
+    versionId = (result.initialVersion as Record<string, unknown> | undefined)?.version as string | undefined;
+  }
+
+  // Publish the newly-created draft version.
+  if (versionId) {
+    const pubRes = await fetch(`${CONTENT_ENDPOINT}/${contentKey}/versions/${versionId}:publish`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!pubRes.ok) {
+      const pubText = await pubRes.text();
+      throw new Error(`Publish "${page.displayName}" failed: ${pubRes.status} ${pubText.slice(0, 300)}`);
+    }
+  }
+
+  console.log(`  [created] ${page.displayName} → key=${contentKey} route=${page.routeSegment ?? "/"}`);
 }
 
 async function deleteExisting(): Promise<void> {
@@ -841,20 +892,16 @@ async function deleteExisting(): Promise<void> {
 
   if (!res.ok) return;
 
-  const data = await res.json();
+  const data = await res.json() as { items?: Array<{ key: string }> };
   for (const item of data.items ?? []) {
-    const displayName = item.locales?.en?.displayName ?? item.key;
-    const delRes = await fetch(
-      `${CONTENT_ENDPOINT}/${item.key}?permanent=true`,
-      {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const delRes = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
+    });
     if (!delRes.ok) {
-      undeletableKeys.set(displayName, item.key);
+      undeletableKeys.set(item.key, item.key);
     }
-    console.log(`  [deleted] ${displayName} (${delRes.status})`);
+    console.log(`  [deleted] ${item.key} (${delRes.status})`);
   }
 }
 
@@ -878,7 +925,11 @@ async function findSavingsKey(): Promise<string | null> {
 async function main() {
   console.log("=== Mosey Bank Content Seeding Script ===\n");
 
-  console.log("--- Cleaning existing content ---");
+  console.log("--- Discovering root container ---");
+  CONTAINER = await discoverRootContainer();
+  console.log(`  container: ${CONTAINER}`);
+
+  console.log("\n--- Cleaning existing content ---");
   await deleteExisting();
 
   // Wait for CMS to free up routeSegments from deleted pages before re-creating

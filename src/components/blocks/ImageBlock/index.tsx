@@ -9,6 +9,17 @@ export const ImageBlockType = contentType({
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
     image: { type: "contentReference", displayName: "Image", allowedTypes: ["_image"], indexingType: "disabled" },
+    rendition: {
+      type: "string",
+      displayName: "Image Rendition",
+      enum: [
+        { value: "original",    displayName: "Original" },
+        { value: "thumbnail",   displayName: "Thumbnail" },
+        { value: "medium",      displayName: "Medium" },
+        { value: "banner-wide", displayName: "Banner (wide)" },
+        { value: "square",      displayName: "Square" },
+      ],
+    },
     altText: { type: "string", displayName: "Alt Text" },
     caption: { type: "string", displayName: "Caption" },
   },
@@ -38,7 +49,11 @@ export const ImageBlockRoundedTemplate = displayTemplate({
 interface ImageBlockData {
   image?: {
     _metadata?: { url?: { default?: string | null } | null } | null;
+    url?: { default?: string | null } | null;
+    Url?: string | null;
+    Renditions?: Array<{ Name?: string | null; Url?: string | null; Width?: number | null; Height?: number | null }> | null;
   } | null;
+  rendition?: string | null;
   altText?: string | null;
   caption?: string | null;
 }
@@ -53,7 +68,13 @@ export default function ImageBlock(props: ImageBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
-  const imageUrl = data.image?._metadata?.url?.default;
+  const renditions = data.image?.Renditions ?? [];
+  const matched = renditions.find((r) => r.Name === data.rendition);
+  const imageUrl =
+    matched?.Url ??
+    data.image?.Url ??
+    data.image?._metadata?.url?.default ??
+    data.image?.url?.default;
 
   if (!imageUrl) return null;
 
@@ -70,8 +91,8 @@ export default function ImageBlock(props: ImageBlockProps) {
           src={imageUrl}
           alt={data.altText ?? ""}
           fill={aspectRatio !== "auto"}
-          width={aspectRatio === "auto" ? 1200 : undefined}
-          height={aspectRatio === "auto" ? 675 : undefined}
+          width={aspectRatio === "auto" ? (matched?.Width ?? 1200) : undefined}
+          height={aspectRatio === "auto" ? (matched?.Height ?? 675) : undefined}
           className={`${aspectRatio !== "auto" ? "object-cover" : "w-full h-auto"} ${isRounded ? "rounded-2xl" : ""}`}
         />
       </div>

@@ -1,12 +1,13 @@
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
+import { discoverRootContainer, wrapProps } from "./_shared";
 
 config({ path: ".env.local" });
 
 const API_BASE = "https://api.cms.optimizely.com";
-const CONTENT_ENDPOINT = `${API_BASE}/preview3/experimental/content`;
-const CONTAINER = "43f936c99b234ea397b261c538ad07c9";
+const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
+let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
@@ -30,29 +31,71 @@ async function findKeyByUrl(url: string): Promise<string | null> {
 async function softDelete(key: string, token: string): Promise<void> {
   const res = await fetch(`${CONTENT_ENDPOINT}/${key}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
   });
   console.log(`  [delete] ${key} → ${res.status}`);
 }
 
 async function createItem(body: Record<string, unknown>, token: string, label: string): Promise<string | null> {
+  const { key, contentType, container, locale, displayName, routeSegment, status: _status, properties, composition } = body;
+
+  const initialVersion: Record<string, unknown> = {};
+  if (locale !== undefined)       initialVersion.locale       = locale;
+  if (displayName !== undefined)  initialVersion.displayName  = displayName;
+  if (routeSegment !== undefined) initialVersion.routeSegment = routeSegment;
+  if (properties !== undefined)   initialVersion.properties   = wrapProps(properties as Record<string, unknown>);
+  if (composition !== undefined)  initialVersion.composition  = composition;
+
+  const reqBody: Record<string, unknown> = { contentType, initialVersion };
+  if (key !== undefined)       reqBody.key       = key;
+  if (container !== undefined) reqBody.container = container;
+
   const res = await fetch(CONTENT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
+    body: JSON.stringify(reqBody),
   });
   const text = await res.text();
   if (!res.ok) {
     console.error(`  [ERROR] ${label}: ${res.status} ${text.slice(0, 200)}`);
     return null;
   }
-  const result = JSON.parse(text);
-  console.log(`  [created] ${label} → key=${result.key}`);
-  return result.key as string;
+  const inferredKey = reqBody.key as string | undefined;
+  let contentKey: string;
+  let versionId: string | undefined;
+
+  if (!text.trim()) {
+    // v1 API returns 201 with no body — look up the version separately
+    if (!inferredKey) return null;
+    contentKey = inferredKey;
+    const vRes = await fetch(`${CONTENT_ENDPOINT}/${contentKey}/versions?pageSize=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (vRes.ok) {
+      const vData = await vRes.json() as { items?: Array<{ version?: string }> };
+      versionId = vData.items?.[0]?.version;
+    }
+  } else {
+    const result = JSON.parse(text) as Record<string, unknown>;
+    contentKey = result.key as string ?? inferredKey ?? "";
+    versionId = ((result.initialVersion as Record<string, unknown> | undefined)?.version) as string | undefined;
+  }
+
+  if (versionId) {
+    await fetch(`${CONTENT_ENDPOINT}/${contentKey}/versions/${versionId}:publish`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+  console.log(`  [created] ${label} → key=${contentKey}`);
+  return contentKey;
 }
 
 async function main() {
   console.log("=== Nav Strategy Demo Seed ===\n");
+
+  CONTAINER = await discoverRootContainer();
+  console.log(`  container: ${CONTAINER}\n`);
 
   const token = await getManagementToken();
 

@@ -108,16 +108,20 @@ async function CmsPage({
   // published version; for multi-version pages (e.g. homepage) it returns all
   // matching versions so we pick the variation match.
   for (const url of urls) {
-    const items = await client.getContentByPath(url, {
-      ...variationFilter,
-      next: { revalidate: 60, tags: ["page"] },
-    } as any);
-    if (items.length > 0) {
-      const variationMatch = variationFilter
-        ? items.find((item: any) => activeVariations.includes(item._metadata?.variation))
-        : null;
-      page = variationMatch ?? items[0];
-      break;
+    try {
+      const items = await client.getContentByPath(url, {
+        ...variationFilter,
+        next: { revalidate: 60, tags: ["page"] },
+      } as any);
+      if (items.length > 0) {
+        const variationMatch = variationFilter
+          ? items.find((item: any) => activeVariations.includes(item._metadata?.variation))
+          : null;
+        page = variationMatch ?? items[0];
+        break;
+      }
+    } catch {
+      // Graph unavailable for this URL — try next candidate
     }
   }
 
@@ -126,11 +130,16 @@ async function CmsPage({
   // _Page.items has no such restriction — use it to find key+variation by name,
   // then fall back to the highest base version.
   if (!page) {
-    const keyResult = await graphqlFetch<{
-      _Page: { items: Array<{ _metadata: { key: string; version: string | number; variation: string | null } }> };
-    }>(KEY_QUERY, { urls }, { next: { revalidate: 60, tags: ["page"] } });
+    type KeyResult = { _Page: { items: Array<{ _metadata: { key: string; version: string | number; variation: string | null } }> } };
+    let keyItems: KeyResult["_Page"]["items"] = [];
+    try {
+      const keyResult = await graphqlFetch<KeyResult>(KEY_QUERY, { urls }, { next: { revalidate: 60, tags: ["page"] } });
+      keyItems = keyResult.data?._Page?.items ?? [];
+    } catch {
+      // Graph unavailable — fall through to notFound()
+    }
 
-    const candidates = (keyResult.data?._Page?.items ?? [])
+    const candidates = keyItems
       .map((i) => i._metadata)
       .filter((m): m is { key: string; version: string | number; variation: string | null } => !!(m?.key && m?.version));
 
@@ -145,10 +154,14 @@ async function CmsPage({
 
     const meta = variationMatch ?? baseFallback;
     if (meta) {
-      page = await client.getContent(
-        { key: meta.key, version: String(meta.version) },
-        { next: { revalidate: 60, tags: ["page"] } } as any
-      );
+      try {
+        page = await client.getContent(
+          { key: meta.key, version: String(meta.version) },
+          { next: { revalidate: 60, tags: ["page"] } } as any
+        );
+      } catch {
+        // Graph unavailable — fall through to notFound()
+      }
     }
   }
 
@@ -232,10 +245,15 @@ export async function generateMetadata({
   const { cleanSlug } = extractVariations(slug);
   const urls = buildUrlCandidates(cleanSlug);
 
-  const result = await graphqlFetch<any>(GET_PAGE_META_QUERY, { urls }, { next: { revalidate: 300 } });
-  const page = result.data?._Page?.items?.[0];
+  let displayName: string | undefined;
+  try {
+    const result = await graphqlFetch<any>(GET_PAGE_META_QUERY, { urls }, { next: { revalidate: 300 } });
+    displayName = result.data?._Page?.items?.[0]?._metadata?.displayName;
+  } catch {
+    // Graph unavailable — return fallback title
+  }
 
   return {
-    title: page?._metadata?.displayName ?? "Page",
+    title: displayName ?? "Page",
   };
 }
