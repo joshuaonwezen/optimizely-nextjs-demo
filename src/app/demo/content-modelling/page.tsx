@@ -279,6 +279,39 @@ export default function ContentModellingPage() {
               </p>
             </Callout>
           </div>
+
+          <div className="mt-6 max-w-md">
+            <p className="text-xs font-mono text-on-surface-variant mb-2">
+              Custom section with typed children
+            </p>
+            <div className="border-2 border-brand/25 rounded-xl p-4 bg-surface-lowest">
+              <p className="text-xs font-mono text-brand/60 mb-3">
+                Experience - DynamicExperience
+              </p>
+              <div className="border border-on-surface-variant/20 rounded-lg p-3">
+                <p className="text-xs font-mono text-on-surface-variant/60 mb-2">
+                  Section - FaqContainerBlock{" "}
+                  <span className="text-brand/50">[sectionEnabled]</span>
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {["FAQ Item 1", "FAQ Item 2", "FAQ Item 3"].map((item) => (
+                    <div key={item} className="bg-surface-low rounded-md p-2 text-center">
+                      <p className="text-[10px] font-mono text-brand/50 mb-0.5">Element</p>
+                      <p className="text-[11px] text-on-surface-variant">FaqItemBlock</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-on-surface-variant mt-3 max-w-3xl leading-relaxed">
+            <Code>FaqContainerBlock</Code> has <Code>sectionEnabled</Code> and a{" "}
+            <Code>type: &quot;array&quot;</Code> property - so editors add{" "}
+            <Code>FaqItemBlock</Code> children directly on the section in Visual Builder.
+            The SDK&apos;s built-in <Code>BlankSection</Code> works the same way at the
+            layout level but accepts any <Code>elementEnabled</Code> block rather than
+            a typed list.
+          </p>
         </section>
 
         {/* 2. compositionBehaviors */}
@@ -455,6 +488,85 @@ export default function ContentModellingPage() {
             <Pre code={INLINE_SNIPPET} label="inline - array content area (Graph auto-expands)" />
             <Pre code={REFERENCE_SNIPPET} label="referenced - self-fetching pattern" />
           </div>
+
+          <div className="mt-6 grid md:grid-cols-2 gap-5">
+            <div>
+              <p className="text-xs font-mono text-on-surface-variant mb-2">
+                ContentArea - type: &quot;array&quot; (inline composition)
+              </p>
+              <div className="border border-ghost-border rounded-xl p-4 bg-surface-lowest h-full">
+                <div className="border-2 border-brand/25 rounded-lg p-3 mb-3">
+                  <p className="text-xs font-mono text-brand/60 mb-2">Page - Business Banking</p>
+                  <div className="space-y-1.5">
+                    {[
+                      "Q: What are your business rates?",
+                      "Q: How do I open an account?",
+                      "Q: Can I add team members?",
+                    ].map((q) => (
+                      <div
+                        key={q}
+                        className="bg-surface-low rounded-md px-3 py-2 text-[11px] text-on-surface-variant"
+                      >
+                        {q}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] font-mono text-on-surface-variant/50 mt-2">
+                    faqItems[ ] - lives inside this page composition
+                  </p>
+                </div>
+                <p className="text-[11px] text-on-surface-variant leading-relaxed">
+                  Items are created inside this page. Editing one affects only this page.
+                  Delete the page and the items are gone.
+                </p>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-mono text-on-surface-variant mb-2">
+                ContentReference - type: &quot;contentReference&quot; (shared item)
+              </p>
+              <div className="border border-ghost-border rounded-xl p-4 bg-surface-lowest h-full">
+                <div className="flex flex-col gap-2 mb-3">
+                  {[
+                    "Article: Q3 Report",
+                    "Article: Product Launch",
+                    "Article: Year in Review",
+                  ].map((article) => (
+                    <div key={article} className="flex items-center gap-2">
+                      <div className="bg-surface-low rounded-md px-3 py-1.5 text-[11px] text-on-surface-variant flex-1">
+                        {article}
+                      </div>
+                      <svg
+                        className="w-4 h-4 text-brand/40 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M13 7l5 5m0 0l-5 5m5-5H6"
+                        />
+                      </svg>
+                    </div>
+                  ))}
+                  <div className="border-2 border-brand/25 rounded-lg px-3 py-2 text-center mt-1">
+                    <p className="text-[10px] font-mono text-brand/60 mb-0.5">
+                      AuthorBlock - shared CMS item
+                    </p>
+                    <p className="text-xs font-semibold text-on-surface">Jane Smith</p>
+                    <p className="text-[10px] text-on-surface-variant">Senior Writer</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-on-surface-variant leading-relaxed">
+                  The AuthorBlock exists independently. Editing it once updates every article
+                  that references it. Graph returns only its base metadata - full field data
+                  requires a self-fetch inside the component.
+                </p>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* 6. Property types */}
@@ -522,12 +634,24 @@ export default function ContentModellingPage() {
         {/* 7. Fragment co-location */}
         <section id="fragment-colocation">
           <SectionHeading id="fragment-colocation">Fragment Co-location</SectionHeading>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            Every block in <Code>src/components/blocks/</Code> has a co-located{" "}
+            <Code>fragment.ts</Code> file next to it. This is a convention in this
+            demo, not something the SDK enforces.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            The reason fragments exist at all: <Code>contentType()</Code> pushes a
+            schema <em>to</em> the CMS - it tells the CMS what fields this block has.
+            A GraphQL fragment does the opposite - it tells Graph which fields to send
+            back when you query. The SDK handles the push side automatically, but it
+            does not generate the fetch side for you. You have to declare what you
+            want back from Graph yourself.
+          </p>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            Each block defines its own GraphQL fragment in a{" "}
-            <Code>fragment.ts</Code> file next to its component. The component
-            &quot;owns&quot; its data shape - adding a property to the content type and
-            fetching it from Graph both happen in the same directory. There is no
-            central &quot;mega-query&quot; that every developer must update.
+            Co-locating the fragment with the component is just the organisational
+            choice for where that declaration lives. The block owns both its schema
+            and its query shape in one place, so there is no central file every
+            developer has to touch when adding a new block.
           </p>
 
           <div className="grid md:grid-cols-3 gap-5 mb-6">
@@ -565,14 +689,15 @@ export default function ContentModellingPage() {
             <Pre code={FRAGMENT_BARREL}  label="src/lib/graphql/fragments/index.ts" />
           </div>
 
-          <Callout label="Why this scales" className="mt-4 max-w-3xl">
+          <Callout label="How this works in this demo" className="mt-4 max-w-3xl">
             <p>
-              A team of 10 can each add a new block without ever touching a shared
-              query file. Each block&apos;s fragment is co-located with its component -
-              the same developer who writes the component writes the fragment.
-              The SDK auto-generates the full page query by spreading all registered
-              fragments, so the page route never needs to be updated when a new block
-              is added.
+              Each block&apos;s fragment is collected by the barrel file at{" "}
+              <Code>src/lib/graphql/fragments/index.ts</Code>. The page query spreads
+              every fragment in a single Graph request - each block gets exactly the
+              fields it declared. Adding a new block means writing its{" "}
+              <Code>fragment.ts</Code> and adding one export line to the barrel.
+              No other shared file needs to change. A team of 10 can each ship a
+              new block without co-ordinating on a central query.
             </p>
           </Callout>
         </section>
