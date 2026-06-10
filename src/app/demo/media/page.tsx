@@ -404,6 +404,87 @@ export default function MediaDemoPage() {
           <CodeBlock code={GRAPH_SHAPES_SNIPPET} label="Both shapes + defensive resolveImageUrl helper" />
         </section>
 
+        <section id="dam-assets">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            <code className="font-mono text-2xl">damAssets()</code> for responsive srcsets and DAM alt text
+            <SectionAnchor id="dam-assets" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            The SDK ships a <code className="bg-surface-low px-1 rounded font-mono text-xs">damAssets()</code> helper
+            that builds responsive <code className="bg-surface-low px-1 rounded font-mono text-xs">srcset</code> strings,
+            reads alt text stored in the DAM (rather than as a separate CMS property), and provides
+            TypeScript type guards for distinguishing image, video, and raw file references.
+            It also appends the preview token to image URLs automatically when rendering in edit mode,
+            so DAM images load correctly in the Visual Builder editor without extra code.
+          </p>
+
+          <CodeBlock code={DAM_ASSETS_SNIPPET} label="damAssets - getSrcset, getAlt, isDamImageAsset" />
+
+          <div className="mt-8">
+            <p className="text-xs font-semibold text-on-surface mb-4">Live example - getSrcset output rendered as a real image</p>
+            <div className="grid md:grid-cols-2 gap-8 items-start">
+              <div>
+                <div
+                  className="resize-x overflow-hidden rounded-2xl border border-ghost-border"
+                  style={{ width: "700px", minWidth: "100px", maxWidth: "100%" }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={PANDAS_IMAGE_REF.item.Url}
+                    srcSet={pandasSrcset}
+                    sizes="(max-width: 480px) 100px, (max-width: 768px) 500px, 700px"
+                    alt={pandasAlt}
+                    className="w-full h-auto block"
+                  />
+                </div>
+                <p className="text-xs font-mono text-on-surface-variant mt-2 opacity-60 break-all">
+                  srcset: {pandasSrcset}
+                </p>
+              </div>
+              <div className="space-y-3 text-xs text-on-surface-variant leading-relaxed">
+                <p>
+                  <code className="bg-surface-low px-1 rounded font-mono">getSrcset()</code> walks the <code className="bg-surface-low px-1 rounded font-mono">Renditions</code> array and builds the srcset string. Drag the bottom-right handle — DevTools → Network → Img shows which rendition the browser fetches at each width.
+                </p>
+                <p>
+                  In edit mode <code className="bg-surface-low px-1 rounded font-mono">getSrcset()</code> automatically appends the CMS preview token to each rendition URL so DAM images load correctly in Visual Builder without extra code.
+                </p>
+                <p>
+                  <code className="bg-surface-low px-1 rounded font-mono">getAlt()</code> returns <code className="bg-surface-low px-1 rounded font-mono">AltText</code> stored on the DAM asset, falling back to the string you provide — here <strong className="text-on-surface">&ldquo;{pandasAlt}&rdquo;</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 mt-6">
+            <div className="bg-surface-lowest border border-green-200 rounded-2xl p-5">
+              <p className="text-xs font-semibold text-green-700 mb-3">Use damAssets when</p>
+              <ul className="space-y-1.5 text-xs text-on-surface-variant">
+                {[
+                  "You want responsive srcset strings without building them manually",
+                  "Alt text is managed in the DAM rather than as a CMS property",
+                  "You need to distinguish image vs video vs file references at runtime",
+                  "You want preview token handling in edit mode without custom code",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2"><span className="text-green-600 shrink-0">→</span>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+              <p className="text-xs font-semibold text-on-surface mb-3">Use direct URL access when</p>
+              <ul className="space-y-1.5 text-xs text-on-surface-variant">
+                {[
+                  "You only need the URL for a Next.js <Image> (which handles srcset internally)",
+                  "Alt text is a separate string property on the content type",
+                  "The image is always the same type - no type guard needed",
+                  "You want minimal SDK surface area in the component",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2"><span className="text-brand/50 shrink-0">→</span>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
         <section id="dam-renditions">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
             DAM renditions and srcset
@@ -421,7 +502,12 @@ export default function MediaDemoPage() {
             and let the browser download the smallest one that fits the rendered width. Always pair{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">srcSet</code> with a{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">sizes</code> attribute -
-            without it the browser assumes 100vw and downloads the largest file on every viewport.
+            without it the browser assumes 100vw and downloads the largest file on every viewport.{" "}
+            To skip building this string manually, use{" "}
+            <a href="#dam-assets" className="text-brand hover:underline font-medium">
+              <code className="font-mono text-xs">damAssets().getSrcset()</code>
+            </a>{" "}
+            above.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -599,87 +685,6 @@ export default function MediaDemoPage() {
             downloads an appropriately sized image on mobile.
           </p>
           <CodeBlock code={NEXT_IMAGE_PATTERNS_SNIPPET} label="fill vs fixed size vs natural editorial image" />
-        </section>
-
-        <section id="dam-assets">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            <code className="font-mono text-2xl">damAssets()</code> for responsive srcsets and DAM alt text
-            <SectionAnchor id="dam-assets" label="#" />
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            The SDK ships a <code className="bg-surface-low px-1 rounded font-mono text-xs">damAssets()</code> helper
-            that builds responsive <code className="bg-surface-low px-1 rounded font-mono text-xs">srcset</code> strings,
-            reads alt text stored in the DAM (rather than as a separate CMS property), and provides
-            TypeScript type guards for distinguishing image, video, and raw file references.
-            It also appends the preview token to image URLs automatically when rendering in edit mode,
-            so DAM images load correctly in the Visual Builder editor without extra code.
-          </p>
-
-          <CodeBlock code={DAM_ASSETS_SNIPPET} label="damAssets - getSrcset, getAlt, isDamImageAsset" />
-
-          <div className="mt-8">
-            <p className="text-xs font-semibold text-on-surface mb-4">Live example - getSrcset output rendered as a real image</p>
-            <div className="grid md:grid-cols-2 gap-8 items-start">
-              <div>
-                <div
-                  className="resize-x overflow-hidden rounded-2xl border border-ghost-border"
-                  style={{ width: "700px", minWidth: "100px", maxWidth: "100%" }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={PANDAS_IMAGE_REF.item.Url}
-                    srcSet={pandasSrcset}
-                    sizes="(max-width: 480px) 100px, (max-width: 768px) 500px, 700px"
-                    alt={pandasAlt}
-                    className="w-full h-auto block"
-                  />
-                </div>
-                <p className="text-xs font-mono text-on-surface-variant mt-2 opacity-60 break-all">
-                  srcset: {pandasSrcset}
-                </p>
-              </div>
-              <div className="space-y-3 text-xs text-on-surface-variant leading-relaxed">
-                <p>
-                  <code className="bg-surface-low px-1 rounded font-mono">getSrcset()</code> walks the <code className="bg-surface-low px-1 rounded font-mono">Renditions</code> array and builds the srcset string. Drag the bottom-right handle — DevTools → Network → Img shows which rendition the browser fetches at each width.
-                </p>
-                <p>
-                  In edit mode <code className="bg-surface-low px-1 rounded font-mono">getSrcset()</code> automatically appends the CMS preview token to each rendition URL so DAM images load correctly in Visual Builder without extra code.
-                </p>
-                <p>
-                  <code className="bg-surface-low px-1 rounded font-mono">getAlt()</code> returns <code className="bg-surface-low px-1 rounded font-mono">AltText</code> stored on the DAM asset, falling back to the string you provide — here <strong className="text-on-surface">&ldquo;{pandasAlt}&rdquo;</strong>.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4 mt-6">
-            <div className="bg-surface-lowest border border-green-200 rounded-2xl p-5">
-              <p className="text-xs font-semibold text-green-700 mb-3">Use damAssets when</p>
-              <ul className="space-y-1.5 text-xs text-on-surface-variant">
-                {[
-                  "You want responsive srcset strings without building them manually",
-                  "Alt text is managed in the DAM rather than as a CMS property",
-                  "You need to distinguish image vs video vs file references at runtime",
-                  "You want preview token handling in edit mode without custom code",
-                ].map((item) => (
-                  <li key={item} className="flex gap-2"><span className="text-green-600 shrink-0">→</span>{item}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
-              <p className="text-xs font-semibold text-on-surface mb-3">Use direct URL access when</p>
-              <ul className="space-y-1.5 text-xs text-on-surface-variant">
-                {[
-                  "You only need the URL for a Next.js <Image> (which handles srcset internally)",
-                  "Alt text is a separate string property on the content type",
-                  "The image is always the same type - no type guard needed",
-                  "You want minimal SDK surface area in the component",
-                ].map((item) => (
-                  <li key={item} className="flex gap-2"><span className="text-brand/50 shrink-0">→</span>{item}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
         </section>
 
         <KeyPoints points={[
