@@ -1,10 +1,20 @@
+import { getClient } from "@optimizely/cms-sdk";
 import { RichText } from "@optimizely/cms-sdk/react/richText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import FaqContainerBlock from "@/components/blocks/FaqContainerBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 
-export default function TraditionalPage({ content }: { content: any }) {
+export default async function TraditionalPage({ content }: { content: any }) {
   const { pa } = getPreviewUtils(content);
+
+  // Graph returns only base metadata for single type:"content" references.
+  // When featuredBlock comes back as _Content (no inline expansion), fetch
+  // the full item by key so OptimizelyComponent can dispatch it correctly.
+  let featuredBlock = content.featuredBlock ?? null;
+  if (featuredBlock?.__typename === "_Content" && featuredBlock?._metadata?.key) {
+    featuredBlock = await getClient()
+      .getContent({ key: featuredBlock._metadata.key }, { next: { revalidate: 60 } } as any)
+      .catch(() => null);
+  }
 
   return (
     <div data-component="TraditionalPage" className="max-w-4xl mx-auto px-8 py-24">
@@ -41,20 +51,14 @@ export default function TraditionalPage({ content }: { content: any }) {
         )}
       </div>
 
-      {content.featuredBlock && content.featuredBlock.__typename !== "_Content" && (
+      {featuredBlock && featuredBlock.__typename !== "_Content" && (
         <div
           className="mt-16 border-t border-outline-variant pt-12"
           {...pa("featuredBlock")}
         >
           <BlockErrorBoundary>
-            <OptimizelyComponent content={content.featuredBlock} />
+            <OptimizelyComponent content={featuredBlock} />
           </BlockErrorBoundary>
-        </div>
-      )}
-
-      {content._metadata?.url?.default?.includes("/faqs") && (
-        <div className="mt-16 border-t border-outline-variant pt-12">
-          <FaqContainerBlock content={{}} />
         </div>
       )}
     </div>
