@@ -17,12 +17,13 @@ import SectionHeadingBlock, { SectionHeadingBlockType, SectionHeadingCenteredTem
 import TestimonialBlock, { TestimonialBlockType, TestimonialCardTemplate, TestimonialMinimalTemplate } from "@/components/blocks/TestimonialBlock";
 import StatsCounterBlock, { StatsCounterBlockType, StatsCounterHighlightTemplate } from "@/components/blocks/StatsCounterBlock";
 import ImageBlock, { ImageBlockType, ImageBlockRoundedTemplate } from "@/components/blocks/ImageBlock";
+import RenditionImageBlock, { RenditionImageBlockType } from "@/components/blocks/RenditionImageBlock";
 import FormContainerBlock, { FormContainerBlockType } from "@/components/blocks/FormContainerBlock";
 import FormTextInput, { FormTextInputType } from "@/components/blocks/FormTextInput";
 import FormTextArea, { FormTextAreaType } from "@/components/blocks/FormTextArea";
 import FormSelect, { FormSelectType } from "@/components/blocks/FormSelect";
 import FormSubmitButton, { FormSubmitButtonType } from "@/components/blocks/FormSubmitButton";
-import { NavigationItemType, NavigationType } from "@/components/blocks/NavigationItemBlock";
+import { NavigationItemType, NavigationType, NavigationBlock, NavigationItemPreview } from "@/components/blocks/NavigationItemBlock";
 import FaqItemBlock, { FaqItemBlockType, FaqItemFlatTemplate } from "@/components/blocks/FaqItemBlock";
 import FaqContainerBlock, { FaqContainerBlockType } from "@/components/blocks/FaqContainerBlock";
 import FeaturedContentBlock, { FeaturedContentBlockType } from "@/components/blocks/FeaturedContentBlock";
@@ -81,6 +82,7 @@ export function initComponentRegistry() {
     TestimonialBlockType,
     StatsCounterBlockType,
     ImageBlockType,
+    RenditionImageBlockType,
     FormContainerBlockType,
     FormTextInputType,
     FormTextAreaType,
@@ -188,6 +190,7 @@ export function initComponentRegistry() {
         default: ImageBlock,
         tags: { Rounded: ImageBlock },
       },
+      RenditionImageBlock,
       FormContainerBlock,
       FormTextInput,
       FormTextArea,
@@ -215,6 +218,8 @@ export function initComponentRegistry() {
       TeamGridBlock,
       ComparisonTableBlock,
       CalloutBlock,
+      Navigation: NavigationBlock,
+      NavigationItem: NavigationItemPreview,
       // Fallback: unknown types from the CMS (stale seeds, deleted types) — render nothing
       _Component: () => null,
     },
