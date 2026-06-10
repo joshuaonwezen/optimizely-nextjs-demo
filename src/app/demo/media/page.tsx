@@ -255,29 +255,17 @@ fragment RenditionImageFields on RenditionImageBlock {
   }
 }`;
 
-const RENDITION_SRCSET_SNIPPET = `// Map rendition names to the pixel width they represent.
-// Values must match rendition names in your DAM instance exactly.
-const RENDITION_WIDTHS: Record<string, number> = {
+const RENDITION_SRCSET_SNIPPET = `const RENDITION_WIDTHS: Record<string, number> = {
   thumbnail: 480,
   medium:    1280,
   large:     1920,
 };
 
-// Build the srcset string: each entry is "<url> <width>w"
-// e.g. "https://.../thumb.jpg 480w, https://.../medium.jpg 1280w"
-const renditions = content.image?.Renditions ?? [];
-const srcsetParts: string[] = [];
-for (const rendition of renditions) {
-  const width = RENDITION_WIDTHS[rendition.Name];
-  if (width !== undefined) {
-    srcsetParts.push(\`\${rendition.Url} \${width}w\`);
-  }
-}
-const srcset = srcsetParts.join(", ");
+const srcset = (content.image?.Renditions ?? [])
+  .filter((r) => RENDITION_WIDTHS[r.Name] !== undefined)
+  .map((r) => \`\${r.Url} \${RENDITION_WIDTHS[r.Name]}w\`)
+  .join(", ");
 
-// Always include src as the original URL fallback.
-// Without it, browsers that don't support srcset show nothing, and hi-DPI
-// screens have no candidate larger than your largest rendition.
 <img
   src={content.image?.Url}
   srcSet={srcset}
