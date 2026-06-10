@@ -4,39 +4,162 @@ This is a Next.js 16 + Optimizely SaaS CMS + Feature Experimentation demo projec
 
 ---
 
+## Seeding Content
+
+### How to seed
+
+Always use the seed runner — never call individual seed scripts directly:
+
+```bash
+npm run seed:all   # prompts: "Which instance? (personal / onboarding)"
+```
+
+Or pass the instance directly (Claude should always do this after asking the user):
+
+```bash
+npx tsx scripts/seed-runner.ts --instance=personal
+npx tsx scripts/seed-runner.ts --instance=onboarding
+```
+
+### What the runner does (in order)
+
+| Step | Script | Notes |
+|---|---|---|
+| 1 | `opti:push` | Pushes content type definitions to the CMS |
+| 2 | `seed-content.ts` | Creates all DynamicExperience pages with compositions |
+| 3 | `seed-nav.ts` | Creates navigation tree |
+| 4 | `seed-modeling.ts` | Authors, articles, case studies, milestones, team members |
+| 5 | `seed-faqs.ts` | FAQ items + FaqContainerBlock |
+| 6 | `seed-homepage-variations.ts` | Optional — needs Graph to have indexed the homepage (~60s lag) |
+| 7 | `seed-nav-strategy-demo.ts` | Optional — nav strategy demo pages |
+| 8 | `seed-quotes.ts` | Optional — quote content via Content Source API |
+
+Steps 6-8 are optional: if they fail (usually Graph lag on a fresh seed), the runner warns and continues. Re-run them individually after ~60s if needed.
+
+### Scripts excluded from the runner
+
+- `seed-business-banking-app-variation.ts` — hardcoded version key for personal instance only
+- `seed-fx-experiment.ts` — requires `OPTIMIZELY_FX_API_TOKEN` + `OPTIMIZELY_FX_PROJECT_ID`
+- `register-webhook.mjs` — interactive prompt for public URL; run manually when needed
+
+### Two instances
+
+Credentials for each instance live in `.env.local` with suffixes:
+
+| Instance | Suffix | CMS URL |
+|---|---|---|
+| personal | _(none)_ | `app-ocstjoshuac8je4ft002.cms.optimizely.com` |
+| onboarding | `_ONBOARDING` | `app-opononboard15smbt002.cms.optimizely.com` |
+
+Each instance needs its own `OPTIMIZELY_ROOT_CONTAINER_<SUFFIX>` — a UUID **without hyphens** pointing to the root container for that instance. It must exist before seeding. Two supported container setups:
+
+| Setup | When to use | Notes |
+|---|---|---|
+| BlankExperience / folder | Organizational container only, not a page itself | Traditional approach; container is never visited directly |
+| DynamicExperience as start page | Container IS the site start page at `/` | ONBOARDING uses this; seed patches the container's own composition |
+
+For the DynamicExperience-as-start-page setup, the CMS admin must:
+1. Create a DynamicExperience in the CMS (Settings → Content or Visual Builder)
+2. Set it as the site start page (Settings → Site → Start page)
+3. Copy its key (from the CMS UI URL, without hyphens) into `OPTIMIZELY_ROOT_CONTAINER_ONBOARDING`
+
+The seed script handles both setups automatically: it always tries to patch the container key directly with the homepage composition when Graph hasn't indexed the start page yet.
+
+### Critical gotchas
+
+**Compositions must be PATCHed after creation** — the Management API silently drops the `composition` field on POST. `seed-content.ts` handles this automatically: POST creates the item, then a PATCH to `/content/{key}/versions/{version}` with `application/merge-patch+json` saves the composition. If you write a new seed script that creates DynamicExperience pages, follow the same pattern.
+
+**Homepage variations cannot be created via API** — the Visual Builder UI is required. `seed-homepage-variations.ts` prints manual instructions when it can't create them. Create each variation in the CMS (open Homepage → Add variation), name them exactly matching the FX variation keys (`new_visitor`, `personal`, `business`), then the script can PATCH their compositions.
+
+**Graph indexing lag** — newly created content takes ~30-60s to appear in Graph. Scripts that look up keys via Graph (seed-faqs wiring, seed-homepage-variations, Phase D pages in seed-modeling) will skip/warn on a fresh seed run. Re-run those individual scripts after waiting.
+
+**API keys need content write scope** — CLI credentials (used for `opti:push`) only have config-push scope and will get `403 Required access is 'create'` on content operations. Content seeding requires a dedicated API key created in **Settings → API Keys** with write access granted in **Settings → Set Access Rights**.
+
+**Container key format** — the `OPTIMIZELY_ROOT_CONTAINER` value must be a UUID without hyphens (e.g. `bac6997fb4594e9ebcd93349de583fee`), not the hyphenated form from the CMS UI URL.
+
+**Navigation is a shared application-level block, not a composition node** — `NavigationItem` and `Navigation` blocks live as standalone CMS items under the root container. They are fetched by the Next.js app via a Graph query (by display name `"Seeded Navigation"`), not embedded in any page composition. `DynamicExperienceType.mayContainTypes` must include `NavigationItem` and `Navigation` for this to work when the root container is a DynamicExperience.
+
+**Permanently deleting all children may delete the container itself** — if you `DELETE /content/{key}?permanent=true` every child of a DynamicExperience container, the CMS may cascade-delete the container too. If the container key starts returning 404, create a new DynamicExperience, set it as the start page, and update `OPTIMIZELY_ROOT_CONTAINER` in `.env.local`. Never use `permanent=true` on the container itself.
+
+---
+
+## Management API — Authentication
+
+### Token endpoint
+All Management API calls authenticate with a Bearer JWT obtained from:
+
+```
+POST https://api.cms.optimizely.com/oauth/token
+Content-Type: application/json
+
+{ "grant_type": "client_credentials", "client_id": "...", "client_secret": "..." }
+```
+
+The token is valid for **300 seconds (5 minutes)**. `auth.ts` caches it and re-fetches automatically before expiry.
+
+### API key requirements
+The `api:admin` scope is required for content create/update/delete operations. **CLI credentials** (created via `npx @optimizely/cms-cli login` or used for `opti:push`) only have config-push scope — they can push content types but will get `403 Required access is 'create'` on content operations.
+
+For content seeding you need a dedicated **API key** created in the CMS UI:
+1. **Settings → API Keys** → Create API Key (name: letters, numbers, hyphens, underscores only)
+2. **Settings → Set Access Rights** → grant the new key content read/write access
+3. Use the resulting Client ID + Secret as `OPTIMIZELY_CMS_CLIENT_ID` / `OPTIMIZELY_CMS_CLIENT_SECRET`
+
+### Two credential types in `.env.local`
+| Variable | Purpose | Created via |
+|---|---|---|
+| `OPTIMIZELY_CMS_CLIENT_ID` / `_SECRET` | Content management (seed scripts, Management API) | Settings → API Keys in CMS UI |
+| `OPTIMIZELY_APP_KEY` / `_SECRET` | Graph webhook registration (Basic auth) | Settings → API Keys in CMS UI |
+
+For a second CMS instance, suffix both sets with `_ONBOARDING` (or another label) and the seed runner picks the right pair automatically.
+
+### v1 API endpoint and payload differences
+The current seed scripts use `/preview3/experimental/content`. The stable endpoint is `/v1/content`. The v1 API has a different payload shape — content version fields (`displayName`, `locale`, `composition`) are nested inside an `initialVersion` object, and `status` cannot be set at creation time (requires a separate publish call). Migration to v1 is pending.
+
+---
+
 ## Optimizely Graph — Critical Gotchas
 
 ### Single content references are NOT inline-expanded
 `type: "content"` single reference properties on pages return only base metadata from Graph — regardless of whether the field is set. Graph only inline-expands `type: "array"` content areas.
 
-Do not try to detect whether a reference is set from its returned value — the value looks the same whether set or unset. Use URL-based detection instead:
+The base metadata does include `_metadata.key`. Use `getClient().getContent({ key })` in the **parent** component (the page that received the reference) to resolve the full item before passing it down — do not add self-fetching logic inside the child component:
 
 ```tsx
-// In TraditionalPage.tsx — detect by URL, not by featuredBlock value
-{content._metadata?.url?.default?.includes("/faqs") && (
-  <FaqContainerBlock content={{}} />
-)}
-```
+// src/components/pages/TraditionalPage.tsx
+export default async function TraditionalPage({ content }) {
+  let featuredBlock = content.featuredBlock ?? null;
 
-For components that need their own data, two options:
-
-**Option A — self-fetching pattern** (call `graphqlFetch` inside the component when `!data.heading`). See `src/components/blocks/FaqContainerBlock/index.tsx`.
-
-**Option B — `getContent()` by key** (SDK 2.0.0+): the base metadata returned for a single reference includes `_metadata.key`. Use `getClient().getContent({ key })` to fetch the full item:
-
-```ts
-import { getClient } from "@optimizely/cms-sdk";
-
-export default async function FaqContainerBlock({ content }) {
-  let data = content;
-  if (!data.heading && data._metadata?.key) {
-    data = await getClient().getContent({ key: data._metadata.key });
+  // Graph returned base metadata only (_Content) — resolve to full item
+  if (featuredBlock?.__typename === "_Content" && featuredBlock?._metadata?.key) {
+    featuredBlock = await getClient()
+      .getContent({ key: featuredBlock._metadata.key }, { next: { revalidate: 60 } })
+      .catch(() => null);
   }
-  // render...
+
+  return (
+    // featuredBlock is now the full item — OptimizelyComponent can dispatch it
+    {featuredBlock && featuredBlock.__typename !== "_Content" && (
+      <OptimizelyComponent content={featuredBlock} />
+    )}
+  );
 }
 ```
 
 `getContent()` also accepts a `graph://` string from `_metadata.url.graph`, and an optional `{ previewToken }` option for preview mode.
+
+### `graphqlFetch` vs `getClient().request()` — when to use each
+The SDK exposes `getClient().request(query, variables, previewToken?, cache?)` for raw GraphQL queries. The `cache` parameter is a boolean — it does not support Next.js `next: { revalidate, tags }` fetch options.
+
+`graphqlFetch` in `src/lib/optimizely/client.ts` exists specifically because Next.js ISR requires passing `next: { revalidate, tags }` through the underlying `fetch()` call. The SDK's `request()` method cannot do this.
+
+| Use case | Recommended method |
+|---|---|
+| Fetch a content item by key | `getClient().getContent({ key })` |
+| Fetch a page by URL path | `getClient().getContentByPath(url)` |
+| Custom query needing ISR revalidation tags | `graphqlFetch(query, vars, { next: { revalidate, tags } })` |
+| Custom query, no ISR tags needed | Either works; `getClient().request()` avoids the extra wrapper |
+| Preview/draft content | Either — both accept `previewToken`; `graphqlFetch` sets `cache: "no-store"` automatically when a token is present |
 
 ### Content area arrays ARE inline-expanded
 `type: "array"` content areas (e.g., `faqItems`, `navItems`) return full typed fields from Graph. Use arrays when you need Graph to resolve referenced content.
