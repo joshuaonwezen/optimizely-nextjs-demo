@@ -48,7 +48,11 @@ const OTTERS_IMAGE_REF = {
 };
 
 const { getSrcset: getDamSrcset, getAlt: getDamAlt } = damAssets({});
-const pandasSrcset = getDamSrcset(PANDAS_IMAGE_REF as any);
+const pandasRenditionSrcset = getDamSrcset(PANDAS_IMAGE_REF as any) ?? "";
+const pandasSrcset = [
+  pandasRenditionSrcset,
+  `${PANDAS_IMAGE_REF.item.Url} ${PANDAS_IMAGE_REF.item.Width}w`,
+].filter(Boolean).join(", ");
 const pandasAlt = getDamAlt(PANDAS_IMAGE_REF as any, "Pandas");
 
 // Build Otters srcset from renditions (smallest-to-largest) then append the original as
@@ -214,10 +218,10 @@ import { damAssets } from "@optimizely/cms-sdk";
 export default function HeroBlock({ content }) {
   const { getSrcset, getAlt, isDamImageAsset } = damAssets(content);
 
-  // getSrcset returns a srcset string for the given breakpoints:
-  // "https://...hero.jpg?w=480 480w, https://...hero.jpg?w=800 800w, ..."
-  // In edit mode it appends the preview token automatically.
-  const srcset = getSrcset(content.backgroundImage, [480, 800, 1200, 1600]);
+  // getSrcset builds a srcset string from the asset's pre-generated Renditions:
+  // "https://...hero.jpg/rendition1 100w, https://...hero.jpg/rendition2 500w, ..."
+  // In edit mode it appends the preview token to each rendition URL automatically.
+  const srcset = getSrcset(content.backgroundImage);
 
   // getAlt pulls alt text stored in the DAM, falling back to the provided string:
   const alt = getAlt(content.backgroundImage, "Hero image");
@@ -427,14 +431,14 @@ export default function MediaDemoPage() {
             <div className="grid md:grid-cols-2 gap-8 items-start">
               <div>
                 <div
-                  className="resize-x overflow-hidden rounded-2xl border border-ghost-border"
-                  style={{ width: "700px", minWidth: "100px", maxWidth: "100%" }}
+                  className="resize-x overflow-hidden rounded-2xl border border-ghost-border max-w-[260px] md:max-w-full"
+                  style={{ width: "700px", minWidth: "100px" }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={PANDAS_IMAGE_REF.item.Url}
                     srcSet={pandasSrcset}
-                    sizes="(max-width: 480px) 100px, (max-width: 768px) 500px, 700px"
+                    sizes="(max-width: 768px) 260px, 700px"
                     alt={pandasAlt}
                     className="w-full h-auto block"
                   />
@@ -445,7 +449,7 @@ export default function MediaDemoPage() {
               </div>
               <div className="space-y-3 text-xs text-on-surface-variant leading-relaxed">
                 <p>
-                  <code className="bg-surface-low px-1 rounded font-mono">getSrcset()</code> walks the <code className="bg-surface-low px-1 rounded font-mono">Renditions</code> array and builds the srcset string. Drag the bottom-right handle — DevTools → Network → Img shows which rendition the browser fetches at each width.
+                  <code className="bg-surface-low px-1 rounded font-mono">getSrcset()</code> walks the <code className="bg-surface-low px-1 rounded font-mono">Renditions</code> array in ascending width order. The original URL is appended as the largest candidate so the browser always has a full-resolution fallback. On desktop, drag the bottom-right handle and check DevTools → Network → Img to see which entry is fetched at each width.
                 </p>
                 <p>
                   In edit mode <code className="bg-surface-low px-1 rounded font-mono">getSrcset()</code> automatically appends the CMS preview token to each rendition URL so DAM images load correctly in Visual Builder without extra code.
@@ -694,7 +698,7 @@ export default function MediaDemoPage() {
           <><strong className="text-on-surface">Graph returns two different shapes for image references.</strong> Composition context gives <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata.url.default</code>; direct page queries give <code className="bg-surface-low px-1 rounded font-mono text-xs">url.default</code>. Write a defensive helper that checks both.</>,
           <><strong className="text-on-surface">Allowlist all three Optimizely domains in next.config before using &lt;Image&gt;.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">**.cms.optimizely.com</code> for CMS assets, <code className="bg-surface-low px-1 rounded font-mono text-xs">**.cmp.optimizely.com</code> for DAM assets from CMP, and <code className="bg-surface-low px-1 rounded font-mono text-xs">cg.optimizely.com</code> for Graph CDN. Missing any one causes a 400 at runtime - not caught at build time.</>,
           <><strong className="text-on-surface">Always provide a sizes prop when using fill.</strong> Without it Next.js defaults to 100vw, causing the browser to download a full-width image even on mobile devices.</>,
-          <><strong className="text-on-surface">Always pair srcSet with a sizes attribute.</strong> Without sizes the browser assumes 100vw and downloads the largest srcset candidate on every viewport. Use Option A (<code className="bg-surface-low px-1 rounded font-mono text-xs">getSrcset()</code>) for CDN-resized images from a single URL, Option B for pre-generated DAM rendition files.</>,
+          <><strong className="text-on-surface">Always pair srcSet with a sizes attribute.</strong> Without sizes the browser assumes 100vw and downloads the largest srcset candidate on every viewport. Use <code className="bg-surface-low px-1 rounded font-mono text-xs">damAssets().getSrcset()</code> to build the srcset string from the asset&apos;s pre-generated DAM renditions automatically, or build it manually from the <code className="bg-surface-low px-1 rounded font-mono text-xs">Renditions</code> array when you need custom filtering.</>,
           <><strong className="text-on-surface">Image arrays use type: &quot;array&quot; with items: type: &quot;content&quot;.</strong> Graph inline-expands these automatically - all <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata</code> fields arrive with the page query, no extra fetch needed.</>,
           <><strong className="text-on-surface">damAssets() handles preview token injection automatically.</strong> If you pass a DAM image ref through <code className="bg-surface-low px-1 rounded font-mono text-xs">getSrcset()</code> in edit mode, the helper appends the preview token so the image loads correctly in Visual Builder.</>,
           <><strong className="text-on-surface">The content picker cannot select a DAM rendition - serve it from code.</strong> All rendition data is available in Graph under <code className="bg-surface-low px-1 rounded font-mono text-xs">cmp_PublicImageAsset.Renditions</code>. Default to building a srcset so the browser picks by viewport width. Expose a rendition dropdown to authors only when renditions represent different crops or formats rather than size variants of the same image.</>,
