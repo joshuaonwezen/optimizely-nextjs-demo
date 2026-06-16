@@ -159,7 +159,7 @@ export default function SearchOverlay({ onClose }: Props) {
                     href={r.url}
                     onClick={() => {
                       onClose();
-                      if (r.trackUrl) fetch(r.trackUrl, { method: "GET", mode: "no-cors" }).catch(() => {});
+                      if (r.trackUrl) fetch(r.trackUrl, { method: "GET", mode: "no-cors", keepalive: true }).catch(() => {});
                     }}
                     className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-surface-low transition-colors group"
                   >

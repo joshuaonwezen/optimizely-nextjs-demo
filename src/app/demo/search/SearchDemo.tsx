@@ -82,7 +82,7 @@ export default function SearchDemo() {
                 className="text-brand hover:underline truncate"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (r.trackUrl) fetch(r.trackUrl, { method: "GET", mode: "no-cors" }).catch(() => {});
+                  if (r.trackUrl) fetch(r.trackUrl, { method: "GET", mode: "no-cors", keepalive: true }).catch(() => {});
                   window.location.href = r.url;
                 }}
               >{r.title}</a>
