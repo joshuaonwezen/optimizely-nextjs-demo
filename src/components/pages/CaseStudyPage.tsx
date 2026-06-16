@@ -5,6 +5,7 @@ import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/
 import { getClient } from "@optimizely/cms-sdk";
 
 interface ImageRef {
+  url?: { default?: string | null } | null;
   _metadata?: { url?: { default?: string | null } | null } | null;
 }
 
@@ -84,7 +85,7 @@ async function loadTestimonial(key: string | null | undefined): Promise<Testimon
 export default async function CaseStudyPage({ content }: { content: CaseStudyContent }) {
   const { pa } = getPreviewUtils(content as any);
 
-  const heroUrl = content.heroImage?._metadata?.url?.default;
+  const heroUrl = content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
   const industryLabel = content.industry ? INDUSTRY_LABEL[content.industry] ?? content.industry : null;
 
   const outcomeKeys = (content.outcomes ?? [])

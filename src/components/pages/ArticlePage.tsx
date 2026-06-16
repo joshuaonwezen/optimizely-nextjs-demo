@@ -5,6 +5,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getClient } from "@optimizely/cms-sdk";
 
 interface ImageRef {
+  url?: { default?: string | null } | null;
   _metadata?: { url?: { default?: string | null } | null } | null;
 }
 
@@ -69,7 +70,7 @@ function formatDate(input: string | null | undefined): string | null {
 export default async function ArticlePage({ content }: { content: ArticleContent }) {
   const { pa } = getPreviewUtils(content as any);
 
-  const heroUrl = content.heroImage?._metadata?.url?.default ?? null;
+  const heroUrl = content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
   const authorKey = content.author?.key ?? content.author?._metadata?.key ?? null;
   const author = await loadAuthor(authorKey);
   const formattedDate = formatDate(content.publishDate);
