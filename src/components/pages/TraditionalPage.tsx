@@ -6,7 +6,7 @@ import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 
 export default async function TraditionalPage({ content }: { content: any }) {
   const { pa, src } = getPreviewUtils(content);
-  const heroUrl = src(content.heroImage) ?? content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
+  const heroUrl = src(content.heroImage as any) ?? content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
 
   // Graph returns only base metadata for single type:"content" references.
   // When featuredBlock comes back as _Content (no inline expansion), fetch
