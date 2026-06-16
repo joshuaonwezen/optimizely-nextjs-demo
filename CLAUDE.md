@@ -427,9 +427,13 @@ Three values: `"searchable"` (full-text), `"queryable"` (filter/sort/aggregate),
 |---|---|---|
 | `"searchable"` | Prose text users search (`string`, `richText`) | `heading`, `body`, `bio`, `description` |
 | `"queryable"` | Filter/sort metadata (enum `string`, `dateTime`, `integer`) | `category`, `publishDate`, `navOrder` |
-| `"disabled"` | All `contentReference`/`content` fields | `heroImage`, `author`, `featuredPage` |
+| `"disabled"` | `contentReference`/`content` on `_component` types only | `backgroundImage` on HeroBlock |
 
-When `indexingType` is omitted, the field is excluded from Graph by default — explicit `"disabled"` is only needed when you want to document the intent clearly (convention: add it to image `contentReference` fields; leave non-image content refs without explicit `indexingType`).
+**Critical: do NOT set `indexingType: "disabled"` on `contentReference` fields on `_page` types.**
+
+The SDK's `createQuery` skips any property with `indexingType === "disabled"` when building GraphQL fragments. On a `_component` type this is harmless because component properties are returned inline in composition data. On a `_page` type it means the field is never queried and `content.heroImage` is always `null`.
+
+For `contentReference` fields on `_page` types, **omit `indexingType` entirely** — the SDK will include the field in its generated fragment and Graph will return the image URL.
 
 ### `isLocalized: true` — per-language field values
 
