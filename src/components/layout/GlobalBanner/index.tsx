@@ -19,6 +19,7 @@ export const SiteBannerType = contentType({
 export interface FxBannerData {
   message: string;
   linkText?: string | null;
+  variation: string | null;
 }
 
 export default async function GlobalBanner() {
@@ -30,7 +31,7 @@ export default async function GlobalBanner() {
     const v = fxDecision.variables;
     const message = (v.title as string) || (v.description as string) || "";
     if (message) {
-      fxBanner = { message, linkText: v.linkText as string | null | undefined };
+      fxBanner = { message, linkText: v.linkText as string | null | undefined, variation: fxDecision.variationKey };
     }
   }
 
