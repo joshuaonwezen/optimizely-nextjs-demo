@@ -228,19 +228,22 @@ export async function middleware(request: NextRequest) {
   const ctx = client.createUserContext(userId, { device, persona, ... });
   const decisions = ctx.decideAll([OptimizelyDecideOption.DISABLE_DECISION_EVENT]);
 
-  // Collect active variation keys (sorted for a stable cache key).
-  const activeVariations = Object.values(decisions)
+  // Collect active decisions sorted by variationKey for a stable ISR cache key.
+  const activeDecisions = Object.values(decisions)
     .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
-    .map((d) => d.variationKey)
-    .sort();
+    .sort((a, b) => (a.variationKey as string).localeCompare(b.variationKey as string));
 
-  if (activeVariations.length === 0) return response;
+  if (activeDecisions.length === 0) return response;
 
-  // Rewrite URL: /savings → /savings/__v_variation_1
+  // Rewrite URL: /savings → /savings/__v_homepage_audience--variation_1
+  // Each segment encodes flagKey--variationKey so the page knows which flag fired.
   // The user sees /savings in the browser - the rewrite is transparent.
-  // Next.js catches /savings/__v_variation_1 as a separate ISR cache entry.
+  // Next.js catches each rewritten path as a separate ISR cache entry.
   const url = request.nextUrl.clone();
-  url.pathname += "/" + activeVariations.map((v) => \`__v_\${v}\`).join("/");
+  const variationSuffix = activeDecisions
+    .map((d) => \`__v_\${d.flagKey}--\${d.variationKey}\`)
+    .join("/");
+  url.pathname = url.pathname.replace(/\\/$/, "") + \`/\${variationSuffix}\`;
   return NextResponse.rewrite(url, { headers: response.headers });
 }`;
 
