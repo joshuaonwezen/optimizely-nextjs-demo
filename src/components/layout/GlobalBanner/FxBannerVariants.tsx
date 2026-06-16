@@ -3,49 +3,61 @@ interface BannerProps {
   linkText?: string | null;
 }
 
+// Gradient brand (blue → light-blue) - bold, flagship feel
 export function Banner1({ message, linkText }: BannerProps) {
   return (
     <div data-component="Banner1" className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 bg-gradient-brand text-on-brand">
+      <span className="text-[10px] opacity-50">◆</span>
       <span>{message}</span>
       {linkText && (
         <span className="underline underline-offset-2 font-semibold opacity-80">{linkText}</span>
       )}
+      <span className="text-[10px] opacity-50">◆</span>
     </div>
   );
 }
 
+// Solid primary blue - clean, direct
 export function Banner2({ message, linkText }: BannerProps) {
   return (
-    <div data-component="Banner2" className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 bg-emerald-600 text-white">
-      <span className="text-emerald-200 text-xs">✦</span>
+    <div data-component="Banner2" className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 bg-brand text-on-brand">
       <span>{message}</span>
       {linkText && (
-        <span className="underline underline-offset-2 font-semibold opacity-90">{linkText}</span>
+        <>
+          <span className="opacity-30">·</span>
+          <span className="font-semibold underline underline-offset-2 opacity-90">{linkText}</span>
+        </>
       )}
     </div>
   );
 }
 
+// Insight gradient (blue → purple) - premium, elevated
 export function Banner3({ message, linkText }: BannerProps) {
   return (
-    <div data-component="Banner3" className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 bg-slate-900 text-slate-100">
-      <span className="text-brand text-xs font-bold tracking-wide">NEW</span>
+    <div
+      data-component="Banner3"
+      className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 text-on-brand"
+      style={{ background: "var(--gradient-insight)" }}
+    >
       <span>{message}</span>
       {linkText && (
-        <span className="text-brand underline underline-offset-2 font-semibold">{linkText}</span>
+        <span className="underline underline-offset-2 font-semibold opacity-85">
+          {linkText} &rarr;
+        </span>
       )}
     </div>
   );
 }
 
+// Surface-low with brand accent dot - subtle, informational
 export function Banner4({ message, linkText }: BannerProps) {
   return (
-    <div data-component="Banner4" className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 bg-amber-400 text-amber-950">
-      <span className="font-bold text-xs uppercase tracking-wide">Limited time</span>
-      <span className="opacity-40">|</span>
+    <div data-component="Banner4" className="h-9 flex items-center justify-center text-sm font-medium gap-3 px-4 bg-surface-low text-on-surface">
+      <span className="w-1.5 h-1.5 rounded-full bg-brand shrink-0" />
       <span>{message}</span>
       {linkText && (
-        <span className="underline underline-offset-2 font-semibold opacity-80">{linkText}</span>
+        <span className="text-brand font-semibold underline underline-offset-2">{linkText}</span>
       )}
     </div>
   );
