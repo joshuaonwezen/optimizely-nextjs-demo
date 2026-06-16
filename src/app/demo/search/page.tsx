@@ -18,6 +18,14 @@ const searchRouteTs = fs.readFileSync(
   path.join(process.cwd(), "src/app/api/search/route.ts"),
   "utf8"
 );
+const searchDemoTs = fs.readFileSync(
+  path.join(process.cwd(), "src/app/demo/search/SearchDemo.tsx"),
+  "utf8"
+);
+const searchOverlayTs = fs.readFileSync(
+  path.join(process.cwd(), "src/components/layout/SearchOverlay/index.tsx"),
+  "utf8"
+);
 
 export const metadata: Metadata = {
   title: "Search & Filtering",
@@ -116,6 +124,42 @@ const page2 = await graphqlFetch(SEARCH_PAGES_QUERY_WITH_CURSOR, {
   since: ...,
   cursor: cursor,   // ← the cursor from page 1 response
 });`;
+
+const TRACKING_QUERY_SNIPPET = `# Add tracking: { phrase, source } to the _Content arguments.
+# Graph records the search phrase automatically on each query execution.
+# Each result item returns a _track URL containing the session ID,
+# content ID, content type, and zero-based position.
+
+query SearchRelevance($query: String!) {
+  _Content(
+    where: { _fulltext: { match: $query } }
+    orderBy: { _ranking: RELEVANCE }
+    limit: 10
+    tracking: { phrase: $query, source: "/search" }
+  ) {
+    total
+    items {
+      _track                        # tracking URL returned per result
+      _score
+      _metadata {
+        displayName
+        url { default }
+      }
+    }
+  }
+}`;
+
+const TRACKING_CLICK_SNIPPET = `// Graph does not embed auth in _track URLs - append the single key server-side.
+// In your API route:
+const trackUrl = item._track
+  ? \`\${item._track}&auth=\${process.env.OPTIMIZELY_GRAPH_SINGLE_KEY}\`
+  : null;
+
+// On result click, fire a fire-and-forget GET to the tracking URL.
+// Never await it or block navigation on it.
+if (result.trackUrl) {
+  fetch(result.trackUrl, { method: "GET", mode: "no-cors" }).catch(() => {});
+}`;
 
 const CACHE_SNIPPET = `// Search results must NEVER be cached - every query string is unique.
 // Using the default ISR behaviour would create a separate cache entry
@@ -261,6 +305,35 @@ export default function SearchDemoPage() {
           <CodeBlock code={CACHE_SNIPPET} label="Why search bypasses ISR" />
         </section>
 
+        <section id="tracking">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Search hit tracking
+            <SectionAnchor id="tracking" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            Graph can record two kinds of search data. <strong>Phrase tracking</strong> - which queries
+            users run - is automatic: add a{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">tracking</code> argument to
+            the <code className="bg-surface-low px-1 rounded font-mono text-xs">_Content</code> call and
+            every query execution is logged. <strong>Click tracking</strong> - which result the user
+            selected - requires a client-side step: each result item returns a{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">_track</code> URL, and you
+            fire a GET request to that URL when the user clicks. Together they give you the full picture -
+            what was searched and what was chosen.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <p className="text-xs font-medium text-on-surface-variant mb-2">Query with tracking enabled</p>
+              <CodeBlock code={TRACKING_QUERY_SNIPPET} label="Add tracking param and _track field" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-on-surface-variant mb-2">Client-side click handler</p>
+              <CodeBlock code={TRACKING_CLICK_SNIPPET} label="Fire _track URL on result click" />
+            </div>
+          </div>
+        </section>
+
         <section id="live">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
             Live demo
@@ -282,6 +355,7 @@ export default function SearchDemoPage() {
           <><strong className="text-on-surface">Cursor pagination is stable;</strong> offset pagination shifts when new content is published. Always use the cursor returned by Graph, not a computed skip value.</>,
           <><strong className="text-on-surface">Search queries must use cache: &quot;no-store&quot;.</strong> Every user query is unique - ISR would fill the data cache with one-time entries. Navigation queries are the opposite - same query for every visitor, perfect for ISR.</>,
           <><strong className="text-on-surface">_score is a float between 0 and 1.</strong> Use it to show relevance indicators in the UI or to filter out low-confidence results below a threshold.</>,
+          <><strong className="text-on-surface">Add <code className="bg-surface-low px-1 rounded font-mono text-xs">tracking</code> to record search phrases.</strong> Each result item returns a <code className="bg-surface-low px-1 rounded font-mono text-xs">_track</code> URL - call it with a GET request when the user clicks a result. Tracking should never block or interrupt navigation.</>,
         ]} />
 
         <SourcePanel
@@ -289,6 +363,8 @@ export default function SearchDemoPage() {
           files={[
             { label: "SearchContent.ts", path: "src/lib/graphql/queries/SearchContent.ts", content: searchQueryTs },
             { label: "search/route.ts", path: "src/app/api/search/route.ts", content: searchRouteTs },
+            { label: "SearchDemo.tsx", path: "src/app/demo/search/SearchDemo.tsx", content: searchDemoTs },
+            { label: "SearchOverlay/index.tsx", path: "src/components/layout/SearchOverlay/index.tsx", content: searchOverlayTs },
           ]}
         />
 

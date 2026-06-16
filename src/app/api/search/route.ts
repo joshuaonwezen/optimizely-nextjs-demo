@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import { SEARCH_RELEVANCE_QUERY, SEARCH_SEMANTIC_QUERY } from "@/lib/graphql/queries/SearchContent";
 
+const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
+
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const q      = searchParams.get("q")?.trim() ?? "";
@@ -24,9 +26,13 @@ export async function GET(request: NextRequest) {
     const items = (raw.items ?? [])
       .filter((item: any) => item?._metadata?.displayName && item?._metadata?.url?.default)
       .map((item: any) => ({
-        title: item._metadata.displayName as string,
-        url:   item._metadata.url.default as string,
-        score: (item._score as number | null | undefined) ?? 0,
+        title:    item._metadata.displayName as string,
+        url:      item._metadata.url.default as string,
+        score:    (item._score as number | null | undefined) ?? 0,
+        trackUrl: (() => {
+          const t = item._track as string | null | undefined;
+          return t && SINGLE_KEY ? `${t}&auth=${SINGLE_KEY}` : (t ?? null);
+        })(),
       }));
 
     return NextResponse.json({ total: raw.total ?? items.length, items });

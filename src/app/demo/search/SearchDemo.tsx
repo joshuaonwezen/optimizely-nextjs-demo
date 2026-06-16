@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback, useRef } from "react";
 
-type SearchResult = { title: string; url: string; score: number };
+type SearchResult = { title: string; url: string; score: number; trackUrl: string | null };
 
 export default function SearchDemo() {
   const [query, setQuery] = useState("");
@@ -77,7 +77,15 @@ export default function SearchDemo() {
         <ul className="space-y-2 divide-y divide-ghost-border">
           {results.map((r) => (
             <li key={r.url} className="flex items-center justify-between gap-4 pt-2 first:pt-0 text-sm">
-              <a href={r.url} className="text-brand hover:underline truncate">{r.title}</a>
+              <a
+                href={r.url}
+                className="text-brand hover:underline truncate"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (r.trackUrl) fetch(r.trackUrl, { method: "GET", mode: "no-cors" }).catch(() => {});
+                  window.location.href = r.url;
+                }}
+              >{r.title}</a>
               <span className="text-xs font-mono text-on-surface-variant shrink-0">
                 {r.score.toFixed(3)}
               </span>

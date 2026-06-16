@@ -4,9 +4,11 @@ export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
       where: { _fulltext: { match: $query } }
       orderBy: { _ranking: RELEVANCE }
       limit: 10
+      tracking: { phrase: $query, source: "/search" }
     ) {
       total
       items {
+        _track
         _score
         _metadata {
           displayName
@@ -23,9 +25,11 @@ export const SEARCH_SEMANTIC_QUERY = /* GraphQL */ `
       where: { _fulltext: { match: $query } }
       orderBy: { _ranking: SEMANTIC, _semanticWeight: $weight }
       limit: 10
+      tracking: { phrase: $query, source: "/search" }
     ) {
       total
       items {
+        _track
         _score
         _metadata {
           displayName

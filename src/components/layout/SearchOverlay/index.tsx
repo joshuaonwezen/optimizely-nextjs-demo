@@ -4,9 +4,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 
 interface SearchResult {
-  title: string;
-  url:   string;
-  score: number;
+  title:    string;
+  url:      string;
+  score:    number;
+  trackUrl: string | null;
 }
 
 type SearchMode = "relevance" | "semantic";
@@ -156,7 +157,10 @@ export default function SearchOverlay({ onClose }: Props) {
                 <li key={i}>
                   <Link
                     href={r.url}
-                    onClick={onClose}
+                    onClick={() => {
+                      onClose();
+                      if (r.trackUrl) fetch(r.trackUrl, { method: "GET", mode: "no-cors" }).catch(() => {});
+                    }}
                     className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-surface-low transition-colors group"
                   >
                     <div>
