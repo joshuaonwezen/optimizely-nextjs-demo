@@ -29,7 +29,7 @@ export const LandingPageType = contentType({
   properties: {
     heading:    { type: "string",   displayName: "Heading" },
     subheading: { type: "string",   displayName: "Subheading" },
-    heroImage:  { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"], indexingType: "disabled" },
+    heroImage:  { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"] },
     body:       { type: "richText", displayName: "Body" },
     // content: references a single reusable block from the shared content library.
     // The SDK auto-generates inline fragments for every registered component type,
@@ -59,7 +59,7 @@ export const ArticlePageType = contentType({
   properties: {
     title:       { type: "string",           displayName: "Title",       indexingType: "searchable" },
     summary:     { type: "string",           displayName: "Summary",     indexingType: "searchable" },
-    heroImage:   { type: "contentReference", displayName: "Hero Image",  allowedTypes: ["_image"], indexingType: "disabled" },
+    heroImage:   { type: "contentReference", displayName: "Hero Image",  allowedTypes: ["_image"] },
     body:        { type: "richText",         displayName: "Body",        indexingType: "searchable" },
     author:      { type: "contentReference", displayName: "Author",      allowedTypes: ["AuthorBlock"] },
     publishDate: { type: "dateTime",         displayName: "Publish Date" },
@@ -86,7 +86,7 @@ export const CaseStudyPageType = contentType({
     clientName:  { type: "string",           displayName: "Client Name",  indexingType: "queryable" },
     industry:    { type: "string",           displayName: "Industry",     indexingType: "queryable", enum: CATEGORY_ENUM },
     summary:     { type: "string",           displayName: "Summary",      indexingType: "searchable" },
-    heroImage:   { type: "contentReference", displayName: "Hero Image",   allowedTypes: ["_image"], indexingType: "disabled" },
+    heroImage:   { type: "contentReference", displayName: "Hero Image",   allowedTypes: ["_image"] },
     challenge:   { type: "richText",         displayName: "Challenge",    indexingType: "searchable" },
     solution:    { type: "richText",         displayName: "Solution",     indexingType: "searchable" },
     outcomes: {
