@@ -29,7 +29,7 @@ export const LandingPageType = contentType({
   properties: {
     heading:    { type: "string",   displayName: "Heading",    indexingType: "searchable", isLocalized: true },
     subheading: { type: "string",   displayName: "Subheading", indexingType: "searchable", isLocalized: true },
-    heroImage:  { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"], indexingType: "disabled" },
+    heroImage:  { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"] },
     body:       { type: "richText", displayName: "Body", indexingType: "searchable", isLocalized: true },
     // content: references a single reusable block from the shared content library.
     // The SDK auto-generates inline fragments for every registered component type,
@@ -59,7 +59,7 @@ export const ArticlePageType = contentType({
   properties: {
     title:       { type: "string",           displayName: "Title",       indexingType: "searchable", isLocalized: true },
     summary:     { type: "string",           displayName: "Summary",     indexingType: "searchable", isLocalized: true },
-    heroImage:   { type: "contentReference", displayName: "Hero Image",  allowedTypes: ["_image"], indexingType: "disabled" },
+    heroImage:   { type: "contentReference", displayName: "Hero Image",  allowedTypes: ["_image"] },
     body:        { type: "richText",         displayName: "Body",        indexingType: "searchable", isLocalized: true },
     author:      { type: "contentReference", displayName: "Author",      allowedTypes: ["AuthorBlock"] },
     publishDate: { type: "dateTime",         displayName: "Publish Date", indexingType: "queryable" },
@@ -86,7 +86,7 @@ export const CaseStudyPageType = contentType({
     clientName:  { type: "string",           displayName: "Client Name",  indexingType: "queryable",  isLocalized: true },
     industry:    { type: "string",           displayName: "Industry",     indexingType: "queryable", enum: CATEGORY_ENUM },
     summary:     { type: "string",           displayName: "Summary",      indexingType: "searchable", isLocalized: true },
-    heroImage:   { type: "contentReference", displayName: "Hero Image",   allowedTypes: ["_image"], indexingType: "disabled" },
+    heroImage:   { type: "contentReference", displayName: "Hero Image",   allowedTypes: ["_image"] },
     challenge:   { type: "richText",         displayName: "Challenge",    indexingType: "searchable", isLocalized: true },
     solution:    { type: "richText",         displayName: "Solution",     indexingType: "searchable", isLocalized: true },
     outcomes: {
