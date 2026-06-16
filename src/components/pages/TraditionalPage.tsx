@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { getClient } from "@optimizely/cms-sdk";
 import { RichText } from "@optimizely/cms-sdk/react/richText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
@@ -5,6 +6,7 @@ import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 
 export default async function TraditionalPage({ content }: { content: any }) {
   const { pa } = getPreviewUtils(content);
+  const heroUrl = content.heroImage?._metadata?.url?.default ?? null;
 
   // Graph returns only base metadata for single type:"content" references.
   // When featuredBlock comes back as _Content (no inline expansion), fetch
@@ -18,6 +20,17 @@ export default async function TraditionalPage({ content }: { content: any }) {
 
   return (
     <div data-component="TraditionalPage" className="max-w-4xl mx-auto px-8 py-24">
+      {heroUrl && (
+        <div {...pa("heroImage")} className="relative w-full aspect-[16/9] mb-12 rounded-2xl overflow-hidden">
+          <Image
+            src={heroUrl}
+            alt={content.heading ?? ""}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 896px"
+          />
+        </div>
+      )}
       <div className="mb-12">
         {content.heading && (
           <h1

@@ -29,6 +29,7 @@ export const LandingPageType = contentType({
   properties: {
     heading:    { type: "string",   displayName: "Heading" },
     subheading: { type: "string",   displayName: "Subheading" },
+    heroImage:  { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"], indexingType: "disabled" },
     body:       { type: "richText", displayName: "Body" },
     // content: references a single reusable block from the shared content library.
     // The SDK auto-generates inline fragments for every registered component type,
