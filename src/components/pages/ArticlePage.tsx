@@ -70,7 +70,7 @@ function formatDate(input: string | null | undefined): string | null {
 export default async function ArticlePage({ content }: { content: ArticleContent }) {
   const { pa, src } = getPreviewUtils(content as any);
 
-  const heroUrl = src(content.heroImage) ?? content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
+  const heroUrl = src(content.heroImage as any) ?? content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
   const authorKey = content.author?.key ?? content.author?._metadata?.key ?? null;
   const author = await loadAuthor(authorKey);
   const formattedDate = formatDate(content.publishDate);
