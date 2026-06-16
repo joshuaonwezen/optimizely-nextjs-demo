@@ -83,9 +83,9 @@ async function loadTestimonial(key: string | null | undefined): Promise<Testimon
 }
 
 export default async function CaseStudyPage({ content }: { content: CaseStudyContent }) {
-  const { pa } = getPreviewUtils(content as any);
+  const { pa, src } = getPreviewUtils(content as any);
 
-  const heroUrl = content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
+  const heroUrl = src(content.heroImage) ?? content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
   const industryLabel = content.industry ? INDUSTRY_LABEL[content.industry] ?? content.industry : null;
 
   const outcomeKeys = (content.outcomes ?? [])
