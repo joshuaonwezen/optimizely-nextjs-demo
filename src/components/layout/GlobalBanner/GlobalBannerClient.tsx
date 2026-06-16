@@ -27,10 +27,10 @@ export function GlobalBannerClient({
   fxBanner: FxBannerData | null;
 }) {
   if (fxBanner) {
-    if (fxBanner.variation === "banner_1") return <Banner1 message={fxBanner.message} linkText={fxBanner.linkText} />;
-    if (fxBanner.variation === "banner_2") return <Banner2 message={fxBanner.message} linkText={fxBanner.linkText} />;
-    if (fxBanner.variation === "banner_3") return <Banner3 message={fxBanner.message} linkText={fxBanner.linkText} />;
-    if (fxBanner.variation === "banner_4") return <Banner4 message={fxBanner.message} linkText={fxBanner.linkText} />;
+    if (fxBanner.variation === "banner1") return <Banner1 message={fxBanner.message} linkText={fxBanner.linkText} />;
+    if (fxBanner.variation === "banner2") return <Banner2 message={fxBanner.message} linkText={fxBanner.linkText} />;
+    if (fxBanner.variation === "banner3") return <Banner3 message={fxBanner.message} linkText={fxBanner.linkText} />;
+    if (fxBanner.variation === "banner4") return <Banner4 message={fxBanner.message} linkText={fxBanner.linkText} />;
   }
 
   if (!cmsBanner?.enabled || !cmsBanner?.message) return null;
