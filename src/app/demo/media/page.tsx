@@ -635,11 +635,24 @@ export default function MediaDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">Cache-Control</code> headers,
             and avoids exposing third-party hostnames in your page HTML.
           </p>
-          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             A minimal Next.js route handler fetches the image server-side and streams it back.
             Always validate the source hostname before fetching - without it the route becomes
             an open proxy that anyone can use to fetch arbitrary URLs through your origin.
           </p>
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 mb-6 max-w-3xl">
+            <p className="text-xs font-semibold text-on-surface mb-2">Alternative - configure the Media hostname in the CMS UI</p>
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              Rather than proxying at request time, you can tell the CMS to index media URLs under your own domain from the start.
+              In the CMS go to <strong className="text-on-surface">Settings &rarr; Applications &rarr; Hostnames</strong>, find the{" "}
+              <strong className="text-on-surface">Media</strong> entry, and overwrite it with your domain. Graph will then store and
+              return asset URLs rooted at your hostname rather than the default Optimizely CDN subdomains - no proxy route or{" "}
+              <code className="bg-surface px-1 rounded font-mono">remotePatterns</code> rewrites needed on the Next.js side.
+              Use this approach when you want the URL change to be reflected in Graph itself, so all clients (not just your frontend) see your domain.
+            </p>
+          </div>
+
           <CodeBlock code={IMAGE_PROXY_SNIPPET} label="src/app/api/image-proxy/route.ts" />
 
           <div className="mt-8">
