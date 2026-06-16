@@ -8,8 +8,8 @@ export const OutcomeItemBlockType = contentType({
   compositionBehaviors: ["elementEnabled"],
   properties: {
     stat:   { type: "string", displayName: "Stat (e.g. 42, 3.5)" },
-    suffix: { type: "string", displayName: "Suffix (e.g. %, x, M)" },
-    label:  { type: "string", displayName: "Label" },
+    suffix: { type: "string", displayName: "Suffix (e.g. %, x, M)", isLocalized: true },
+    label:  { type: "string", displayName: "Label",                  isLocalized: true },
   },
 });
 

@@ -7,7 +7,7 @@ export const CallToActionType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    label: { type: "string", displayName: "Label" },
+    label: { type: "string", displayName: "Label", isLocalized: true },
     link: { type: "string", displayName: "Link" },
   },
 });

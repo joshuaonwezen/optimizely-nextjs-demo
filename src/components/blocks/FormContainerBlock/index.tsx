@@ -7,10 +7,10 @@ export const FormContainerBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    heading: { type: "string", displayName: "Heading" },
-    description: { type: "string", displayName: "Description" },
+    heading: { type: "string", displayName: "Heading",         isLocalized: true },
+    description: { type: "string", displayName: "Description",  isLocalized: true },
     submitUrl: { type: "url", displayName: "Submit URL" },
-    successMessage: { type: "string", displayName: "Success Message" },
+    successMessage: { type: "string", displayName: "Success Message", isLocalized: true },
   },
 });
 

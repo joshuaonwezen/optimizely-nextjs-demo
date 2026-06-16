@@ -11,12 +11,12 @@ export const ComparisonTableBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled"],
   properties: {
-    heading:    { type: "string", displayName: "Heading" },
-    subheading: { type: "string", displayName: "Subheading" },
+    heading:    { type: "string", displayName: "Heading",    indexingType: "searchable", isLocalized: true },
+    subheading: { type: "string", displayName: "Subheading", indexingType: "searchable", isLocalized: true },
     // [{ name: "Plus", highlighted: true }, ...]
-    columns:    { type: "json",   displayName: "Columns (JSON array)" },
+    columns:    { type: "json",   displayName: "Columns (JSON array)", isLocalized: true },
     // [{ label: "Monthly fee", values: ["£0", "£0", "£5"] }, ...]
-    rows:       { type: "json",   displayName: "Rows (JSON array)" },
+    rows:       { type: "json",   displayName: "Rows (JSON array)",    isLocalized: true },
   },
 });
 

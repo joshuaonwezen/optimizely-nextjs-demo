@@ -103,14 +103,14 @@ export default async function FaqContainerBlock(props) {
 }`;
 
 const PROPERTY_STRING = `// string - short text, no formatting
-headline:  { type: "string", displayName: "Headline", indexingType: "searchable" },
-badge:     { type: "string", displayName: "Badge Label" },
-ctaText:   { type: "string", displayName: "Button Label" },`;
+headline:  { type: "string", displayName: "Headline", indexingType: "searchable", isLocalized: true },
+badge:     { type: "string", displayName: "Badge Label",   isLocalized: true },
+ctaText:   { type: "string", displayName: "Button Label",  isLocalized: true },`;
 
 const PROPERTY_RICH = `// richText - long-form, editor gets a formatting toolbar
 // Graph returns { json: {...} } - render with <RichText content={bio.json} />
-bio:         { type: "richText", displayName: "Author Bio" },
-body:        { type: "richText", displayName: "Article Body" },`;
+bio:  { type: "richText", displayName: "Author Bio",    indexingType: "searchable", isLocalized: true },
+body: { type: "richText", displayName: "Article Body",  indexingType: "searchable", isLocalized: true },`;
 
 const PROPERTY_URL = `// url - Graph returns { default: "https://…" }
 // Unwrap with: const href = value?.default ?? value
@@ -154,6 +154,43 @@ const milestones = await Promise.all(
     getClient().getContent({ key }, { next: { revalidate: 300 } })
   )
 );`;
+
+const INDEXING_SNIPPET = `// indexingType controls how Graph indexes a property.
+// Only three values exist — and not all are valid on every type.
+
+// "searchable" — full-text search. Apply to prose a user would type.
+headline:    { type: "string",   displayName: "Headline",     indexingType: "searchable" },
+bio:         { type: "richText", displayName: "Author Bio",   indexingType: "searchable" },
+question:    { type: "string",   displayName: "Question",     indexingType: "searchable" },
+
+// "queryable" — filter / sort in Graph. Apply to metadata, not prose.
+publishDate: { type: "dateTime", displayName: "Publish Date", indexingType: "queryable" },
+category:    { type: "string",   displayName: "Category",     indexingType: "queryable" },
+navOrder:    { type: "integer",  displayName: "Nav Order",    indexingType: "queryable" },
+
+// "disabled" — exclude from the index. Required on image contentReferences.
+// contentReference fields only accept "disabled" — "searchable" / "queryable"
+// are not valid on reference types and will be rejected by the CMS on push.
+heroImage:   { type: "contentReference", allowedTypes: ["_image"], indexingType: "disabled" },
+
+// omitting indexingType entirely — fine for fields you never query
+ctaText:     { type: "string",   displayName: "CTA Text" },`;
+
+const LOCALIZED_SNIPPET = `// isLocalized: true — editor stores a separate value per language.
+// Add to every field a site visitor reads. Omit from structural fields.
+
+// Localize: all user-visible text
+headline:    { type: "string",   displayName: "Headline",  indexingType: "searchable", isLocalized: true },
+body:        { type: "richText", displayName: "Body",      indexingType: "searchable", isLocalized: true },
+columns:     { type: "json",     displayName: "Columns",                               isLocalized: true },
+altText:     { type: "string",   displayName: "Alt Text",                              isLocalized: true },
+
+// Do NOT localize: URLs, booleans, integers, dates, enums, identifiers
+ctaLink:     { type: "url",      displayName: "CTA URL" },     // same URL for all locales
+highlighted: { type: "boolean",  displayName: "Recommended" }, // structural flag
+navOrder:    { type: "integer",  displayName: "Nav Order" },   // sort order
+publishDate: { type: "dateTime", displayName: "Publish Date" }, // same timestamp
+category:    { type: "string",   displayName: "Category",  indexingType: "queryable" }, // enum key`;
 
 
 function SectionHeading({ id, children }: { id: string; children: React.ReactNode }) {
@@ -618,13 +655,14 @@ export default function ContentModellingPage() {
             </table>
           </div>
 
-          <Callout label="Indexing tip" className="mb-4 max-w-3xl">
+          <Callout label="Indexing and localization" className="mb-4 max-w-3xl">
             <p>
-              Add <Code>indexingType: &quot;searchable&quot;</Code> to <Code>string</Code> fields editors
-              should be able to search via Graph (e.g. <Code>heading</Code>,{" "}
-              <Code>quote</Code>). Use <Code>indexingType: &quot;disabled&quot;</Code> for{" "}
-              <Code>contentReference</Code> image fields - Graph can&apos;t index
-              binary content and will throw if you omit it.
+              See the{" "}
+              <a href="#indexing-and-localization" className="text-brand hover:underline">
+                Graph Indexing and Localization
+              </a>{" "}
+              section below for a full guide on <Code>indexingType</Code> values and{" "}
+              <Code>isLocalized</Code>.
             </p>
           </Callout>
 
@@ -697,6 +735,117 @@ export default function ContentModellingPage() {
               <Code>getClient().getContent()</Code> to fetch their referenced content.
               Blocks whose content arrives fully inline-expanded via the page
               composition (most blocks) need no self-fetch at all.
+            </p>
+          </Callout>
+        </section>
+
+        {/* 8. Indexing and localization */}
+        <section id="indexing-and-localization">
+          <SectionHeading id="indexing-and-localization">
+            Graph Indexing and Localization
+          </SectionHeading>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            Two property-level settings control how Graph stores and exposes your
+            content: <Code>indexingType</Code> determines whether a field can be
+            searched or filtered in Graph queries, and <Code>isLocalized</Code>{" "}
+            tells the CMS to store a separate value per language.
+          </p>
+
+          {/* indexingType */}
+          <h3 className="font-display text-lg font-bold text-on-surface mb-2">
+            indexingType
+          </h3>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            Only three values exist. The key constraint: <Code>&quot;searchable&quot;</Code>{" "}
+            and <Code>&quot;queryable&quot;</Code> are valid on primitive fields only
+            (<Code>string</Code>, <Code>richText</Code>, <Code>integer</Code>,{" "}
+            <Code>dateTime</Code>, <Code>boolean</Code>). The CMS rejects them on{" "}
+            <Code>contentReference</Code> fields - those only accept{" "}
+            <Code>&quot;disabled&quot;</Code>.
+          </p>
+
+          <div className="overflow-auto rounded-2xl border border-ghost-border mb-6">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-surface-low border-b border-ghost-border">
+                  <th className="text-left px-4 py-3 font-mono text-on-surface-variant font-semibold">value</th>
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">What it enables</th>
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">Apply to</th>
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">Examples in this repo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  {
+                    value: "searchable",
+                    what: "Full-text search in Graph queries",
+                    apply: "Prose a user would type into a search box",
+                    examples: "headline, title, summary, body, bio, question, answer",
+                  },
+                  {
+                    value: "queryable",
+                    what: "Filter / sort in Graph queries",
+                    apply: "Metadata fields — dates, categories, flags, numbers",
+                    examples: "publishDate, category, navOrder, includeInNavigation",
+                  },
+                  {
+                    value: "disabled",
+                    what: "Exclude from the Graph index entirely",
+                    apply: "Image contentReferences. Required — binary content cannot be indexed.",
+                    examples: "heroImage, backgroundImage, avatar, photo, logos",
+                  },
+                ].map((row, i) => (
+                  <tr key={row.value} className={`border-b border-ghost-border ${i % 2 === 0 ? "bg-surface" : "bg-surface-lowest"}`}>
+                    <td className="px-4 py-3 font-mono text-brand">{row.value}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{row.what}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{row.apply}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{row.examples}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <Pre code={INDEXING_SNIPPET} label="indexingType — all three values with notes" />
+
+          {/* isLocalized */}
+          <h3 className="font-display text-lg font-bold text-on-surface mb-2 mt-10">
+            isLocalized
+          </h3>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            When <Code>isLocalized: true</Code> is set, the CMS stores a separate
+            value for each language - editors can provide a French headline and an
+            English headline for the same block. Without it, all languages share
+            a single value.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <Callout variant="do" label="Localize">
+              <ul className="space-y-1 text-xs">
+                <li>All <Code>string</Code> fields visible to site visitors (headlines, labels, CTA text, alt text)</li>
+                <li>All <Code>richText</Code> fields (bio, body, description)</li>
+                <li><Code>json</Code> fields containing display text (table columns/rows)</li>
+              </ul>
+            </Callout>
+            <Callout variant="warning" label="Do NOT localize">
+              <ul className="space-y-1 text-xs">
+                <li><Code>url</Code> fields - the same URL serves all languages</li>
+                <li><Code>boolean</Code>, <Code>integer</Code>, <Code>dateTime</Code> - structural values</li>
+                <li>Enum discriminators (<Code>category</Code>, <Code>industry</Code>) - the key is shared; the display label is separate</li>
+                <li>Technical identifiers (<Code>fieldName</Code>, <Code>rendition</Code>, <Code>icon</Code>)</li>
+              </ul>
+            </Callout>
+          </div>
+
+          <Pre code={LOCALIZED_SNIPPET} label="isLocalized - what to set and what to leave unset" />
+
+          <Callout label="Gotcha - breaking change" className="mt-4 max-w-3xl">
+            <p>
+              Adding <Code>isLocalized: true</Code> to an existing field is a breaking
+              schema change. The CMS CLI will refuse to push without{" "}
+              <Code>--force</Code>. Existing content keeps its value in the default
+              locale; other locales start empty. Plan accordingly before enabling
+              localization on a field that already has published content.
             </p>
           </Callout>
         </section>

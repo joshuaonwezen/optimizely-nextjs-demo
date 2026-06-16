@@ -10,9 +10,9 @@ export const AuthorBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    name:        { type: "string",           displayName: "Name",        indexingType: "searchable" },
-    role:        { type: "string",           displayName: "Role" },
-    bio:         { type: "richText",         displayName: "Bio" },
+    name:        { type: "string",           displayName: "Name",        indexingType: "searchable", isLocalized: true },
+    role:        { type: "string",           displayName: "Role",        isLocalized: true },
+    bio:         { type: "richText",         displayName: "Bio",         indexingType: "searchable", isLocalized: true },
     avatar:      { type: "contentReference", displayName: "Avatar", allowedTypes: ["_image"], indexingType: "disabled" },
     linkedinUrl: { type: "url",              displayName: "LinkedIn URL" },
   },

@@ -8,9 +8,9 @@ export const FormSelectType = contentType({
   baseType: "_component",
   compositionBehaviors: ["elementEnabled"],
   properties: {
-    label: { type: "string", displayName: "Label" },
+    label: { type: "string", displayName: "Label",                       isLocalized: true },
     fieldName: { type: "string", displayName: "Field Name" },
-    options: { type: "string", displayName: "Options (comma-separated)" },
+    options: { type: "string", displayName: "Options (comma-separated)", isLocalized: true },
     required: { type: "boolean", displayName: "Required" },
   },
 });

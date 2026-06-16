@@ -8,8 +8,8 @@ export const StatsCounterBlockType = contentType({
   compositionBehaviors: ["elementEnabled"],
   properties: {
     value: { type: "string", displayName: "Value" },
-    label: { type: "string", displayName: "Label" },
-    suffix: { type: "string", displayName: "Suffix (e.g. %, +, K)" },
+    label: { type: "string", displayName: "Label", isLocalized: true },
+    suffix: { type: "string", displayName: "Suffix (e.g. %, +, K)", isLocalized: true },
   },
 });
 

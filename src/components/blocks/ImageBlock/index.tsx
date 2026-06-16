@@ -18,8 +18,8 @@ export const ImageBlockType = contentType({
         { value: "700px Crop",   displayName: "Large (700px crop)" },
       ],
     },
-    altText: { type: "string", displayName: "Alt Text" },
-    caption: { type: "string", displayName: "Caption" },
+    altText: { type: "string", displayName: "Alt Text", isLocalized: true },
+    caption: { type: "string", displayName: "Caption", isLocalized: true },
   },
 });
 

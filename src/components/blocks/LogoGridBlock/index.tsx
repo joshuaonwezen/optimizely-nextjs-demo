@@ -8,8 +8,8 @@ export const LogoGridBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled"],
   properties: {
-    heading:    { type: "string", displayName: "Heading" },
-    subheading: { type: "string", displayName: "Subheading" },
+    heading:    { type: "string", displayName: "Heading",    isLocalized: true },
+    subheading: { type: "string", displayName: "Subheading", isLocalized: true },
     logos: {
       type: "array",
       displayName: "Partner Logos",

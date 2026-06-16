@@ -8,8 +8,8 @@ export const HeroBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    headline: { type: "string", displayName: "Headline", indexingType: "searchable" },
-    subheadline: { type: "string", displayName: "Subheadline", indexingType: "searchable" },
+    headline: { type: "string", displayName: "Headline", indexingType: "searchable", isLocalized: true },
+    subheadline: { type: "string", displayName: "Subheadline", indexingType: "searchable", isLocalized: true },
     backgroundImage: { type: "contentReference", displayName: "Background Image", allowedTypes: ["_image"], indexingType: "disabled" },
     rendition: {
       type: "string",
@@ -22,7 +22,7 @@ export const HeroBlockType = contentType({
         { value: "square",      displayName: "Square" },
       ],
     },
-    ctaText: { type: "string", displayName: "CTA Text" },
+    ctaText: { type: "string", displayName: "CTA Text", isLocalized: true },
     ctaLink: { type: "string", displayName: "CTA Link" },
   },
 });

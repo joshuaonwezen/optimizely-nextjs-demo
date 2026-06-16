@@ -416,6 +416,35 @@ OPTIMIZELY_CMS_CLIENT_ID=xxx OPTIMIZELY_CMS_CLIENT_SECRET=yyy npm run opti:push
 - `npx optimizely-cms-cli content delete <Key>` — delete a single content type
 - `npx optimizely-cms-cli danger delete-all-content-types` — ⚠️ destructive, clears all user-defined types
 
+### `indexingType` — Graph indexing rules
+
+Three values: `"searchable"` (full-text), `"queryable"` (filter/sort/aggregate), `"disabled"` (excluded from Graph index).
+
+**Critical constraint**: `"searchable"` and `"queryable"` are only valid on **primitive** fields (`string`, `richText`, `integer`, `dateTime`, `boolean`, array of primitives). `contentReference` and `content` fields **only accept `"disabled"`** — the CMS rejects any other value at push time with:
+> `Setting 'IndexingType.Queryable' is not allowed on property of type 'contentReference'. 'IndexingType' should be applied to primitive properties.`
+
+| Value | Use on | Examples |
+|---|---|---|
+| `"searchable"` | Prose text users search (`string`, `richText`) | `heading`, `body`, `bio`, `description` |
+| `"queryable"` | Filter/sort metadata (enum `string`, `dateTime`, `integer`) | `category`, `publishDate`, `navOrder` |
+| `"disabled"` | All `contentReference`/`content` fields | `heroImage`, `author`, `featuredPage` |
+
+When `indexingType` is omitted, the field is excluded from Graph by default — explicit `"disabled"` is only needed when you want to document the intent clearly (convention: add it to image `contentReference` fields; leave non-image content refs without explicit `indexingType`).
+
+### `isLocalized: true` — per-language field values
+
+Add `isLocalized: true` to any field whose value should differ by language (user-visible text shown to site visitors).
+
+**Localize**: `string` and `richText` prose fields — headings, body copy, labels, alt text, placeholders, button text, option lists.
+
+**Do NOT localize**: URLs (`href`, `src`), booleans, integers, dates, enum discriminators (`variant`, `inputType`, `rendition`, `icon`), technical identifiers (`fieldName`, `key`).
+
+**Breaking change**: Adding `isLocalized: true` to an **existing** field requires `--force`:
+```bash
+OPTIMIZELY_CMS_CLIENT_ID=xxx OPTIMIZELY_CMS_CLIENT_SECRET=yyy npm run opti:push -- --force
+```
+The CMS will warn: `"The changes to 'TypeName' are considered breaking and could potentially result in data loss."` This is expected — proceed with `--force`.
+
 ---
 
 ## Feature Experimentation (FX)

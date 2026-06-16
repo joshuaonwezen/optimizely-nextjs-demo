@@ -9,10 +9,10 @@ export const TeamMemberBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    name:        { type: "string",           displayName: "Name", indexingType: "searchable" },
-    role:        { type: "string",           displayName: "Role" },
+    name:        { type: "string",           displayName: "Name",      indexingType: "searchable", isLocalized: true },
+    role:        { type: "string",           displayName: "Role",      isLocalized: true },
     photo:       { type: "contentReference", displayName: "Photo", allowedTypes: ["_image"], indexingType: "disabled" },
-    bio:         { type: "string",           displayName: "Short bio" },
+    bio:         { type: "string",           displayName: "Short bio", indexingType: "searchable", isLocalized: true },
     linkedinUrl: { type: "url",              displayName: "LinkedIn URL" },
   },
 });

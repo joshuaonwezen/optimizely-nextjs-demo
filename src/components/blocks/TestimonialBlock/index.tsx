@@ -8,9 +8,9 @@ export const TestimonialBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    quote: { type: "string", displayName: "Quote", indexingType: "searchable" },
-    authorName: { type: "string", displayName: "Author Name" },
-    authorRole: { type: "string", displayName: "Author Role" },
+    quote: { type: "string", displayName: "Quote", indexingType: "searchable", isLocalized: true },
+    authorName: { type: "string", displayName: "Author Name", isLocalized: true },
+    authorRole: { type: "string", displayName: "Author Role", isLocalized: true },
     authorImage: { type: "contentReference", displayName: "Author Photo", allowedTypes: ["_image"], indexingType: "disabled" },
   },
 });

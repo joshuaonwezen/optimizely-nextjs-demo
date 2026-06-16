@@ -8,8 +8,8 @@ export const FormTextInputType = contentType({
   baseType: "_component",
   compositionBehaviors: ["elementEnabled"],
   properties: {
-    label: { type: "string", displayName: "Label" },
-    placeholder: { type: "string", displayName: "Placeholder" },
+    label: { type: "string", displayName: "Label",       isLocalized: true },
+    placeholder: { type: "string", displayName: "Placeholder", isLocalized: true },
     fieldName: { type: "string", displayName: "Field Name" },
     inputType: { type: "string", displayName: "Input Type (text, email, tel)" },
     required: { type: "boolean", displayName: "Required" },

@@ -7,8 +7,8 @@ export const FeatureItemBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["elementEnabled"],
   properties: {
-    title: { type: "string", displayName: "Title", indexingType: "searchable" },
-    description: { type: "string", displayName: "Description" },
+    title: { type: "string", displayName: "Title", indexingType: "searchable", isLocalized: true },
+    description: { type: "string", displayName: "Description", indexingType: "searchable", isLocalized: true },
   },
 });
 

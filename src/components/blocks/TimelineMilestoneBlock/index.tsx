@@ -8,8 +8,8 @@ export const TimelineMilestoneBlockType = contentType({
   compositionBehaviors: ["elementEnabled"],
   properties: {
     date:        { type: "string", displayName: "Date (e.g. 1998, Mar 2024)" },
-    title:       { type: "string", displayName: "Title" },
-    description: { type: "string", displayName: "Description" },
+    title:       { type: "string", displayName: "Title",       indexingType: "searchable", isLocalized: true },
+    description: { type: "string", displayName: "Description", indexingType: "searchable", isLocalized: true },
   },
 });
 

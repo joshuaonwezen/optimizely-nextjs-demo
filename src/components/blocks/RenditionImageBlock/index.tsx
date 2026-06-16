@@ -21,7 +21,7 @@ export const RenditionImageBlockType = contentType({
         { value: "landscape-crop", displayName: "Landscape (heroes, banners)" },
       ],
     },
-    altText: { type: "string", displayName: "Alt Text" },
+    altText: { type: "string", displayName: "Alt Text", isLocalized: true },
   },
 });
 

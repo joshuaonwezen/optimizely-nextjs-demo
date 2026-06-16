@@ -8,8 +8,8 @@ export const FormTextAreaType = contentType({
   baseType: "_component",
   compositionBehaviors: ["elementEnabled"],
   properties: {
-    label: { type: "string", displayName: "Label" },
-    placeholder: { type: "string", displayName: "Placeholder" },
+    label: { type: "string", displayName: "Label",       isLocalized: true },
+    placeholder: { type: "string", displayName: "Placeholder", isLocalized: true },
     fieldName: { type: "string", displayName: "Field Name" },
     required: { type: "boolean", displayName: "Required" },
   },

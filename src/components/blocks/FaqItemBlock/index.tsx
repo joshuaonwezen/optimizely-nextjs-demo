@@ -7,8 +7,8 @@ export const FaqItemBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    question: { type: "string", displayName: "Question" },
-    answer:   { type: "string", displayName: "Answer" },
+    question: { type: "string", displayName: "Question", indexingType: "searchable", isLocalized: true },
+    answer:   { type: "string", displayName: "Answer",   indexingType: "searchable", isLocalized: true },
   },
 });
 

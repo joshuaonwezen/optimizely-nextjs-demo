@@ -8,10 +8,10 @@ export const FeaturedContentBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    label:        { type: "string",           displayName: "Label (e.g. Case Study, Featured Article)" },
+    label:        { type: "string",           displayName: "Label (e.g. Case Study, Featured Article)", isLocalized: true },
     featuredPage: { type: "contentReference", displayName: "Featured Page", allowedTypes: ["_page"], indexingType: "disabled" },
-    description:  { type: "string",           displayName: "Override Description" },
-    ctaText:      { type: "string",           displayName: "CTA Button Text" },
+    description:  { type: "string",           displayName: "Override Description", indexingType: "searchable", isLocalized: true },
+    ctaText:      { type: "string",           displayName: "CTA Button Text", isLocalized: true },
   },
 });
 

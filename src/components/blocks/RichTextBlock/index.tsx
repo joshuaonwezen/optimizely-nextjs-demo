@@ -8,7 +8,7 @@ export const TextBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    body: { type: "richText", displayName: "Body" },
+    body: { type: "richText", displayName: "Body", isLocalized: true },
   },
 });
 

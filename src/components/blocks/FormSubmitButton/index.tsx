@@ -9,7 +9,7 @@ export const FormSubmitButtonType = contentType({
   baseType: "_component",
   compositionBehaviors: ["elementEnabled"],
   properties: {
-    label: { type: "string", displayName: "Button Label" },
+    label: { type: "string", displayName: "Button Label", isLocalized: true },
   },
 });
 

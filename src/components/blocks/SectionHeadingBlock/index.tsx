@@ -7,8 +7,8 @@ export const SectionHeadingBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    heading: { type: "string", displayName: "Heading", indexingType: "searchable" },
-    subheading: { type: "string", displayName: "Subheading" },
+    heading: { type: "string", displayName: "Heading", indexingType: "searchable", isLocalized: true },
+    subheading: { type: "string", displayName: "Subheading", indexingType: "searchable", isLocalized: true },
   },
 });
 

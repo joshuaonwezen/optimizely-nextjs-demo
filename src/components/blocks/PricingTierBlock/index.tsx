@@ -8,16 +8,17 @@ export const PricingTierBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    name:        { type: "string",  displayName: "Tier name" },
+    name:        { type: "string",  displayName: "Tier name",                  isLocalized: true },
     price:       { type: "string",  displayName: "Price (e.g. £0, £9)" },
-    period:      { type: "string",  displayName: "Billing period (e.g. /month)" },
+    period:      { type: "string",  displayName: "Billing period (e.g. /month)", isLocalized: true },
     highlighted: { type: "boolean", displayName: "Highlight as recommended" },
     features:    {
       type: "array",
       displayName: "Features",
+      isLocalized: true,
       items: { type: "string" },
     },
-    ctaText:     { type: "string", displayName: "CTA text" },
+    ctaText:     { type: "string", displayName: "CTA text", isLocalized: true },
     ctaLink:     { type: "string", displayName: "CTA link" },
   },
 });

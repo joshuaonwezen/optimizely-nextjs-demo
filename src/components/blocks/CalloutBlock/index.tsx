@@ -17,8 +17,8 @@ export const CalloutBlockType = contentType({
         { value: "do",      displayName: "Do"      },
       ],
     },
-    label: { type: "string", displayName: "Label" },
-    body:  { type: "richText", displayName: "Body" },
+    label: { type: "string",   displayName: "Label", isLocalized: true },
+    body:  { type: "richText", displayName: "Body",  indexingType: "searchable", isLocalized: true },
   },
 });
 

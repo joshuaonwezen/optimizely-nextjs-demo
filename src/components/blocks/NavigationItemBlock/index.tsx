@@ -7,9 +7,9 @@ export const NavigationItemType = contentType({
   displayName: "Navigation Item",
   baseType: "_component",
   properties: {
-    label: { type: "string", displayName: "Label" },
+    label: { type: "string", displayName: "Label", isLocalized: true },
     href: { type: "contentReference", displayName: "URL" },
-    description: { type: "string", displayName: "Description" },
+    description: { type: "string", displayName: "Description", isLocalized: true },
     openInNewTab: { type: "boolean", displayName: "Open in New Tab" },
     // Content area — editors drop child NavigationItems here
     children: {
@@ -26,7 +26,7 @@ export const NavigationType = contentType({
   displayName: "Navigation",
   baseType: "_component",
   properties: {
-    name: { type: "string", displayName: "Name" },
+    name: { type: "string", displayName: "Name", isLocalized: true },
     navItems: {
       type: "array",
       displayName: "Top-level Items",

@@ -8,10 +8,10 @@ export const ProductHeroBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    badge: { type: "string", displayName: "Badge Text" },
-    title: { type: "string", displayName: "Title", indexingType: "searchable" },
-    description: { type: "string", displayName: "Description", indexingType: "searchable" },
-    ctaText: { type: "string", displayName: "CTA Text" },
+    badge: { type: "string", displayName: "Badge Text", isLocalized: true },
+    title: { type: "string", displayName: "Title", indexingType: "searchable", isLocalized: true },
+    description: { type: "string", displayName: "Description", indexingType: "searchable", isLocalized: true },
+    ctaText: { type: "string", displayName: "CTA Text", isLocalized: true },
     ctaUrl: { type: "url", displayName: "CTA URL" },
   },
 });

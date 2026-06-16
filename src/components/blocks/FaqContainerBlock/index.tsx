@@ -9,8 +9,8 @@ export const FaqContainerBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled"],
   properties: {
-    heading:    { type: "string",    displayName: "Heading" },
-    subheading: { type: "string",    displayName: "Subheading" },
+    heading:    { type: "string",    displayName: "Heading",    indexingType: "searchable", isLocalized: true },
+    subheading: { type: "string",    displayName: "Subheading", indexingType: "searchable", isLocalized: true },
     faqItems:   { type: "array", items: { type: "content", allowedTypes: [FaqItemBlockType] }, displayName: "FAQ Items" },
   },
 });

@@ -9,10 +9,10 @@ export const ProductCardBlockType = contentType({
   compositionBehaviors: ["elementEnabled"],
   properties: {
     icon: { type: "string", displayName: "Icon Name" },
-    title: { type: "string", displayName: "Title", indexingType: "searchable" },
-    description: { type: "string", displayName: "Description", indexingType: "searchable" },
+    title: { type: "string", displayName: "Title", indexingType: "searchable", isLocalized: true },
+    description: { type: "string", displayName: "Description", indexingType: "searchable", isLocalized: true },
     linkUrl: { type: "url", displayName: "Link URL" },
-    linkText: { type: "string", displayName: "Link Text" },
+    linkText: { type: "string", displayName: "Link Text", isLocalized: true },
   },
 });
 
