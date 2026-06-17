@@ -2,6 +2,7 @@ import { contentType } from "@optimizely/cms-sdk";
 import { getSiteBanner } from "@/lib/graphql/queries/GetSiteBanner";
 import { getOptimizelyUser } from "@/lib/optimizely/user";
 import { GlobalBannerClient } from "./GlobalBannerClient";
+import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 
 export const SiteBannerType = contentType({
   key: "SiteBanner",
@@ -25,7 +26,7 @@ export interface FxBannerData {
 export default async function GlobalBanner() {
   const [cmsBanner, user] = await Promise.all([getSiteBanner(), getOptimizelyUser()]);
 
-  const fxDecision = user.decide("banner", []); // [] fires the bucketing impression
+  const fxDecision = user.decide("banner");
   let fxBanner: FxBannerData | null = null;
   if (fxDecision.enabled) {
     const v = fxDecision.variables;
@@ -35,5 +36,10 @@ export default async function GlobalBanner() {
     }
   }
 
-  return <GlobalBannerClient cmsBanner={cmsBanner} fxBanner={fxBanner} />;
+  return (
+    <>
+      <GlobalBannerClient cmsBanner={cmsBanner} fxBanner={fxBanner} />
+      {fxBanner && <FxBucketingEvent flagKey="banner" />}
+    </>
+  );
 }

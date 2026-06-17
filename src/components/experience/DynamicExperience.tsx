@@ -12,6 +12,8 @@ function ComponentWrapper({ children, node }: ComponentContainerProps) {
 export default function DynamicExperience({ content }: { content: any }) {
   const nodes: any[] = content?.composition?.nodes ?? [];
   return (
-    <OptimizelyComposition nodes={nodes} ComponentWrapper={ComponentWrapper} />
+    <div data-component="DynamicExperience">
+      <OptimizelyComposition nodes={nodes} ComponentWrapper={ComponentWrapper} />
+    </div>
   );
 }

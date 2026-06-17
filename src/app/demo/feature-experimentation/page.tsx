@@ -473,7 +473,7 @@ export default async function FeatureFlagsDemoPage() {
               <div className="text-2xl mb-2">📊</div>
               <p className="text-xs font-mono font-semibold text-on-surface mb-1">Browser SDK</p>
               <p className="text-xs text-on-surface-variant">
-                <code className="bg-surface-low px-1 rounded">FxBucketingEvent</code> mounts client-side - calls <code className="bg-surface-low px-1 rounded">decideAll([])</code> to record user in experiment results
+                <code className="bg-surface-low px-1 rounded">FxBucketingEvent</code> mounts client-side - calls <code className="bg-surface-low px-1 rounded">decide(flagKey, [])</code> to record user in experiment results
               </p>
             </div>
           </div>

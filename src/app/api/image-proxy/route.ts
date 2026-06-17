@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   return new Response(upstream.body, {
     headers: {
       "Content-Type": upstream.headers.get("Content-Type") ?? "image/jpeg",
-      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cache-Control": "public, max-age=2592000, immutable",
     },
   });
 }
