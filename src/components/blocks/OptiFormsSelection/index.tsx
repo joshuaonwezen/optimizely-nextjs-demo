@@ -29,20 +29,31 @@ interface SelectionItem {
 interface OptiFormsSelectionData {
   Label?: string | null;
   Validators?: string | null;
-  AllowMultipleChoices?: boolean | null;
-  Items?: SelectionItem[] | null;
+  AllowMultiSelect?: boolean | null;
+  Options?: string | null;
 }
 
 type OptiFormsSelectionProps = OptiFormsSelectionData & {
   content?: OptiFormsSelectionData;
 };
 
+function parseOptions(raw?: string | null): SelectionItem[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    // not valid JSON
+  }
+  return [];
+}
+
 export default function OptiFormsSelection(props: OptiFormsSelectionProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
   const name = slugify(data.Label);
   const required = isRequired(data.Validators);
-  const items = data.Items ?? [];
+  const items = parseOptions(data.Options);
 
   return (
     <div data-component="OptiFormsSelection" className="max-w-2xl mx-auto px-8 py-3">
@@ -60,10 +71,10 @@ export default function OptiFormsSelection(props: OptiFormsSelectionProps) {
         id={name}
         name={name}
         required={required}
-        multiple={data.AllowMultipleChoices ?? false}
+        multiple={data.AllowMultiSelect ?? false}
         className={INPUT_CLASS}
       >
-        {!data.AllowMultipleChoices && <option value="">Select...</option>}
+        {!data.AllowMultiSelect && <option value="">Select...</option>}
         {items.map((item, idx) => (
           <option
             key={idx}

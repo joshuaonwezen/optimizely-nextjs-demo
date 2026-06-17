@@ -114,15 +114,11 @@ const OptiFormsSelectionElementType = contentType({
   baseType: "_component",
   compositionBehaviors: ["elementEnabled"],
   properties: {
-    Label:               { type: "string",  displayName: "Label" },
-    Validators:          { type: "string",  displayName: "Validators" },
-    AllowMultipleChoices:{ type: "boolean", displayName: "Allow Multiple" },
-    // Items is an array of selection options; exact GraphQL shape to verify after activation
-    Items: {
-      type: "array",
-      displayName: "Items",
-      items: { type: "string" },
-    },
+    Label:            { type: "string",  displayName: "Label" },
+    Validators:       { type: "string",  displayName: "Validators" },
+    AllowMultiSelect: { type: "boolean", displayName: "Allow Multiple" },
+    // Options is a JSON scalar containing the array of choice items
+    Options:          { type: "string",  displayName: "Options" },
   },
 });
 

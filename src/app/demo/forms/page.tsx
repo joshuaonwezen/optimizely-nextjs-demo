@@ -41,6 +41,21 @@ export default function OptiFormsTextbox(props) {
   );
 }
 
+// src/components/blocks/OptiFormsSelection/index.tsx
+// Options is a JSON scalar from Graph - parse it to get the choice array.
+// AllowMultiSelect (boolean) controls single vs. multi-select.
+export default function OptiFormsSelection(props) {
+  const data = props.content ?? props;
+  const items = data.Options ? JSON.parse(data.Options) : [];
+  return (
+    <select multiple={data.AllowMultiSelect ?? false}>
+      {items.map((item, i) => (
+        <option key={i} value={item.value ?? item.label}>{item.label}</option>
+      ))}
+    </select>
+  );
+}
+
 // src/components/blocks/OptiFormsSubmit/index.tsx — "use client"
 // Same DOM-scoped collection as before: scans closest("main") for all inputs,
 // reads data-form-submit-url, validates required fields, POSTs JSON payload.`;
@@ -87,14 +102,26 @@ const OptiFormsContainerDataType = contentType({
   },
 });
 
-// Repeat for OptiFormsTextboxElement, OptiFormsTextareaElement,
-// OptiFormsSelectionElement, OptiFormsSubmitElement
+// OptiFormsSelectionElement - field names differ from what you might guess:
+//   Options (JSON scalar, not Items[])      AllowMultiSelect (not AllowMultipleChoices)
+// Getting these wrong causes ALL pages to 404 - the SDK includes these fields in its
+// auto-generated composition fragment, and Graph returns a schema error for unknown fields.
+const OptiFormsSelectionElementType = contentType({
+  key: "OptiFormsSelectionElement",
+  baseType: "_component",
+  properties: {
+    Label: { type: "string" },
+    AllowMultiSelect: { type: "boolean" },  // NOT AllowMultipleChoices
+    Options: { type: "string" },            // JSON scalar in Graph, NOT an Items array
+    Validators: { type: "string" },
+  },
+});
 
 initContentTypeRegistry([
   ...otherTypes,
   OptiFormsContainerDataType,
-  OptiFormsTextboxElementType,
-  // ...
+  OptiFormsSelectionElementType,
+  // OptiFormsTextboxElementType, OptiFormsTextareaElementType, OptiFormsSubmitElementType
 ]);
 
 initReactComponentRegistry({ resolver: {
@@ -202,12 +229,12 @@ export default function FormsPage() {
             />
             <OptiFormsSelection
               Label="Topic"
-              Items={[
+              Options={JSON.stringify([
                 { label: "Account help", value: "account" },
                 { label: "Card query", value: "card" },
                 { label: "Mortgage", value: "mortgage" },
                 { label: "Other", value: "other" },
-              ]}
+              ])}
             />
             <OptiFormsTextarea
               Label="Message"
@@ -239,6 +266,7 @@ export default function FormsPage() {
             <ul className="text-xs text-on-surface-variant leading-relaxed space-y-1 list-disc list-inside">
               <li>Native forms only work inside <strong>DynamicExperience</strong> (Visual Builder). Dragging a form onto a ContentArea in a traditional page has no effect.</li>
               <li>Do <strong>not</strong> run <code className="bg-surface px-1 rounded font-mono">opti:push</code> for native form types — they are already in the CMS. The SDK schema hints for fragment generation live in <code className="bg-surface px-1 rounded font-mono">componentRegistry.ts</code>, not in <code className="bg-surface px-1 rounded font-mono">src/components/**/*.tsx</code>.</li>
+              <li><strong>OptiFormsSelectionElement field names are not what you expect.</strong> The Graph schema uses <code className="bg-surface px-1 rounded font-mono">Options</code> (a JSON scalar, not an <code className="bg-surface px-1 rounded font-mono">Items</code> array) and <code className="bg-surface px-1 rounded font-mono">AllowMultiSelect</code> (not <code className="bg-surface px-1 rounded font-mono">AllowMultipleChoices</code>). Registering the wrong field names in <code className="bg-surface px-1 rounded font-mono">componentRegistry.ts</code> breaks the SDK&apos;s auto-generated composition fragment and causes <strong>every page</strong> to return 404 - Graph rejects the unknown fields at schema validation time.</li>
             </ul>
           </div>
         </section>
