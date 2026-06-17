@@ -72,6 +72,118 @@ export default function ArchitecturePage() {
 
       <div className="max-w-6xl mx-auto px-8 py-16 space-y-20">
 
+        <section id="building-blocks">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            The building blocks of a headless site{" "}
+            <a href="#building-blocks" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            A headless CMS site has more moving parts than a traditional coupled CMS because the concerns are separated. Here is every piece you need and what it does.
+          </p>
+          <div className="space-y-2">
+            {[
+              {
+                n: "1",
+                label: "Headless CMS",
+                sub: "Optimizely SaaS CMS in this demo",
+                detail: "Where editors create, manage, and publish content. Stores content as structured data - text, images, references, rich text. Generates no HTML and knows nothing about how content will be displayed. Exposes content via a management API and fires webhooks when content is published.",
+              },
+              {
+                n: "2",
+                label: "Content Delivery API",
+                sub: "Optimizely Graph in this demo",
+                detail: "A read-optimized, globally distributed API that makes CMS content queryable by the frontend. In this demo it is a GraphQL API at cg.optimizely.com with its own CDN cache layer. The frontend queries this - not the CMS management API directly - because the delivery API is built for high-traffic reads, not authoring operations.",
+              },
+              {
+                n: "3",
+                label: "Frontend application",
+                sub: "Next.js in this demo",
+                detail: "The application that fetches content from the delivery API and renders it into HTML for visitors. Entirely your code, hosted wherever you choose. Because it is separate from the CMS, it can be rebuilt, rewritten, or replaced without touching the CMS or migrating content. The same CMS content can simultaneously serve a web app, a mobile app, and a third-party integration.",
+              },
+              {
+                n: "4",
+                label: "Frontend hosting and CDN",
+                sub: "Vercel in this demo",
+                detail: "Where the frontend application runs and where rendered pages are cached. The CDN stores pre-rendered copies of pages at edge nodes close to users and serves them in ~10-50ms without involving the frontend server. Any hosting provider that supports your framework works here - Vercel, Netlify, Cloudflare Pages, AWS, and others all handle this pattern.",
+              },
+              {
+                n: "5",
+                label: "Cache invalidation via webhook",
+                sub: "Optimizely Graph fires a POST to /api/webhooks",
+                detail: "When an editor publishes content, something needs to tell the frontend its cached pages are out of date. This is done via webhook - Optimizely Graph sends a POST request to the frontend's webhook endpoint, which marks the relevant cache entries as stale. The next visitor request triggers a background re-render with fresh content.",
+              },
+              {
+                n: "6",
+                label: "Feature Experimentation (optional)",
+                sub: "Optimizely FX in this demo",
+                detail: "A separate service for A/B testing and feature flags. Delivers a datafile (a JSON config) that the frontend uses to decide which variation of content or UI to show each user. Optional - a headless CMS site does not require it, but when you want to run experiments or roll out features to a subset of users, this is the layer that handles it.",
+              },
+            ].map(({ n, label, sub, detail }) => (
+              <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
+                <div className="shrink-0 w-7 h-7 rounded-full bg-brand flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">{n}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface">{label}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant/60 mb-0.5">{sub}</p>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="what-is-headless">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            What is a headless CMS?{" "}
+            <a href="#what-is-headless" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            A CMS (Content Management System) is where editors write, organise, and publish content. "Headless" describes how it connects to your website.
+          </p>
+          <div className="grid md:grid-cols-2 gap-5">
+            <div className="rounded-2xl border border-ghost-border bg-surface-lowest p-5">
+              <h3 className="font-display font-bold text-sm text-on-surface mb-1">Traditional ("coupled") CMS - e.g. CMS 12 / CMS 13</h3>
+              <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                One system handles both authoring and rendering. Optimizely CMS 12 and CMS 13 are examples of this model.
+              </p>
+              <ul className="space-y-1.5">
+                {[
+                  "Editors write content in the CMS admin.",
+                  "The CMS generates the HTML and sends it to visitors directly.",
+                  "Changing the look of the site means changing CMS themes or templates.",
+                  "Content is locked to one presentation - it can only appear on the site the CMS controls.",
+                ].map((p, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                    <span className="shrink-0 font-bold text-on-surface-variant">-</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-brand/20 bg-brand/5 p-5">
+              <h3 className="font-display font-bold text-sm text-brand mb-1">Headless CMS (this demo)</h3>
+              <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                The CMS stores and manages content. A separate frontend (this Next.js app) fetches that content via API and decides how to display it.
+              </p>
+              <ul className="space-y-1.5">
+                {[
+                  "Editors write content in Optimizely CMS.",
+                  "Content is delivered as structured data via Optimizely Graph (a GraphQL API) - not as HTML.",
+                  "This Next.js app fetches that data, renders it, and sends HTML to visitors.",
+                  "The same content can power a website, a mobile app, and an email newsletter - all from one source.",
+                  "Developers and editors work independently - no code deployment is needed when content changes.",
+                ].map((p, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                    <span className="shrink-0 font-bold text-brand">-</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
         <section id="diagram">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
             Architecture Diagram{" "}
@@ -263,6 +375,123 @@ export default function ArchitecturePage() {
                   </li>
                 ))}
               </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="experimentation-personalization">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            A/B Testing, Experimentation & Personalization{" "}
+            <a href="#experimentation-personalization" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            Three related concepts that all mean the same thing at a high level: different users see different content. They differ in how a user is assigned to a version.
+          </p>
+          <div className="grid md:grid-cols-3 gap-5 mb-5">
+            {[
+              {
+                label: "A/B Testing",
+                color: "border-indigo-200 bg-indigo-50",
+                hcolor: "text-indigo-700",
+                description: "The simplest form. Two versions of a page (A and B) are shown to two random groups of users. You measure which version results in more sign-ups, clicks, or purchases - then keep the winner.",
+                points: [
+                  "Purely random - no targeting logic.",
+                  "Users are split 50/50 (or any ratio you set).",
+                  "The goal is statistical evidence: does version B outperform A?",
+                  "Once you have a winner, you roll it out to everyone.",
+                ],
+              },
+              {
+                label: "Experimentation",
+                color: "border-purple-200 bg-purple-50",
+                hcolor: "text-purple-700",
+                description: "A more powerful form of A/B testing. Instead of just two versions, you can have multiple variations and control exactly who is eligible to see them.",
+                points: [
+                  "Multiple variations, not just A and B.",
+                  "Controlled rollout - show to 10% of users first, then expand.",
+                  "Target by attributes: device type, location, persona, plan tier.",
+                  "Optimizely Feature Experimentation (FX) is this layer in the demo.",
+                ],
+              },
+              {
+                label: "Personalization",
+                color: "border-teal-200 bg-teal-50",
+                hcolor: "text-teal-700",
+                description: "Not random at all. Content is shown to a specific user because of something you already know about them - not because they were randomly drawn into a group.",
+                points: [
+                  "A returning business customer sees business-focused content.",
+                  "A first-time visitor sees an introductory message.",
+                  "Assignment is deterministic: the same user always gets the same content.",
+                  "In this demo: the demo_persona cookie controls which CMS variation is served.",
+                ],
+              },
+            ].map(({ label, color, hcolor, description, points }) => (
+              <div key={label} className={`rounded-2xl border p-5 ${color}`}>
+                <h3 className={`font-display font-bold text-sm mb-2 ${hcolor}`}>{label}</h3>
+                <p className="text-xs text-on-surface-variant leading-relaxed mb-3">{description}</p>
+                <ul className="space-y-1.5">
+                  {points.map((p, i) => (
+                    <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                      <span className={`shrink-0 font-bold ${hcolor}`}>-</span>
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-xl border border-ghost-border bg-surface-lowest p-5">
+            <h3 className="font-display font-semibold text-sm text-on-surface mb-2">Same mechanism, different assignment logic</h3>
+            <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl">
+              In this demo, both experimentation and personalization are served by the exact same technical mechanism: the Edge Middleware encodes a variation name into the URL (e.g.{" "}
+              <span className="font-mono text-[10px]">__v_homepage--variation_1</span>
+              ), the CDN caches each variation URL separately, and Next.js fetches the matching CMS Variation from Graph. The only difference is what drives the variation name. For FX flags it is a random bucket assignment based on the user&apos;s stable ID. For the demo_persona cookie it is the cookie value itself. Both paths produce a variation key that goes into the URL - the rest of the system is identical.
+            </p>
+          </div>
+        </section>
+
+        <section id="why-this-architecture">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Why this architecture?{" "}
+            <a href="#why-this-architecture" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            The design decisions behind how this system is built, and why they were made.
+          </p>
+          <div className="space-y-5">
+            <div className="rounded-xl border border-ghost-border bg-surface-lowest p-5">
+              <h3 className="font-display font-semibold text-sm text-on-surface mb-4">The core problem: caching pages that differ by user</h3>
+              <div className="grid md:grid-cols-2 gap-5">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-red-600 mb-2">The naive approach - and why it fails</p>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">
+                    The obvious way to show different content to different users is to read a cookie on the server and render the appropriate version. The problem: CDNs cache by URL. Two users requesting the same URL get the same cached page regardless of their cookies. To fix this you would need to configure the CDN to vary its cache by cookie - which requires CDN-specific rules, disables most cache optimisations, and often results in every request hitting the server anyway.
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-green-700 mb-2">This architecture's solution</p>
+                  <ul className="space-y-1.5">
+                    {[
+                      "Evaluate which variation a user should see at the edge - before the CDN cache is checked.",
+                      "Encode the result in the URL: /savings/__v_homepage--variation_1",
+                      "The CDN caches by URL, so each variation gets its own independent cache entry.",
+                      "Next.js only renders a page on the FIRST request for each variation URL.",
+                      "All subsequent requests are served from CDN cache in ~10-50ms - no server involved.",
+                    ].map((p, i) => (
+                      <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                        <span className="shrink-0 font-bold text-green-700">-</span>
+                        <span>{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-ghost-border bg-surface-lowest p-5">
+              <h3 className="font-display font-semibold text-sm text-on-surface mb-2">Why Optimizely Graph is a separate layer</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl">
+                The CMS authoring API is designed for editors - it is single-region, write-heavy, and not built to handle thousands of simultaneous visitors. Optimizely Graph is a separate globally-distributed GraphQL delivery layer. It indexes content from the CMS, adds its own CDN cache, supports filtering by variation and locale in a single query, and is purpose-built for read performance at scale. Think of the CMS as your database and Graph as the read replica optimized for your frontend queries. This also means the CMS can go into maintenance mode without affecting visitors - Graph keeps serving content from its own index.
+              </p>
             </div>
           </div>
         </section>
@@ -545,6 +774,71 @@ export default function ArchitecturePage() {
                     </li>
                   ))}
                 </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="glossary">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Key Terms{" "}
+            <a href="#glossary" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            Definitions of the technical terms used throughout this page.
+          </p>
+          <div className="grid md:grid-cols-2 gap-3">
+            {[
+              {
+                term: "CDN",
+                full: "Content Delivery Network",
+                def: "A global network of servers that cache copies of your pages close to users. Instead of every request travelling to one central server, it is served from the nearest node - reducing latency from hundreds of milliseconds to tens.",
+              },
+              {
+                term: "Edge",
+                def: "Servers at CDN edge nodes - physically distributed around the world, close to users. Running code at the edge means it executes at these locations rather than a central server. Latency can drop from ~200ms to under 5ms.",
+              },
+              {
+                term: "ISR",
+                full: "Incremental Static Regeneration",
+                def: "A Next.js feature. Pages are pre-rendered to static HTML and cached. They serve instantly from cache. After a set time (or on demand via webhook), the page is regenerated in the background with fresh data - no redeploy needed.",
+              },
+              {
+                term: "GraphQL",
+                def: "A query language for APIs. Instead of many fixed endpoints (like REST), you send one query describing exactly the data you want and get exactly that back - no over-fetching, no under-fetching. Optimizely Graph exposes its content delivery API via GraphQL.",
+              },
+              {
+                term: "Webhook",
+                def: "When something happens in one system, it automatically sends an HTTP POST request to notify another system. When an editor publishes in Optimizely CMS, Optimizely Graph fires a webhook to tell this Next.js app to invalidate its cache.",
+              },
+              {
+                term: "Feature Flag",
+                def: "A named switch in Optimizely Feature Experimentation that controls which variation of a feature or page a user sees. Flags can be simple on/off toggles or have multiple named variations with different rollout percentages.",
+              },
+              {
+                term: "Variation",
+                def: "One specific version of content. A homepage might have a control (original) and variation_1 (different hero image). Each CMS Variation maps to a separate CDN cache entry via the __v_ URL segment.",
+              },
+              {
+                term: "Bucketing",
+                def: "The process of assigning a user to a variation. Based on a stable user ID (the optimizelyEndUserId cookie) so the same user always sees the same variation. The assignment rules live in the FX datafile.",
+              },
+              {
+                term: "Datafile",
+                def: "A JSON file published by Optimizely FX containing all flag configurations and variation rules. Edge Middleware fetches this file (edge-cached for 60s) and evaluates flags locally - no remote API call needed on every request.",
+              },
+              {
+                term: "RSC",
+                full: "React Server Components",
+                def: "A Next.js and React feature where components render on the server and send HTML to the browser instead of JavaScript that runs client-side. Used for CMS content rendering so the page arrives pre-rendered and cacheable.",
+              },
+            ].map(({ term, full, def }) => (
+              <div key={term} className="rounded-xl border border-ghost-border bg-surface-lowest p-4">
+                <div className="mb-1">
+                  <span className="font-display font-bold text-sm text-on-surface">{term}</span>
+                  {full && <span className="ml-2 text-xs text-on-surface-variant">{full}</span>}
+                </div>
+                <p className="text-xs text-on-surface-variant leading-relaxed">{def}</p>
               </div>
             ))}
           </div>

@@ -507,22 +507,16 @@ const pages: PageDef[] = [
     displayName: "Contact Us",
     routeSegment: "contact",
     container: PAGE_KEYS.help,
+    // Native Optimizely forms (OptiFormsContainerData + element types) must be created
+    // and placed via Visual Builder — the Management API cannot create them.
+    // After seeding: go to Settings > Forms Settings > Activate, create a form in the
+    // CMS form builder (set Submit URL to /api/form-submit), then drag it onto this
+    // page in Visual Builder.
     nodes: [
       sectionComponent("SectionHeadingBlock", "Contact Heading", {
         heading: "Get in touch",
         subheading: "Have a question or need help with your account? Fill out the form and we'll get back to you within one business day.",
       }),
-      sectionComponent("FormContainerBlock", "Contact Form Container", {
-        heading: "Contact Us",
-        description: "We'd love to hear from you. Please fill out the form below.",
-        submitUrl: "/api/form-submit",
-        successMessage: "Thank you for getting in touch! We'll be in touch within one business day.",
-      }),
-      gridSection("Name Field Row", [elementComponent("FormTextInput", "Name Field", { label: "Full Name", placeholder: "Jane Smith", fieldName: "name", inputType: "text", required: true })]),
-      gridSection("Email Field Row", [elementComponent("FormTextInput", "Email Field", { label: "Email Address", placeholder: "jane@example.com", fieldName: "email", inputType: "email", required: true })]),
-      gridSection("Enquiry Type Row", [elementComponent("FormSelect", "Enquiry Type", { label: "What's your enquiry about?", fieldName: "enquiry_type", options: "Current Account,Savings,Mortgage,Business Banking,General Enquiry", required: true })]),
-      gridSection("Message Row", [elementComponent("FormTextArea", "Message Field", { label: "Message", placeholder: "How can we help you today?", fieldName: "message", required: true })]),
-      gridSection("Submit Row", [elementComponent("FormSubmitButton", "Submit Button", { label: "Send Message" })]),
     ],
   },
 

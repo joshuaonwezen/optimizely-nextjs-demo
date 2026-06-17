@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     console.log("[Form Submission]", JSON.stringify(body, null, 2));
 
     return NextResponse.json(
-      { success: true, message: "Form submitted successfully" },
+      { success: true, message: "Form submitted successfully", received: body },
       { status: 200 }
     );
   } catch {

@@ -1,5 +1,6 @@
 import {
   config,
+  contentType,
   initContentTypeRegistry,
   initDisplayTemplateRegistry,
   BlankExperienceContentType,
@@ -18,11 +19,11 @@ import TestimonialBlock, { TestimonialBlockType, TestimonialCardTemplate, Testim
 import StatsCounterBlock, { StatsCounterBlockType, StatsCounterHighlightTemplate } from "@/components/blocks/StatsCounterBlock";
 import ImageBlock, { ImageBlockType, ImageBlockRoundedTemplate } from "@/components/blocks/ImageBlock";
 import RenditionImageBlock, { RenditionImageBlockType } from "@/components/blocks/RenditionImageBlock";
-import FormContainerBlock, { FormContainerBlockType } from "@/components/blocks/FormContainerBlock";
-import FormTextInput, { FormTextInputType } from "@/components/blocks/FormTextInput";
-import FormTextArea, { FormTextAreaType } from "@/components/blocks/FormTextArea";
-import FormSelect, { FormSelectType } from "@/components/blocks/FormSelect";
-import FormSubmitButton, { FormSubmitButtonType } from "@/components/blocks/FormSubmitButton";
+import OptiFormsContainer from "@/components/blocks/OptiFormsContainer";
+import OptiFormsTextbox from "@/components/blocks/OptiFormsTextbox";
+import OptiFormsTextarea from "@/components/blocks/OptiFormsTextarea";
+import OptiFormsSelection from "@/components/blocks/OptiFormsSelection";
+import OptiFormsSubmit from "@/components/blocks/OptiFormsSubmit";
 import { NavigationItemType, NavigationType, NavigationBlock, NavigationItemPreview } from "@/components/blocks/NavigationItemBlock";
 import FaqItemBlock, { FaqItemBlockType, FaqItemFlatTemplate } from "@/components/blocks/FaqItemBlock";
 import FaqContainerBlock, { FaqContainerBlockType } from "@/components/blocks/FaqContainerBlock";
@@ -61,6 +62,81 @@ config({
   graphUrl: process.env.OPTIMIZELY_GRAPH_GATEWAY,
 });
 
+// Native Optimizely Forms type schemas — defined here so opti:push does NOT discover
+// them (the buildConfig glob only covers src/components/**/*.tsx, not src/lib/).
+// These types are already registered in the CMS after forms activation
+// (Settings > Forms Settings > Activate); we just tell the SDK their property
+// shapes so it includes them in auto-generated composition GraphQL fragments.
+const OptiFormsContainerDataType = contentType({
+  key: "OptiFormsContainerData",
+  displayName: "Form Container",
+  baseType: "_component",
+  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
+  properties: {
+    Title:                        { type: "string", displayName: "Title" },
+    Description:                  { type: "string", displayName: "Description" },
+    SubmitUrl:                    { type: "url",    displayName: "Submit URL" },
+    SubmitConfirmationMessage:    { type: "string", displayName: "Submit Confirmation Message" },
+    ResetConfirmationMessage:     { type: "string", displayName: "Reset Confirmation Message" },
+    ShowSummaryMessageAfterSubmission: { type: "boolean", displayName: "Show Summary" },
+  },
+});
+
+const OptiFormsTextboxElementType = contentType({
+  key: "OptiFormsTextboxElement",
+  displayName: "Text Input",
+  baseType: "_component",
+  compositionBehaviors: ["elementEnabled"],
+  properties: {
+    Label:          { type: "string",  displayName: "Label" },
+    Placeholder:    { type: "string",  displayName: "Placeholder" },
+    AutoComplete:   { type: "boolean", displayName: "Autocomplete" },
+    PredefinedValue:{ type: "string",  displayName: "Predefined Value" },
+    Validators:     { type: "string",  displayName: "Validators" },
+  },
+});
+
+const OptiFormsTextareaElementType = contentType({
+  key: "OptiFormsTextareaElement",
+  displayName: "Text Area",
+  baseType: "_component",
+  compositionBehaviors: ["elementEnabled"],
+  properties: {
+    Label:       { type: "string", displayName: "Label" },
+    Placeholder: { type: "string", displayName: "Placeholder" },
+    Validators:  { type: "string", displayName: "Validators" },
+  },
+});
+
+const OptiFormsSelectionElementType = contentType({
+  key: "OptiFormsSelectionElement",
+  displayName: "Selection",
+  baseType: "_component",
+  compositionBehaviors: ["elementEnabled"],
+  properties: {
+    Label:               { type: "string",  displayName: "Label" },
+    Validators:          { type: "string",  displayName: "Validators" },
+    AllowMultipleChoices:{ type: "boolean", displayName: "Allow Multiple" },
+    // Items is an array of selection options; exact GraphQL shape to verify after activation
+    Items: {
+      type: "array",
+      displayName: "Items",
+      items: { type: "string" },
+    },
+  },
+});
+
+const OptiFormsSubmitElementType = contentType({
+  key: "OptiFormsSubmitElement",
+  displayName: "Submit Button",
+  baseType: "_component",
+  compositionBehaviors: ["elementEnabled"],
+  properties: {
+    Label:   { type: "string", displayName: "Label" },
+    Tooltip: { type: "string", displayName: "Tooltip" },
+  },
+});
+
 let initialized = false;
 
 export function initComponentRegistry() {
@@ -83,11 +159,11 @@ export function initComponentRegistry() {
     StatsCounterBlockType,
     ImageBlockType,
     RenditionImageBlockType,
-    FormContainerBlockType,
-    FormTextInputType,
-    FormTextAreaType,
-    FormSelectType,
-    FormSubmitButtonType,
+    OptiFormsContainerDataType,
+    OptiFormsTextboxElementType,
+    OptiFormsTextareaElementType,
+    OptiFormsSelectionElementType,
+    OptiFormsSubmitElementType,
     NavigationItemType,
     NavigationType,
     FaqItemBlockType,
@@ -195,11 +271,11 @@ export function initComponentRegistry() {
         tags: { Rounded: ImageBlock },
       },
       RenditionImageBlock,
-      FormContainerBlock,
-      FormTextInput,
-      FormTextArea,
-      FormSelect,
-      FormSubmitButton,
+      OptiFormsContainerData: OptiFormsContainer,
+      OptiFormsTextboxElement: OptiFormsTextbox,
+      OptiFormsTextareaElement: OptiFormsTextarea,
+      OptiFormsSelectionElement: OptiFormsSelection,
+      OptiFormsSubmitElement: OptiFormsSubmit,
       FaqItemBlock: {
         default: FaqItemBlock,
         tags: { Flat: FaqItemBlock },
