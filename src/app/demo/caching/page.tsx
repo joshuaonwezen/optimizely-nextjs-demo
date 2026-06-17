@@ -258,7 +258,7 @@ export default function CachingDemoPage() {
     <>
       <DemoHero
         title="ISR Caching & Webhooks"
-        description="Optimizely Graph + Next.js ISR gives you static-site performance with CMS-speed updates. Pages are pre-rendered at build time and regenerated in the background whenever content changes - no redeploy required."
+        description="ISR (Incremental Static Regeneration) is Next.js's caching model: pages are pre-built as static HTML and served instantly from a CDN edge, then automatically refreshed in the background when content changes - no redeploy needed. This demo shows how Optimizely Graph integrates with ISR so editors can publish and see changes live in seconds while visitors always get fast, cached responses."
       >
         <div className="flex flex-wrap gap-3 mt-8">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
@@ -300,6 +300,76 @@ export default function CachingDemoPage() {
           </div>
         </section>
 
+        {/* Flow diagram */}
+        <section id="revalidate-flow">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            How Publish → Cache Invalidation Works <a href="#revalidate-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            When an editor publishes, the ISR cache is invalidated automatically - no redeploy, no manual flush.
+            Here&apos;s what actually happens, step by step.{" "}
+            For a full system view including the edge middleware and Graph layers, see the{" "}
+            <a href="/demo/architecture#publish-flow" className="text-brand hover:underline">Architecture - Publish Flow</a>.
+          </p>
+
+          <div className="space-y-2 mb-8">
+            {[
+              {
+                n: "1", color: "bg-red-500", label: "Editor hits Publish in the CMS",
+                detail: "Content is saved and the CMS begins syncing it to Optimizely Graph.",
+              },
+              {
+                n: "2", color: "bg-orange-500", label: "Graph indexes the updated content",
+                detail: "Optimizely Graph processes the change and makes the new content queryable via its GraphQL API.",
+              },
+              {
+                n: "3", color: "bg-orange-500", label: "Graph sends a POST webhook to /api/webhooks",
+                detail: "Just a signal - a small JSON payload saying \"content changed\" (type: bulk.completed or doc.updated). No content is sent in the webhook itself.",
+              },
+              {
+                n: "4", color: "bg-green-600", label: "Next.js marks cached items as stale",
+                detail: "The webhook handler calls revalidatePath(\"/\", \"layout\") and revalidateTag() for navigation, banner, and quotes. Nothing is deleted or re-rendered yet - just flagged as stale.",
+              },
+              {
+                n: "5", color: "bg-purple-600", label: "Next visitor arrives - gets the old cached version instantly",
+                detail: "ISR always serves the existing cached version first, no matter what. The visitor doesn't wait for a re-render. This is what makes ISR fast.",
+              },
+              {
+                n: "6", color: "bg-purple-600", label: "Next.js re-renders in the background",
+                detail: "After serving the stale version, Next.js fetches fresh data from Graph and rebuilds the affected pages and layout components behind the scenes.",
+              },
+              {
+                n: "7", color: "bg-blue-600", label: "Every request after that gets the updated version",
+                detail: "The freshly rendered output is cached. Done - no redeploy needed.",
+              },
+            ].map(({ n, color, label, detail }) => (
+              <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
+                <div className={`shrink-0 w-7 h-7 rounded-full ${color} flex items-center justify-center`}>
+                  <span className="text-white text-xs font-bold">{n}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface mb-0.5">{label}</p>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Callout label="CMS page content is ISR-cached per variation">
+              Edge middleware rewrites each visitor&apos;s URL with their active FX variation key
+              (e.g. <code className="bg-surface-low px-1 rounded font-mono text-xs">/savings/__v_variation_1</code>).
+              Each rewritten URL is its own 60-second ISR cache entry - base users and every variation
+              are cached independently. The publish webhook marks all of them stale at once.
+            </Callout>
+            <Callout label="Stale-while-revalidate in plain English">
+              ISR never makes a visitor wait. When a cache is stale, the <em>first</em> person
+              after a publish sees the old nav/banner for one request. Everyone after sees the
+              updated version. For most content this is imperceptible - nav changes are low frequency.
+            </Callout>
+          </div>
+        </section>
+
         {/* Cache strategy table */}
         <section id="caching-strategy">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
@@ -307,9 +377,14 @@ export default function CachingDemoPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             Every data source in the project has an explicit caching policy.
-            TTLs are tuned to the update frequency of each piece of data - navigation
-            changes rarely so it caches for 5 minutes; banners and content change more
-            often so they cache for 60 seconds. Search is always fresh.
+            TTL (Time To Live) is how long a cached version is kept before Next.js considers
+            it stale and eligible for a background refresh. Cache tags are labels attached to
+            a fetch so that a single{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">revalidateTag(&apos;navigation&apos;)</code>{" "}
+            call can instantly mark all fetches with that label as stale - without waiting for
+            the TTL to expire. Navigation changes rarely so it caches for 5 minutes; banners
+            and content change more often so they cache for 60 seconds. Search is always fresh
+            because user-typed queries must never be stale.
           </p>
           <div className="overflow-x-auto rounded-2xl border border-ghost-border">
             <table className="w-full text-sm">
@@ -398,6 +473,16 @@ export default function CachingDemoPage() {
               property at all - Next.js cannot register it for ISR revalidation.
             </p>
           </div>
+
+          <Callout label="Short version">
+            Use{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch()</code>{" "}
+            whenever you want Next.js to manage the cache lifetime. It is what all the query
+            helpers in this project use.{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">getClient().request()</code>{" "}
+            is for one-off queries where you don&apos;t need ISR - for example, a no-store
+            server action or a preview fetch that must always be fresh.
+          </Callout>
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
@@ -620,7 +705,7 @@ export default function CachingDemoPage() {
               on the entire response - even if{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">export const revalidate = 60</code>{" "}
               is set on the page. The call does not have to be in the page component itself; it kills ISR
-              if it is anywhere in the server render tree - including shared layout components.
+              if it appears anywhere in the chain of server components that render the page - including shared layout components like the site header or footer.
             </p>
           </div>
 
@@ -722,76 +807,6 @@ export default function CachingDemoPage() {
             <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
               <code>{PREFETCH_SNIPPET}</code>
             </pre>
-          </div>
-        </section>
-
-        {/* Flow diagram */}
-        <section id="revalidate-flow">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            How Publish → Cache Invalidation Works <a href="#revalidate-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            When an editor publishes, the ISR cache is invalidated automatically - no redeploy, no manual flush.
-            Here&apos;s what actually happens, step by step.{" "}
-            For a full system view including the edge middleware and Graph layers, see the{" "}
-            <a href="/demo/architecture#publish-flow" className="text-brand hover:underline">Architecture - Publish Flow</a>.
-          </p>
-
-          <div className="space-y-2 mb-8">
-            {[
-              {
-                n: "1", color: "bg-red-500", label: "Editor hits Publish in the CMS",
-                detail: "Content is saved and the CMS begins syncing it to Optimizely Graph.",
-              },
-              {
-                n: "2", color: "bg-orange-500", label: "Graph indexes the updated content",
-                detail: "Optimizely Graph processes the change and makes the new content queryable via its GraphQL API.",
-              },
-              {
-                n: "3", color: "bg-orange-500", label: "Graph sends a POST webhook to /api/webhooks",
-                detail: "Just a signal - a small JSON payload saying \"content changed\" (type: bulk.completed or doc.updated). No content is sent in the webhook itself.",
-              },
-              {
-                n: "4", color: "bg-green-600", label: "Next.js marks cached items as stale",
-                detail: "The webhook handler calls revalidatePath(\"/\", \"layout\") and revalidateTag() for navigation, banner, and quotes. Nothing is deleted or re-rendered yet - just flagged as stale.",
-              },
-              {
-                n: "5", color: "bg-purple-600", label: "Next visitor arrives - gets the old cached version instantly",
-                detail: "ISR always serves the existing cached version first, no matter what. The visitor doesn't wait for a re-render. This is what makes ISR fast.",
-              },
-              {
-                n: "6", color: "bg-purple-600", label: "Next.js re-renders in the background",
-                detail: "After serving the stale version, Next.js fetches fresh data from Graph and rebuilds the affected pages and layout components behind the scenes.",
-              },
-              {
-                n: "7", color: "bg-blue-600", label: "Every request after that gets the updated version",
-                detail: "The freshly rendered output is cached. Done - no redeploy needed.",
-              },
-            ].map(({ n, color, label, detail }) => (
-              <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
-                <div className={`shrink-0 w-7 h-7 rounded-full ${color} flex items-center justify-center`}>
-                  <span className="text-white text-xs font-bold">{n}</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-on-surface mb-0.5">{label}</p>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <Callout label="CMS page content is ISR-cached per variation">
-              Edge middleware rewrites each visitor&apos;s URL with their active FX variation key
-              (e.g. <code className="bg-surface-low px-1 rounded font-mono text-xs">/savings/__v_variation_1</code>).
-              Each rewritten URL is its own 60-second ISR cache entry - base users and every variation
-              are cached independently. The publish webhook marks all of them stale at once.
-            </Callout>
-            <Callout label="Stale-while-revalidate in plain English">
-              ISR never makes a visitor wait. When a cache is stale, the <em>first</em> person
-              after a publish sees the old nav/banner for one request. Everyone after sees the
-              updated version. For most content this is imperceptible - nav changes are low frequency.
-            </Callout>
           </div>
         </section>
 
