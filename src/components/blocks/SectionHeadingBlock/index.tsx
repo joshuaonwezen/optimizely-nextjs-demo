@@ -15,13 +15,13 @@ export const SectionHeadingBlockType = contentType({
 export const SectionHeadingCenteredTemplate = displayTemplate({
   key: "SectionHeadingCenteredTemplate",
   isDefault: false,
-  displayName: "Centred heading",
+  displayName: "Centered heading",
   contentType: "SectionHeadingBlock",
   tag: "Centered",
   settings: {
     showAccent: {
       editor: "checkbox" as const,
-      displayName: "Show coloured bar on the left",
+      displayName: "Show accent bar",
       sortOrder: 0,
       choices: {},
     },
@@ -30,8 +30,8 @@ export const SectionHeadingCenteredTemplate = displayTemplate({
       displayName: "Heading size",
       sortOrder: 1,
       choices: {
-        default: { displayName: "Standard",              sortOrder: 0 },
-        large:   { displayName: "Large (section opener)", sortOrder: 1 },
+        default: { displayName: "Standard", sortOrder: 0 },
+        large:   { displayName: "Large",    sortOrder: 1 },
       },
     },
   },

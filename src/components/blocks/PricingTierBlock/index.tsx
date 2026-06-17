@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
 export const PricingTierBlockType = contentType({
@@ -23,6 +23,15 @@ export const PricingTierBlockType = contentType({
   },
 });
 
+export const PricingTierCompactTemplate = displayTemplate({
+  key: "PricingTierCompactTemplate",
+  isDefault: false,
+  displayName: "Compact (condensed)",
+  contentType: "PricingTierBlock",
+  tag: "Compact",
+  settings: {},
+});
+
 interface PricingTierData {
   name?:        string | null;
   price?:       string | null;
@@ -37,6 +46,7 @@ interface PricingTierData {
 type PricingTierBlockProps = PricingTierData & {
   content?: PricingTierData;
   displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 };
 
 export default function PricingTierBlock(props: PricingTierBlockProps) {
@@ -44,8 +54,13 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
   const { pa } = getPreviewUtils(data as any);
   const features = (data.features ?? []).filter((f): f is string => Boolean(f));
 
-  const wrapperBase =
-    "rounded-2xl p-8 border h-full flex flex-col transition-shadow";
+  const isCompact = props.displayTemplateKey === "PricingTierCompactTemplate";
+  const padding = isCompact ? "p-5" : "p-8";
+  const nameSize = isCompact ? "text-lg" : "text-2xl";
+  const priceSize = isCompact ? "text-3xl" : "text-5xl";
+  const featureSpacing = isCompact ? "space-y-1.5 mb-5" : "space-y-3 mb-8";
+
+  const wrapperBase = `rounded-2xl ${padding} border h-full flex flex-col transition-shadow`;
   const wrapperStyle = data.highlighted
     ? `${wrapperBase} bg-brand text-on-brand border-brand shadow-lift`
     : `${wrapperBase} bg-surface-lowest border-ghost-border hover-ambient`;
@@ -60,7 +75,7 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
       {data.name && (
         <h3
           {...pa("name")}
-          className="font-display text-2xl font-extrabold mb-2"
+          className={`font-display ${nameSize} font-extrabold mb-2`}
         >
           {data.name}
         </h3>
@@ -69,7 +84,7 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
         {data.price && (
           <span
             {...pa("price")}
-            className="font-display text-5xl font-extrabold"
+            className={`font-display ${priceSize} font-extrabold`}
           >
             {data.price}
           </span>
@@ -85,7 +100,7 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
       </div>
 
       {features.length > 0 && (
-        <ul {...pa("features")} className="space-y-3 mb-8 flex-1">
+        <ul {...pa("features")} className={`${featureSpacing} flex-1`}>
           {features.map((feature, i) => (
             <li key={i} className="flex items-start gap-2 text-sm">
               <svg

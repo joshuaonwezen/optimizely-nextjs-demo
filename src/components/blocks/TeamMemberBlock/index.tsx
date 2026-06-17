@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
 export const TeamMemberBlockType = contentType({
@@ -15,6 +15,15 @@ export const TeamMemberBlockType = contentType({
     bio:         { type: "string",           displayName: "Short bio", indexingType: "searchable", isLocalized: true },
     linkedinUrl: { type: "url",              displayName: "LinkedIn URL" },
   },
+});
+
+export const TeamMemberHorizontalTemplate = displayTemplate({
+  key: "TeamMemberHorizontalTemplate",
+  isDefault: false,
+  displayName: "Horizontal (photo left)",
+  contentType: "TeamMemberBlock",
+  tag: "Horizontal",
+  settings: {},
 });
 
 // Graph contentReference comes back as { url: { default } }; inline
@@ -42,6 +51,7 @@ function resolveImageUrl(ref: ImageRef | undefined): string | null {
 type TeamMemberBlockProps = TeamMemberData & {
   content?: TeamMemberData;
   displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 };
 
 function resolveUrl(value: string | { default?: string | null } | null | undefined): string | null {
@@ -55,6 +65,46 @@ export default function TeamMemberBlock(props: TeamMemberBlockProps) {
   const { pa } = getPreviewUtils(data as any);
   const photoUrl = resolveImageUrl(data.photo);
   const linkedinHref = resolveUrl(data.linkedinUrl);
+
+  const isHorizontal = props.displayTemplateKey === "TeamMemberHorizontalTemplate";
+
+  if (isHorizontal) {
+    return (
+      <div data-component="TeamMemberBlock" className="flex items-center gap-5 p-5 rounded-2xl bg-surface-lowest border border-ghost-border hover-ambient">
+        <div className="relative w-16 h-16 rounded-full flex-shrink-0 overflow-hidden bg-surface-low">
+          {photoUrl ? (
+            <Image src={photoUrl} alt={data.name ?? ""} fill className="object-cover" sizes="64px" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center font-display text-xl font-bold text-on-surface-variant">
+              {data.name?.charAt(0).toUpperCase() ?? "?"}
+            </div>
+          )}
+        </div>
+        <div className="min-w-0">
+          {data.name && (
+            <h3 {...pa("name")} className="font-display text-base font-bold text-on-surface">
+              {data.name}
+            </h3>
+          )}
+          {data.role && (
+            <p {...pa("role")} className="text-sm text-on-surface-variant">
+              {data.role}
+            </p>
+          )}
+          {data.bio && (
+            <p {...pa("bio")} className="text-sm text-on-surface-variant leading-relaxed mt-1 line-clamp-2">
+              {data.bio}
+            </p>
+          )}
+          {linkedinHref && (
+            <Link href={linkedinHref} target="_blank" rel="noopener noreferrer" className="inline-block text-xs font-semibold text-brand mt-1 hover:opacity-80">
+              LinkedIn →
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div data-component="TeamMemberBlock" className="rounded-2xl bg-surface-lowest border border-ghost-border p-6 text-center hover-ambient transition-shadow">

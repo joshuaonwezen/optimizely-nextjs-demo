@@ -26,14 +26,14 @@ import FormSubmitButton, { FormSubmitButtonType } from "@/components/blocks/Form
 import { NavigationItemType, NavigationType, NavigationBlock, NavigationItemPreview } from "@/components/blocks/NavigationItemBlock";
 import FaqItemBlock, { FaqItemBlockType, FaqItemFlatTemplate } from "@/components/blocks/FaqItemBlock";
 import FaqContainerBlock, { FaqContainerBlockType } from "@/components/blocks/FaqContainerBlock";
-import FeaturedContentBlock, { FeaturedContentBlockType } from "@/components/blocks/FeaturedContentBlock";
+import FeaturedContentBlock, { FeaturedContentBlockType, FeaturedContentCardTemplate } from "@/components/blocks/FeaturedContentBlock";
 import LogoGridBlock, { LogoGridBlockType, LogoGridColorTemplate } from "@/components/blocks/LogoGridBlock";
 import AuthorBlock, { AuthorBlockType, AuthorInlineTemplate } from "@/components/blocks/AuthorBlock";
-import OutcomeItemBlock, { OutcomeItemBlockType } from "@/components/blocks/OutcomeItemBlock";
-import PricingTierBlock, { PricingTierBlockType } from "@/components/blocks/PricingTierBlock";
+import OutcomeItemBlock, { OutcomeItemBlockType, OutcomeItemBrandTemplate } from "@/components/blocks/OutcomeItemBlock";
+import PricingTierBlock, { PricingTierBlockType, PricingTierCompactTemplate } from "@/components/blocks/PricingTierBlock";
 import TimelineMilestoneBlock, { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
 import TimelineBlock, { TimelineBlockType } from "@/components/blocks/TimelineBlock";
-import TeamMemberBlock, { TeamMemberBlockType } from "@/components/blocks/TeamMemberBlock";
+import TeamMemberBlock, { TeamMemberBlockType, TeamMemberHorizontalTemplate } from "@/components/blocks/TeamMemberBlock";
 import TeamGridBlock, { TeamGridBlockType } from "@/components/blocks/TeamGridBlock";
 import ComparisonTableBlock, { ComparisonTableBlockType } from "@/components/blocks/ComparisonTableBlock";
 import CalloutBlock, { CalloutBlockType } from "@/components/blocks/CalloutBlock";
@@ -125,6 +125,10 @@ export function initComponentRegistry() {
     FaqItemFlatTemplate,
     LogoGridColorTemplate,
     ImageBlockRoundedTemplate,
+    OutcomeItemBrandTemplate,
+    PricingTierCompactTemplate,
+    TeamMemberHorizontalTemplate,
+    FeaturedContentCardTemplate,
     DefaultRowTemplate,
     DefaultColumnTemplate,
   ]);
@@ -201,7 +205,10 @@ export function initComponentRegistry() {
         tags: { Flat: FaqItemBlock },
       },
       FaqContainerBlock,
-      FeaturedContentBlock,
+      FeaturedContentBlock: {
+        default: FeaturedContentBlock,
+        tags: { Card: FeaturedContentBlock },
+      },
       LogoGridBlock: {
         default: LogoGridBlock,
         tags: { Color: LogoGridBlock },
@@ -210,11 +217,20 @@ export function initComponentRegistry() {
         default: AuthorBlock,
         tags: { Inline: AuthorBlock },
       },
-      OutcomeItemBlock,
-      PricingTierBlock,
+      OutcomeItemBlock: {
+        default: OutcomeItemBlock,
+        tags: { Brand: OutcomeItemBlock },
+      },
+      PricingTierBlock: {
+        default: PricingTierBlock,
+        tags: { Compact: PricingTierBlock },
+      },
       TimelineMilestoneBlock,
       TimelineBlock,
-      TeamMemberBlock,
+      TeamMemberBlock: {
+        default: TeamMemberBlock,
+        tags: { Horizontal: TeamMemberBlock },
+      },
       TeamGridBlock,
       ComparisonTableBlock,
       CalloutBlock,

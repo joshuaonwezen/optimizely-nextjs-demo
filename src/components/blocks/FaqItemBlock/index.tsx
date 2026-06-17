@@ -15,7 +15,7 @@ export const FaqItemBlockType = contentType({
 export const FaqItemFlatTemplate = displayTemplate({
   key: "FaqItemFlatTemplate",
   isDefault: false,
-  displayName: "Simple divider, no border",
+  displayName: "Flat (divider only)",
   contentType: "FaqItemBlock",
   tag: "Flat",
   settings: {},

@@ -15,7 +15,7 @@ export const CallToActionType = contentType({
 export const CallToActionOutlineTemplate = displayTemplate({
   key: "CallToActionOutlineTemplate",
   isDefault: false,
-  displayName: "Outline CTA",
+  displayName: "Outline button",
   contentType: "CallToAction",
   tag: "Outline",
   settings: {
@@ -34,7 +34,7 @@ export const CallToActionOutlineTemplate = displayTemplate({
 export const CallToActionSurfaceTemplate = displayTemplate({
   key: "CallToActionSurfaceTemplate",
   isDefault: false,
-  displayName: "Surface CTA",
+  displayName: "Light button",
   contentType: "CallToAction",
   tag: "Surface",
   settings: {
@@ -59,6 +59,7 @@ interface CallToActionData {
 type CallToActionProps = CallToActionData & {
   content?: CallToActionData;
   displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 };
 
 const VARIANT_CLASSES: Record<string, string> = {
@@ -72,7 +73,10 @@ export default function CallToActionBlock(props: CallToActionProps) {
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
 
-  const variant = (ds?.variant as string) ?? "brand";
+  const variant =
+    props.displayTemplateKey === "CallToActionOutlineTemplate" ? "outline" :
+    props.displayTemplateKey === "CallToActionSurfaceTemplate" ? "surface" :
+    "brand";
   const isLarge = ds?.size === "large";
   const vs = VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.brand;
 

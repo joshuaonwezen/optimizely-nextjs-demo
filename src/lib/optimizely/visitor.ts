@@ -15,12 +15,14 @@ export const getVisitorContext = cache(async (): Promise<{
   const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
   const demoPersona = cookieStore.get("demo_persona")?.value;
   const bucketingId = cookieStore.get("demo_bucketing_id")?.value;
+  const demoPageViews = cookieStore.get("demo_page_views")?.value;
   return {
     userId,
     attributes: {
       device,
       logged_in: !!bucketingId,
       ...(demoPersona ? { persona: demoPersona } : {}),
+      ...(demoPageViews !== undefined ? { page_views: Number(demoPageViews) } : {}),
     },
     ...(bucketingId ? { bucketingId } : {}),
   };

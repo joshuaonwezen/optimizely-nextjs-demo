@@ -26,19 +26,19 @@ export const ImageBlockType = contentType({
 export const ImageBlockRoundedTemplate = displayTemplate({
   key: "ImageBlockRoundedTemplate",
   isDefault: false,
-  displayName: "Rounded Image",
+  displayName: "Rounded corners",
   contentType: "ImageBlock",
   tag: "Rounded",
   settings: {
     aspectRatio: {
       editor: "select",
-      displayName: "Aspect Ratio",
+      displayName: "Aspect ratio",
       sortOrder: 0,
       choices: {
-        auto: { displayName: "Auto", sortOrder: 0 },
-        r16x9: { displayName: "16:9", sortOrder: 1 },
-        r4x3: { displayName: "4:3", sortOrder: 2 },
-        r1x1: { displayName: "Square", sortOrder: 3 },
+        auto: { displayName: "Auto",           sortOrder: 0 },
+        r16x9: { displayName: "16:9 Widescreen", sortOrder: 1 },
+        r4x3:  { displayName: "4:3 Standard",    sortOrder: 2 },
+        r1x1:  { displayName: "1:1 Square",      sortOrder: 3 },
       },
     },
   },

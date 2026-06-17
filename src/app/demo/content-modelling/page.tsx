@@ -89,17 +89,28 @@ export const ProductHeroBlockType = contentType({
 });`;
 
 const REFERENCE_SNIPPET = `// Referenced content - block exists independently, linked from many pages.
-// Graph returns only base metadata for type:"content" single references.
-// Self-fetch inside the component to get the full field data.
-export default async function FaqContainerBlock(props) {
-  let data = props.content ?? props;
+// Graph returns only base metadata (_Content) for type:"content" single references.
+// Resolve the full item in the PARENT PAGE before passing it down.
 
-  // Graph didn't inline-expand the standalone reference → self-fetch
-  if (!data.heading) {
-    const res = await graphqlFetch(FETCH_QUERY, {}, { next: { revalidate: 60 } });
-    data = res.FaqContainerBlock?.items?.[0] ?? data;
+// src/components/pages/TraditionalPage.tsx
+export default async function TraditionalPage({ content }) {
+  let featuredBlock = content.featuredBlock ?? null;
+
+  // featuredBlock came back as _Content (base metadata only) - fetch the full item
+  if (featuredBlock?.__typename === "_Content" && featuredBlock?._metadata?.key) {
+    featuredBlock = await getClient()
+      .getContent({ key: featuredBlock._metadata.key }, { next: { revalidate: 60 } })
+      .catch(() => null);
   }
-  // … render
+
+  return (
+    // featuredBlock is now fully resolved - OptimizelyComponent can dispatch it
+    <div>
+      {featuredBlock && featuredBlock.__typename !== "_Content" && (
+        <OptimizelyComponent content={featuredBlock} />
+      )}
+    </div>
+  );
 }`;
 
 const PROPERTY_STRING = `// string - short text, no formatting
@@ -119,7 +130,7 @@ linkedinUrl: { type: "url", displayName: "LinkedIn Profile" },`;
 
 const PROPERTY_REF = `// contentReference - single image or content item
 // Graph returns only base metadata (_metadata.url, displayName, key).
-// If you need full field data → use self-fetching pattern.
+// If you need full field data → resolve in the parent page component.
 authorImage:     { type: "contentReference", allowedTypes: ["_image"],   indexingType: "disabled" },
 backgroundImage: { type: "contentReference", allowedTypes: ["_image"],   indexingType: "disabled" },`;
 
@@ -354,7 +365,108 @@ export default function ContentModellingPage() {
           </p>
         </section>
 
-        {/* 2. compositionBehaviors */}
+        {/* 2. Page types */}
+        <section id="page-types">
+          <SectionHeading id="page-types">
+            Page Types - DynamicExperience vs TraditionalPage
+          </SectionHeading>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            Optimizely SaaS CMS supports two base types for pages. Which one to use
+            determines whether a page&apos;s layout is owned by the editor in Visual
+            Builder or by the developer in React code.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="rounded-2xl border border-brand/20 bg-brand/5 p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Code>_experience</Code>
+                <span className="text-xs text-on-surface-variant">base type</span>
+              </div>
+              <p className="text-xs font-semibold text-on-surface mb-3">DynamicExperience - editor-owned layout</p>
+              <ul className="space-y-2 text-xs text-on-surface-variant leading-relaxed">
+                <li>The editor assembles the page in Visual Builder by placing blocks into sections and columns.</li>
+                <li>The React component (<Code>DynamicExperience</Code>) renders the composition tree using <Code>OptimizelyComposition</Code> - no layout logic lives in the component.</li>
+                <li>Best for marketing pages, landing pages, homepages - anything where an editor needs layout control.</li>
+                <li>Graph returns the full composition tree in one query - no extra fetches needed for composition nodes.</li>
+              </ul>
+              <div className="mt-4 pt-4 border-t border-brand/10">
+                <p className="text-[10px] font-mono text-brand/60 mb-1">Examples in this repo</p>
+                <div className="flex flex-wrap gap-1">
+                  {["LandingPage", "BusinessBankingPage", "InvestmentsPage"].map((t) => (
+                    <Pill key={t}>{t}</Pill>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-tertiary/20 bg-tertiary/5 p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Code>_page</Code>
+                <span className="text-xs text-on-surface-variant">base type</span>
+              </div>
+              <p className="text-xs font-semibold text-on-surface mb-3">TraditionalPage - developer-owned layout</p>
+              <ul className="space-y-2 text-xs text-on-surface-variant leading-relaxed">
+                <li>The React component defines the layout. The editor only fills in content fields (headline, body, heroImage, etc.).</li>
+                <li>Properties are defined with <Code>contentType()</Code> just like any block - Graph returns them as typed fields.</li>
+                <li>Best for structured content with a consistent layout: article pages, team profiles, case studies.</li>
+                <li><Code>type: &quot;content&quot;</Code> single-reference fields return only base metadata from Graph - resolve them in the page component using <Code>getClient().getContent()</Code>.</li>
+              </ul>
+              <div className="mt-4 pt-4 border-t border-tertiary/10">
+                <p className="text-[10px] font-mono text-tertiary/60 mb-1">Examples in this repo</p>
+                <div className="flex flex-wrap gap-1">
+                  {["ArticlePage", "CaseStudyPage", "TeamMemberPage"].map((t) => (
+                    <Pill key={t}>{t}</Pill>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Callout label="Same dispatch path, different content">
+            <p>
+              Both page types go through the same <Code>OptimizelyComponent</Code> resolver. The catch-all route calls{" "}
+              <Code>getContentByPath()</Code>, which returns either a{" "}
+              <Code>DynamicExperience</Code> or a <Code>TraditionalPage</Code> (or any other registered type).{" "}
+              <Code>OptimizelyComponent</Code> reads <Code>__typename</Code> and dispatches to the matching React
+              component - no <Code>if/switch</Code> on the type in the route.
+              The key difference is what that component does with its{" "}
+              <Code>content</Code> prop: a <Code>DynamicExperience</Code> renders{" "}
+              <Code>content.composition.nodes</Code> with the SDK tree walker, while a{" "}
+              <Code>TraditionalPage</Code> renders its own JSX layout using{" "}
+              <Code>content.heading</Code>, <Code>content.body</Code>, etc.
+            </p>
+          </Callout>
+
+          <div className="mt-6 overflow-auto rounded-2xl border border-ghost-border">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-surface-low border-b border-ghost-border">
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">Dimension</th>
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">DynamicExperience (_experience)</th>
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">TraditionalPage (_page)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { dim: "Layout owner", exp: "Editor in Visual Builder", trad: "Developer in React" },
+                  { dim: "Graph payload", exp: "composition.nodes tree (full block data)", trad: "Typed content fields (heading, body, etc.)" },
+                  { dim: "Single references", exp: "N/A - blocks are inline in composition", trad: "Base metadata only - resolve in page component" },
+                  { dim: "Ideal for", exp: "Marketing pages, campaign pages, homepages", trad: "Articles, profiles, structured documents" },
+                  { dim: "Editor autonomy", exp: "High - editor controls block order and layout", trad: "Low - layout is fixed in code" },
+                ].map((row, i) => (
+                  <tr key={row.dim} className={`border-b border-ghost-border ${i % 2 === 0 ? "bg-surface" : "bg-surface-lowest"}`}>
+                    <td className="px-4 py-3 font-semibold text-on-surface">{row.dim}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{row.exp}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{row.trad}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* 3. compositionBehaviors - elementEnabled vs sectionEnabled */}
         <section id="composition-behaviors">
           <SectionHeading id="composition-behaviors">
             elementEnabled vs sectionEnabled
@@ -410,7 +522,7 @@ export default function ContentModellingPage() {
           </div>
         </section>
 
-        {/* 3. Naming */}
+        {/* 4. Naming */}
         <section id="naming">
           <SectionHeading id="naming">Name for Purpose, Not Appearance</SectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
@@ -447,7 +559,7 @@ export default function ContentModellingPage() {
           </div>
         </section>
 
-        {/* 4. Display templates vs new types */}
+        {/* 5. Display templates vs new types */}
         <section id="display-templates-vs-types">
           <SectionHeading id="display-templates-vs-types">
             Display Template vs New Content Type
@@ -480,7 +592,7 @@ export default function ContentModellingPage() {
           <Pre code={DISPLAY_TEMPLATE_SNIPPET} label="one content type, two display templates" />
         </section>
 
-        {/* 5. Reuse patterns */}
+        {/* 6. Reuse patterns */}
         <section id="reuse-patterns">
           <SectionHeading id="reuse-patterns">
             Content Reuse: Inline vs Referenced
@@ -512,7 +624,7 @@ export default function ContentModellingPage() {
               <ul className="text-xs text-on-surface-variant space-y-2 leading-relaxed">
                 <li>Block exists as its own CMS item - editing it once updates everywhere it&apos;s used</li>
                 <li>Best for shared content: author bios, legal disclaimers, global FAQs</li>
-                <li>Graph returns only base metadata for single references - full field data requires a self-fetch inside the component</li>
+                <li>Graph returns only base metadata for single references - resolve full field data in the parent page component using <Code>getClient().getContent()</Code></li>
                 <li>Examples: <Pill>AuthorBlock</Pill> linked from 10 articles, <Pill>FaqContainerBlock</Pill> on the FAQ page</li>
               </ul>
             </Callout>
@@ -522,14 +634,15 @@ export default function ContentModellingPage() {
             <strong><Code>type: &quot;content&quot;</Code> single references return only base metadata from Graph</strong>{" "}
             - regardless of whether the field is set. Graph only inline-expands{" "}
             <Code>type: &quot;array&quot;</Code> content areas. For referenced blocks
-            that need their own field data, use the self-fetching pattern: call{" "}
-            <Code>graphqlFetch</Code> directly inside the component when the
-            expected fields are absent.
+            that need their own field data, resolve them in the{" "}
+            <strong>parent page component</strong> using{" "}
+            <Code>getClient().getContent({"{ key }"})</Code> before passing the
+            resolved block down. Never add self-fetch logic inside the block itself.
           </Callout>
 
           <div className="grid md:grid-cols-2 gap-4 mt-4">
             <Pre code={INLINE_SNIPPET} label="inline - array content area (Graph auto-expands)" />
-            <Pre code={REFERENCE_SNIPPET} label="referenced - self-fetching pattern" />
+            <Pre code={REFERENCE_SNIPPET} label="referenced - parent resolves via getClient().getContent()" />
           </div>
 
           <div className="mt-6 grid md:grid-cols-2 gap-5">
@@ -604,15 +717,15 @@ export default function ContentModellingPage() {
                 </div>
                 <p className="text-[11px] text-on-surface-variant leading-relaxed">
                   The AuthorBlock exists independently. Editing it once updates every article
-                  that references it. Graph returns only its base metadata - full field data
-                  requires a self-fetch inside the component.
+                  that references it. Graph returns only its base metadata - the parent page
+                  resolves the full item via getClient().getContent() before rendering.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* 6. Property types */}
+        {/* 7. Property types */}
         <section id="property-types">
           <SectionHeading id="property-types">
             Choosing the Right Property Type
@@ -675,7 +788,7 @@ export default function ContentModellingPage() {
           </div>
         </section>
 
-        {/* 7. Fetching referenced content */}
+        {/* 8. Fetching referenced content */}
         <section id="fragment-colocation">
           <SectionHeading id="fragment-colocation">Fetching Referenced Content</SectionHeading>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
@@ -739,7 +852,7 @@ export default function ContentModellingPage() {
           </Callout>
         </section>
 
-        {/* 8. Indexing and localization */}
+        {/* 9. Indexing and localization */}
         <section id="indexing-and-localization">
           <SectionHeading id="indexing-and-localization">
             Graph Indexing and Localization

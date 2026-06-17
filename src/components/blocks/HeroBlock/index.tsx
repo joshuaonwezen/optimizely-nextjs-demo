@@ -30,7 +30,7 @@ export const HeroBlockType = contentType({
 export const HeroCenteredTemplate = displayTemplate({
   key: "HeroCenteredTemplate",
   isDefault: false,
-  displayName: "Centered Hero",
+  displayName: "Centered layout",
   contentType: "HeroBlock",
   tag: "Centered",
   settings: {
@@ -40,12 +40,12 @@ export const HeroCenteredTemplate = displayTemplate({
       sortOrder: 0,
       choices: {
         default: { displayName: "Default", sortOrder: 0 },
-        tall: { displayName: "Full Viewport", sortOrder: 1 },
+        tall: { displayName: "Full screen height", sortOrder: 1 },
       },
     },
     overlay: {
       editor: "checkbox",
-      displayName: "Dark Overlay on Image",
+      displayName: "Darken background image",
       sortOrder: 1,
       choices: {},
     },
@@ -72,6 +72,7 @@ interface HeroBlockData {
 type HeroBlockProps = HeroBlockData & {
   content?: HeroBlockData;
   displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 };
 
 export default function HeroBlock(props: HeroBlockProps) {
@@ -88,7 +89,7 @@ export default function HeroBlock(props: HeroBlockProps) {
     data.backgroundImage?._metadata?.url?.default ??
     data.backgroundImage?.url?.default;
 
-  const isCentered = ds?.alignment === "center";
+  const isCentered = props.displayTemplateKey === "HeroCenteredTemplate";
   const isTall = ds?.height === "tall";
   const showOverlay = ds?.overlay === true;
 

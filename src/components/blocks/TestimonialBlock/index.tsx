@@ -18,11 +18,11 @@ export const TestimonialBlockType = contentType({
 const TESTIMONIAL_THEME_SETTING = {
   theme: {
     editor: "select" as const,
-    displayName: "Background colour",
+    displayName: "Background color",
     sortOrder: 0,
     choices: {
-      default: { displayName: "White",                 sortOrder: 0 },
-      brand:   { displayName: "Dark blue (brand)",     sortOrder: 1 },
+      default: { displayName: "White",      sortOrder: 0 },
+      brand:   { displayName: "Brand blue", sortOrder: 1 },
     },
   },
   size: {
@@ -30,8 +30,8 @@ const TESTIMONIAL_THEME_SETTING = {
     displayName: "Quote text size",
     sortOrder: 1,
     choices: {
-      default: { displayName: "Standard",  sortOrder: 0 },
-      compact: { displayName: "Smaller",   sortOrder: 1 },
+      default: { displayName: "Standard", sortOrder: 0 },
+      compact: { displayName: "Compact",  sortOrder: 1 },
     },
   },
 };
@@ -39,7 +39,7 @@ const TESTIMONIAL_THEME_SETTING = {
 export const TestimonialCardTemplate = displayTemplate({
   key: "TestimonialCardTemplate",
   isDefault: false,
-  displayName: "Quote in a card (boxed)",
+  displayName: "Card (boxed)",
   contentType: "TestimonialBlock",
   tag: "Card",
   settings: TESTIMONIAL_THEME_SETTING,
@@ -48,12 +48,10 @@ export const TestimonialCardTemplate = displayTemplate({
 export const TestimonialMinimalTemplate = displayTemplate({
   key: "TestimonialMinimalTemplate",
   isDefault: false,
-  displayName: "Inline quote, no background",
+  displayName: "Minimal (pull-quote with accent)",
   contentType: "TestimonialBlock",
   tag: "Minimal",
-  settings: {
-    theme: TESTIMONIAL_THEME_SETTING.theme,
-  },
+  settings: {},
 });
 
 interface TestimonialData {
@@ -93,7 +91,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
       ? `bg-gradient-brand rounded-2xl ${padding}`
       : `bg-surface-lowest rounded-2xl ${padding}`;
   } else if (isMinimal) {
-    wrapperClass = "py-10 max-w-3xl mx-auto";
+    wrapperClass = "insight-rail py-12 max-w-3xl mx-auto";
   } else {
     wrapperClass = "py-20 max-w-3xl mx-auto";
   }
@@ -103,7 +101,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
       {data.quote && (
         <blockquote
           {...pa("quote")}
-          className={`font-display ${isCard && isCompact ? "text-sm" : isCard ? "text-base" : "text-xl md:text-2xl"} leading-relaxed mb-8 ${textColor}`}
+          className={`font-display ${isCard && isCompact ? "text-sm" : isCard ? "text-base" : isMinimal ? "text-2xl md:text-3xl italic" : "text-xl md:text-2xl"} leading-relaxed mb-8 ${textColor}`}
         >
           &ldquo;{data.quote}&rdquo;
         </blockquote>

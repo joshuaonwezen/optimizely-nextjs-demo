@@ -732,7 +732,9 @@ export default function CachingDemoPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             When an editor publishes, the ISR cache is invalidated automatically - no redeploy, no manual flush.
-            Here&apos;s what actually happens, step by step.
+            Here&apos;s what actually happens, step by step.{" "}
+            For a full system view including the edge middleware and Graph layers, see the{" "}
+            <a href="/demo/architecture#publish-flow" className="text-brand hover:underline">Architecture - Publish Flow</a>.
           </p>
 
           <div className="space-y-2 mb-8">

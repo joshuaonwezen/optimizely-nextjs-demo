@@ -28,6 +28,7 @@ export default function AudienceSwitcher() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [bucketingId, setBucketingId] = useState("");
   const [userId, setUserId] = useState("anonymous");
+  const [frequentCustomer, setFrequentCustomer] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -41,6 +42,7 @@ export default function AudienceSwitcher() {
     setBucketingId(bid);
     setLoggedIn(!!bid);
     setUserId(getCookie("optimizelyEndUserId") || "anonymous");
+    setFrequentCustomer(!!getCookie("demo_page_views"));
 
     function handleOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -59,6 +61,20 @@ export default function AudienceSwitcher() {
       body: JSON.stringify({ persona: key }),
     });
     setCurrent(key);
+    setLoading(false);
+    router.refresh();
+  }
+
+  async function toggleFrequentCustomer() {
+    if (loading) return;
+    setLoading(true);
+    const next = !frequentCustomer;
+    await fetch("/api/demo/set-attributes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pageViews: next ? 5 : null }),
+    });
+    setFrequentCustomer(next);
     setLoading(false);
     router.refresh();
   }
@@ -105,6 +121,33 @@ export default function AudienceSwitcher() {
               {p.label}
             </button>
           ))}
+
+          {/* Attributes section */}
+          <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider border-t border-outline-variant mt-1">
+            Attributes
+          </p>
+          <div className="px-4 pb-3">
+            <button
+              onClick={toggleFrequentCustomer}
+              className="w-full flex items-center justify-between py-1.5 text-sm text-on-surface"
+            >
+              <span>Frequent Customer</span>
+              <span
+                className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${
+                  frequentCustomer ? "bg-brand" : "bg-outline-variant"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${
+                    frequentCustomer ? "translate-x-4" : "translate-x-0.5"
+                  }`}
+                />
+              </span>
+            </button>
+            {frequentCustomer && (
+              <p className="text-xs font-mono text-on-surface-variant mt-1">page_views = 5</p>
+            )}
+          </div>
 
           {/* Auth + Login section */}
           <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider border-t border-outline-variant mt-1">
@@ -159,6 +202,9 @@ export default function AudienceSwitcher() {
         <span>{loading ? "Switching…" : currentLabel}</span>
         {loggedIn && (
           <span className="text-xs bg-brand/10 text-brand px-1.5 py-0.5 rounded font-mono">auth</span>
+        )}
+        {frequentCustomer && (
+          <span className="text-xs bg-brand/10 text-brand px-1.5 py-0.5 rounded font-mono">freq</span>
         )}
         <svg
           viewBox="0 0 20 20"

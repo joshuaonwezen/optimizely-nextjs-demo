@@ -41,10 +41,29 @@ export const LandingPageType = contentType({
   },
 });
 
-// Editorial article — a TraditionalPage subtype with structured fields for
-// authored long-form content. Demonstrates: single content reference (author),
-// enum-style category filtering, array-of-strings tag taxonomy, and an array
-// of self-references for related-content links.
+// EditorialContent contract — properties shared by ArticlePage and CaseStudyPage.
+//
+// When @optimizely/cms-sdk exports contract(), this becomes:
+//   export const EditorialContentContract = contract({ key: "EditorialContent", ... })
+// and each content type uses:  extends: EditorialContentContract
+//
+// For now, spread EDITORIAL_CONTENT_PROPERTIES into each type's properties block.
+// Defining the matching contract in the CMS (UI or REST API) gives Optimizely Graph
+// a shared IEditorialContent interface so both types can be queried together.
+const EDITORIAL_CONTENT_PROPERTIES = {
+  title:     { type: "string",           displayName: "Title",     indexingType: "searchable", isLocalized: true },
+  summary:   { type: "string",           displayName: "Summary",   indexingType: "searchable", isLocalized: true },
+  heroImage: { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"] },
+  tags:      { type: "array",            displayName: "Tags",      indexingType: "queryable",  items: { type: "string" } },
+};
+
+export const EditorialContentContract = {
+  key: "EditorialContent",
+  displayName: "Editorial Content",
+  description: "Shared properties for editorial page types. Create this contract in the CMS to unlock the IEditorialContent Graph interface.",
+  properties: EDITORIAL_CONTENT_PROPERTIES,
+};
+
 const CATEGORY_ENUM = [
   { value: "personal-finance",  displayName: "Personal Finance" },
   { value: "business-banking",  displayName: "Business Banking" },
@@ -52,19 +71,17 @@ const CATEGORY_ENUM = [
   { value: "market-insights",   displayName: "Market Insights" },
 ];
 
+// Editorial article. Implements EditorialContentContract via property spread.
 export const ArticlePageType = contentType({
   key: "ArticlePage",
   displayName: "Article",
   baseType: "_page",
   properties: {
-    title:       { type: "string",           displayName: "Title",       indexingType: "searchable", isLocalized: true },
-    summary:     { type: "string",           displayName: "Summary",     indexingType: "searchable", isLocalized: true },
-    heroImage:   { type: "contentReference", displayName: "Hero Image",  allowedTypes: ["_image"] },
-    body:        { type: "richText",         displayName: "Body",        indexingType: "searchable", isLocalized: true },
-    author:      { type: "contentReference", displayName: "Author",      allowedTypes: ["AuthorBlock"] },
+    ...EDITORIAL_CONTENT_PROPERTIES,
+    body:        { type: "richText",         displayName: "Body",         indexingType: "searchable", isLocalized: true },
+    author:      { type: "contentReference", displayName: "Author",       allowedTypes: ["AuthorBlock"] },
     publishDate: { type: "dateTime",         displayName: "Publish Date", indexingType: "queryable" },
-    category:    { type: "string",           displayName: "Category",    indexingType: "queryable", enum: CATEGORY_ENUM },
-    tags:        { type: "array",            displayName: "Tags",        indexingType: "queryable", items: { type: "string" } },
+    category:    { type: "string",           displayName: "Category",     indexingType: "queryable", enum: CATEGORY_ENUM },
     relatedArticles: {
       type: "array",
       displayName: "Related Articles",
@@ -73,20 +90,15 @@ export const ArticlePageType = contentType({
   },
 });
 
-// Case study — a TraditionalPage subtype for customer outcome stories.
-// Demonstrates: enum-style industry taxonomy, repeating structured groups via
-// OutcomeItemBlock content references, single-block reference for testimonial,
-// and self-referencing related case studies.
+// Case study. Implements EditorialContentContract via property spread.
 export const CaseStudyPageType = contentType({
   key: "CaseStudyPage",
   displayName: "Case Study",
   baseType: "_page",
   properties: {
-    title:       { type: "string",           displayName: "Title",        indexingType: "searchable", isLocalized: true },
+    ...EDITORIAL_CONTENT_PROPERTIES,
     clientName:  { type: "string",           displayName: "Client Name",  indexingType: "queryable",  isLocalized: true },
-    industry:    { type: "string",           displayName: "Industry",     indexingType: "queryable", enum: CATEGORY_ENUM },
-    summary:     { type: "string",           displayName: "Summary",      indexingType: "searchable", isLocalized: true },
-    heroImage:   { type: "contentReference", displayName: "Hero Image",   allowedTypes: ["_image"] },
+    industry:    { type: "string",           displayName: "Industry",     indexingType: "queryable",  enum: CATEGORY_ENUM },
     challenge:   { type: "richText",         displayName: "Challenge",    indexingType: "searchable", isLocalized: true },
     solution:    { type: "richText",         displayName: "Solution",     indexingType: "searchable", isLocalized: true },
     outcomes: {
@@ -94,8 +106,7 @@ export const CaseStudyPageType = contentType({
       displayName: "Outcomes (Stats)",
       items: { type: "contentReference", allowedTypes: ["OutcomeItemBlock"] },
     },
-    testimonial: { type: "contentReference", displayName: "Testimonial", allowedTypes: ["TestimonialBlock"] },
-    tags:        { type: "array",            displayName: "Tags", indexingType: "queryable", items: { type: "string" } },
+    testimonial:       { type: "contentReference", displayName: "Testimonial", allowedTypes: ["TestimonialBlock"] },
     relatedCaseStudies: {
       type: "array",
       displayName: "Related Case Studies",

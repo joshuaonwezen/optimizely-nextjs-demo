@@ -21,7 +21,7 @@ export const AuthorBlockType = contentType({
 export const AuthorInlineTemplate = displayTemplate({
   key: "AuthorInlineTemplate",
   isDefault: false,
-  displayName: "Compact one-line byline",
+  displayName: "Inline byline",
   contentType: "AuthorBlock",
   tag: "Inline",
   settings: {

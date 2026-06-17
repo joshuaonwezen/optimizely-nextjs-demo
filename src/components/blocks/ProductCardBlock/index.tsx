@@ -19,13 +19,13 @@ export const ProductCardBlockType = contentType({
 export const ProductCardFeaturedTemplate = displayTemplate({
   key: "ProductCardFeaturedTemplate",
   isDefault: false,
-  displayName: "Featured Product Card",
+  displayName: "Featured (highlighted)",
   contentType: "ProductCardBlock",
   tag: "Featured",
   settings: {
     showIcon: {
       editor: "checkbox",
-      displayName: "Show Icon",
+      displayName: "Show icon",
       sortOrder: 0,
       choices: {},
     },
@@ -92,7 +92,7 @@ export default function ProductCardBlock(props: ProductCardBlockProps) {
     <a
       data-component="ProductCardBlock"
       href={href}
-      className={`hover-ambient group flex flex-col h-full rounded-2xl p-8 bg-surface-lowest ${isFeatured ? "ring-2 ring-brand/20 shadow-ambient" : ""}`}
+      className={`hover-ambient group flex flex-col h-full rounded-2xl p-8 ${isFeatured ? "bg-secondary-container ring-2 ring-brand/30 shadow-ambient" : "bg-surface-lowest"}`}
     >
       {showIcon && (
         <div className="w-12 h-12 mb-6 rounded-xl bg-brand/10 text-brand flex items-center justify-center p-3 shrink-0">

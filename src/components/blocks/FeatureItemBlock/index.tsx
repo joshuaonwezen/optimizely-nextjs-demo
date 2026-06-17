@@ -15,7 +15,7 @@ export const FeatureItemBlockType = contentType({
 export const FeatureItemOutlinedTemplate = displayTemplate({
   key: "FeatureItemOutlinedTemplate",
   isDefault: false,
-  displayName: "Outlined Feature Item",
+  displayName: "Outlined (with border)",
   contentType: "FeatureItemBlock",
   tag: "Outlined",
   settings: {},
@@ -24,7 +24,7 @@ export const FeatureItemOutlinedTemplate = displayTemplate({
 export const FeatureItemFlatTemplate = displayTemplate({
   key: "FeatureItemFlatTemplate",
   isDefault: false,
-  displayName: "Flat Feature Item",
+  displayName: "Flat (no border)",
   contentType: "FeatureItemBlock",
   tag: "Flat",
   settings: {},
@@ -43,8 +43,8 @@ type FeatureItemBlockProps = FeatureItemData & {
 };
 
 const VARIANT_CLASSES: Record<string, string> = {
-  card: "rounded-2xl p-8 bg-surface-lowest",
-  flat: "p-8",
+  card:     "rounded-2xl p-8 bg-surface-lowest",
+  flat:     "p-8 border-b border-outline-variant",
   outlined: "rounded-2xl p-8 border border-ghost-border",
 };
 

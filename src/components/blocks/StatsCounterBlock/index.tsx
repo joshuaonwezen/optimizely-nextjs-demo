@@ -16,17 +16,17 @@ export const StatsCounterBlockType = contentType({
 export const StatsCounterHighlightTemplate = displayTemplate({
   key: "StatsCounterHighlightTemplate",
   isDefault: false,
-  displayName: "Number in a coloured box",
+  displayName: "Highlighted (colored box)",
   contentType: "StatsCounterBlock",
   tag: "Highlight",
   settings: {
     theme: {
       editor: "select" as const,
-      displayName: "Box colour",
+      displayName: "Box color",
       sortOrder: 0,
       choices: {
-        default: { displayName: "No background",         sortOrder: 0 },
-        brand:   { displayName: "Dark blue (brand)",     sortOrder: 1 },
+        surface: { displayName: "Surface (white)", sortOrder: 0 },
+        brand:   { displayName: "Brand blue",      sortOrder: 1 },
       },
     },
     size: {
@@ -34,8 +34,8 @@ export const StatsCounterHighlightTemplate = displayTemplate({
       displayName: "Number size",
       sortOrder: 1,
       choices: {
-        default: { displayName: "Standard — big",   sortOrder: 0 },
-        compact: { displayName: "Smaller",          sortOrder: 1 },
+        default: { displayName: "Standard", sortOrder: 0 },
+        compact: { displayName: "Compact",  sortOrder: 1 },
       },
     },
   },
@@ -69,11 +69,14 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
   const suffixClass = isCompact ? "text-2xl md:text-3xl" : "text-3xl md:text-4xl";
   const valueColor = isBrand ? "text-on-brand" : "text-brand";
   const labelColor = isBrand ? "text-on-brand/80" : "text-on-surface-variant";
+  const boxClass = isHighlight
+    ? (isBrand ? "bg-gradient-brand rounded-xl" : "bg-surface-lowest rounded-xl border border-ghost-border")
+    : "";
 
   return (
     <div
       data-component="StatsCounterBlock"
-      className={`text-center p-8 ${isBrand ? "bg-gradient-brand rounded-xl" : ""}`}
+      className={`text-center p-8 ${boxClass}`}
     >
       {data.value && (
         <p className={`${valueClass} ${valueColor}`}>

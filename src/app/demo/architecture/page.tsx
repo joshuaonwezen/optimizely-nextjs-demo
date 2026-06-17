@@ -330,7 +330,9 @@ export default function ArchitecturePage() {
             <a href="#publish-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            What happens when an editor publishes content in the CMS.
+            What happens when an editor publishes content in the CMS. For webhook endpoint details
+            and ISR revalidation tag strategy, see the{" "}
+            <a href="/demo/caching#revalidate-flow" className="text-brand hover:underline">Caching demo</a>.
           </p>
           <div className="space-y-2">
             {[

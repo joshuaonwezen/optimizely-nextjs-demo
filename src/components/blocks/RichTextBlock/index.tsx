@@ -15,7 +15,7 @@ export const TextBlockType = contentType({
 export const TextBlockNarrowTemplate = displayTemplate({
   key: "TextBlockNarrowTemplate",
   isDefault: false,
-  displayName: "Narrow Text Block",
+  displayName: "Narrow column",
   contentType: "TextBlock",
   tag: "Narrow",
   settings: {},

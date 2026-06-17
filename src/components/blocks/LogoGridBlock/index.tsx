@@ -22,7 +22,7 @@ export const LogoGridBlockType = contentType({
 export const LogoGridColorTemplate = displayTemplate({
   key: "LogoGridColorTemplate",
   isDefault: false,
-  displayName: "Full-colour logos",
+  displayName: "Full color",
   contentType: "LogoGridBlock",
   tag: "Color",
   settings: {
@@ -38,7 +38,7 @@ export const LogoGridColorTemplate = displayTemplate({
     },
     showNames: {
       editor: "checkbox" as const,
-      displayName: "Show partner name below each logo",
+      displayName: "Show partner names",
       sortOrder: 1,
       choices: {},
     },

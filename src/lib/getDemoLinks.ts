@@ -8,6 +8,7 @@ export function getDemoCategories(): DemoCategory[] {
       links: [
         { href: "/demo/visual-builder",    label: "Visual Builder",       description: "Page composition, blocks, and display templates" },
         { href: "/demo/content-modelling", label: "Content Modelling",    description: "Structuring content types and properties" },
+        { href: "/demo/contracts",         label: "Contracts, Mappings & Bindings", description: "Shared property contracts, inter-type property mappings, and content binding" },
         { href: "/demo/preview",           label: "Draft Mode & Preview", description: "In-context editing and draft content" },
         { href: "/demo/forms",             label: "Forms",                description: "CMS-managed form blocks and submissions" },
         { href: "/demo/navigation",        label: "Navigation",           description: "Recursive nav trees from the CMS" },

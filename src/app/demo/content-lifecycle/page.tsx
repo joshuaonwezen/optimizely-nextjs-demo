@@ -160,7 +160,7 @@ const VERSION_HISTORY_SNIPPET = `// Content versioning - every save creates a ne
 // The Management API exposes version history for a content item.
 
 const token   = await getManagementToken();
-const ENDPOINT = \`\${process.env.OPTIMIZELY_CMS_URL}/preview3/experimental/content\`;
+const ENDPOINT = "https://api.cms.optimizely.com/v1/content";
 
 // List all versions of an item:
 const res = await fetch(\`\${ENDPOINT}/\${key}/versions\`, {

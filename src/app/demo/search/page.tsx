@@ -161,6 +161,105 @@ if (result.trackUrl) {
   fetch(result.trackUrl, { method: "GET", mode: "no-cors" }).catch(() => {});
 }`;
 
+const PINNED_SETUP_SNIPPET = `// 1. Create a collection (once, via REST - store the returned ID)
+const collRes = await fetch(
+  \`\${process.env.OPTIMIZELY_GRAPH_GATEWAY}/api/pinned/collections\`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "..." },
+    body: JSON.stringify({ title: "Featured Results", isActive: true }),
+  }
+);
+const { id: collectionId } = await collRes.json();
+
+// 2. Add a pinned item - targetKey is the content GUID (from ContentLink.GuidValue)
+await fetch(
+  \`\${process.env.OPTIMIZELY_GRAPH_GATEWAY}/api/pinned/collections/\${collectionId}/items\`,
+  {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Authorization: "..." },
+    body: JSON.stringify({
+      phrases: ["savings account", "save money"],
+      targetKey: "abc123...",   // content GUID
+      language: "en",
+      priority: 1,              // 1 = highest; top 5 pins are shown per query
+      isActive: true,
+    }),
+  }
+);`;
+
+const PINNED_QUERY_SNIPPET = `# Add pinned: { phrase, collections } alongside where/orderBy.
+# Graph prepends matching pinned items before organic results (up to 5).
+# Omit collections to evaluate ALL active collections automatically.
+
+query SearchWithPinned($query: String!, $collectionId: String) {
+  _Content(
+    where: { _fulltext: { match: $query } }
+    orderBy: { _ranking: RELEVANCE }
+    limit: 10
+    pinned: { phrase: $query, collections: $collectionId }
+  ) {
+    total
+    items {
+      _score
+      _metadata { displayName url { default } }
+    }
+  }
+}`;
+
+const SYNONYMS_UPLOAD_SNIPPET = `// Synonyms are uploaded via REST as a CSV string.
+// PUT replaces the entire slot - always upload the full set.
+
+const csv = [
+  // Bi-directional: all terms are interchangeable in both directions
+  "mortgage, home loan, house loan",
+  "ISA, individual savings account",
+  // Uni-directional: left-side terms expand to right-side terms only
+  "H2O => water",
+  "current account => checking account",
+].join("\\n");
+
+await fetch(\`\${process.env.OPTIMIZELY_GRAPH_GATEWAY}/resources/synonyms\`, {
+  method: "PUT",
+  headers: {
+    "Content-Type": "application/x-www-form-urlencoded",
+    Authorization: \`Basic \${btoa(\`\${process.env.OPTIMIZELY_GRAPH_APP_KEY}:\`)}\`,
+  },
+  body: new URLSearchParams({
+    synonym_slot: "ONE",
+    language_routing: "en",
+    synonyms: csv,
+  }),
+});`;
+
+const SYNONYMS_QUERY_SNIPPET = `# Apply synonym expansion on field-level operators via the synonyms parameter.
+# Supported operators: contains, in, notIn, eq, notEq.
+# ONE and TWO are independent slots per language - use both if you manage
+# separate synonym groups (e.g. product terms in ONE, acronyms in TWO).
+
+{
+  _Content(
+    where: {
+      Title: { contains: "home loan", synonyms: ONE }
+    }
+    orderBy: { _ranking: RELEVANCE }
+    limit: 10
+  ) {
+    total
+    items {
+      _score
+      _metadata { displayName url { default } }
+    }
+  }
+}
+
+# Multiple slots:
+# where: { Name: { eq: "ISA", synonyms: [ONE, TWO] } }
+
+# Note: _fulltext { match } uses BM25 without synonym expansion.
+# Use field-level contains with synonyms, or switch to SEMANTIC ranking
+# which handles meaning-based matching implicitly.`;
+
 const CACHE_SNIPPET = `// Search results must NEVER be cached - every query string is unique.
 // Using the default ISR behaviour would create a separate cache entry
 // per search term and balloon the Next.js data cache with useless entries.
@@ -190,6 +289,20 @@ export default function SearchDemoPage() {
       />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
+
+        <section id="live">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Live demo
+            <SectionAnchor id="live" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            The input below calls <code className="bg-surface-low px-1 rounded font-mono text-xs">/api/search</code> with
+            a 300ms debounce. Try searching for content from the Mosey Bank site -
+            &ldquo;savings&rdquo;, &ldquo;mortgage&rdquo;, &ldquo;team&rdquo;, or &ldquo;FAQ&rdquo;. Switch to
+            Semantic mode to see how it finds related content that doesn&apos;t contain the exact phrase.
+          </p>
+          <SearchDemo />
+        </section>
 
         <section id="fulltext">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
@@ -334,18 +447,97 @@ export default function SearchDemoPage() {
           </div>
         </section>
 
-        <section id="live">
+        <section id="pinned">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Live demo
-            <SectionAnchor id="live" label="#" />
+            Pinned results
+            <SectionAnchor id="pinned" label="#" />
           </h2>
-          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            The input below calls <code className="bg-surface-low px-1 rounded font-mono text-xs">/api/search</code> with
-            a 300ms debounce. Try searching for content from the Mosey Bank site -
-            &ldquo;savings&rdquo;, &ldquo;mortgage&rdquo;, &ldquo;team&rdquo;, or &ldquo;FAQ&rdquo;. Switch to
-            Semantic mode to see how it finds related content that doesn&apos;t contain the exact phrase.
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            Pinned results let editors guarantee that specific content always appears at the top of
+            search results when a user&apos;s query matches a configured phrase - regardless of
+            ranking score. Common uses: promoted products, campaign pages, curated editorial picks.
+            Pins are managed via REST and applied in GraphQL with a single{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">pinned</code> argument.
           </p>
-          <SearchDemo />
+
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <p className="text-xs font-medium text-on-surface-variant mb-2">Create a collection and add pinned items</p>
+              <CodeBlock code={PINNED_SETUP_SNIPPET} label="REST API - collection setup" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-on-surface-variant mb-2">Apply pinned results in a GraphQL query</p>
+              <CodeBlock code={PINNED_QUERY_SNIPPET} label="pinned argument in _Content query" />
+            </div>
+          </div>
+
+          <div className="bg-surface-lowest rounded-2xl p-5 border border-ghost-border">
+            <p className="text-xs font-mono font-semibold text-on-surface mb-2">Pinned items are prepended, not ranked</p>
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              Graph prepends matching pinned items before the organic result set - they don&apos;t
+              compete for ranking position. Up to 5 pinned items appear per query; organic results fill
+              the remainder of the{" "}
+              <code className="bg-surface px-1 rounded font-mono">limit</code>. Omit{" "}
+              <code className="bg-surface px-1 rounded font-mono">collections</code> to evaluate all
+              active collections automatically.
+            </p>
+          </div>
+        </section>
+
+        <section id="synonyms">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Synonyms
+            <SectionAnchor id="synonyms" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            Synonyms expand what Graph considers a match, reducing zero-result searches and search
+            abandonment. Graph supports two synonym slots per language (
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">ONE</code> and{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">TWO</code>) so you can
+            manage independent synonym groups - for example product terminology in{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">ONE</code> and financial
+            acronyms in{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">TWO</code>. Synonyms are
+            uploaded as CSV via REST and applied at query time via the{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">synonyms</code> parameter
+            on field operators.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            {[
+              {
+                label: "Bi-directional",
+                note: "Comma-separated terms. All are interchangeable in both directions. mortgage, home loan, house loan",
+              },
+              {
+                label: "Uni-directional",
+                note: "Arrow notation. Left-side terms expand to right-side only. H2O => water",
+              },
+              {
+                label: "Slot ONE / TWO",
+                note: "Two independent synonym sets per language. Apply one or both per field: synonyms: [ONE, TWO]",
+              },
+            ].map(({ label, note }) => (
+              <div
+                key={label}
+                className="bg-surface-lowest rounded-2xl p-5 border border-ghost-border"
+              >
+                <p className="text-xs font-mono font-semibold text-on-surface mb-2">{label}</p>
+                <p className="text-xs text-on-surface-variant leading-relaxed">{note}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <p className="text-xs font-medium text-on-surface-variant mb-2">Upload synonyms via REST (CSV format)</p>
+              <CodeBlock code={SYNONYMS_UPLOAD_SNIPPET} label="PUT /resources/synonyms" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-on-surface-variant mb-2">Apply synonym expansion in a query</p>
+              <CodeBlock code={SYNONYMS_QUERY_SNIPPET} label="synonyms parameter on field operators" />
+            </div>
+          </div>
         </section>
 
         <KeyPoints points={[
@@ -356,6 +548,8 @@ export default function SearchDemoPage() {
           <><strong className="text-on-surface">Search queries must use cache: &quot;no-store&quot;.</strong> Every user query is unique - ISR would fill the data cache with one-time entries. Navigation queries are the opposite - same query for every visitor, perfect for ISR.</>,
           <><strong className="text-on-surface">_score is a float between 0 and 1.</strong> Use it to show relevance indicators in the UI or to filter out low-confidence results below a threshold.</>,
           <><strong className="text-on-surface">Add <code className="bg-surface-low px-1 rounded font-mono text-xs">tracking</code> to record search phrases.</strong> Each result item returns a <code className="bg-surface-low px-1 rounded font-mono text-xs">_track</code> URL - call it with a GET request when the user clicks a result. Tracking should never block or interrupt navigation.</>,
+          <><strong className="text-on-surface">Use <code className="bg-surface-low px-1 rounded font-mono text-xs">pinned</code> to guarantee editorial picks appear first.</strong> Create a collection, add items with trigger phrases, then pass <code className="bg-surface-low px-1 rounded font-mono text-xs">pinned: &#123; phrase, collections &#125;</code> in the GraphQL query. Up to 5 pinned items are prepended before organic results.</>,
+          <><strong className="text-on-surface">Synonyms reduce zero-result searches by expanding query terms.</strong> Upload a CSV to slot ONE or TWO via REST, then enable synonym expansion per field using <code className="bg-surface-low px-1 rounded font-mono text-xs">synonyms: ONE</code> on <code className="bg-surface-low px-1 rounded font-mono text-xs">contains</code>, <code className="bg-surface-low px-1 rounded font-mono text-xs">in</code>, or <code className="bg-surface-low px-1 rounded font-mono text-xs">eq</code> operators.</>,
         ]} />
 
         <SourcePanel

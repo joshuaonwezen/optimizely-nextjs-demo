@@ -56,43 +56,6 @@ return (
   </>
 );`;
 
-const FORCE_DYNAMIC_SNIPPET = `// src/app/[[...slug]]/page.tsx - Approach B: force-dynamic SSR
-// Simpler: everything happens server-side. No middleware changes, no client component.
-// Trade-off: every CMS page request hits the origin server - no CDN caching.
-
-import { getOptimizelyUser } from "@/lib/optimizely/user";
-import { getClient } from "@optimizely/cms-sdk";
-
-export const dynamic = "force-dynamic"; // cookies() in getOptimizelyUser() requires this
-
-async function CmsPage({ params }) {
-  const { slug } = await params;
-
-  // Reads optimizelyEndUserId + demo_persona cookies - opts route into dynamic rendering
-  const user = await getOptimizelyUser();
-  const decisions = user.decideAll(); // no impression yet
-
-  const activeVariations = Object.values(decisions)
-    .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
-    .map((d) => d.variationKey as string);
-
-  const variationFilter = activeVariations.length > 0
-    ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
-    : undefined;
-
-  const client = getClient();
-  const items = await client.getContentByPath(\`/\${slug.join("/")}/\`, { ...variationFilter, cache: false });
-  const page = items.find((i) => activeVariations.includes(i._metadata?.variation)) ?? items[0];
-
-  // Fire the bucketing event server-side - no client component needed
-  const servedVariation = page._metadata?.variation ?? null;
-  if (servedVariation) {
-    const match = Object.values(decisions).find((d) => d.variationKey === servedVariation);
-    if (match) void user.decide(match.flagKey, []);
-  }
-
-  return <OptimizelyComponent content={page} />;
-}`;
 
 const DECISION_SNIPPET = `import { getOptimizelyUser } from "@/lib/optimizely/user";
 
@@ -1020,12 +983,6 @@ await getDecision("my_flag", userId, {
             </div>
           </div>
 
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
-              Approach B code - force-dynamic SSR (simpler, no CDN caching)
-            </p>
-            <CodeBlock code={FORCE_DYNAMIC_SNIPPET} label="src/app/[[...slug]]/page.tsx - force-dynamic" />
-          </div>
         </section>
 
         {/* ── Code snippets ── */}

@@ -17,10 +17,6 @@ export const metadata: Metadata = {
   title: "Visual Builder Demo",
 };
 
-// ---------------------------------------------------------------------------
-// Code snippets
-// ---------------------------------------------------------------------------
-
 const CONTENT_TYPE_SNIPPET = `import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 
 export const HeroBlockType = contentType({
@@ -221,10 +217,6 @@ async function PreviewPage({ searchParams }) {
 
 export default withAppContext(PreviewPage);`;
 
-// ---------------------------------------------------------------------------
-// Block table rows
-// ---------------------------------------------------------------------------
-
 const BLOCKS = [
   { name: "HeroBlock",            templates: "HeroCenteredTemplate (tag: Centered)" },
   { name: "ProductHeroBlock",     templates: "ProductHeroCompactTemplate (tag: Compact)" },
@@ -242,10 +234,6 @@ const BLOCKS = [
   { name: "LogoGridBlock",        templates: "-" },
   { name: "FormContainerBlock",   templates: "-" },
 ];
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 export default function VisualBuilderPage() {
   return (

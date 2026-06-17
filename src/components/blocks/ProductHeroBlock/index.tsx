@@ -19,13 +19,13 @@ export const ProductHeroBlockType = contentType({
 export const ProductHeroCompactTemplate = displayTemplate({
   key: "ProductHeroCompactTemplate",
   isDefault: false,
-  displayName: "Compact Product Hero",
+  displayName: "Compact (reduced height)",
   contentType: "ProductHeroBlock",
   tag: "Compact",
   settings: {
     alignment: {
       editor: "select",
-      displayName: "Text Alignment",
+      displayName: "Text alignment",
       sortOrder: 0,
       choices: {
         left: { displayName: "Left", sortOrder: 0 },
@@ -47,6 +47,7 @@ interface ProductHeroData {
 type ProductHeroBlockProps = ProductHeroData & {
   content?: ProductHeroData;
   displaySettings?: Record<string, string | boolean>;
+  displayTemplateKey?: string;
 };
 
 export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
@@ -54,7 +55,7 @@ export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
 
-  const isCompact = ds?.height === "compact";
+  const isCompact = props.displayTemplateKey === "ProductHeroCompactTemplate";
   const isCentered = ds?.alignment === "center";
 
   return (
