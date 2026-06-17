@@ -55,7 +55,7 @@ export default function OutcomeItemBlock(props: OutcomeItemBlockProps) {
   const useBrandBg = isBrand && ds?.theme !== "surface";
 
   const wrapperClass = isBrand
-    ? `text-center p-8 rounded-xl ${useBrandBg ? "bg-gradient-brand" : "bg-surface-lowest border border-ghost-border"}`
+    ? `text-center p-8 rounded-xl ${useBrandBg ? "bg-gradient-brand" : "bg-surface-lowest border border-outline-variant"}`
     : "text-center px-6 py-4";
   const valueColor = useBrandBg ? "text-on-brand" : "text-brand";
   const labelColor = useBrandBg ? "text-on-brand/80" : "text-on-surface-variant";

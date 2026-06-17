@@ -60,7 +60,7 @@ export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
 
   return (
     <div data-component="SectionHeadingBlock" className={`py-20 ${isCentered ? "text-center" : ""}`}>
-      <div className={`${showAccent ? "insight-rail" : ""} ${isCentered ? "max-w-2xl mx-auto" : "max-w-2xl"}`}>
+      <div className={`${showAccent && !isCentered ? "insight-rail" : ""} ${isCentered ? "max-w-2xl mx-auto" : "max-w-2xl"}`}>
         {data.heading && (
           <h2
             {...pa("heading")}

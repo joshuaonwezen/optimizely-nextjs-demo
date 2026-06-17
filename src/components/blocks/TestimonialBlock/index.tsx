@@ -89,7 +89,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
     const padding = isCompact ? "p-6" : "p-10";
     wrapperClass = isBrand
       ? `bg-gradient-brand rounded-2xl ${padding}`
-      : `bg-surface-lowest rounded-2xl ${padding}`;
+      : `bg-surface-lowest rounded-2xl border border-outline-variant ${padding}`;
   } else if (isMinimal) {
     wrapperClass = "insight-rail py-12 max-w-3xl mx-auto";
   } else {

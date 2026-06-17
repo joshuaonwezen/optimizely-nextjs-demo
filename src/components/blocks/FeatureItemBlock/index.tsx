@@ -45,7 +45,7 @@ type FeatureItemBlockProps = FeatureItemData & {
 const VARIANT_CLASSES: Record<string, string> = {
   card:     "rounded-2xl p-8 bg-surface-lowest",
   flat:     "p-8 border-b border-outline-variant",
-  outlined: "rounded-2xl p-8 border border-ghost-border",
+  outlined: "rounded-2xl p-8 border border-outline-variant",
 };
 
 export default function FeatureItemBlock(props: FeatureItemBlockProps) {

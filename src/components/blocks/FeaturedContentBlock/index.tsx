@@ -70,7 +70,7 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   const isBrand  = isCard && ds?.theme === "brand";
 
   const sectionClass = isCard
-    ? `rounded-2xl p-10 ${isBrand ? "bg-gradient-brand" : "bg-surface-lowest border border-ghost-border"}`
+    ? `rounded-2xl p-10 ${isBrand ? "bg-gradient-brand" : "bg-surface-lowest border border-outline-variant"}`
     : "py-20";
   const innerClass   = isBrand ? "max-w-2xl" : "insight-rail max-w-2xl";
   const labelColor   = isBrand ? "text-on-brand/70" : "text-brand";

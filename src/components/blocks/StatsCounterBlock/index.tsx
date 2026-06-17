@@ -70,7 +70,7 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
   const valueColor = isBrand ? "text-on-brand" : "text-brand";
   const labelColor = isBrand ? "text-on-brand/80" : "text-on-surface-variant";
   const boxClass = isHighlight
-    ? (isBrand ? "bg-gradient-brand rounded-xl" : "bg-surface-lowest rounded-xl border border-ghost-border")
+    ? (isBrand ? "bg-gradient-brand rounded-xl" : "bg-surface-lowest rounded-xl border border-outline-variant")
     : "";
 
   return (

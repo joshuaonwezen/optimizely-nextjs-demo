@@ -65,7 +65,7 @@ type CallToActionProps = CallToActionData & {
 const VARIANT_CLASSES: Record<string, string> = {
   brand: "bg-gradient-brand text-on-brand",
   outline: "bg-transparent text-brand border-2 border-brand",
-  surface: "bg-surface-lowest text-brand",
+  surface: "bg-surface-lowest text-brand border-2 border-outline-variant",
 };
 
 export default function CallToActionBlock(props: CallToActionProps) {
