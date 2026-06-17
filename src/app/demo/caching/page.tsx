@@ -79,6 +79,12 @@ const WEBHOOKS_SNIPPET = `// POST /api/webhooks  (registered via: npm run webhoo
 // { "type": "doc.updated",     ... }  - a single item was updated
 // { "type": "doc.expired",     ... }  - item reached its StopPublish date
 
+// Next.js 16 adds a second "profile" arg to revalidateTag's type signature
+// (for Server Action cache profiles). Route handlers have no valid profile,
+// so cast to the single-arg overload to keep TypeScript happy.
+import { revalidateTag as _revalidateTag } from "next/cache";
+const revalidateTag = _revalidateTag as (tag: string) => void;
+
 export async function POST(request: NextRequest) {
   const body = await request.json();
   revalidatePath("/", "layout"); // bust ISR page output cache
@@ -223,6 +229,10 @@ const PREFETCH_SNIPPET = `// Next.js <Link> prefetch behaviour in App Router (pr
 //    for that route and caches it in the browser's router cache.
 // 2. Clicking the link navigates instantly - no round-trip needed.
 //
+// Router cache staleness (Next.js 15+):
+//   Static / ISR routes → 5 minutes
+//   Dynamic routes      → 0 seconds (always fetches on navigation)
+//
 // Implication: always-rendered links prefetch eagerly, even if the user
 // never clicks them. 20 footer links = 20 prefetch requests on every page load.
 
@@ -242,13 +252,13 @@ const CACHE_TABLE = [
   { data: "Navigation tree",   location: "getNavigation()",                ttl: "300s (5 min)", tag: "navigation",  revalidatedBy: "revalidateTag('navigation') in /api/webhooks" },
   { data: "Site banner",       location: "getSiteBanner()",                ttl: "60s",          tag: "banner",      revalidatedBy: "revalidateTag('banner') in /api/webhooks" },
   { data: "External quotes",   location: "getQuotes()",                    ttl: "60s",          tag: "quotes",      revalidatedBy: "revalidateTag('quotes') in /api/webhooks" },
-  { data: "Page metadata",     location: "generateMetadata()",             ttl: "300s (5 min)", tag: "-",           revalidatedBy: "/api/revalidate" },
+  { data: "Page metadata",     location: "generateMetadata()",             ttl: "300s (5 min)", tag: "-",           revalidatedBy: "All three webhooks via revalidatePath('/', 'layout')" },
   { data: "Static page paths", location: "generateStaticParams()",         ttl: "3600s (1 hr)", tag: "-",           revalidatedBy: "Next.js build / deploy" },
   { data: "FX datafile",       location: "middleware.ts + experimentation.ts", ttl: "60s",    tag: "-",            revalidatedBy: "Automatic (fetch cache, next: { revalidate: 60 })" },
   { data: "Search results",    location: "GET /api/search",                ttl: "no-store",     tag: "-",           revalidatedBy: "Always fresh - bypasses ISR" },
   { data: "Draft/preview",     location: "client.getPreviewContent()",     ttl: "no-store",  tag: "-",            revalidatedBy: "Always fresh - bypasses ISR" },
   { data: "Graph CDN cache",  location: "cg.optimizely.com/content/v2",   ttl: "Graph-managed", tag: "-",        revalidatedBy: "?cache=false on the request URL - see section below" },
-  { data: "Link prefetch (RSC payload)", location: "browser router cache", ttl: "30s (default)", tag: "-",       revalidatedBy: "Page navigation or 30s expiry" },
+  { data: "Link prefetch (RSC payload)", location: "browser router cache", ttl: "5 min (static) / 0s (dynamic)", tag: "-", revalidatedBy: "Page navigation or TTL expiry" },
 ];
 
 export default function CachingDemoPage() {
@@ -358,7 +368,7 @@ export default function CachingDemoPage() {
           <div className="grid md:grid-cols-2 gap-4">
             <Callout label="CMS page content is ISR-cached per variation">
               Edge middleware rewrites each visitor&apos;s URL with their active FX variation key
-              (e.g. <code className="bg-surface-low px-1 rounded font-mono text-xs">/savings/__v_variation_1</code>).
+              (e.g. <code className="bg-surface-low px-1 rounded font-mono text-xs">/savings/__v_homepage--variation_1</code>, one segment per active flag in the format <code className="bg-surface-low px-1 rounded font-mono text-xs">__v_flagKey--variationKey</code>).
               Each rewritten URL is its own 60-second ISR cache entry - base users and every variation
               are cached independently. The publish webhook marks all of them stale at once.
             </Callout>
@@ -761,9 +771,9 @@ export default function CachingDemoPage() {
               In production, Next.js{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">&lt;Link&gt;</code>{" "}
               automatically prefetches the RSC payload for every link that enters the viewport. The
-              prefetch is cached in the browser&apos;s router cache for ~30 seconds, making
-              subsequent navigation to that page instant. This is a browser-side cache - independent
-              of Vercel CDN or Next.js ISR.
+              prefetch is cached in the browser&apos;s router cache for 5 minutes (static/ISR routes)
+              or 0 seconds (dynamic routes), making subsequent navigation to that page instant.
+              This is a browser-side cache - independent of Vercel CDN or Next.js ISR.
             </p>
           </div>
 
@@ -854,9 +864,16 @@ export default function CachingDemoPage() {
               <code className="bg-surface-low px-1 rounded text-xs font-mono">bulk.completed</code> (sync finished),{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">doc.updated</code> (single item changed),{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">doc.expired</code> (item hit its StopPublish date).
-              No secret required - Graph authenticates with HMAC in production.
             </p>
-            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+            <Callout label="HMAC validation is required before production use">
+              This demo accepts any POST to <code className="bg-surface-low px-1 rounded font-mono text-xs">/api/webhooks</code> without authentication.
+              In production, Graph signs each request with an HMAC-SHA256 signature in the{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">X-Graph-Signature</code> header.
+              Validate it before calling <code className="bg-surface-low px-1 rounded font-mono text-xs">revalidatePath</code> or{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">revalidateTag</code> - an unauthenticated endpoint lets anyone trigger
+              a full-site cache bust on demand.
+            </Callout>
+            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed mt-4">
               <code>{WEBHOOKS_SNIPPET}</code>
             </pre>
           </div>
