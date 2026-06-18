@@ -6,6 +6,9 @@ import GlobalBanner from "@/components/layout/GlobalBanner";
 import Footer from "@/components/layout/Footer";
 import DemoToolbar from "@/components/demo/DemoToolbar";
 import OdpSetup from "@/components/OdpSetup";
+import StickyOfferBar from "@/components/layout/StickyOfferBar";
+import RatesBar from "@/components/layout/RatesBar";
+import TrustSection from "@/components/layout/TrustSection";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -58,7 +61,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <GlobalBanner />
         <NavigationHeader />
         <main>{children}</main>
+        <RatesBar />
+        <TrustSection />
         <Footer />
+        <StickyOfferBar />
         <DemoToolbar />
         <OdpSetup />
       </body>

@@ -15,6 +15,9 @@ interface Props {
   tree: NavNode[];
   demoCategories: DemoCategory[];
   locales: SupportedLocale[];
+  isLoggedIn?: boolean;
+  searchExpanded?: boolean;
+  showBottomTabs?: boolean;
 }
 
 const LOCALE_RE = /^[a-z]{2}(-[a-z]{2})?$/;
@@ -54,7 +57,7 @@ function SearchIcon() {
   );
 }
 
-export default function NavItems({ tree, demoCategories, locales }: Props) {
+export default function NavItems({ tree, demoCategories, locales, isLoggedIn, searchExpanded, showBottomTabs }: Props) {
   const [activeKey,     setActiveKey]     = useState<string | null>(null);
   const [searchOpen,    setSearchOpen]    = useState(false);
   const [mobileOpen,    setMobileOpen]    = useState(false);
@@ -232,6 +235,31 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
                   ))}
                 </div>
               </>
+            )}
+          </div>
+
+          {/* Mobile: auth */}
+          <div className="border-t border-ghost-border mx-4" />
+          <div className="px-4 py-4 flex flex-col gap-2">
+            {isLoggedIn ? (
+              <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-surface-low">
+                <span className="w-8 h-8 rounded-full bg-brand text-on-brand text-xs font-bold flex items-center justify-center flex-shrink-0">MB</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-on-surface">My Account</p>
+                  <p className="text-xs text-on-surface-variant">Logged in</p>
+                </div>
+                <Link href="/demo/personalization" onClick={() => setMobileOpen(false)} className="text-xs text-on-surface-variant hover:text-brand transition-colors">
+                  Sign out
+                </Link>
+              </div>
+            ) : (
+              <Link
+                href="/demo/personalization"
+                onClick={() => setMobileOpen(false)}
+                className="block w-full text-center px-4 py-3 rounded-xl text-sm font-medium text-on-surface-variant bg-surface-low hover:text-brand transition-colors"
+              >
+                Sign In
+              </Link>
             )}
           </div>
 
@@ -481,21 +509,64 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
           </div>
         )}
 
+        {/* Personalization: logged-in nav state */}
+        {isLoggedIn ? (
+          <div
+            className="relative ml-1"
+            onMouseEnter={() => setActiveKey("__account__")}
+            onMouseLeave={() => setActiveKey(null)}
+          >
+            <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-full text-sm font-semibold transition-colors bg-surface-low text-on-surface hover:bg-surface">
+              <span className="w-6 h-6 rounded-full bg-brand text-on-brand text-[10px] font-bold flex items-center justify-center flex-shrink-0">MB</span>
+              <span>My Account</span>
+              <Chevron open={activeKey === "__account__"} />
+            </button>
+            {activeKey === "__account__" && (
+              <div className="absolute top-full right-0 pt-2 z-50">
+                <div className="bg-surface-lowest border border-ghost-border rounded-xl shadow-lg py-2 min-w-44">
+                  <Link href="/personal" className="block px-4 py-2 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors">Dashboard</Link>
+                  <Link href="/personal/savings" className="block px-4 py-2 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors">My Accounts</Link>
+                  <div className="border-t border-ghost-border my-1" />
+                  <Link href="/demo/personalization" className="block px-4 py-2 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors">Sign Out</Link>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Link
+            href="/demo/personalization"
+            className="px-3 py-1.5 rounded-lg text-sm font-medium text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
+          >
+            Sign In
+          </Link>
+        )}
+
         {/* Theme toggle */}
         <ThemeToggle />
 
-        {/* Search */}
-        <button
-          onClick={() => setSearchOpen(true)}
-          aria-label="Search"
-          className="p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
-        >
-          <SearchIcon />
-        </button>
+        {/* Search — icon or expanded pill (FX: nav_search_style) */}
+        {searchExpanded ? (
+          <button
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm text-on-surface-variant bg-surface-low border border-ghost-border hover:border-brand/40 hover:text-brand transition-colors min-w-[140px]"
+          >
+            <SearchIcon />
+            <span className="text-xs">Search…</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search"
+            className="p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
+          >
+            <SearchIcon />
+          </button>
+        )}
       </div>
 
-      {/* ── Mobile: search + hamburger ────────────────────── */}
-      <div className="flex md:hidden items-center gap-1">
+      {/* ── Mobile: search + hamburger (hidden when bottom tabs active) ── */}
+      <div className={`${showBottomTabs ? "hidden" : "flex"} md:hidden items-center gap-1`}>
         <button
           onClick={() => setSearchOpen(true)}
           aria-label="Search"
@@ -513,6 +584,23 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
           </svg>
         </button>
       </div>
+
+      {/* ── Mobile bottom tab bar (FX: mobile_nav = bottom_tabs) ─── */}
+      {showBottomTabs && (
+        <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-surface-lowest border-t border-ghost-border flex safe-pb">
+          {[
+            { href: "/",                    label: "Home",     icon: <path d="M3 9.5L10 3l7 6.5V19a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /> },
+            { href: "/personal",            label: "Products", icon: <><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.5"/></> },
+            { href: "/demo",                label: "Demo",     icon: <><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5"/><path d="M9.5 8.5l5 3.5-5 3.5V8.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></> },
+            { href: "/demo/personalization",label: "Account",  icon: <><circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></> },
+          ].map(({ href, label, icon }) => (
+            <Link key={href} href={href} className="flex-1 flex flex-col items-center py-3 gap-1 text-on-surface-variant hover:text-brand transition-colors">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">{icon}</svg>
+              <span className="text-[10px] font-medium">{label}</span>
+            </Link>
+          ))}
+        </nav>
+      )}
     </>
   );
 }
