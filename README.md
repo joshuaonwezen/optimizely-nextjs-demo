@@ -131,9 +131,11 @@ npm run seed:faqs        # FAQ blocks and container
 
 # Individual seed scripts (run with tsx directly)
 npx tsx scripts/seed-quotes.ts              # External quote data → Graph Content Source API
-npx tsx scripts/seed-fx-experiment.ts       # Feature Experimentation flag + variations
 npx tsx scripts/seed-homepage-variations.ts # CMS homepage variations for FX demo
 npx tsx scripts/update-homepage-variations.ts # Update existing homepage variation compositions
+
+# Feature Experimentation flags and experiments are managed via the Optimizely
+# Experimentation MCP server — no local seed script.
 
 # Webhooks
 npm run webhook:register  # Register /api/webhooks with Optimizely Graph

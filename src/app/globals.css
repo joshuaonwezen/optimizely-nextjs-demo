@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* ── Design Tokens: The Precision Architect ────────────────────────── */
 :root {
   /* Surface hierarchy */
@@ -41,33 +43,6 @@
 }
 
 /* ── Dark mode token overrides ─────────────────────────────────────── */
-@media (prefers-color-scheme: dark) {
-  html:not([data-theme="light"]) {
-    color-scheme: dark;
-    --surface: #0f1217;
-    --surface-container-low: #161c22;
-    --surface-container: #1c2329;
-    --surface-container-high: #222a32;
-    --surface-container-highest: #283038;
-    --surface-container-lowest: #0a0d10;
-    --primary: #8ab4f8;
-    --primary-dim: #7aa5f0;
-    --primary-container: #1e3a5f;
-    --on-primary: #0a1628;
-    --secondary-container: #1a2c40;
-    --on-secondary-container: #b8cfe2;
-    --tertiary: #bb86fc;
-    --on-surface: #dde1e6;
-    --on-surface-variant: #8a9199;
-    --outline-variant: #2d3640;
-    --shadow-ambient: 0 20px 40px rgba(0, 0, 0, 0.5);
-    --shadow-lift: 0 8px 24px rgba(0, 0, 0, 0.6);
-    --ghost-border-color: rgba(255, 255, 255, 0.07);
-    --nav-glass: rgba(15, 18, 23, 0.88);
-    --badge-bg: rgba(255, 255, 255, 0.10);
-  }
-}
-
 html[data-theme="dark"] {
   color-scheme: dark;
   --surface: #0f1217;

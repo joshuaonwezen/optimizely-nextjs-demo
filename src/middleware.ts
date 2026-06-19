@@ -68,7 +68,7 @@ export async function middleware(request: NextRequest) {
     if (activeDecisions.length === 0) return response;
 
     // Append one __v_ segment per active decision encoding flagKey--variationKey.
-    // e.g. /savings → /savings/__v_homepage_audience--variation_1
+    // e.g. /savings → /savings/__v_homepage--business
     // The page reads flagKey from the segment — no extra SDK call needed client-side.
     const url = request.nextUrl.clone();
     const variationSuffix = activeDecisions

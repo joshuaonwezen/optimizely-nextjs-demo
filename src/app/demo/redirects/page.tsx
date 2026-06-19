@@ -206,7 +206,7 @@ export default function RedirectsDemoPage() {
           <Callout variant="note">
             <strong>Run the redirect check before the FX variation rewrite.</strong>{" "}
             If it runs after, the URL already has a variation segment appended (e.g.{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">/savings-accounts/__v_homepage_audience--variation_1</code>)
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">/savings-accounts/__v_homepage--business</code>)
             and the plain-path match fails.
           </Callout>
         </section>

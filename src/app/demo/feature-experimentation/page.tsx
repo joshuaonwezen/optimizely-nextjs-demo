@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 
 const BUCKETING_SNIPPET = `// src/components/FxBucketingEvent.tsx
 // flagKey is passed in from the page — it was encoded in the URL by middleware:
-//   /savings → /savings/__v_homepage_audience--variation_1
+//   /savings → /savings/__v_homepage--business
 // extractVariations() in page.tsx parses it back out.
 // No decideAll() here — the flagKey is already known from the route.
 
@@ -44,7 +44,7 @@ export function FxBucketingEvent({ flagKey }: { flagKey: string }) {
 
 // src/app/[[...slug]]/page.tsx
 // flagKey comes from the URL segment, not from a client-side SDK call.
-// flagVariations = [{ flagKey: "homepage_audience", variationKey: "variation_1" }]
+// flagVariations = [{ flagKey: "homepage", variationKey: "business" }]
 const { cleanSlug, activeVariations, flagVariations } = extractVariations(slug);
 const servedVariation = page._metadata?.variation ?? null;
 const servedFlagKey = flagVariations.find((fv) => fv.variationKey === servedVariation)?.flagKey ?? null;
@@ -63,19 +63,20 @@ export default async function MyPage() {
   const user = await getOptimizelyUser();
 
   // Evaluate without firing an impression (default: DISABLE_DECISION_EVENT)
-  const decision = user.decide("subscribe_button");
+  const decision = user.decide("hero_copy");
   if (!decision.enabled) return null;
 
   // Once you know the variation will be shown, fire the impression:
-  void user.decide("subscribe_button", []);
+  void user.decide("hero_copy", []);
 
   // Variables come back typed - you cast to the type you expect
-  const title = decision.variables.subscribe_title as string;
-  return <Banner title={title} variation={decision.variationKey} />;
+  const headline = decision.variables.headline as string;
+  const subheadline = decision.variables.subheadline as string;
+  return <Hero headline={headline} subheadline={subheadline} variation={decision.variationKey} />;
 }`;
 
 const VARIATIONS_SNIPPET = `// src/app/[[...slug]]/page.tsx
-// Middleware rewrites: /savings → /savings/__v_homepage_audience--variation_1
+// Middleware rewrites: /savings → /savings/__v_homepage--business
 //   VARIATION_MARKER = "__v_"   FLAG_VAR_SEP = "--"
 // Both flagKey and variationKey are encoded in the URL segment so the page
 // knows which flag to fire the bucketing event for - no extra SDK call needed.
@@ -198,7 +199,7 @@ export async function middleware(request: NextRequest) {
 
   if (activeDecisions.length === 0) return response;
 
-  // Rewrite URL: /savings → /savings/__v_homepage_audience--variation_1
+  // Rewrite URL: /savings → /savings/__v_homepage--business
   // Each segment encodes flagKey--variationKey so the page knows which flag fired.
   // The user sees /savings in the browser - the rewrite is transparent.
   // Next.js catches each rewritten path as a separate ISR cache entry.
@@ -306,50 +307,51 @@ function FlagCard({ decision }: { decision: FxDecision }) {
   );
 }
 
-function SubscribeDemo({ decision }: { decision: FxDecision | undefined }) {
+function HeroCopyDemo({ decision }: { decision: FxDecision | undefined }) {
   if (!decision?.enabled) {
     return (
       <div className="rounded-2xl border border-dashed border-ghost-border bg-surface-lowest p-8 text-center">
-        <p className="text-sm font-mono text-on-surface-variant mb-1">subscribe_button</p>
+        <p className="text-sm font-mono text-on-surface-variant mb-1">hero_copy</p>
         <p className="text-on-surface-variant text-sm">
-          Flag is <strong>off</strong> - enable it in the FX dashboard to see the live subscribe CTA.
+          Flag is <strong>off</strong> - enable it in the FX dashboard to see the live hero copy variation.
         </p>
       </div>
     );
   }
 
-  const title =
-    (decision.variables.subscribe_title as string) ||
-    (decision.variationKey === "contribute" ? "Contribute to the community" : "Subscribe for updates");
-  const isContribute = decision.variationKey === "contribute";
+  const headline = (decision.variables.headline as string) || "Banking made simple";
+  const subheadline = (decision.variables.subheadline as string) || "";
+  const isChallenger = decision.variationKey === "challenger";
 
   return (
     <div
-      className={`rounded-2xl p-8 text-center ${
-        isContribute ? "bg-gradient-brand" : "bg-surface-lowest border border-ghost-border"
+      className={`rounded-2xl p-8 ${
+        isChallenger ? "bg-gradient-brand" : "bg-surface-lowest border border-ghost-border"
       }`}
     >
       <p
         className={`text-xs font-semibold uppercase tracking-widest mb-3 ${
-          isContribute ? "text-on-brand opacity-70" : "text-on-surface-variant"
+          isChallenger ? "text-on-brand opacity-70" : "text-on-surface-variant"
         }`}
       >
         variation: {decision.variationKey}
       </p>
       <h3
-        className={`font-display text-2xl font-bold mb-4 ${
-          isContribute ? "text-on-brand" : "text-on-surface"
+        className={`font-display text-2xl font-bold mb-3 ${
+          isChallenger ? "text-on-brand" : "text-on-surface"
         }`}
       >
-        {title}
+        {headline}
       </h3>
-      <button
-        className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-90 ${
-          isContribute ? "bg-surface text-brand" : "bg-brand text-on-brand"
-        }`}
-      >
-        {isContribute ? "Get involved" : "Subscribe"}
-      </button>
+      {subheadline && (
+        <p
+          className={`text-sm leading-relaxed ${
+            isChallenger ? "text-on-brand opacity-90" : "text-on-surface-variant"
+          }`}
+        >
+          {subheadline}
+        </p>
+      )}
     </div>
   );
 }
@@ -392,13 +394,13 @@ export default async function MyPage() {
   const { bucketingId } = await getVisitorContext();
 
   // Normal decision - bucketed by the visitor's stable userId
-  const decision = user.decide("subscribe_button");
+  const decision = user.decide("hero_copy");
 
   // Account-level decision - when logged in, bucket by account ID instead.
   // All seats on the same account see the same variation.
   // userId is still used for analytics; only bucketing is overridden.
   const accountDecision = bucketingId
-    ? user.decide("subscribe_button", { bucketingId })
+    ? user.decide("hero_copy", { bucketingId })
     : null;
 }`;
 
@@ -408,9 +410,9 @@ export default async function FeatureFlagsDemoPage() {
   const device = attributes.device as string;
 
   const decisions = user.decideAll();
-  const subscribeDecision = decisions["subscribe_button"];
+  const heroCopyDecision = decisions["hero_copy"];
   const bucketedDecision = bucketingId
-    ? user.decide("subscribe_button", { bucketingId })
+    ? user.decide("hero_copy", { bucketingId })
     : null;
 
   const activeVariations = Object.values(decisions)
@@ -501,7 +503,7 @@ export default async function FeatureFlagsDemoPage() {
               <h3 className="font-display font-semibold text-on-surface mb-2">Page decodes variation from URL params</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 The catch-all route receives{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">slug = ["savings", "__v_variation_1"]</code>.
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">slug = ["savings", "__v_homepage--business"]</code>.
                 <code className="bg-surface-low px-1 rounded font-mono text-xs"> extractVariations(slug)</code> strips the{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">__v_</code> segments back out and returns the
                 clean path + active variation keys. No <code className="bg-surface-low px-1 rounded font-mono text-xs">cookies()</code> call
@@ -601,27 +603,28 @@ export default async function FeatureFlagsDemoPage() {
           )}
         </section>
 
-        {/* ── Live subscribe demo ── */}
+        {/* ── Live hero_copy demo ── */}
         <section id="live-demo">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Live Demo: <code className="font-mono text-2xl">subscribe_button</code> <a href="#live-demo" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            Live Demo: <code className="font-mono text-2xl">hero_copy</code> <a href="#live-demo" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-2">
-            This component is driven entirely by the{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">subscribe_button</code> flag
-            and its <code className="bg-surface-low px-1 rounded text-xs font-mono">subscribe_title</code> variable.
+            This card is driven entirely by the{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">hero_copy</code> flag
+            and its <code className="bg-surface-low px-1 rounded text-xs font-mono">headline</code> +{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">subheadline</code> variables.
           </p>
           <div className="flex flex-wrap gap-2 mb-6 text-xs text-on-surface-variant">
             <span>Variations:</span>
             <Pill>off</Pill>
             <span>·</span>
-            <Pill>on</Pill>
-            <span>(default title from variable)</span>
+            <Pill>control</Pill>
+            <span>(product-led copy)</span>
             <span>·</span>
-            <Pill>contribute</Pill>
-            <span>(alternate messaging + brand gradient)</span>
+            <Pill>challenger</Pill>
+            <span>(benefit-led copy + brand gradient)</span>
           </div>
-          <SubscribeDemo decision={subscribeDecision} />
+          <HeroCopyDemo decision={heroCopyDecision} />
         </section>
 
         {/* ── Bucketing ID ── */}
@@ -663,7 +666,7 @@ export default async function FeatureFlagsDemoPage() {
 
           {/* Live comparison */}
           <div className="mt-8">
-            <h3 className="font-display font-semibold text-on-surface mb-1">Live comparison - <code className="font-mono font-semibold">subscribe_button</code></h3>
+            <h3 className="font-display font-semibold text-on-surface mb-1">Live comparison - <code className="font-mono font-semibold">hero_copy</code></h3>
             <p className="text-sm text-on-surface-variant mb-5">
               {bucketingId
                 ? `Bucketing ID active (SHA-256 of login email). The two decisions below may land in different variations - the normal decision is bucketed by your browser's stable userId, the account decision by the hashed login ID.`
@@ -674,10 +677,10 @@ export default async function FeatureFlagsDemoPage() {
                 <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-3">
                   Normal - bucketed by userId
                 </p>
-                <SubscribeDemo decision={subscribeDecision} />
-                {subscribeDecision && (
+                <HeroCopyDemo decision={heroCopyDecision} />
+                {heroCopyDecision && (
                   <p className="mt-2 text-xs font-mono text-on-surface-variant">
-                    variation: <span className="text-brand">{subscribeDecision.variationKey ?? "off"}</span>
+                    variation: <span className="text-brand">{heroCopyDecision.variationKey ?? "off"}</span>
                   </p>
                 )}
               </div>
@@ -690,7 +693,7 @@ export default async function FeatureFlagsDemoPage() {
                 </p>
                 {bucketedDecision ? (
                   <>
-                    <SubscribeDemo decision={bucketedDecision} />
+                    <HeroCopyDemo decision={bucketedDecision} />
                     <p className="mt-2 text-xs font-mono text-on-surface-variant">
                       variation: <span className="text-emerald-600">{bucketedDecision.variationKey ?? "off"}</span>
                     </p>
@@ -722,13 +725,13 @@ export default async function FeatureFlagsDemoPage() {
           {/* Flow diagram */}
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-6">
             <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
-              Request flow - this demo&apos;s homepage_audience experiment
+              Request flow - this demo&apos;s homepage personalization
             </p>
             <div className="flex flex-wrap items-start gap-3">
               <div className="text-center">
                 <div className="bg-surface-low rounded-xl px-4 py-3 mb-1 min-w-[120px]">
                   <p className="text-xs font-mono font-semibold text-on-surface">FX Dashboard</p>
-                  <p className="text-xs text-on-surface-variant mt-0.5">flag: <code className="font-mono">homepage_audience</code></p>
+                  <p className="text-xs text-on-surface-variant mt-0.5">flag: <code className="font-mono">homepage</code></p>
                   <p className="text-xs text-on-surface-variant">variation: <code className="font-mono text-brand">business</code></p>
                 </div>
               </div>
@@ -809,13 +812,13 @@ export default async function FeatureFlagsDemoPage() {
           </p>
 
           <div className="space-y-8 max-w-2xl">
-            <Step number={1} title="Create a flag and experiment in Feature Experimentation">
+            <Step number={1} title="Create a flag and targeting rules in Feature Experimentation">
               Create manually in the FX dashboard or via the REST API. This demo uses flag{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">homepage_audience</code> with two
-              audience-targeted delivery rules and a fallback:{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code> (33%, audience: <code className="bg-surface-low px-1 rounded font-mono text-xs">persona == "personal"</code>),{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code> (33%, audience: <code className="bg-surface-low px-1 rounded font-mono text-xs">persona == "business"</code>), and{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">off</code> (34%). The{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">homepage</code> with two
+              targeted-delivery rules, each serving 100% of its audience:{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code> (audience: <code className="bg-surface-low px-1 rounded font-mono text-xs">persona == "business"</code>) and{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code> (audience: <code className="bg-surface-low px-1 rounded font-mono text-xs">persona == "personal"</code>).
+              Visitors matching neither audience fall through to the default <code className="bg-surface-low px-1 rounded font-mono text-xs">off</code> variation and see the base homepage. The{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code> attribute is set from the{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_persona</code> cookie by the Audience Switcher.
             </Step>

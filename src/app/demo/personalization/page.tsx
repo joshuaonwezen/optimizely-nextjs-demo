@@ -599,7 +599,7 @@ export default async function CmsPage({
                 <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
                   <code>{`// Pass everything you know about the user
 const { userId, attributes } = await getVisitorContext();
-const decision = await getDecision("homepage_audience", userId, {
+const decision = await getDecision("homepage", userId, {
   // From getVisitorContext() (device, persona, logged_in)
   ...attributes,
 

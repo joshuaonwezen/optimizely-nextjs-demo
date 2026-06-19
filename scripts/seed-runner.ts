@@ -88,8 +88,8 @@ async function main() {
     ["npx", ["tsx", "scripts/seed-quotes.ts"]],
     // Excluded:
     // seed-business-banking-app-variation.ts — hardcoded version key, instance-specific
-    // seed-fx-experiment.ts                  — requires separate FX_API_TOKEN + FX_PROJECT_ID
     // register-webhook.mjs                   — interactive prompt for public URL
+    // FX flags/experiments are managed via the Optimizely Experimentation MCP server.
   ];
 
   for (const [cmd, args] of required) {

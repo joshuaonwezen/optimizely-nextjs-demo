@@ -102,8 +102,9 @@ These are normal — they are not failures:
 ### Scripts excluded from the runner
 
 - `seed-business-banking-app-variation.ts` — hardcoded version key for personal instance only
-- `seed-fx-experiment.ts` — requires `OPTIMIZELY_FX_API_TOKEN` + `OPTIMIZELY_FX_PROJECT_ID`
 - `register-webhook.mjs` — interactive prompt for public URL; run manually when needed
+
+FX flags and experiments are managed through the Optimizely Experimentation MCP server (`mcp__exp__*` tools), not via a local seed script.
 
 ### Two instances
 
@@ -482,7 +483,7 @@ Case-sensitive. If the FX flag has variation key `variation_1`, the CMS variatio
 Changes in the FX console take up to 60 seconds to propagate. Wait before concluding a flag isn't working.
 
 ### Middleware rewrite — non-CMS routes must be excluded
-The middleware appends variation segments to the URL path (e.g. `/savings/__v_homepage_audience--variation_1`) so each ISR cache key is stable per bucket. Any route that is NOT a CMS page must be excluded from this rewrite or it will 404: the rewritten path won't match its Next.js route and will fall through to the `[[...slug]]` catch-all, which calls `notFound()`.
+The middleware appends variation segments to the URL path (e.g. `/savings/__v_homepage--business`) so each ISR cache key is stable per bucket. Any route that is NOT a CMS page must be excluded from this rewrite or it will 404: the rewritten path won't match its Next.js route and will fall through to the `[[...slug]]` catch-all, which calls `notFound()`.
 
 Current exclusions in `src/middleware.ts`:
 ```ts
