@@ -11,7 +11,7 @@ export default async function Footer() {
   const ctaStyle = footerCta.enabled ? ((footerCta.variables.style as string) || "app_download") : null;
 
   return (
-    <footer data-component="Footer" className="bg-surface-low">
+    <footer data-component="Footer" data-track-event="mb_nav_click" data-track-tags={JSON.stringify({ source: "footer" })} className="bg-surface-low">
       {ctaStyle && (
         <>
           <div className="border-b border-ghost-border">

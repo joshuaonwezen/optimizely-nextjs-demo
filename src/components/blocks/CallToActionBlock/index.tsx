@@ -85,6 +85,8 @@ export default function CallToActionBlock(props: CallToActionProps) {
       {(data.link || data.__context?.edit) && (
         <a
           href={data.__context?.edit ? undefined : (data.link ?? undefined)}
+          data-track-event="mb_cta_click"
+          data-track-tags={JSON.stringify({ label: data.label ?? "", variant })}
           className={`hover-lift font-display inline-block rounded-lg font-semibold ${isLarge ? "px-12 py-5 text-lg" : "px-10 py-4 text-base"} ${vs}`}
         >
           <span {...pa("label")}>{data.label ?? "Get Started"}</span>

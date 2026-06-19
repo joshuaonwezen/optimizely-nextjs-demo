@@ -6,6 +6,7 @@ import GlobalBanner from "@/components/layout/GlobalBanner";
 import Footer from "@/components/layout/Footer";
 import DemoToolbar from "@/components/demo/DemoToolbar";
 import OdpSetup from "@/components/OdpSetup";
+import AutoTracker from "@/components/AutoTracker";
 import StickyOfferBar from "@/components/layout/StickyOfferBar";
 import RatesBar from "@/components/layout/RatesBar";
 import TrustSection from "@/components/layout/TrustSection";
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
     "Personal, business, and mortgage banking — built around you.",
 };
 
-const themeScript = `(function(){var t=localStorage.getItem('theme');var s=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t||s);})();`;
+const themeScript = `(function(){var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');})();`;
 
 // Inlined in <head> so the zaius queue exists synchronously during HTML
 // parsing — before React hydration, before any useEffect fires.
@@ -67,6 +68,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <StickyOfferBar />
         <DemoToolbar />
         <OdpSetup />
+        <AutoTracker />
       </body>
     </html>
   );

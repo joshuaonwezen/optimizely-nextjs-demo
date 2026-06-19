@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { trackEvent } from "@/lib/optimizely/track";
 
 const PERSONAS = [
   { key: "",          label: "Default" },
@@ -62,6 +63,7 @@ export default function AudienceSwitcher() {
     });
     setCurrent(key);
     setLoading(false);
+    trackEvent("mb_audience_switch", { from: current || "default", to: key || "default" });
     router.refresh();
   }
 
@@ -94,8 +96,18 @@ export default function AudienceSwitcher() {
     router.refresh();
   }
 
+  async function resetVisitorId() {
+    if (loading) return;
+    setLoading(true);
+    const res = await fetch("/api/demo/reset-visitor-id", { method: "POST" });
+    const { userId: newId } = await res.json();
+    setUserId(newId);
+    setLoading(false);
+    router.refresh();
+  }
+
   return (
-    <div data-component="AudienceSwitcher" ref={ref} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+    <div data-component="AudienceSwitcher" ref={ref} className="fixed bottom-16 right-6 z-50 flex flex-col items-end gap-2">
       {open && (
         <div className="bg-surface-lowest border border-outline-variant rounded-2xl shadow-xl overflow-hidden w-56">
 
@@ -172,7 +184,17 @@ export default function AudienceSwitcher() {
           <div className="px-4 py-3 border-t border-outline-variant space-y-1.5">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-xs font-mono text-on-surface-variant shrink-0">visitor_id</span>
-              <span className="text-xs font-mono text-on-surface truncate text-right">{userId === "anonymous" ? "anonymous" : `${userId.slice(0, 8)}…${userId.slice(-4)}`}</span>
+              <div className="flex items-baseline gap-1.5 min-w-0">
+                <span className="text-xs font-mono text-on-surface truncate text-right">{userId === "anonymous" ? "anonymous" : `${userId.slice(0, 8)}…${userId.slice(-4)}`}</span>
+                <button
+                  onClick={resetVisitorId}
+                  disabled={loading}
+                  title="Reset visitor ID — assigns a fresh UUID and re-buckets you"
+                  className="text-xs text-brand hover:underline disabled:opacity-60 shrink-0"
+                >
+                  reset
+                </button>
+              </div>
             </div>
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-xs font-mono text-on-surface-variant shrink-0">bucketing_id</span>

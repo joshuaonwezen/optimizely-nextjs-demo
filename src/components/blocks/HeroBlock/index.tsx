@@ -156,6 +156,8 @@ export default async function HeroBlock(props: HeroBlockProps) {
               {(data.ctaLink || data.__context?.edit) && (
                 <a
                   href={data.__context?.edit ? undefined : (data.ctaLink ?? undefined)}
+                  data-track-event="mb_hero_cta_click"
+                  data-track-tags={JSON.stringify({ label: data.ctaText ?? "", placement: "primary" })}
                   className="hover-lift font-display inline-block px-8 py-4 rounded-lg font-semibold text-lg bg-surface-lowest text-brand"
                 >
                   <span {...pa("ctaText")}>{data.ctaText ?? "Learn More"}</span>
@@ -164,6 +166,8 @@ export default async function HeroBlock(props: HeroBlockProps) {
               {secondaryLabel && secondaryUrl && (
                 <a
                   href={secondaryUrl}
+                  data-track-event="mb_hero_cta_click"
+                  data-track-tags={JSON.stringify({ label: secondaryLabel, placement: "secondary" })}
                   className="font-display inline-block px-8 py-4 rounded-lg font-semibold text-lg border-2 border-white/30 text-on-brand hover:bg-white/10 transition-colors"
                 >
                   {secondaryLabel}

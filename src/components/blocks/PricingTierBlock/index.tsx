@@ -120,6 +120,8 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
       {data.ctaText && data.ctaLink && (
         <Link
           href={data.ctaLink}
+          data-track-event="mb_pricing_tier_click"
+          data-track-tags={JSON.stringify({ tier: data.name ?? "", label: data.ctaText ?? "", highlighted: !!data.highlighted })}
           className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-opacity ${
             data.highlighted
               ? "bg-on-brand text-brand hover:opacity-90"

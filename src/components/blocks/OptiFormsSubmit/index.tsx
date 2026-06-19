@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { trackEvent } from "@/lib/optimizely/track";
 
 interface OptiFormsSubmitData {
   Label?: string | null;
@@ -64,12 +65,15 @@ export default function OptiFormsSubmit(props: OptiFormsSubmitProps) {
         const responseData = await res.json().catch(() => ({}));
         if (showDebug) setDebug({ payload, response: responseData, httpStatus: res.status });
         setStatus("success");
+        trackEvent("mb_form_submit", { fields: Object.keys(payload).join(","), status: "success" });
         inputs.forEach((el) => { el.value = ""; });
       } else {
         setStatus("error");
+        trackEvent("mb_form_submit", { fields: Object.keys(payload).join(","), status: "error", httpStatus: res.status });
       }
     } catch {
       setStatus("error");
+      trackEvent("mb_form_submit", { fields: Object.keys(payload).join(","), status: "error" });
     }
   }
 

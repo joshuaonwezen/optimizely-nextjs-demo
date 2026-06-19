@@ -92,6 +92,8 @@ export default function ProductCardBlock(props: ProductCardBlockProps) {
     <a
       data-component="ProductCardBlock"
       href={href}
+      data-track-event="mb_product_card_click"
+      data-track-tags={JSON.stringify({ title: data.title ?? "", featured: isFeatured })}
       className={`hover-ambient group flex flex-col h-full rounded-2xl p-8 ${isFeatured ? "bg-secondary-container ring-2 ring-brand/30 shadow-ambient" : "bg-surface-lowest"}`}
     >
       {showIcon && (
