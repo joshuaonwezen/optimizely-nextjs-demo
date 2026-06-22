@@ -53,6 +53,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script src="https://cdn.optimizely.com/js/23338860169.js" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: odpInitScript }} />
       </head>
