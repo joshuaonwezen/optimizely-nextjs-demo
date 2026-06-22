@@ -1,8 +1,6 @@
 import { contentType } from "@optimizely/cms-sdk";
 import { getSiteBanner } from "@/lib/graphql/queries/GetSiteBanner";
-import { getOptimizelyUser } from "@/lib/optimizely/user";
 import { GlobalBannerClient } from "./GlobalBannerClient";
-import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 
 export const SiteBannerType = contentType({
   key: "SiteBanner",
@@ -17,29 +15,10 @@ export const SiteBannerType = contentType({
   },
 });
 
-export interface FxBannerData {
-  message: string;
-  linkText?: string | null;
-  variation: string | null;
-}
-
+// CMS banner is fetched server-side (ISR-cacheable). The FX banner experiment is
+// decided client-side in GlobalBannerClient so this stays out of the cookie-reading
+// server render path.
 export default async function GlobalBanner() {
-  const [cmsBanner, user] = await Promise.all([getSiteBanner(), getOptimizelyUser()]);
-
-  const fxDecision = user.decide("banner");
-  let fxBanner: FxBannerData | null = null;
-  if (fxDecision.enabled) {
-    const v = fxDecision.variables;
-    const message = (v.title as string) || (v.description as string) || "";
-    if (message) {
-      fxBanner = { message, linkText: v.linkText as string | null | undefined, variation: fxDecision.variationKey };
-    }
-  }
-
-  return (
-    <>
-      <GlobalBannerClient cmsBanner={cmsBanner} fxBanner={fxBanner} />
-      {fxBanner && <FxBucketingEvent flagKey="banner" />}
-    </>
-  );
+  const cmsBanner = await getSiteBanner();
+  return <GlobalBannerClient cmsBanner={cmsBanner} />;
 }

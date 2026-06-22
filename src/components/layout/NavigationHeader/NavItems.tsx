@@ -10,17 +10,19 @@ import type { SupportedLocale } from "@/lib/graphql/queries/GetSupportedLocales"
 import SearchOverlay from "@/components/layout/SearchOverlay";
 import MoseyBankLogo from "@/components/MoseyBankLogo";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 
 interface Props {
   tree: NavNode[];
   demoCategories: DemoCategory[];
   locales: SupportedLocale[];
-  isLoggedIn?: boolean;
-  searchExpanded?: boolean;
-  showBottomTabs?: boolean;
 }
 
 const LOCALE_RE = /^[a-z]{2}(-[a-z]{2})?$/;
+
+function getCookie(name: string): string | undefined {
+  return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1];
+}
 
 function getCurrentLocale(pathname: string): string {
   const first = pathname.split("/").filter(Boolean)[0] ?? "";
@@ -57,13 +59,25 @@ function SearchIcon() {
   );
 }
 
-export default function NavItems({ tree, demoCategories, locales, isLoggedIn, searchExpanded, showBottomTabs }: Props) {
+export default function NavItems({ tree, demoCategories, locales }: Props) {
   const [activeKey,     setActiveKey]     = useState<string | null>(null);
   const [searchOpen,    setSearchOpen]    = useState(false);
   const [mobileOpen,    setMobileOpen]    = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const [isLoggedIn,    setIsLoggedIn]    = useState(false);
   const pathname = usePathname();
   const currentLocale = getCurrentLocale(pathname);
+
+  // Logged-in state derives from the demo_bucketing_id cookie (read client-side so
+  // the server render stays cacheable).
+  useEffect(() => { setIsLoggedIn(!!getCookie("demo_bucketing_id")); }, []);
+
+  // FX: nav_search_style + mobile_nav, decided client-side.
+  const searchStyle = useFxDecision("nav_search_style");
+  const searchExpanded = searchStyle?.enabled && (searchStyle.variables.style as string) === "expanded";
+
+  const mobileNav = useFxDecision("mobile_nav");
+  const showBottomTabs = mobileNav?.enabled && mobileNav.variationKey === "bottom_tabs";
 
   // Close drawer on navigation
   useEffect(() => { setMobileOpen(false); }, [pathname]);

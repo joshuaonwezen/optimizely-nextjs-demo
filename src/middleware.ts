@@ -60,9 +60,13 @@ export async function middleware(request: NextRequest) {
     if (!ctx) return response;
 
     const decisions = ctx.decideAll([OptimizelyDecideOption.DISABLE_DECISION_EVENT]);
-    // Collect active decisions sorted by variationKey for a stable ISR cache key.
+    // Only flags that drive CMS content (variation variable cms_flag === true) create
+    // cache routes. Component-level experiments resolve client-side and are excluded
+    // here so they don't fragment the ISR cache key. Sorted by variationKey for a
+    // stable cache key.
     const activeDecisions = Object.values(decisions)
       .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
+      .filter((d) => d.variables?.cms_flag === true)
       .sort((a, b) => (a.variationKey as string).localeCompare(b.variationKey as string));
 
     if (activeDecisions.length === 0) return response;

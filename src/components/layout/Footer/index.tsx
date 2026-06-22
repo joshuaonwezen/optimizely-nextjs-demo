@@ -1,61 +1,13 @@
 import Link from "next/link";
 import { getDemoCategories } from "@/lib/getDemoLinks";
-import { getOptimizelyUser } from "@/lib/optimizely/user";
-import { FxBucketingEvent } from "@/components/FxBucketingEvent";
+import { FooterCtaClient } from "./FooterCtaClient";
 
-export default async function Footer() {
+export default function Footer() {
   const categories = getDemoCategories();
-
-  const user = await getOptimizelyUser();
-  const footerCta = user.decide("footer_cta");
-  const ctaStyle = footerCta.enabled ? ((footerCta.variables.style as string) || "app_download") : null;
 
   return (
     <footer data-component="Footer" data-track-event="mb_nav_click" data-track-tags={JSON.stringify({ source: "footer" })} className="bg-surface-low">
-      {ctaStyle && (
-        <>
-          <div className="border-b border-ghost-border">
-            <div className="max-w-7xl mx-auto px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
-              {ctaStyle === "open_account" ? (
-                <>
-                  <div>
-                    <p className="font-display font-bold text-xl text-on-surface">Start earning today</p>
-                    <p className="text-sm text-on-surface-variant mt-1">Open an account in 3 minutes. No fees, no minimums.</p>
-                  </div>
-                  <Link
-                    href="/personal/checking"
-                    className="flex-shrink-0 px-6 py-3 rounded-full bg-brand text-on-brand text-sm font-semibold hover:bg-brand-dim transition-colors"
-                  >
-                    Open an account &rarr;
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <p className="font-display font-bold text-xl text-on-surface">Bank on the go</p>
-                    <p className="text-sm text-on-surface-variant mt-1">Available on iOS and Android. 4.9★ rated.</p>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <a
-                      href="#"
-                      className="px-5 py-2.5 rounded-xl bg-on-surface text-surface text-sm font-semibold hover:opacity-90 transition-opacity"
-                    >
-                      App Store
-                    </a>
-                    <a
-                      href="#"
-                      className="px-5 py-2.5 rounded-xl bg-on-surface text-surface text-sm font-semibold hover:opacity-90 transition-opacity"
-                    >
-                      Google Play
-                    </a>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-          <FxBucketingEvent flagKey="footer_cta" />
-        </>
-      )}
+      <FooterCtaClient />
       <div className="py-16">
         <div className="max-w-7xl mx-auto px-8">
           <div className="flex flex-wrap justify-center gap-x-12 gap-y-6 mb-8">

@@ -2,18 +2,20 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useFxDecision } from "@/lib/optimizely/useFxDecision";
+import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 
-interface Props {
-  message: string;
-  linkText?: string | null;
-  linkUrl?: string | null;
-  expiryLabel?: string | null;
-}
+export function StickyOfferBarClient() {
+  const decision = useFxDecision("sticky_offer_bar");
+  const message = (decision?.variables.message as string) || "";
+  const linkText = (decision?.variables.linkText as string) || null;
+  const linkUrl = (decision?.variables.linkUrl as string) || null;
+  const expiryLabel = (decision?.variables.expiryLabel as string) || null;
 
-export function StickyOfferBarClient({ message, linkText, linkUrl, expiryLabel }: Props) {
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
+    if (!message) return;
     if (!sessionStorage.getItem(`offer-dismissed:${message}`)) {
       setDismissed(false);
     }
@@ -24,9 +26,11 @@ export function StickyOfferBarClient({ message, linkText, linkUrl, expiryLabel }
     setDismissed(true);
   }
 
-  if (dismissed) return null;
+  if (!decision?.enabled || !message) return null;
+  if (dismissed) return <FxBucketingEvent flagKey="sticky_offer_bar" />;
 
   return (
+    <>
     <div
       data-component="StickyOfferBar"
       className="fixed bottom-0 inset-x-0 z-40 bg-gradient-brand text-on-brand shadow-xl border-t border-white/10"
@@ -57,5 +61,7 @@ export function StickyOfferBarClient({ message, linkText, linkUrl, expiryLabel }
         </button>
       </div>
     </div>
+    <FxBucketingEvent flagKey="sticky_offer_bar" />
+    </>
   );
 }

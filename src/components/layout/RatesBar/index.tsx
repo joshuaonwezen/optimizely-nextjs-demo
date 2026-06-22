@@ -1,10 +1,10 @@
-import { getOptimizelyUser } from "@/lib/optimizely/user";
+"use client";
+import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 
-export default async function RatesBar() {
-  const user = await getOptimizelyUser();
-  const decision = user.decide("rates_bar");
-  if (!decision.enabled) return null;
+export default function RatesBar() {
+  const decision = useFxDecision("rates_bar");
+  if (!decision?.enabled) return null;
 
   const apy     = (decision.variables.apy     as string) || "";
   const product = (decision.variables.product as string) || "";

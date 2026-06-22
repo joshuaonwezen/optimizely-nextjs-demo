@@ -1,4 +1,5 @@
-import { getOptimizelyUser } from "@/lib/optimizely/user";
+"use client";
+import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 
 const STATS = [
@@ -26,10 +27,9 @@ const TESTIMONIALS = [
   },
 ];
 
-export default async function TrustSection() {
-  const user = await getOptimizelyUser();
-  const decision = user.decide("trust_section_style");
-  if (!decision.enabled) return null;
+export default function TrustSection() {
+  const decision = useFxDecision("trust_section_style");
+  if (!decision?.enabled) return null;
 
   const style = (decision.variables.style as string) || "stats";
 

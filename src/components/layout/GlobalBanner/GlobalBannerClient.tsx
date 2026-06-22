@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import type { FxBannerData } from "./index";
+import { useFxDecision } from "@/lib/optimizely/useFxDecision";
+import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 import { Banner1, Banner2, Banner3, Banner4 } from "./FxBannerVariants";
 
 interface CmsBanner {
@@ -19,20 +20,32 @@ const VARIANT_CLASSES: Record<string, string> = {
   success: "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300",
 };
 
-export function GlobalBannerClient({
-  cmsBanner,
-  fxBanner,
-}: {
-  cmsBanner: CmsBanner | null;
-  fxBanner: FxBannerData | null;
-}) {
-  if (fxBanner) {
-    if (fxBanner.variation === "banner1") return <Banner1 message={fxBanner.message} linkText={fxBanner.linkText} />;
-    if (fxBanner.variation === "banner2") return <Banner2 message={fxBanner.message} linkText={fxBanner.linkText} />;
-    if (fxBanner.variation === "banner3") return <Banner3 message={fxBanner.message} linkText={fxBanner.linkText} />;
-    if (fxBanner.variation === "banner4") return <Banner4 message={fxBanner.message} linkText={fxBanner.linkText} />;
+export function GlobalBannerClient({ cmsBanner }: { cmsBanner: CmsBanner | null }) {
+  const decision = useFxDecision("banner");
+
+  if (decision?.enabled) {
+    const v = decision.variables;
+    const message = (v.title as string) || (v.description as string) || "";
+    if (message) {
+      const linkText = v.linkText as string | null | undefined;
+      const variation = decision.variationKey;
+      let variant: React.ReactNode = null;
+      if (variation === "banner1") variant = <Banner1 message={message} linkText={linkText} />;
+      else if (variation === "banner2") variant = <Banner2 message={message} linkText={linkText} />;
+      else if (variation === "banner3") variant = <Banner3 message={message} linkText={linkText} />;
+      else if (variation === "banner4") variant = <Banner4 message={message} linkText={linkText} />;
+      if (variant) {
+        return (
+          <>
+            {variant}
+            <FxBucketingEvent flagKey="banner" />
+          </>
+        );
+      }
+    }
   }
 
+  // SSR default + fallback: the CMS banner (no FX variant active)
   if (!cmsBanner?.enabled || !cmsBanner?.message) return null;
 
   const variantClass = VARIANT_CLASSES[cmsBanner.variant ?? "info"] ?? VARIANT_CLASSES.info;
