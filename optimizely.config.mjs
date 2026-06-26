@@ -14,6 +14,7 @@ export const DynamicExperienceType = contentType({
     "AuthorBlock", "OutcomeItemBlock", "TestimonialBlock",
     "FaqItemBlock", "FaqContainerBlock",
     "TimelineMilestoneBlock", "TeamMemberBlock",
+    "ContactFormBlock",
     "NavigationItem", "Navigation",
   ],
   properties: {

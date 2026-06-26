@@ -3,19 +3,46 @@ import { getClient } from "@optimizely/cms-sdk";
 import { RichText } from "@optimizely/cms-sdk/react/richText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
+import { graphqlFetch } from "@/lib/optimizely/client";
+
+const FEATURED_BLOCK_KEY_QUERY = /* GraphQL */ `
+  query FeaturedBlockKey($key: String!) {
+    TraditionalPage(where: { _metadata: { key: { eq: $key } } }, limit: 1) {
+      items { featuredBlock { _metadata { key } } }
+    }
+  }
+`;
 
 export default async function TraditionalPage({ content }: { content: any }) {
   const { pa, src } = getPreviewUtils(content);
   const heroUrl = src(content.heroImage as any) ?? content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
 
-  // Graph returns only base metadata for single type:"content" references.
-  // When featuredBlock comes back as _Content (no inline expansion), fetch
+  // Graph returns only base metadata for single type:"content" references and
+  // never inline-expands them. When the referenced type is a _component, the
+  // SDK's generated page query omits even _metadata (it skips the interface
+  // fragment for main base types), so the page query gives us only __typename.
+  // Resolve the reference key with a targeted query on this page, then fetch
   // the full item by key so OptimizelyComponent can dispatch it correctly.
+  const isBaseMeta = (b: { __typename?: string } | null | undefined) =>
+    b?.__typename === "_Content" || b?.__typename === "_Component";
   let featuredBlock = content.featuredBlock ?? null;
-  if (featuredBlock?.__typename === "_Content" && featuredBlock?._metadata?.key) {
-    featuredBlock = await getClient()
-      .getContent({ key: featuredBlock._metadata.key }, { next: { revalidate: 60 } } as any)
-      .catch(() => null);
+  if (isBaseMeta(featuredBlock)) {
+    let blockKey = featuredBlock?._metadata?.key as string | undefined;
+    if (!blockKey && content?._metadata?.key) {
+      const { data } = await graphqlFetch<{
+        TraditionalPage?: { items?: Array<{ featuredBlock?: { _metadata?: { key?: string } } }> };
+      }>(
+        FEATURED_BLOCK_KEY_QUERY,
+        { key: content._metadata.key },
+        { next: { revalidate: 60, tags: ["page"] } }
+      );
+      blockKey = data?.TraditionalPage?.items?.[0]?.featuredBlock?._metadata?.key;
+    }
+    featuredBlock = blockKey
+      ? await getClient()
+          .getContent({ key: blockKey }, { next: { revalidate: 60 } } as any)
+          .catch(() => null)
+      : null;
   }
 
   return (
@@ -64,7 +91,7 @@ export default async function TraditionalPage({ content }: { content: any }) {
         )}
       </div>
 
-      {featuredBlock && featuredBlock.__typename !== "_Content" && (
+      {featuredBlock && !isBaseMeta(featuredBlock) && (
         <div
           className="mt-16 border-t border-outline-variant pt-12"
           {...pa("featuredBlock")}

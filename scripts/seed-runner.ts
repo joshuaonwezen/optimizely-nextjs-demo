@@ -86,6 +86,7 @@ async function main() {
     ["npx", ["tsx", "scripts/seed-homepage-variations.ts"]],
     ["npx", ["tsx", "scripts/seed-nav-strategy-demo.ts"]],
     ["npx", ["tsx", "scripts/seed-quotes.ts"]],
+    ["npx", ["tsx", "scripts/seed-contact-pages.ts"]],
     // Excluded:
     // seed-business-banking-app-variation.ts — hardcoded version key, instance-specific
     // register-webhook.mjs                   — interactive prompt for public URL

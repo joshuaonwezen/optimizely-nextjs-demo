@@ -38,6 +38,7 @@ import TeamMemberBlock, { TeamMemberBlockType, TeamMemberHorizontalTemplate } fr
 import TeamGridBlock, { TeamGridBlockType } from "@/components/blocks/TeamGridBlock";
 import ComparisonTableBlock, { ComparisonTableBlockType } from "@/components/blocks/ComparisonTableBlock";
 import CalloutBlock, { CalloutBlockType } from "@/components/blocks/CalloutBlock";
+import ContactFormBlock, { ContactFormBlockType } from "@/components/blocks/ContactFormBlock";
 
 import DynamicExperience from "@/components/experience/DynamicExperience";
 import BlankExperience from "@/components/experience/BlankExperience";
@@ -175,6 +176,7 @@ export function initComponentRegistry() {
     TeamGridBlockType,
     ComparisonTableBlockType,
     CalloutBlockType,
+    ContactFormBlockType,
     ArticlePageType,
     CaseStudyPageType,
   ]);
@@ -306,6 +308,7 @@ export function initComponentRegistry() {
       TeamGridBlock,
       ComparisonTableBlock,
       CalloutBlock,
+      ContactFormBlock,
       Navigation: NavigationBlock,
       NavigationItem: NavigationItemPreview,
       // Fallback: unknown types from the CMS (stale seeds, deleted types) — render nothing
