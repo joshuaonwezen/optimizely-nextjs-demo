@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { OptimizelyDecideOption } from "@optimizely/optimizely-sdk";
 import { getOptimizelyBrowserClient } from "./browser-client";
 
@@ -15,12 +16,24 @@ function getCookie(name: string): string | undefined {
 
 // Resolves an FX flag in the browser using the same attributes as the server-side
 // getVisitorContext (device, logged_in, persona, page_views). Returns null until the
-// datafile loads. Impression-suppressed — render <FxBucketingEvent> to fire the event
+// datafile loads. Impression-suppressed - render <FxBucketingEvent> to fire the event
 // when the variant is shown, matching the existing measurement behavior.
+//
+// Decisions are suppressed on /demo/* routes (returns null), so the SDK documentation
+// pages render flag-free chrome - no banner, sticky offer, rates bar, etc. This mirrors
+// the middleware, which also skips server-side FX bucketing on /demo (src/middleware.ts).
 export function useFxDecision(flagKey: string): ClientFxDecision | null {
+  const pathname = usePathname();
   const [decision, setDecision] = useState<ClientFxDecision | null>(null);
 
   useEffect(() => {
+    // No flag-driven global UI on the docs pages. Clear any prior decision so
+    // client-side navigation into /demo hides UI that was showing on the last page.
+    if (pathname && /^\/demo(\/|$)/.test(pathname)) {
+      setDecision(null);
+      return;
+    }
+
     let cancelled = false;
     const userId = getCookie("optimizelyEndUserId");
     if (!userId) return;
@@ -53,7 +66,7 @@ export function useFxDecision(flagKey: string): ClientFxDecision | null {
     return () => {
       cancelled = true;
     };
-  }, [flagKey]);
+  }, [flagKey, pathname]);
 
   return decision;
 }
