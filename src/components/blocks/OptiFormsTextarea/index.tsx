@@ -7,17 +7,22 @@ function slugify(label?: string | null): string {
   return label?.toLowerCase().replace(/\s+/g, "_") ?? "field";
 }
 
-function isRequired(validators?: string | null): boolean {
+function isRequired(validators?: unknown): boolean {
   if (!validators) return false;
-  try {
-    const parsed = JSON.parse(validators);
-    if (Array.isArray(parsed)) {
-      return parsed.some((v: any) => v?.Type === "RequiredValidator" || v?.type === "RequiredValidator");
+  // Graph returns Validators as a JSON value (array of validator objects); demo
+  // mock data may pass a serialized string. Handle both.
+  let parsed: unknown = validators;
+  if (typeof validators === "string") {
+    try {
+      parsed = JSON.parse(validators);
+    } catch {
+      return validators.toLowerCase().includes("required");
     }
-  } catch {
-    return validators.toLowerCase().includes("required");
   }
-  return false;
+  return (
+    Array.isArray(parsed) &&
+    parsed.some((v: any) => v?.Type === "RequiredValidator" || v?.type === "RequiredValidator")
+  );
 }
 
 interface OptiFormsTextareaData {

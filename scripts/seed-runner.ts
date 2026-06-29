@@ -87,6 +87,11 @@ async function main() {
     ["npx", ["tsx", "scripts/seed-nav-strategy-demo.ts"]],
     ["npx", ["tsx", "scripts/seed-quotes.ts"]],
     ["npx", ["tsx", "scripts/seed-contact-pages.ts"]],
+    // Requires a published "Form Container" shared block authored in the CMS UI
+    // (native forms cannot be created via the API). Warns and skips if none exists.
+    // Build out the block's elements first, then place it on the contact page.
+    ["npx", ["tsx", "scripts/seed-form-block.ts"]],
+    ["npx", ["tsx", "scripts/seed-contact-form.ts"]],
     // Excluded:
     // seed-business-banking-app-variation.ts — hardcoded version key, instance-specific
     // register-webhook.mjs                   — interactive prompt for public URL

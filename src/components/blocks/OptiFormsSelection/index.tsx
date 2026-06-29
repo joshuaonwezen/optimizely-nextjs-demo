@@ -7,17 +7,22 @@ function slugify(label?: string | null): string {
   return label?.toLowerCase().replace(/\s+/g, "_") ?? "field";
 }
 
-function isRequired(validators?: string | null): boolean {
+function isRequired(validators?: unknown): boolean {
   if (!validators) return false;
-  try {
-    const parsed = JSON.parse(validators);
-    if (Array.isArray(parsed)) {
-      return parsed.some((v: any) => v?.Type === "RequiredValidator" || v?.type === "RequiredValidator");
+  // Graph returns Validators as a JSON value (array of validator objects); demo
+  // mock data may pass a serialized string. Handle both.
+  let parsed: unknown = validators;
+  if (typeof validators === "string") {
+    try {
+      parsed = JSON.parse(validators);
+    } catch {
+      return validators.toLowerCase().includes("required");
     }
-  } catch {
-    return validators.toLowerCase().includes("required");
   }
-  return false;
+  return (
+    Array.isArray(parsed) &&
+    parsed.some((v: any) => v?.Type === "RequiredValidator" || v?.type === "RequiredValidator")
+  );
 }
 
 interface SelectionItem {
@@ -37,15 +42,18 @@ type OptiFormsSelectionProps = OptiFormsSelectionData & {
   content?: OptiFormsSelectionData;
 };
 
-function parseOptions(raw?: string | null): SelectionItem[] {
+function parseOptions(raw?: unknown): SelectionItem[] {
   if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
-  } catch {
-    // not valid JSON
+  // Graph returns Options as a JSON value (array); demo mock data may pass a string.
+  let parsed: unknown = raw;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return [];
+    }
   }
-  return [];
+  return Array.isArray(parsed) ? (parsed as SelectionItem[]) : [];
 }
 
 export default function OptiFormsSelection(props: OptiFormsSelectionProps) {
