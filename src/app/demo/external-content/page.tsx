@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { getQuotes, GET_QUOTES_QUERY } from "@/lib/graphql/queries/GetQuotes";
 import { getLocations, GET_LOCATIONS_QUERY } from "@/lib/graphql/queries/GetLocations";
-import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 
 export const metadata: Metadata = {
@@ -282,13 +281,20 @@ export default async function ExternalContentPage() {
                   <strong>Settings → Content Types → Connect From Graph</strong>, the CMS rejects it:{" "}
                   <em>&quot;The content source &apos;locs&apos; with source type &apos;BankLocation&apos; has no property type &apos;GeoPoint&apos;.&quot;</em>
                 </p>
-                <p className="text-xs text-amber-700 leading-relaxed">
+                <p className="text-xs text-amber-700 leading-relaxed mb-2">
                   The schema uses separate <code className="bg-amber-100 px-1 rounded font-mono">lat</code> and{" "}
                   <code className="bg-amber-100 px-1 rounded font-mono">lon</code> Float fields as the CMS-compatible
                   alternative. This means Graph&apos;s{" "}
                   <code className="bg-amber-100 px-1 rounded font-mono">distance</code> filter is not available -
                   geographic filtering requires a native GeoPoint property type in SaaS CMS, which does not yet exist.
                   The Graph engineer&apos;s assessment is confirmed.
+                </p>
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  <strong className="text-amber-900">Additional constraint:</strong> the CMS also rejects &quot;Connect From Graph&quot;
+                  with <em>&quot;Can&apos;t connect a Graph schema without data as a content source&quot;</em> if no items are
+                  indexed yet. Schema registration alone is not enough - at least one record must exist in Graph before
+                  the CMS will allow connecting the source. Data indexing via the Content Source API requires
+                  Optimizely to enable the pipeline for the account (contact support).
                 </p>
               </div>
             </div>
