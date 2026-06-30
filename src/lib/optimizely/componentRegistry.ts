@@ -11,7 +11,7 @@ import { initReactComponentRegistry } from "@optimizely/cms-sdk/react/server";
 import HeroBlock, { HeroBlockType, HeroCenteredTemplate } from "@/components/blocks/HeroBlock";
 import CallToActionBlock, { CallToActionType, CallToActionOutlineTemplate, CallToActionSurfaceTemplate } from "@/components/blocks/CallToActionBlock";
 import TextBlock, { TextBlockType, TextBlockNarrowTemplate } from "@/components/blocks/RichTextBlock";
-import ProductCardBlock, { ProductCardBlockType, ProductCardFeaturedTemplate } from "@/components/blocks/ProductCardBlock";
+import ProductCardBlock, { ProductCardBlockType, ProductCardDefaultTemplate, ProductCardFeaturedTemplate } from "@/components/blocks/ProductCardBlock";
 import ProductHeroBlock, { ProductHeroBlockType, ProductHeroCompactTemplate } from "@/components/blocks/ProductHeroBlock";
 import FeatureItemBlock, { FeatureItemBlockType, FeatureItemOutlinedTemplate, FeatureItemFlatTemplate } from "@/components/blocks/FeatureItemBlock";
 import SectionHeadingBlock, { SectionHeadingBlockType, SectionHeadingCenteredTemplate } from "@/components/blocks/SectionHeadingBlock";
@@ -55,6 +55,7 @@ import {
   CaseStudyPageType,
   DefaultRowTemplate,
   DefaultColumnTemplate,
+  DefaultSectionTemplate,
 } from "../../../optimizely.config.mjs";
 
 // Configure the Graph client once for the whole app — all getClient() calls use this.
@@ -189,6 +190,7 @@ export function initComponentRegistry() {
     TextBlockNarrowTemplate,
     CallToActionOutlineTemplate,
     CallToActionSurfaceTemplate,
+    ProductCardDefaultTemplate,
     ProductCardFeaturedTemplate,
     FeatureItemOutlinedTemplate,
     FeatureItemFlatTemplate,
@@ -205,6 +207,7 @@ export function initComponentRegistry() {
     FeaturedContentCardTemplate,
     DefaultRowTemplate,
     DefaultColumnTemplate,
+    DefaultSectionTemplate,
   ]);
 
   // React components — display template variants use the tags pattern so the SDK

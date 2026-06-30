@@ -82,6 +82,37 @@ const ORPHANED_NAV_ITEM_KEYS = [
 ];
 
 // ---------------------------------------------------------------------------
+// Display templates actively used by this application — keep all of these.
+// ---------------------------------------------------------------------------
+
+const KEEP_TEMPLATES = new Set([
+  "HeroCenteredTemplate",
+  "ProductHeroCompactTemplate",
+  "SectionHeadingCenteredTemplate",
+  "TextBlockNarrowTemplate",
+  "CallToActionOutlineTemplate",
+  "CallToActionSurfaceTemplate",
+  "ProductCardDefaultTemplate",
+  "ProductCardFeaturedTemplate",
+  "FeatureItemOutlinedTemplate",
+  "FeatureItemFlatTemplate",
+  "TestimonialCardTemplate",
+  "TestimonialMinimalTemplate",
+  "StatsCounterHighlightTemplate",
+  "AuthorInlineTemplate",
+  "FaqItemFlatTemplate",
+  "LogoGridColorTemplate",
+  "ImageBlockRoundedTemplate",
+  "OutcomeItemBrandTemplate",
+  "PricingTierCompactTemplate",
+  "TeamMemberHorizontalTemplate",
+  "FeaturedContentCardTemplate",
+  "DefaultRowTemplate",
+  "DefaultColumnTemplate",
+  "DefaultSectionTemplate",
+]);
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -194,6 +225,71 @@ async function cleanupOrphanedNavItems(token: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Part 3 — Display template cleanup
+// ---------------------------------------------------------------------------
+
+async function cleanupDisplayTemplates(token: string): Promise<void> {
+  console.log("--- Part 3: Display template audit ---");
+
+  const listRes = await fetch(TYPES_ENDPOINT, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!listRes.ok) {
+    const text = await listRes.text();
+    if (listRes.status === 404) {
+      console.log("  [skip] v1/contenttypes not available on this CMS instance.");
+      return;
+    }
+    throw new Error(`List types failed: ${listRes.status} ${text.slice(0, 200)}`);
+  }
+  const listData = await listRes.json();
+  const allTypes: Array<{ key: string }> = listData.items ?? listData ?? [];
+  if (!Array.isArray(allTypes) || allTypes.length === 0) {
+    console.log("  [skip] No content types returned.\n");
+    return;
+  }
+
+  let totalDeleted = 0, totalErrors = 0;
+
+  for (const type of allTypes) {
+    const tmplRes = await fetch(`${TYPES_ENDPOINT}/${type.key}/displaytemplates`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!tmplRes.ok) continue;
+
+    const tmplData = await tmplRes.json();
+    const templates: Array<{ key: string; displayName?: string }> = tmplData.items ?? tmplData ?? [];
+    if (!Array.isArray(templates) || templates.length === 0) continue;
+
+    const stale = templates.filter((t) => !KEEP_TEMPLATES.has(t.key));
+    if (stale.length === 0) continue;
+
+    console.log(`  ${type.key}: removing ${stale.length} stale template(s)`);
+    for (const tmpl of stale) {
+      const delRes = await fetch(`${TYPES_ENDPOINT}/${type.key}/displaytemplates/${tmpl.key}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (delRes.ok || delRes.status === 404) {
+        console.log(`    [deleted] ${tmpl.key} (${tmpl.displayName ?? ""})`);
+        totalDeleted++;
+      } else {
+        const body = await delRes.text();
+        console.warn(`    [error]   ${tmpl.key}: ${delRes.status} ${body.slice(0, 120)}`);
+        totalErrors++;
+      }
+    }
+  }
+
+  if (totalDeleted === 0 && totalErrors === 0) {
+    console.log("  All display templates are in use — nothing to remove.");
+  } else {
+    console.log(`  Summary: ${totalDeleted} deleted, ${totalErrors} errors.`);
+  }
+  console.log();
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -202,6 +298,7 @@ async function main() {
   const token = await getManagementToken();
   await cleanupContentTypes(token);
   await cleanupOrphanedNavItems(token);
+  await cleanupDisplayTemplates(token);
   console.log("=== Done ===");
 }
 

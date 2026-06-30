@@ -16,6 +16,11 @@ export const DynamicExperienceType = contentType({
     "TimelineMilestoneBlock", "TeamMemberBlock",
     "ContactFormBlock",
     "NavigationItem", "Navigation",
+    "OptiFormsContainerData",
+    "OptiFormsTextboxElement",
+    "OptiFormsTextareaElement",
+    "OptiFormsSelectionElement",
+    "OptiFormsSubmitElement",
   ],
   properties: {
     lastSync: { type: "dateTime", displayName: "Last Sync" },
@@ -142,6 +147,16 @@ export const DefaultRowTemplate = displayTemplate({
         stretch: { displayName: "Stretch", sortOrder: 2 },
       },
     },
+    maxWidth: {
+      editor: "select",
+      displayName: "Max Width",
+      sortOrder: 2,
+      choices: {
+        default:   { displayName: "Default (1280px)", sortOrder: 0 },
+        narrow:    { displayName: "Narrow (768px)",   sortOrder: 1 },
+        fullWidth: { displayName: "Full Width",        sortOrder: 2 },
+      },
+    },
   },
 });
 
@@ -177,6 +192,49 @@ export const DefaultColumnTemplate = displayTemplate({
       displayName: "Rounded Corners",
       sortOrder: 2,
       choices: {},
+    },
+  },
+});
+
+export const DefaultSectionTemplate = displayTemplate({
+  key: "DefaultSectionTemplate",
+  isDefault: true,
+  displayName: "Default Section",
+  contentType: "BlankSection",
+  settings: {
+    background: {
+      editor: "select",
+      displayName: "Background",
+      sortOrder: 0,
+      choices: {
+        transparent: { displayName: "Transparent",  sortOrder: 0 },
+        surface:     { displayName: "Surface",      sortOrder: 1 },
+        surfaceLow:  { displayName: "Surface Low",  sortOrder: 2 },
+        brand:       { displayName: "Brand",        sortOrder: 3 },
+        dark:        { displayName: "Dark",         sortOrder: 4 },
+      },
+    },
+    paddingY: {
+      editor: "select",
+      displayName: "Vertical Padding",
+      sortOrder: 1,
+      choices: {
+        none:     { displayName: "None",     sortOrder: 0 },
+        compact:  { displayName: "Compact",  sortOrder: 1 },
+        default:  { displayName: "Default",  sortOrder: 2 },
+        spacious: { displayName: "Spacious", sortOrder: 3 },
+      },
+    },
+    divider: {
+      editor: "select",
+      displayName: "Divider",
+      sortOrder: 2,
+      choices: {
+        none:   { displayName: "None",   sortOrder: 0 },
+        top:    { displayName: "Top",    sortOrder: 1 },
+        bottom: { displayName: "Bottom", sortOrder: 2 },
+        both:   { displayName: "Both",   sortOrder: 3 },
+      },
     },
   },
 });

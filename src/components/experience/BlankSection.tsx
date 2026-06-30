@@ -27,6 +27,31 @@ const PADDING: Record<string, string> = {
   spacious: "p-16",
 };
 
+const SECTION_BG: Record<string, string> = {
+  surface:    "bg-surface",
+  surfaceLow: "bg-surface-low",
+  brand:      "bg-brand/5",
+  dark:       "bg-on-surface",
+};
+
+const SECTION_PY: Record<string, string> = {
+  none:     "",
+  compact:  "py-8",
+  default:  "py-16",
+  spacious: "py-24",
+};
+
+const SECTION_DIVIDER: Record<string, string> = {
+  top:    "border-t border-outline-variant",
+  bottom: "border-b border-outline-variant",
+  both:   "border-t border-b border-outline-variant",
+};
+
+const MAX_WIDTH: Record<string, string> = {
+  narrow:    "max-w-3xl mx-auto px-8",
+  fullWidth: "px-8",
+};
+
 function Row({ children, node, displaySettings }: StructureContainerProps) {
   const { pa } = getPreviewUtils(node);
   const ds = displaySettings as Record<string, string | boolean> | undefined;
@@ -39,9 +64,10 @@ function Row({ children, node, displaySettings }: StructureContainerProps) {
 
   const gap    = GAP[ds?.gap as string]    ?? GAP.default;
   const valign = VALIGN[ds?.verticalAlign as string] ?? "";
+  const maxWidthClass = MAX_WIDTH[ds?.maxWidth as string] ?? "max-w-7xl mx-auto px-8";
 
   const className = [
-    "max-w-7xl mx-auto px-8",
+    maxWidthClass,
     count > 1 ? `grid grid-cols-1 ${gridCols}` : undefined,
     gap,
     valign,
@@ -73,12 +99,25 @@ function Column({ children, node, displaySettings }: StructureContainerProps) {
   );
 }
 
-export default function BlankSection({ content }: { content: any }) {
+export default function BlankSection({
+  content,
+  displaySettings,
+}: {
+  content: any;
+  displaySettings?: Record<string, string | boolean>;
+}) {
   const { pa } = getPreviewUtils(content);
+  const ds = displaySettings;
   const nodes: any[] = content?.nodes ?? [];
 
+  const bg      = SECTION_BG[ds?.background as string] ?? "";
+  const py      = SECTION_PY[ds?.paddingY as string] ?? "";
+  const divider = SECTION_DIVIDER[ds?.divider as string] ?? "";
+
+  const className = [bg, py, divider].filter(Boolean).join(" ");
+
   return (
-    <section data-component="BlankSection" {...pa(content)}>
+    <section data-component="BlankSection" className={className || undefined} {...pa(content)}>
       <OptimizelyGridSection nodes={nodes} row={Row} column={Column} />
     </section>
   );
