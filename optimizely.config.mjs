@@ -16,11 +16,6 @@ export const DynamicExperienceType = contentType({
     "TimelineMilestoneBlock", "TeamMemberBlock",
     "ContactFormBlock",
     "NavigationItem", "Navigation",
-    "OptiFormsContainerData",
-    "OptiFormsTextboxElement",
-    "OptiFormsTextareaElement",
-    "OptiFormsSelectionElement",
-    "OptiFormsSubmitElement",
   ],
   properties: {
     lastSync: { type: "dateTime", displayName: "Last Sync" },

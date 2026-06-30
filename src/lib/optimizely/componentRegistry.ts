@@ -8,7 +8,7 @@ import {
 } from "@optimizely/cms-sdk";
 import { initReactComponentRegistry } from "@optimizely/cms-sdk/react/server";
 
-import HeroBlock, { HeroBlockType, HeroCenteredTemplate } from "@/components/blocks/HeroBlock";
+import HeroBlock, { HeroBlockType, HeroBlockDefaultTemplate } from "@/components/blocks/HeroBlock";
 import CallToActionBlock, { CallToActionType, CallToActionOutlineTemplate, CallToActionSurfaceTemplate } from "@/components/blocks/CallToActionBlock";
 import TextBlock, { TextBlockType, TextBlockNarrowTemplate } from "@/components/blocks/RichTextBlock";
 import ProductCardBlock, { ProductCardBlockType, ProductCardDefaultTemplate, ProductCardFeaturedTemplate } from "@/components/blocks/ProductCardBlock";
@@ -184,7 +184,7 @@ export function initComponentRegistry() {
 
   // Display templates
   initDisplayTemplateRegistry([
-    HeroCenteredTemplate,
+    HeroBlockDefaultTemplate,
     ProductHeroCompactTemplate,
     SectionHeadingCenteredTemplate,
     TextBlockNarrowTemplate,
@@ -224,10 +224,7 @@ export function initComponentRegistry() {
       CaseStudyPage,
 
       // Blocks — variants registered via tags so the SDK routes by displayTemplateKey
-      HeroBlock: {
-        default: HeroBlock,
-        tags: { Centered: HeroBlock },
-      },
+      HeroBlock,
       Hero: HeroBlock,
       CallToAction: {
         default: CallToActionBlock,
