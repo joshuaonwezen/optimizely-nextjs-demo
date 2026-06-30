@@ -62,49 +62,9 @@ function buildInstances(): Instance[] {
   return instances;
 }
 
-async function registerContentType(auth: string, instanceName: string): Promise<boolean> {
-  console.log("  Part 1: Registering BankLocation content type (GeoPoint)");
+async function registerContentType(auth: string, instanceName: string): Promise<void> {
+  console.log("  Part 1: Registering BankLocation content type (lat/lon Float fields)");
 
-  const body = {
-    label: "Bank Locations",
-    languages: ["en"],
-    contentTypes: {
-      BankLocation: {
-        contentType: ["_Item"],
-        properties: {
-          branchName:  { type: "String" },
-          address:     { type: "String" },
-          city:        { type: "String" },
-          country:     { type: "String" },
-          phone:       { type: "String" },
-          services:    { type: "String" },
-          coordinates: { type: "GeoPoint" },
-        },
-      },
-    },
-    preset: "next",
-    useTypedFieldNames: true,
-  };
-
-  const res  = await fetch(`${GRAPH_BASE}/api/content/v3/types?id=${SOURCE_ID}`, {
-    method:  "PUT",
-    headers: { "Content-Type": "application/json", Authorization: auth },
-    body:    JSON.stringify(body),
-  });
-
-  const text = await res.text();
-
-  if (!res.ok) {
-    console.warn(`  [warn] GeoPoint type rejected by ${instanceName} (${res.status}): ${text.slice(0, 300)}`);
-    console.log("  Falling back to lat/lon as separate Float fields");
-    return await registerFallbackContentType(auth, instanceName);
-  }
-
-  console.log(`  [ok] BankLocation type registered with GeoPoint (${res.status})`);
-  return true;
-}
-
-async function registerFallbackContentType(auth: string, instanceName: string): Promise<boolean> {
   const body = {
     label: "Bank Locations",
     languages: ["en"],
@@ -134,12 +94,11 @@ async function registerFallbackContentType(auth: string, instanceName: string): 
   });
 
   const text = await res.text();
-  if (!res.ok) throw new Error(`Fallback registration failed on ${instanceName}: ${res.status} ${text.slice(0, 300)}`);
-  console.log(`  [ok] BankLocation type registered with lat/lon floats (${res.status})`);
-  return false;
+  if (!res.ok) throw new Error(`Schema registration failed on ${instanceName}: ${res.status} ${text.slice(0, 300)}`);
+  console.log(`  [ok] BankLocation type registered (${res.status})`);
 }
 
-async function seedLocations(auth: string, geoPoint: boolean, instanceName: string): Promise<void> {
+async function seedLocations(auth: string, instanceName: string): Promise<void> {
   console.log(`  Part 2: Seeding ${LOCATIONS.length} bank locations`);
 
   const lines: string[] = [];
@@ -163,14 +122,9 @@ async function seedLocations(auth: string, geoPoint: boolean, instanceName: stri
       Status:      "Published",
       Language:    { DisplayName: "English", Name: "en" },
       _rbac:       { read: ["Everyone"] },
+      lat:         loc.coordinates.lat,
+      lon:         loc.coordinates.lon,
     };
-
-    if (geoPoint) {
-      props.coordinates = loc.coordinates;
-    } else {
-      props.lat = loc.coordinates.lat;
-      props.lon = loc.coordinates.lon;
-    }
 
     lines.push(JSON.stringify(props));
   }
@@ -190,69 +144,26 @@ async function seedLocations(auth: string, geoPoint: boolean, instanceName: stri
   console.log(`  [ok] ${LOCATIONS.length} locations synced (${res.status})`);
 }
 
-async function verifyIndexed(singleKey: string, geoPoint: boolean): Promise<void> {
+async function verifyIndexed(singleKey: string): Promise<void> {
   console.log("  Part 3: Verifying indexed data (waiting 10s for Graph)");
   await new Promise((r) => setTimeout(r, 10000));
 
-  const basicQuery = /* GraphQL */`
+  const query = /* GraphQL */`
     query {
       BankLocation(limit: 3, orderBy: { city: ASC }) {
-        items { branchName city country }
+        items { branchName city country lat lon }
       }
     }
   `;
 
-  const basicRes = await fetch(GRAPH_GATEWAY, {
+  const res  = await fetch(GRAPH_GATEWAY, {
     method:  "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${singleKey}` },
-    body:    JSON.stringify({ query: basicQuery }),
+    body:    JSON.stringify({ query }),
   });
-  const basicJson = await basicRes.json() as { data?: unknown; errors?: unknown };
-  if (basicJson.errors) console.warn("  [GraphQL errors - basic]", JSON.stringify(basicJson.errors, null, 2));
-  console.log("  [indexed sample]", JSON.stringify(basicJson.data, null, 2));
-
-  if (!geoPoint) {
-    console.log("  [skip] GeoPoint not used - skipping geo-search test");
-    return;
-  }
-
-  console.log("\n  Part 4: Testing geo-search (500km from Amsterdam)");
-
-  const geoQuery = /* GraphQL */`
-    query {
-      BankLocation(
-        where: {
-          coordinates: {
-            distance: {
-              origin: { lat: 52.3676, lon: 4.9041 }
-              radius: 500
-              unit: KM
-            }
-          }
-        }
-      ) {
-        total
-        items { branchName city country }
-      }
-    }
-  `;
-
-  const geoRes = await fetch(GRAPH_GATEWAY, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json", Authorization: `epi-single ${singleKey}` },
-    body:    JSON.stringify({ query: geoQuery }),
-  });
-  const geoJson = await geoRes.json() as { data?: unknown; errors?: unknown };
-
-  if (geoJson.errors) {
-    console.warn("  [GEO-SEARCH FAILED] Graph rejected the distance filter:");
-    console.warn("  ", JSON.stringify(geoJson.errors, null, 2));
-    console.log("  Finding: GeoPoint type was accepted at schema registration time but geo-distance");
-    console.log("  queries do not work via the Content Source API. The Graph engineer's assessment");
-    console.log("  is correct - a native GeoPoint type in SaaS CMS is needed for this to work.");
-  } else {
-    console.log("  [GEO-SEARCH PASSED]", JSON.stringify(geoJson.data, null, 2));
-  }
+  const json = await res.json() as { data?: unknown; errors?: unknown };
+  if (json.errors) console.warn("  [GraphQL errors]", JSON.stringify(json.errors, null, 2));
+  console.log("  [indexed sample]", JSON.stringify(json.data, null, 2));
 }
 
 async function main() {
@@ -266,9 +177,9 @@ async function main() {
 
   for (const instance of instances) {
     console.log(`\n--- ${instance.name} ---`);
-    const geoPoint = await registerContentType(instance.auth, instance.name);
-    await seedLocations(instance.auth, geoPoint, instance.name);
-    await verifyIndexed(instance.singleKey, geoPoint);
+    await registerContentType(instance.auth, instance.name);
+    await seedLocations(instance.auth, instance.name);
+    await verifyIndexed(instance.singleKey);
   }
 
   console.log("\n=== Done ===");
