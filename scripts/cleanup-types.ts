@@ -7,6 +7,7 @@
  */
 
 import { config } from "dotenv";
+import { execSync } from "child_process";
 import { getManagementToken } from "../src/lib/optimizely/auth";
 
 config({ path: ".env.local" });
@@ -20,11 +21,14 @@ const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 // ---------------------------------------------------------------------------
 
 const KEEP = new Set([
-  // Page / experience types (optimizely.config.mjs)
+  // Experience / page types — use the content type KEY, not the variable name
   "DynamicExperience",
-  "LandingPage",
-  // Block types (src/components/blocks/)
+  "TraditionalPage",   // LandingPageType.key in optimizely.config.mjs
+  "ArticlePage",
+  "CaseStudyPage",
+  // Block types (src/components/blocks/) — all registered in componentRegistry.ts
   "HeroBlock",
+  "Hero",              // legacy key still referenced by some CMS entries
   "CallToAction",
   "TextBlock",
   "ProductCardBlock",
@@ -34,15 +38,27 @@ const KEEP = new Set([
   "TestimonialBlock",
   "StatsCounterBlock",
   "ImageBlock",
-  "FormContainerBlock",
-  "FormTextInput",
-  "FormTextArea",
-  "FormSelect",
-  "FormSubmitButton",
+  "RenditionImageBlock",
   "FaqContainerBlock",
   "FaqItemBlock",
   "FeaturedContentBlock",
   "LogoGridBlock",
+  "AuthorBlock",
+  "OutcomeItemBlock",
+  "PricingTierBlock",
+  "TimelineMilestoneBlock",
+  "TimelineBlock",
+  "TeamMemberBlock",
+  "TeamGridBlock",
+  "ComparisonTableBlock",
+  "CalloutBlock",
+  "ContactFormBlock",
+  // Optimizely Forms native types (activated via CMS Settings → Forms)
+  "OptiFormsContainerData",
+  "OptiFormsTextboxElement",
+  "OptiFormsTextareaElement",
+  "OptiFormsSelectionElement",
+  "OptiFormsSubmitElement",
   // Navigation types (src/components/blocks/NavigationItemBlock/)
   "NavigationItem",
   "Navigation",
@@ -86,7 +102,7 @@ const ORPHANED_NAV_ITEM_KEYS = [
 // ---------------------------------------------------------------------------
 
 const KEEP_TEMPLATES = new Set([
-  "HeroCenteredTemplate",
+  "HeroBlockDefaultTemplate",
   "ProductHeroCompactTemplate",
   "SectionHeadingCenteredTemplate",
   "TextBlockNarrowTemplate",
@@ -115,6 +131,25 @@ const KEEP_TEMPLATES = new Set([
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Returns true if the given key appears as a string literal anywhere in src/.
+ * Used as a last-resort safety net before deleting a type or template that is
+ * absent from the KEEP / KEEP_TEMPLATES set — prevents accidental deletion when
+ * those sets fall out of sync with the codebase.
+ */
+function isKeyInSource(key: string): boolean {
+  try {
+    const result = execSync(
+      `grep -r '"${key}"' src/ --include="*.tsx" --include="*.ts" --include="*.mjs" -l`,
+      { cwd: process.cwd(), encoding: "utf8" }
+    );
+    return result.trim().length > 0;
+  } catch {
+    // grep exits with code 1 (throws via execSync) when no matches are found
+    return false;
+  }
+}
 
 async function deleteItem(token: string, key: string, label: string): Promise<"deleted" | "gone" | "error"> {
   const res = await fetch(`${CONTENT_ENDPOINT}/${key}?permanent=true`, {
@@ -170,9 +205,25 @@ async function cleanupContentTypes(token: string): Promise<void> {
     return;
   }
 
-  console.log(`  Removing ${toDelete.length} unused type(s):`);
-  const needsRecycleBinClear: string[] = [];
+  // Safety net: skip any type whose key still appears in the source tree,
+  // even if it's absent from the KEEP set (catches set drift on new blocks).
+  const safeToDelete: typeof toDelete = [];
   for (const type of toDelete) {
+    if (isKeyInSource(type.key)) {
+      console.log(`    [skip-safe] ${type.key} — found in src/ (add to KEEP set)`);
+    } else {
+      safeToDelete.push(type);
+    }
+  }
+
+  if (safeToDelete.length === 0) {
+    console.log("  All remaining types are protected by source-grep — nothing to remove.\n");
+    return;
+  }
+
+  console.log(`  Removing ${safeToDelete.length} unused type(s):`);
+  const needsRecycleBinClear: string[] = [];
+  for (const type of safeToDelete) {
     const res = await fetch(`${TYPES_ENDPOINT}/${type.key}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
@@ -231,62 +282,64 @@ async function cleanupOrphanedNavItems(token: string): Promise<void> {
 async function cleanupDisplayTemplates(token: string): Promise<void> {
   console.log("--- Part 3: Display template audit ---");
 
-  const listRes = await fetch(TYPES_ENDPOINT, {
+  const TEMPLATES_ENDPOINT = `${API_BASE}/v1/displaytemplates`;
+  const listRes = await fetch(`${TEMPLATES_ENDPOINT}?limit=200`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!listRes.ok) {
     const text = await listRes.text();
     if (listRes.status === 404) {
-      console.log("  [skip] v1/contenttypes not available on this CMS instance.");
+      console.log("  [skip] v1/displaytemplates not available on this CMS instance.");
       return;
     }
-    throw new Error(`List types failed: ${listRes.status} ${text.slice(0, 200)}`);
+    throw new Error(`List display templates failed: ${listRes.status} ${text.slice(0, 200)}`);
   }
   const listData = await listRes.json();
-  const allTypes: Array<{ key: string }> = listData.items ?? listData ?? [];
-  if (!Array.isArray(allTypes) || allTypes.length === 0) {
-    console.log("  [skip] No content types returned.\n");
+  const allTemplates: Array<{ key: string; displayName?: string }> = listData.items ?? listData ?? [];
+  if (!Array.isArray(allTemplates) || allTemplates.length === 0) {
+    console.log("  [skip] No display templates returned.\n");
     return;
   }
 
-  let totalDeleted = 0, totalErrors = 0;
+  console.log(`  Found ${allTemplates.length} display templates in CMS.`);
+  const stale = allTemplates.filter((t) => !KEEP_TEMPLATES.has(t.key));
 
-  for (const type of allTypes) {
-    const tmplRes = await fetch(`${TYPES_ENDPOINT}/${type.key}/displaytemplates`, {
+  if (stale.length === 0) {
+    console.log("  All display templates are in use — nothing to remove.\n");
+    return;
+  }
+
+  // Safety net: skip any template whose key still appears in source.
+  const safeStale = stale.filter((t) => {
+    if (isKeyInSource(t.key)) {
+      console.log(`    [skip-safe] ${t.key} — found in src/ (add to KEEP_TEMPLATES set)`);
+      return false;
+    }
+    return true;
+  });
+
+  if (safeStale.length === 0) {
+    console.log("  All remaining templates are protected by source-grep — nothing to remove.\n");
+    return;
+  }
+
+  console.log(`  Removing ${safeStale.length} stale template(s):`);
+  let totalDeleted = 0, totalErrors = 0;
+  for (const tmpl of safeStale) {
+    const delRes = await fetch(`${TEMPLATES_ENDPOINT}/${tmpl.key}`, {
+      method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!tmplRes.ok) continue;
-
-    const tmplData = await tmplRes.json();
-    const templates: Array<{ key: string; displayName?: string }> = tmplData.items ?? tmplData ?? [];
-    if (!Array.isArray(templates) || templates.length === 0) continue;
-
-    const stale = templates.filter((t) => !KEEP_TEMPLATES.has(t.key));
-    if (stale.length === 0) continue;
-
-    console.log(`  ${type.key}: removing ${stale.length} stale template(s)`);
-    for (const tmpl of stale) {
-      const delRes = await fetch(`${TYPES_ENDPOINT}/${type.key}/displaytemplates/${tmpl.key}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (delRes.ok || delRes.status === 404) {
-        console.log(`    [deleted] ${tmpl.key} (${tmpl.displayName ?? ""})`);
-        totalDeleted++;
-      } else {
-        const body = await delRes.text();
-        console.warn(`    [error]   ${tmpl.key}: ${delRes.status} ${body.slice(0, 120)}`);
-        totalErrors++;
-      }
+    if (delRes.ok || delRes.status === 404) {
+      console.log(`    [deleted] ${tmpl.key} (${tmpl.displayName ?? ""})`);
+      totalDeleted++;
+    } else {
+      const body = await delRes.text();
+      console.warn(`    [error]   ${tmpl.key}: ${delRes.status} ${body.slice(0, 120)}`);
+      totalErrors++;
     }
   }
-
-  if (totalDeleted === 0 && totalErrors === 0) {
-    console.log("  All display templates are in use — nothing to remove.");
-  } else {
-    console.log(`  Summary: ${totalDeleted} deleted, ${totalErrors} errors.`);
-  }
-  console.log();
+  console.log(`  Summary: ${totalDeleted} deleted, ${totalErrors} errors.\n`);
 }
 
 // ---------------------------------------------------------------------------

@@ -71,6 +71,28 @@ async function main() {
     if (value !== undefined) env[key] = value;
   }
 
+  // Fail fast if core credentials are missing — avoids cryptic errors deep in subprocesses.
+  const REQUIRED_VARS = [
+    "OPTIMIZELY_CMS_CLIENT_ID",
+    "OPTIMIZELY_CMS_CLIENT_SECRET",
+    "OPTIMIZELY_GRAPH_SINGLE_KEY",
+    "OPTIMIZELY_GRAPH_GATEWAY",
+    "OPTIMIZELY_CMS_URL",
+  ];
+  const missingVars = REQUIRED_VARS.filter((v) => !env[v]);
+  if (missingVars.length > 0) {
+    console.error(
+      `\nMissing required env vars for instance "${instance}":\n` +
+      missingVars.map((v) => `  - ${v}`).join("\n") +
+      "\n\nSet these in .env.local" +
+      (instance === "onboarding"
+        ? " with the _ONBOARDING suffix (e.g. OPTIMIZELY_CMS_CLIENT_ID_ONBOARDING)."
+        : ".") +
+      "\nSee CLAUDE.md → Seeding Content → Before your first seed for details."
+    );
+    process.exit(1);
+  }
+
   // Required steps — any failure aborts the run.
   const required: [string, string[]][] = [
     ["npx", ["@optimizely/cms-cli@latest", "config", "push", "optimizely.config.mjs", "--force"]],

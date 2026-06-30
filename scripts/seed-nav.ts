@@ -97,6 +97,15 @@ interface NavDef {
   pageKey?: string;
 }
 
+function collectExistingUrls(nodes: NavDef[]): string[] {
+  const urls: string[] = [];
+  for (const node of nodes) {
+    if (node.existing) urls.push(node.href);
+    urls.push(...collectExistingUrls(node.children));
+  }
+  return urls;
+}
+
 const NAV_TREE: NavDef[] = [
   {
     key: noHyphens(), label: "Personal", href: "/en/personal",
@@ -209,6 +218,13 @@ async function buildPageKeyMap(): Promise<Map<string, string>> {
     }
   }
   console.log(`  [graph] Found ${map.size} page URL entries (incl. aliases) across all page types`);
+  if (map.size < 5) {
+    console.error(
+      `  [error] buildPageKeyMap returned only ${map.size} entries — Graph may not have indexed the pages yet.\n` +
+      `  Wait 30-60s after seed-content.ts completes, then re-run: npx tsx scripts/seed-nav.ts`
+    );
+    process.exit(1);
+  }
   return map;
 }
 
@@ -490,6 +506,18 @@ async function main() {
 
   console.log("\n--- Fetching existing page keys from Graph ---");
   const pageKeyMap = await buildPageKeyMap();
+
+  const unresolved = collectExistingUrls(NAV_TREE).filter(
+    (url) => !pageKeyMap.has(url) && !pageKeyMap.has(url.replace("/en", ""))
+  );
+  if (unresolved.length > 0) {
+    console.warn(
+      `\n  [warn] ${unresolved.length} expected page URL(s) not yet indexed in Graph:\n` +
+      unresolved.map((u) => `    ${u}`).join("\n") +
+      "\n  Nav items for these pages will be created without a page reference." +
+      "\n  Re-run after 30-60s: npx tsx scripts/seed-nav.ts"
+    );
+  }
 
   console.log("\n--- Resolving / creating page content items ---");
   await resolvePageKeys(NAV_TREE, pageKeyMap);

@@ -1193,16 +1193,31 @@ async function main(): Promise<void> {
   await new Promise((r) => setTimeout(r, 60000));
 
   console.log("\n--- Resolving parent page keys for Phase D pages ---");
-  const aboutKey    = await findPageKeyByUrl(["/en/about/", "/en/about", "/about/", "/about"]);
-  const businessKey = await findPageKeyByUrl(["/en/business/", "/en/business", "/business/", "/business"]);
-  const personalKey = await findPageKeyByUrl(["/en/personal/", "/en/personal", "/personal/", "/personal"]);
+  const [aboutKey, businessKey, personalKey] = await Promise.all([
+    findPageKeyByUrl(["/en/about/", "/en/about", "/about/", "/about"]),
+    findPageKeyByUrl(["/en/business/", "/en/business", "/business/", "/business"]),
+    findPageKeyByUrl(["/en/personal/", "/en/personal", "/personal/", "/personal"]),
+  ]);
+
+  const missingParents = [
+    !aboutKey    && "/en/about/",
+    !businessKey && "/en/business/",
+    !personalKey && "/en/personal/",
+  ].filter(Boolean) as string[];
+
+  if (missingParents.length === 3) {
+    console.warn(
+      "  [warn] No Phase D parent pages are visible in Graph yet.\n" +
+      "  Phase D pages (Our Story, Team, Pricing, Compare Accounts) will be skipped.\n" +
+      "  Re-run after another 60s: npx tsx scripts/seed-modeling.ts"
+    );
+  } else if (missingParents.length > 0) {
+    console.warn(`  [warn] ${missingParents.length} parent page(s) not found: ${missingParents.join(", ")} — their Phase D children will be skipped.`);
+  }
 
   if (aboutKey)    { await seedOurStoryPage(aboutKey); await seedTeamPage(aboutKey); }
-  else             console.warn("  [warn] /en/about/ not found in Graph — skipping Our Story + Team pages. Run `npm run seed` first.");
   if (businessKey) await seedPricingPage(businessKey);
-  else             console.warn("  [warn] /en/business/ not found in Graph — skipping Pricing page.");
   if (personalKey) await seedCompareAccountsPage(personalKey);
-  else             console.warn("  [warn] /en/personal/ not found in Graph — skipping Compare Accounts page.");
 
   console.log("\n=== Seeding complete ===");
   console.log("  Authors:           " + AUTHORS.length);

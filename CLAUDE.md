@@ -626,7 +626,14 @@ Do not use em dashes (`—`) anywhere in the demo pages: prose, JSX text, code s
    - Import the block and its type
    - Add `NameType` to `initContentTypeRegistry([...])` array
    - Add `Name` to `initReactComponentRegistry({ resolver: { ... } })` object (use `{ default: Name, tags: { Variant: Name } }` pattern if display template variants exist)
-4. Run `npm run opti:push` with credentials injected
+4. `scripts/cleanup-types.ts` — two edits (prevents accidental CMS deletion):
+   - Add the type's `.key` string (e.g. `"MyBlock"`) to the `KEEP` set — use the actual `.key` value from `contentType({ key: "..." })`, **not** the TypeScript variable name
+   - If the block exports display template variants, add each template's `.key` string (e.g. `"MyBlockCompactTemplate"`) to `KEEP_TEMPLATES`
+5. Run `npm run opti:push` with credentials injected
+
+### Adding a display template to `optimizely.config.mjs`
+
+When adding a `displayTemplate({ key: "MyTemplate", ... })` to `optimizely.config.mjs`, also add `"MyTemplate"` to `KEEP_TEMPLATES` in `scripts/cleanup-types.ts`. Templates absent from `KEEP_TEMPLATES` (and whose key doesn't appear in `src/`) will be deleted the next time cleanup runs.
 
 ## Writing a New Seed Script — Step-by-Step
 
