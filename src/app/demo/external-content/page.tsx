@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getQuotes, GET_QUOTES_QUERY } from "@/lib/graphql/queries/GetQuotes";
+import { getLocations, testGeoSearch, GET_LOCATIONS_QUERY, GEO_SEARCH_TEST_QUERY } from "@/lib/graphql/queries/GetLocations";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 
@@ -139,6 +140,8 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
 
 export default async function ExternalContentPage() {
   const { items, fromGraph } = await getQuotes();
+  const { items: locations, fromGraph: locationsFromGraph } = await getLocations();
+  const geoResult = await testGeoSearch();
 
   return (
     <>
@@ -192,6 +195,145 @@ export default async function ExternalContentPage() {
           </div>
         </section>
 
+        {/* Geo-search investigation */}
+        <section id="geo-search">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Geo-Search Investigation - Bank Locations{" "}
+            <a href="#geo-search" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-2 max-w-3xl">
+            Ten fake bank branches across NL/DE/BE/UK/SE, pushed via the Content Source API using{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">{"\"type\": \"GeoPoint\""}</code>{" "}
+            on the <code className="bg-surface-low px-1 rounded text-xs font-mono">coordinates</code> field.
+            The goal is to verify whether Graph&apos;s{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">distance</code> filter works
+            with data pushed via the Content Source API.
+          </p>
+          <p className="text-xs text-on-surface-variant mb-6">
+            {locationsFromGraph
+              ? "✓ Live from Graph - run npx tsx scripts/seed-locations.ts to re-sync"
+              : "◎ No data in Graph yet - run npx tsx scripts/seed-locations.ts"}
+          </p>
+
+          {locationsFromGraph && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+              {locations.map((loc) => (
+                <div
+                  key={loc.branchName}
+                  className="bg-surface-lowest border border-ghost-border rounded-xl p-4 flex flex-col gap-1.5"
+                >
+                  <span className="font-display font-semibold text-on-surface text-sm">{loc.branchName}</span>
+                  <span className="text-xs text-on-surface-variant">{loc.city}, {loc.country}</span>
+                  {loc.coordinates && (
+                    <span className="font-mono text-xs text-on-surface-variant/60">
+                      {loc.coordinates.lat.toFixed(4)}, {loc.coordinates.lon.toFixed(4)}
+                    </span>
+                  )}
+                  <span className="text-xs text-on-surface-variant/70 leading-relaxed mt-0.5">{loc.services}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Type Registration</p>
+              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+                <code>{`PUT /api/content/v3/types?id=locs
+
+{
+  "contentTypes": {
+    "BankLocation": {
+      "contentType": ["_Item"],
+      "properties": {
+        "branchName":  { "type": "String" },
+        "city":        { "type": "String" },
+        "country":     { "type": "String" },
+        "coordinates": { "type": "GeoPoint" }
+      }
+    }
+  },
+  "preset": "next",
+  "useTypedFieldNames": true
+}`}</code>
+              </pre>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Geo-Distance Query (500km from Amsterdam)</p>
+              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+                <code>{GEO_SEARCH_TEST_QUERY.trim()}</code>
+              </pre>
+            </div>
+          </div>
+
+          {!locationsFromGraph ? (
+            <div className="rounded-2xl border border-ghost-border bg-surface-lowest p-5">
+              <div className="flex items-start gap-3">
+                <span className="shrink-0 text-on-surface-variant">◎</span>
+                <div>
+                  <p className="font-display font-semibold text-sm text-on-surface mb-1">
+                    No data in Graph yet - seed required before geo-search can be tested
+                  </p>
+                  <p className="text-xs text-on-surface-variant leading-relaxed mb-2">
+                    Run <code className="bg-surface-low px-1 rounded font-mono">npm run seed:locations</code> to push the 10 bank branches.
+                    The GeoPoint schema IS accepted by the Content Source API (confirmed via Graph introspection) but
+                    the distance filter cannot be tested until items are indexed.
+                  </p>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">
+                    Schema finding: <code className="bg-surface-low px-1 rounded font-mono">{"\"type\": \"GeoPoint\""}</code> is a valid
+                    Content Source API property type. Graph exposes it as a{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono">GeoPoint OBJECT</code> with queryable{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono">lat</code> and{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono">lon</code> sub-fields.
+                    The <code className="bg-surface-low px-1 rounded font-mono">distance</code> filter syntax is accepted
+                    without error (returns 0 results rather than a schema error). Whether it correctly filters by
+                    geography requires live indexed data to verify.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : geoResult.error ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <div className="flex items-start gap-3">
+                <span className="shrink-0 text-amber-600">⚠</span>
+                <div>
+                  <p className="font-display font-semibold text-sm text-amber-900 mb-1">
+                    Geo-search not supported via Content Source API
+                  </p>
+                  <p className="text-xs font-mono text-amber-800 break-all mb-2">{geoResult.error}</p>
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    Graph engineer finding: geo-search requires coordinates indexed as a native geo-point type.
+                    The Content Source API accepts <code className="bg-amber-100 px-1 rounded font-mono">GeoPoint</code> at schema
+                    registration time but the indexing pipeline does not map it to a geo-point field in the underlying
+                    search engine - so the distance filter fails at query time. A native GeoPoint property type in
+                    SaaS CMS is needed for this to work end-to-end.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
+              <div className="flex items-start gap-3">
+                <span className="shrink-0 text-green-600">✓</span>
+                <div>
+                  <p className="font-display font-semibold text-sm text-green-900 mb-1">
+                    Geo-search works - {geoResult.total} location{geoResult.total !== 1 ? "s" : ""} within 500km of Amsterdam
+                  </p>
+                  {geoResult.items.length > 0 && (
+                    <p className="text-xs text-green-800 mb-2">
+                      {geoResult.items.map((l) => `${l.branchName} (${l.city})`).join(", ")}
+                    </p>
+                  )}
+                  <p className="text-xs text-green-700 leading-relaxed">
+                    GeoPoint is accepted by the Content Source API and correctly indexed as a geo-point field.
+                    Distance queries work as documented - coordinates are queryable and filterable by radius.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* GraphQL query */}
         <section id="querying">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-1">
@@ -205,9 +347,20 @@ export default async function ExternalContentPage() {
             <code className="bg-surface-low px-1 rounded text-xs font-mono">null</code> at query time.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
-          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{GET_QUOTES_QUERY.trim()}</code>
-          </pre>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Quotes</p>
+              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+                <code>{GET_QUOTES_QUERY.trim()}</code>
+              </pre>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Bank Locations</p>
+              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+                <code>{GET_LOCATIONS_QUERY.trim()}</code>
+              </pre>
+            </div>
+          </div>
         </section>
 
         {/* Sync paths */}

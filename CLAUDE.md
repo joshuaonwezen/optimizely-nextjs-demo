@@ -37,8 +37,8 @@ The runner reads credentials from `.env.local`. For the `personal` instance use 
 | `OPTIMIZELY_GRAPH_SINGLE_KEY` | Yes | CMS → Settings → API Keys → existing Graph key |
 | `OPTIMIZELY_GRAPH_GATEWAY` | Yes | CMS → Settings → API Keys → Graph endpoint URL |
 | `OPTIMIZELY_CMS_URL` | Yes | `https://app-<slug>.cms.optimizely.com` |
-| `OPTIMIZELY_APP_KEY` | For webhooks only | Same API key, used for Basic auth on webhook registration |
-| `OPTIMIZELY_APP_SECRET` | For webhooks only | Same API key |
+| `OPTIMIZELY_APP_KEY` | For webhooks + Content Source API | Same API key, used for Basic auth on webhook registration and Content Source API data sync |
+| `OPTIMIZELY_APP_SECRET` | For webhooks + Content Source API | Same API key |
 | `OPTIMIZELY_ROOT_CONTAINER` | No — auto-discovered | UUID (no hyphens) of the root container; set to skip the discovery call |
 
 Suffix every variable name with `_ONBOARDING` for the onboarding instance. Example:
@@ -531,6 +531,9 @@ const { pa, src } = getPreviewUtils(content);
 
 ## External Content Sources (Content Source API)
 
+### Account activation required for data indexing
+Schema registration (`PUT /api/content/v3/types`) works without any special setup. Data indexing (`POST /api/content/v2/data`) requires the external content sources pipeline to be enabled for the account by Optimizely. Without activation, data pushes return 200 OK with a `journalId` but items never appear in Graph queries. Contact Optimizely support to enable this if data never indexes despite correct auth and schema registration.
+
 ### `searchable: true` fields return null on direct retrieval
 Fields marked searchable are indexed for full-text search but not stored as regular properties. Duplicate the field without `searchable: true` if you need to retrieve it in a query.
 
@@ -538,8 +541,9 @@ Fields marked searchable are indexed for full-text search but not stored as regu
 Each line must be a valid JSON object. Use `items.map(i => JSON.stringify({...})).join("\n")` — never pretty-print.
 
 ### Auth for Content Source API
+Both `APP_KEY` and `APP_SECRET` are required. Key-only (trailing colon, no secret) returns 401.
 ```ts
-Authorization: `Basic ${btoa(`${GRAPH_APP_KEY}:`)}`  // note the trailing colon
+Authorization: `Basic ${Buffer.from(`${GRAPH_APP_KEY}:${GRAPH_APP_SECRET}`).toString("base64")}`
 ```
 
 ---

@@ -14,6 +14,7 @@
     "seed:faqs": "npx tsx scripts/seed-faqs.ts",
     "seed:modeling": "npx tsx scripts/seed-modeling.ts",
     "seed:all": "npx tsx scripts/seed-runner.ts",
+    "seed:locations": "npx tsx scripts/seed-locations.ts",
     "cleanup:types": "npx tsx scripts/cleanup-types.ts",
     "webhook:register": "node scripts/register-webhook.mjs"
   },
