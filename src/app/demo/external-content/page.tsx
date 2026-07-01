@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getQuotes, GET_QUOTES_QUERY } from "@/lib/graphql/queries/GetQuotes";
-import { getLocations, GET_LOCATIONS_QUERY } from "@/lib/graphql/queries/GetLocations";
+import { GET_LOCATIONS_QUERY } from "@/lib/graphql/queries/GetLocations";
 import DemoHero from "@/components/demo/DemoHero";
 
 export const metadata: Metadata = {
@@ -139,7 +139,6 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
 
 export default async function ExternalContentPage() {
   const { items, fromGraph } = await getQuotes();
-  const { items: locations, fromGraph: locationsFromGraph } = await getLocations();
 
   return (
     <>
@@ -190,114 +189,6 @@ export default async function ExternalContentPage() {
                 </p>
               </div>
             ))}
-          </div>
-        </section>
-
-        {/* Geo-search investigation */}
-        <section id="geo-search">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Geo-Search Investigation - Bank Locations{" "}
-            <a href="#geo-search" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-2 max-w-3xl">
-            Ten fake bank branches across NL/DE/BE/UK/SE, pushed via the Content Source API.
-            This section documents the investigation into whether Graph&apos;s{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">distance</code> geo-filter
-            works with external content - and what the CMS constraint on{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">GeoPoint</code> means in practice.
-          </p>
-          <p className="text-xs text-on-surface-variant mb-6">
-            {locationsFromGraph
-              ? "✓ Live from Graph - run npx tsx scripts/seed-locations.ts to re-sync"
-              : "◎ No data in Graph yet - run npx tsx scripts/seed-locations.ts"}
-          </p>
-
-          {locationsFromGraph && (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
-              {locations.map((loc) => (
-                <div
-                  key={loc.branchName}
-                  className="bg-surface-lowest border border-ghost-border rounded-xl p-4 flex flex-col gap-1.5"
-                >
-                  <span className="font-display font-semibold text-on-surface text-sm">{loc.branchName}</span>
-                  <span className="text-xs text-on-surface-variant">{loc.city}, {loc.country}</span>
-                  {loc.lat != null && loc.lon != null && (
-                    <span className="font-mono text-xs text-on-surface-variant/60">
-                      {loc.lat.toFixed(4)}, {loc.lon.toFixed(4)}
-                    </span>
-                  )}
-                  <span className="text-xs text-on-surface-variant/70 leading-relaxed mt-0.5">{loc.services}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Type Registration</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                <code>{`PUT /api/content/v3/types?id=locs
-
-{
-  "contentTypes": {
-    "BankLocation": {
-      "contentType": ["_Item"],
-      "properties": {
-        "branchName": { "type": "String" },
-        "city":       { "type": "String" },
-        "country":    { "type": "String" },
-        "lat":        { "type": "Float" },
-        "lon":        { "type": "Float" }
-      }
-    }
-  },
-  "preset": "next",
-  "useTypedFieldNames": true
-}`}</code>
-              </pre>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">GraphQL Query</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                <code>{GET_LOCATIONS_QUERY.trim()}</code>
-              </pre>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-            <div className="flex items-start gap-3">
-              <span className="shrink-0 text-amber-600">⚠</span>
-              <div>
-                <p className="font-display font-semibold text-sm text-amber-900 mb-1">
-                  GeoPoint is not supported by the CMS &quot;Connect From Graph&quot; UI
-                </p>
-                <p className="text-xs text-amber-700 leading-relaxed mb-2">
-                  <code className="bg-amber-100 px-1 rounded font-mono">{"\"type\": \"GeoPoint\""}</code> is accepted
-                  by the Content Source API schema registration endpoint (Graph introspects it as a{" "}
-                  <code className="bg-amber-100 px-1 rounded font-mono">GeoPoint OBJECT</code> with{" "}
-                  <code className="bg-amber-100 px-1 rounded font-mono">lat</code> /{" "}
-                  <code className="bg-amber-100 px-1 rounded font-mono">lon</code> sub-fields), but when you try to
-                  connect the source to a CMS content type via{" "}
-                  <strong>Settings → Content Types → Connect From Graph</strong>, the CMS rejects it:{" "}
-                  <em>&quot;The content source &apos;locs&apos; with source type &apos;BankLocation&apos; has no property type &apos;GeoPoint&apos;.&quot;</em>
-                </p>
-                <p className="text-xs text-amber-700 leading-relaxed mb-2">
-                  The schema uses separate <code className="bg-amber-100 px-1 rounded font-mono">lat</code> and{" "}
-                  <code className="bg-amber-100 px-1 rounded font-mono">lon</code> Float fields as the CMS-compatible
-                  alternative. This means Graph&apos;s{" "}
-                  <code className="bg-amber-100 px-1 rounded font-mono">distance</code> filter is not available -
-                  geographic filtering requires a native GeoPoint property type in SaaS CMS, which does not yet exist.
-                  The Graph engineer&apos;s assessment is confirmed.
-                </p>
-                <p className="text-xs text-amber-700 leading-relaxed">
-                  <strong className="text-amber-900">Additional constraint:</strong> the CMS also rejects &quot;Connect From Graph&quot;
-                  with <em>&quot;Can&apos;t connect a Graph schema without data as a content source&quot;</em> if no items are
-                  indexed yet. Schema registration alone is not enough - at least one record must exist in Graph before
-                  the CMS will allow connecting the source. Data indexing via the Content Source API requires
-                  Optimizely to enable the pipeline for the account (contact support).
-                </p>
-              </div>
-            </div>
           </div>
         </section>
 
