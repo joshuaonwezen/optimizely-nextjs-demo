@@ -410,6 +410,17 @@ export async function patchContentProperties(
  */
 export async function findPageKeyByUrl(urls: string[]): Promise<string | null> {
   if (urls.length === 0) return null;
+  // Graph indexes URLs with or without the /en/ prefix depending on the
+  // instance's locale/host configuration (publishing a second locale can flip
+  // this). Try both shapes for every candidate.
+  urls = [
+    ...new Set(
+      urls.flatMap((u) => [
+        u,
+        u.startsWith("/en/") ? u.replace(/^\/en\//, "/") : `/en${u}`,
+      ])
+    ),
+  ];
   const query = `query FindPageKey($urls: [String]) {
     _Page(where: { _metadata: { url: { default: { in: $urls } } } }, limit: 1) {
       items { _metadata { key } }

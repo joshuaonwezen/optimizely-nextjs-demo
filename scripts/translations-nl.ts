@@ -352,6 +352,7 @@ export const NL: Record<string, string> = {
   "Flexible loans and overdrafts to help your business grow on your terms. Decisions in 48 hours.":
     "Flexibele leningen en kredieten om je bedrijf op jouw voorwaarden te laten groeien. Beslissing binnen 48 uur.",
   "Apply for Business Finance": "Vraag zakelijke financiering aan",
+  "Apply for Finance": "Vraag financiering aan",
   "What makes Business Lending work for you.": "Waarom zakelijke kredieten van Mosey bij je passen.",
   "Business loans from £10,000": "Zakelijke leningen vanaf £10.000",
   "Borrow from £10,000 to £500,000 over 1 to 7 years at a fixed rate. No early repayment charges.":

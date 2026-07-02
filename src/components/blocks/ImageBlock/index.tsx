@@ -62,6 +62,13 @@ type ImageBlockProps = ImageBlockData & {
   displayTemplateKey?: string;
 };
 
+// Choice keys cannot contain "/" or ":", so map them to valid CSS aspect-ratio values
+const ASPECT_RATIOS: Record<string, string> = {
+  r16x9: "16 / 9",
+  r4x3:  "4 / 3",
+  r1x1:  "1 / 1",
+};
+
 export default function ImageBlock(props: ImageBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
@@ -77,21 +84,21 @@ export default function ImageBlock(props: ImageBlockProps) {
   if (!imageUrl) return null;
 
   const isRounded = props.displayTemplateKey === "ImageBlockRoundedTemplate";
-  const aspectRatio = (ds?.aspectRatio as string) ?? "auto";
+  const aspectRatio = ASPECT_RATIOS[(ds?.aspectRatio as string) ?? "auto"];
 
   return (
     <figure data-component="ImageBlock" className="max-w-7xl mx-auto px-8 py-8">
       <div
         className={`relative overflow-hidden ${isRounded ? "rounded-2xl" : ""}`}
-        style={aspectRatio !== "auto" ? { aspectRatio } : undefined}
+        style={aspectRatio ? { aspectRatio } : undefined}
       >
         <Image
           src={imageUrl}
           alt={data.altText ?? ""}
-          fill={aspectRatio !== "auto"}
-          width={aspectRatio === "auto" ? (matched?.Width ?? 1200) : undefined}
-          height={aspectRatio === "auto" ? (matched?.Height ?? 675) : undefined}
-          className={`${aspectRatio !== "auto" ? "object-cover" : "w-full h-auto"} ${isRounded ? "rounded-2xl" : ""}`}
+          fill={!!aspectRatio}
+          width={aspectRatio ? undefined : (matched?.Width ?? 1200)}
+          height={aspectRatio ? undefined : (matched?.Height ?? 675)}
+          className={`${aspectRatio ? "object-cover" : "w-full h-auto"} ${isRounded ? "rounded-2xl" : ""}`}
         />
       </div>
       {data.caption && (

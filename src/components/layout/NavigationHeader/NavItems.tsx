@@ -41,6 +41,18 @@ function buildLocaleUrl(pathname: string, targetLocale: string): string {
   return rest.length > 0 ? `/${targetLocale}/${rest.join("/")}` : `/${targetLocale}`;
 }
 
+// Nav hrefs from the CMS carry English (or unprefixed) paths. Rewrite every
+// internal link to the active locale so navigating from an /nl page stays on
+// /nl - even when the localized nav tree isn't in Graph yet and the English
+// tree is serving as the fallback.
+function localizeTree(nodes: NavNode[], locale: string): NavNode[] {
+  return nodes.map((node) => ({
+    ...node,
+    href: node.href.startsWith("/") ? buildLocaleUrl(node.href, locale) : node.href,
+    children: localizeTree(node.children, locale),
+  }));
+}
+
 function Chevron({ open }: { open: boolean }) {
   return (
     <svg
@@ -69,7 +81,10 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
   const [isLoggedIn,    setIsLoggedIn]    = useState(false);
   const pathname = usePathname();
   const currentLocale = getCurrentLocale(pathname);
-  const tree = localizedTrees?.[currentLocale] ?? baseTree;
+  const tree =
+    currentLocale === "en"
+      ? baseTree
+      : localizeTree(localizedTrees?.[currentLocale] ?? baseTree, currentLocale);
 
   // Logged-in state derives from the demo_bucketing_id cookie (read client-side so
   // the server render stays cacheable).

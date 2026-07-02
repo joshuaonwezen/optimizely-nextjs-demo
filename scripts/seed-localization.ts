@@ -30,7 +30,7 @@ const SKIP_KEYS = new Set([
   "contentType", "nodeType", "layoutType", "id", "key", "locale", "status",
   "routeSegment", "container", "url", "href", "reference", "version",
   "variation", "icon", "linkUrl", "ctaUrl", "ctaLink", "link", "suffix",
-  "displayName", "featuredPage", "lastSync",
+  "displayName", "featuredPage", "lastSync", "authorName",
 ]);
 
 let hitCount = 0;
@@ -75,29 +75,38 @@ function translate(node: unknown): unknown {
   return node;
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// The Management API rate-limits bursts (429). Retry with backoff, honouring
+// Retry-After when present.
 async function api(path: string, init: RequestInit = {}): Promise<Response> {
-  const token = await getManagementToken();
-  return fetch(`${CONTENT_ENDPOINT}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
+  for (let attempt = 0; ; attempt++) {
+    const token = await getManagementToken();
+    const res = await fetch(`${CONTENT_ENDPOINT}${path}`, {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
+        ...(init.headers ?? {}),
+      },
+    });
+    if (res.status !== 429 || attempt >= 4) return res;
+    const retryAfter = Number(res.headers.get("retry-after"));
+    await sleep(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2000 * (attempt + 1));
+  }
 }
 
 // Discover everything to localize via Graph: all pages plus the shared
 // navigation and FAQ blocks (which are standalone items, not composition nodes).
 const DISCOVERY_QUERY = /* GraphQL */ `
   query DiscoverLocalizableContent {
-    _Page(limit: 200) {
+    _Page(limit: 100) {
       items { _metadata { key displayName variation url { default } } }
     }
     Navigation(limit: 10) {
       items { _metadata { key displayName variation } }
     }
-    NavigationItem(limit: 300) {
+    NavigationItem(limit: 100) {
       items { _metadata { key displayName variation } }
     }
     FaqItemBlock(limit: 100) {
@@ -148,11 +157,23 @@ async function discover(): Promise<DiscoveredItem[]> {
 type Result = "created" | "exists" | "untranslated" | "failed";
 
 async function localizeItem(item: DiscoveredItem): Promise<Result> {
-  // Skip if an nl version already exists (idempotency).
-  const nlRes = await api(`/${item.key}/locales/${TARGET_LOCALE}?pageSize=1`);
+  // Skip if a published nl version already exists (idempotency). A stranded
+  // nl draft (e.g. publish failed on a previous run) is published instead.
+  const nlRes = await api(`/${item.key}/locales/${TARGET_LOCALE}?pageSize=10`);
   if (nlRes.ok) {
-    const nlData = (await nlRes.json()) as { items?: unknown[] };
-    if ((nlData.items ?? []).length > 0) return "exists";
+    const nlData = (await nlRes.json()) as {
+      items?: Array<{ version?: string; status?: string }>;
+    };
+    const nlVersions = nlData.items ?? [];
+    if (nlVersions.some((v) => v.status === "published")) return "exists";
+    const draft = nlVersions[0];
+    if (draft?.version) {
+      const pubRes = await api(`/${item.key}/versions/${draft.version}:publish`, { method: "POST" });
+      if (pubRes.ok) {
+        console.log(`  [published] ${item.label} (existing nl draft)`);
+        return "created";
+      }
+    }
   }
 
   // Latest EN version, preferring published non-variation versions.
@@ -201,6 +222,14 @@ async function localizeItem(item: DiscoveredItem): Promise<Result> {
   });
   const text = await createRes.text();
   if (!createRes.ok) {
+    if (text.includes("must be enabled")) {
+      console.error(
+        `\n  [ERROR] The '${TARGET_LOCALE}' locale is not enabled on this CMS instance.\n` +
+        `  Enable it in the CMS UI (Settings > Languages > add Dutch and enable it),\n` +
+        `  then re-run: npx tsx scripts/seed-localization.ts`
+      );
+      process.exit(1);
+    }
     console.warn(`  [warn] ${item.label}: POST nl version ${createRes.status} ${text.slice(0, 200)}`);
     return "failed";
   }
@@ -248,6 +277,7 @@ async function main() {
       tally.failed++;
       console.warn(`  [warn] ${item.label}: ${err instanceof Error ? err.message : err}`);
     }
+    await sleep(250); // stay under the Management API burst limit
   }
 
   console.log(

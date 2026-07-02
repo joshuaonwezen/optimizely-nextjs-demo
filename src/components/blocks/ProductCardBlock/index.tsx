@@ -2,8 +2,8 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import type { ReactNode } from "react";
 import {
-  HEADING_SIZE, FONT_STYLE,
-  HEADING_CLASSES, FONT_CLASSES,
+  BACKGROUND, HEADING_SIZE, FONT_STYLE,
+  BG_CLASSES, HEADING_CLASSES, FONT_CLASSES,
 } from "../_shared/displayTemplateSettings";
 
 export const ProductCardBlockType = contentType({
@@ -20,23 +20,8 @@ export const ProductCardBlockType = contentType({
   },
 });
 
-const BACKGROUND_SETTING = {
-  background: {
-    editor: "select" as const,
-    displayName: "Background color",
-    sortOrder: 0,
-    choices: {
-      surfaceLowest: { displayName: "White",        sortOrder: 0 },
-      surfaceLow:    { displayName: "Off-white",    sortOrder: 1 },
-      transparent:   { displayName: "None",         sortOrder: 2 },
-      brand:         { displayName: "Blue tinted",  sortOrder: 3 },
-      dark:          { displayName: "Dark",         sortOrder: 4 },
-    },
-  },
-};
-
 const PRODUCT_CARD_SETTINGS = {
-  ...BACKGROUND_SETTING,
+  ...BACKGROUND,
   showIcon: {
     editor: "checkbox" as const,
     displayName: "Show icon",
@@ -95,14 +80,6 @@ const ICON_MAP: Record<string, ReactNode> = {
   ),
 };
 
-const BG: Record<string, string> = {
-  surfaceLowest: "bg-surface-lowest",
-  surfaceLow:    "bg-surface-low",
-  transparent:   "",
-  brand:         "bg-brand/10",
-  dark:          "bg-on-surface",
-};
-
 interface ProductCardData {
   icon?: string | null;
   title?: string | null;
@@ -127,18 +104,16 @@ export default function ProductCardBlock(props: ProductCardBlockProps) {
 
   const isFeatured = props.displayTemplateKey === "ProductCardFeaturedTemplate";
   const showIcon = ds?.showIcon !== false;
-  const bg = ds?.background as string | undefined;
-  const isDark = bg === "dark";
-  const isBrand = bg === "brand";
+  const bgKey = (ds?.background as string) ?? "white";
+  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
+  const isInverted = bgKey === "dark" || bgKey === "blueGrad";
 
-  const bgClass = BG[bg ?? "surfaceLowest"] ?? BG.surfaceLowest;
   const featuredClass = isFeatured ? "ring-2 ring-brand/30 shadow-ambient" : "";
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
 
-  const headingColor = isDark ? "text-surface" : "text-on-surface";
-  const bodyClass    = isDark ? "text-surface/70" : "text-on-surface-variant";
-  const iconBgClass  = isDark ? "bg-white/10 text-brand" : isBrand ? "bg-brand/20 text-brand" : "bg-brand/10 text-brand";
+  const iconBgClass = isInverted ? "bg-white/10 text-on-brand" : "bg-brand/10 text-brand";
+  const linkClass   = isInverted ? bg.text : "text-brand";
 
   return (
     <a
@@ -146,7 +121,7 @@ export default function ProductCardBlock(props: ProductCardBlockProps) {
       href={href}
       data-track-event="mb_product_card_click"
       data-track-tags={JSON.stringify({ title: data.title ?? "", featured: isFeatured })}
-      className={`hover-ambient group flex flex-col h-full rounded-2xl p-8 ${bgClass} ${featuredClass}`.trim()}
+      className={`hover-ambient group flex flex-col h-full rounded-2xl p-8 ${bg.wrapper} ${featuredClass}`.trim()}
     >
       {showIcon && (
         <div className={`w-12 h-12 mb-6 rounded-xl flex items-center justify-center p-3 shrink-0 ${iconBgClass}`}>
@@ -156,7 +131,7 @@ export default function ProductCardBlock(props: ProductCardBlockProps) {
       {data.title && (
         <h3
           {...pa("title")}
-          className={`${fontClass} ${headingClass} font-bold mb-3 ${headingColor}`}
+          className={`${fontClass} ${headingClass} font-bold mb-3 ${bg.text}`}
         >
           {data.title}
         </h3>
@@ -164,14 +139,14 @@ export default function ProductCardBlock(props: ProductCardBlockProps) {
       {data.description && (
         <p
           {...pa("description")}
-          className={`text-sm leading-relaxed mb-6 flex-grow ${bodyClass}`}
+          className={`text-sm leading-relaxed mb-6 flex-grow ${bg.textMuted}`}
         >
           {data.description}
         </p>
       )}
       <span
         {...pa("linkText")}
-        className="text-sm font-semibold text-brand mt-auto"
+        className={`text-sm font-semibold mt-auto ${linkClass}`}
       >
         {data.linkText ?? "Learn More →"}
       </span>

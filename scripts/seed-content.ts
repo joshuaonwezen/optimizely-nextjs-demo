@@ -30,6 +30,17 @@ const API_BASE = "https://api.cms.optimizely.com";
 const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 
+// The Management API rate-limits bursts (429) - retry with backoff so a burst
+// of page creates doesn't abort the whole seed.
+async function fetchRetry(url: string, init: RequestInit = {}): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(url, init);
+    if (res.status !== 429 || attempt >= 4) return res;
+    const retryAfter = Number(res.headers.get("retry-after"));
+    await new Promise((r) => setTimeout(r, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2000 * (attempt + 1)));
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -806,14 +817,14 @@ async function createPage(page: PageDef): Promise<void> {
   if (!page.routeSegment) {
     const graphKey = (await findHomepageKey()) ?? (CONTAINER || null);
     if (graphKey) {
-      const versionsRes = await fetch(`${CONTENT_ENDPOINT}/${graphKey}/versions`, {
+      const versionsRes = await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (versionsRes.ok) {
         const versionsData = await versionsRes.json() as { items?: Array<{ version?: string }> };
         const version = versionsData.items?.[0]?.version;
         if (version) {
-          const patchRes = await fetch(`${CONTENT_ENDPOINT}/${graphKey}/versions/${version}`, {
+          const patchRes = await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions/${version}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/merge-patch+json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({
@@ -834,7 +845,7 @@ async function createPage(page: PageDef): Promise<void> {
               patchedStatus = patched.status;
             }
             if (!patchedStatus || patchedStatus !== "published") {
-              await fetch(`${CONTENT_ENDPOINT}/${graphKey}/versions/${patchedVersion}:publish`, {
+              await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions/${patchedVersion}:publish`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
               });
@@ -864,7 +875,7 @@ async function createPage(page: PageDef): Promise<void> {
     },
   };
 
-  const res = await fetch(CONTENT_ENDPOINT, {
+  const res = await fetchRetry(CONTENT_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -892,7 +903,7 @@ async function createPage(page: PageDef): Promise<void> {
 
   if (!text.trim()) {
     // v1 API returns 201 with no body for some content types — look up the version separately.
-    const vRes = await fetch(`${CONTENT_ENDPOINT}/${page.key}/versions?pageSize=1`, {
+    const vRes = await fetchRetry(`${CONTENT_ENDPOINT}/${page.key}/versions?pageSize=1`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (vRes.ok) {
@@ -907,7 +918,7 @@ async function createPage(page: PageDef): Promise<void> {
 
   // Publish the newly-created draft version.
   if (versionId) {
-    const pubRes = await fetch(`${CONTENT_ENDPOINT}/${contentKey}/versions/${versionId}:publish`, {
+    const pubRes = await fetchRetry(`${CONTENT_ENDPOINT}/${contentKey}/versions/${versionId}:publish`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -931,14 +942,24 @@ async function deleteExisting(): Promise<void> {
 
   const data = await res.json() as { items?: Array<{ key: string }> };
   for (const item of data.items ?? []) {
-    const delRes = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
-    });
-    if (!delRes.ok) {
+    // The Management API rate-limits delete bursts (429). A 429'd delete is NOT
+    // deleted - its routeSegment stays taken and every dependent create fails -
+    // so retry with backoff and pace the loop.
+    let delRes: Response | null = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      delRes = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
+      });
+      if (delRes.status !== 429) break;
+      const retryAfter = Number(delRes.headers.get("retry-after"));
+      await new Promise((r) => setTimeout(r, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2000 * (attempt + 1)));
+    }
+    if (!delRes || !delRes.ok) {
       undeletableKeys.set(item.key, item.key);
     }
-    console.log(`  [deleted] ${item.key} (${delRes.status})`);
+    console.log(`  [deleted] ${item.key} (${delRes?.status})`);
+    await new Promise((r) => setTimeout(r, 150));
   }
 }
 

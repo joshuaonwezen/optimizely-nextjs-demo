@@ -22,6 +22,12 @@ const FEATURE_SETTINGS = {
   ...FONT_STYLE,
 };
 
+// Flat renders without a background wrapper, so the background setting is omitted
+const FLAT_SETTINGS = {
+  ...HEADING_SIZE,
+  ...FONT_STYLE,
+};
+
 export const FeatureItemOutlinedTemplate = displayTemplate({
   key: "FeatureItemOutlinedTemplate",
   isDefault: false,
@@ -46,7 +52,7 @@ export const FeatureItemFlatTemplate = displayTemplate({
   displayName: "Flat (divider only)",
   contentType: "FeatureItemBlock",
   tag: "Flat",
-  settings: FEATURE_SETTINGS,
+  settings: FLAT_SETTINGS,
 });
 
 interface FeatureItemData {
