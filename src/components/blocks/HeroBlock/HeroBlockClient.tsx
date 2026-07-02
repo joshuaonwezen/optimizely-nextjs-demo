@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
+import { HEADING_CLASSES, FONT_CLASSES } from "../_shared/displayTemplateSettings";
 
 // Preview-attribute objects from the SDK's pa() helper (empty in published mode).
 type PreviewAttrs = Record<string, string | undefined>;
@@ -16,6 +17,8 @@ export interface HeroBlockClientProps {
   isCentered: boolean;
   isTall: boolean;
   showOverlay: boolean;
+  headingSize?: string;
+  fontStyle?: string;
   edit: boolean;
   paHeadline?: PreviewAttrs;
   paSubheadline?: PreviewAttrs;
@@ -32,12 +35,16 @@ export function HeroBlockClient({
   isCentered,
   isTall,
   showOverlay,
+  headingSize = "xl",
+  fontStyle = "modern",
   edit,
   paHeadline = {},
   paSubheadline = {},
   paCtaText = {},
   paCtaLink = {},
 }: HeroBlockClientProps) {
+  const titleSizeClass = HEADING_CLASSES[headingSize] ?? HEADING_CLASSES.xl;
+  const titleFontClass = FONT_CLASSES[fontStyle] ?? FONT_CLASSES.modern;
   // FX experiments, decided client-side. Each is null until the datafile loads —
   // the SSR/default render uses the CMS/control content.
   const heroCopy        = useFxDecision("hero_copy");
@@ -81,7 +88,7 @@ export function HeroBlockClient({
           {displayTitle && (
             <h1
               {...paHeadline}
-              className="font-display text-5xl md:text-6xl lg:text-[3.5rem] font-extrabold leading-tight mb-8 text-on-brand"
+              className={`${titleFontClass} ${titleSizeClass} font-extrabold leading-tight mb-8 text-on-brand`}
             >
               {displayTitle}
             </h1>

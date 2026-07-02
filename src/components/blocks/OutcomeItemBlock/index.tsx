@@ -1,5 +1,9 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import {
+  BACKGROUND, HEADING_SIZE, TEXT_ALIGN,
+  BG_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
+} from "../_shared/displayTemplateSettings";
 
 export const OutcomeItemBlockType = contentType({
   key: "OutcomeItemBlock",
@@ -13,22 +17,29 @@ export const OutcomeItemBlockType = contentType({
   },
 });
 
+export const OutcomeItemInlineTemplate = displayTemplate({
+  key: "OutcomeItemInlineTemplate",
+  isDefault: false,
+  displayName: "Inline stat (number and label side by side)",
+  contentType: "OutcomeItemBlock",
+  tag: "Inline",
+  settings: {
+    ...HEADING_SIZE,
+    ...BACKGROUND,
+    ...TEXT_ALIGN,
+  },
+});
+
 export const OutcomeItemBrandTemplate = displayTemplate({
   key: "OutcomeItemBrandTemplate",
   isDefault: false,
-  displayName: "Stat in a colored box",
+  displayName: "Boxed stat",
   contentType: "OutcomeItemBlock",
   tag: "Brand",
   settings: {
-    theme: {
-      editor: "select" as const,
-      displayName: "Box color",
-      sortOrder: 0,
-      choices: {
-        brand:   { displayName: "Brand blue",      sortOrder: 0 },
-        surface: { displayName: "Surface (white)", sortOrder: 1 },
-      },
-    },
+    ...BACKGROUND,
+    ...HEADING_SIZE,
+    ...TEXT_ALIGN,
   },
 });
 
@@ -51,22 +62,60 @@ export default function OutcomeItemBlock(props: OutcomeItemBlockProps) {
   const { pa } = getPreviewUtils(data as any);
   if (!data.stat && !data.label) return null;
 
+  const isInline = props.displayTemplateKey === "OutcomeItemInlineTemplate";
   const isBrand = props.displayTemplateKey === "OutcomeItemBrandTemplate";
-  const useBrandBg = isBrand && ds?.theme !== "surface";
 
+  if (isInline) {
+    const headingSizeKey = (ds?.headingSize as string) ?? "xl";
+    const statClass = HEADING_CLASSES[headingSizeKey];
+    const suffixSizeKey = headingSizeKey === "xl" ? "lg" : headingSizeKey === "lg" ? "md" : "sm";
+    const suffixClass = HEADING_CLASSES[suffixSizeKey] ?? "text-3xl md:text-4xl";
+    const bgKey = (ds?.background as string) || "transparent";
+    const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.transparent;
+    const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
+    return (
+      <div data-component="OutcomeItemBlock" className={`flex items-baseline gap-3 ${alignClass} ${bg.wrapper ? `${bg.wrapper} rounded-xl p-4` : ""}`}>
+        <div className="flex items-baseline gap-1 flex-shrink-0">
+          {data.stat && (
+            <span {...pa("stat")} className={`font-display ${statClass} font-extrabold ${bg.text || "text-brand"}`}>
+              {data.stat}
+            </span>
+          )}
+          {data.suffix && (
+            <span {...pa("suffix")} className={`font-display ${suffixClass} font-bold ${bg.text || "text-brand"}`}>
+              {data.suffix}
+            </span>
+          )}
+        </div>
+        {data.label && (
+          <p {...pa("label")} className={`text-sm ${bg.textMuted || "text-on-surface-variant"}`}>
+            {data.label}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  const bgKey = (ds?.background as string) || (isBrand ? "blueGrad" : "transparent");
+  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.transparent;
+
+  const headingSizeKey = (ds?.headingSize as string) ?? "xl";
+  const statClass = HEADING_CLASSES[headingSizeKey];
+  const suffixSizeKey = headingSizeKey === "xl" ? "lg" : headingSizeKey === "lg" ? "md" : "sm";
+  const suffixClass = HEADING_CLASSES[suffixSizeKey] ?? "text-3xl md:text-4xl";
+
+  const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "center"];
   const wrapperClass = isBrand
-    ? `text-center p-8 rounded-xl ${useBrandBg ? "bg-gradient-brand" : "bg-surface-lowest border border-outline-variant"}`
-    : "text-center px-6 py-4";
-  const valueColor = useBrandBg ? "text-on-brand" : "text-brand";
-  const labelColor = useBrandBg ? "text-on-brand/80" : "text-on-surface-variant";
+    ? `${alignClass} p-8 rounded-xl ${bg.wrapper}`
+    : `${alignClass} px-6 py-4`;
 
   return (
     <div data-component="OutcomeItemBlock" className={wrapperClass}>
-      <div className="flex items-baseline justify-center gap-1">
+      <div className={`flex items-baseline gap-1 ${ds?.textAlign === "center" || !ds?.textAlign ? "justify-center" : ds?.textAlign === "right" ? "justify-end" : "justify-start"}`}>
         {data.stat && (
           <span
             {...pa("stat")}
-            className={`font-display text-5xl font-extrabold ${valueColor}`}
+            className={`font-display ${statClass} font-extrabold ${bg.text || "text-brand"}`}
           >
             {data.stat}
           </span>
@@ -74,7 +123,7 @@ export default function OutcomeItemBlock(props: OutcomeItemBlockProps) {
         {data.suffix && (
           <span
             {...pa("suffix")}
-            className={`font-display text-3xl font-bold ${valueColor}`}
+            className={`font-display ${suffixClass} font-bold ${bg.text || "text-brand"}`}
           >
             {data.suffix}
           </span>
@@ -83,7 +132,7 @@ export default function OutcomeItemBlock(props: OutcomeItemBlockProps) {
       {data.label && (
         <p
           {...pa("label")}
-          className={`text-sm mt-2 ${labelColor}`}
+          className={`text-sm mt-2 ${bg.textMuted || "text-on-surface-variant"}`}
         >
           {data.label}
         </p>

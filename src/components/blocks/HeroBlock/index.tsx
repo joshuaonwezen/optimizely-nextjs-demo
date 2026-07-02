@@ -1,6 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { HeroBlockClient } from "./HeroBlockClient";
+import { HEADING_SIZE, FONT_STYLE } from "../_shared/displayTemplateSettings";
 
 export const HeroBlockType = contentType({
   key: "HeroBlock",
@@ -57,6 +58,8 @@ export const HeroBlockDefaultTemplate = displayTemplate({
       sortOrder: 2,
       choices: {},
     },
+    ...HEADING_SIZE,
+    ...FONT_STYLE,
   },
 });
 
@@ -100,6 +103,8 @@ export default function HeroBlock(props: HeroBlockProps) {
   const isCentered = ds?.alignment === "center";
   const isTall = ds?.height === "tall";
   const showOverlay = ds?.overlay === true;
+  const headingSize = (ds?.headingSize as string) ?? "xl";
+  const fontStyle = (ds?.fontStyle as string) ?? "modern";
 
   // CMS data is resolved server-side (ISR-cacheable); the four hero experiments are
   // decided client-side in HeroBlockClient so this stays out of the cookie path.
@@ -114,6 +119,8 @@ export default function HeroBlock(props: HeroBlockProps) {
       isCentered={isCentered}
       isTall={isTall}
       showOverlay={showOverlay}
+      headingSize={headingSize}
+      fontStyle={fontStyle}
       edit={!!data.__context?.edit}
       paHeadline={pa("headline")}
       paSubheadline={pa("subheadline")}

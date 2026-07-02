@@ -1,6 +1,10 @@
 import Image from "next/image";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import {
+  BACKGROUND, HEADING_SIZE, TEXT_SIZE, TEXT_ALIGN, FONT_STYLE,
+  BG_CLASSES, HEADING_CLASSES, TEXT_SIZE_CLASSES, TEXT_ALIGN_CLASSES, FONT_CLASSES,
+} from "../_shared/displayTemplateSettings";
 
 export const TestimonialBlockType = contentType({
   key: "TestimonialBlock",
@@ -15,34 +19,17 @@ export const TestimonialBlockType = contentType({
   },
 });
 
-const TESTIMONIAL_THEME_SETTING = {
-  theme: {
-    editor: "select" as const,
-    displayName: "Background color",
-    sortOrder: 0,
-    choices: {
-      default: { displayName: "White",      sortOrder: 0 },
-      brand:   { displayName: "Brand blue", sortOrder: 1 },
-    },
-  },
-  size: {
-    editor: "select" as const,
-    displayName: "Quote text size",
-    sortOrder: 1,
-    choices: {
-      default: { displayName: "Standard", sortOrder: 0 },
-      compact: { displayName: "Compact",  sortOrder: 1 },
-    },
-  },
-};
-
 export const TestimonialCardTemplate = displayTemplate({
   key: "TestimonialCardTemplate",
   isDefault: false,
   displayName: "Card (boxed)",
   contentType: "TestimonialBlock",
   tag: "Card",
-  settings: TESTIMONIAL_THEME_SETTING,
+  settings: {
+    ...BACKGROUND,
+    ...HEADING_SIZE,
+    ...TEXT_SIZE,
+  },
 });
 
 export const TestimonialMinimalTemplate = displayTemplate({
@@ -51,7 +38,11 @@ export const TestimonialMinimalTemplate = displayTemplate({
   displayName: "Minimal (pull-quote with accent)",
   contentType: "TestimonialBlock",
   tag: "Minimal",
-  settings: {},
+  settings: {
+    ...TEXT_SIZE,
+    ...FONT_STYLE,
+    ...TEXT_ALIGN,
+  },
 });
 
 interface TestimonialData {
@@ -77,23 +68,37 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
 
   const isCard = props.displayTemplateKey === "TestimonialCardTemplate";
   const isMinimal = props.displayTemplateKey === "TestimonialMinimalTemplate";
-  const isBrand = ds?.theme === "brand";
-  const isCompact = ds?.size === "compact";
   const photoUrl = data.authorImage?._metadata?.url?.default;
 
-  const textColor = isBrand ? "text-on-brand" : "text-on-surface";
-  const mutedColor = isBrand ? "text-on-brand/80" : "text-on-surface-variant";
-
   let wrapperClass: string;
+  let textColor: string;
+  let mutedColor: string;
+  let quoteClass: string;
+
   if (isCard) {
-    const padding = isCompact ? "p-6" : "p-10";
-    wrapperClass = isBrand
-      ? `bg-gradient-brand rounded-2xl ${padding}`
-      : `bg-surface-lowest rounded-2xl border border-outline-variant ${padding}`;
+    const bgKey = (ds?.background as string) || "white";
+    const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
+    const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
+    const textSizeClass = TEXT_SIZE_CLASSES[(ds?.textSize as string) ?? "md"];
+    wrapperClass = `${bg.wrapper} rounded-2xl p-10`;
+    textColor = bg.text;
+    mutedColor = bg.textMuted;
+    quoteClass = `font-display ${headingClass.startsWith("text-2xl") ? "text-sm" : textSizeClass} leading-relaxed mb-8`;
   } else if (isMinimal) {
-    wrapperClass = "insight-rail py-12 max-w-3xl mx-auto";
+    const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
+    const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
+    const textSizeClass = (ds?.textSize as string) === "sm"
+      ? "text-xl md:text-2xl"
+      : "text-2xl md:text-3xl";
+    wrapperClass = `insight-rail py-12 max-w-3xl mx-auto ${alignClass}`;
+    textColor = "text-on-surface";
+    mutedColor = "text-on-surface-variant";
+    quoteClass = `${fontClass} ${textSizeClass} italic leading-relaxed mb-8`;
   } else {
     wrapperClass = "py-20 max-w-3xl mx-auto";
+    textColor = "text-on-surface";
+    mutedColor = "text-on-surface-variant";
+    quoteClass = "font-display text-xl md:text-2xl leading-relaxed mb-8";
   }
 
   return (
@@ -101,7 +106,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
       {data.quote && (
         <blockquote
           {...pa("quote")}
-          className={`font-display ${isCard && isCompact ? "text-sm" : isCard ? "text-base" : isMinimal ? "text-2xl md:text-3xl italic" : "text-xl md:text-2xl"} leading-relaxed mb-8 ${textColor}`}
+          className={`${quoteClass} ${textColor}`}
         >
           &ldquo;{data.quote}&rdquo;
         </blockquote>

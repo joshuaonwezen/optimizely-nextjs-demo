@@ -1,5 +1,9 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import {
+  HEADING_SIZE, FONT_STYLE,
+  HEADING_CLASSES, FONT_CLASSES,
+} from "../_shared/displayTemplateSettings";
 
 export const FaqItemBlockType = contentType({
   key: "FaqItemBlock",
@@ -15,10 +19,13 @@ export const FaqItemBlockType = contentType({
 export const FaqItemFlatTemplate = displayTemplate({
   key: "FaqItemFlatTemplate",
   isDefault: false,
-  displayName: "Flat (divider only)",
+  displayName: "Minimal (divider only)",
   contentType: "FaqItemBlock",
   tag: "Flat",
-  settings: {},
+  settings: {
+    ...HEADING_SIZE,
+    ...FONT_STYLE,
+  },
 });
 
 interface FaqItemData {
@@ -35,11 +42,14 @@ type FaqItemBlockProps = FaqItemData & {
 
 export default function FaqItemBlock(props: FaqItemBlockProps) {
   const data = props.content ?? props;
+  const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
 
   if (!data.question) return null;
 
   const isFlat = props.displayTemplateKey === "FaqItemFlatTemplate";
+  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
+  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
 
   if (isFlat) {
     return (
@@ -47,7 +57,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
         <details className="group border-b border-outline-variant">
           <summary
             {...pa("question")}
-            className="flex items-center justify-between gap-4 py-4 cursor-pointer select-none list-none font-medium text-on-surface hover:text-brand transition-colors"
+            className={`flex items-center justify-between gap-4 py-4 cursor-pointer select-none list-none ${fontClass} ${headingClass} font-medium text-on-surface hover:text-brand transition-colors`}
           >
             {data.question}
             <svg

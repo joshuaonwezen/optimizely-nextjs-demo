@@ -9,14 +9,14 @@ import {
 import { initReactComponentRegistry } from "@optimizely/cms-sdk/react/server";
 
 import HeroBlock, { HeroBlockType, HeroBlockDefaultTemplate } from "@/components/blocks/HeroBlock";
-import CallToActionBlock, { CallToActionType, CallToActionOutlineTemplate, CallToActionSurfaceTemplate } from "@/components/blocks/CallToActionBlock";
+import CallToActionBlock, { CallToActionType, CallToActionOutlineTemplate, CallToActionSurfaceTemplate, CallToActionGhostTemplate } from "@/components/blocks/CallToActionBlock";
 import TextBlock, { TextBlockType, TextBlockNarrowTemplate } from "@/components/blocks/RichTextBlock";
 import ProductCardBlock, { ProductCardBlockType, ProductCardDefaultTemplate, ProductCardFeaturedTemplate } from "@/components/blocks/ProductCardBlock";
 import ProductHeroBlock, { ProductHeroBlockType, ProductHeroCompactTemplate } from "@/components/blocks/ProductHeroBlock";
-import FeatureItemBlock, { FeatureItemBlockType, FeatureItemOutlinedTemplate, FeatureItemFlatTemplate } from "@/components/blocks/FeatureItemBlock";
-import SectionHeadingBlock, { SectionHeadingBlockType, SectionHeadingCenteredTemplate } from "@/components/blocks/SectionHeadingBlock";
+import FeatureItemBlock, { FeatureItemBlockType, FeatureItemOutlinedTemplate, FeatureItemFlatTemplate, FeatureItemBrandTemplate } from "@/components/blocks/FeatureItemBlock";
+import SectionHeadingBlock, { SectionHeadingBlockType, SectionHeadingDefaultTemplate, SectionHeadingCenteredTemplate } from "@/components/blocks/SectionHeadingBlock";
 import TestimonialBlock, { TestimonialBlockType, TestimonialCardTemplate, TestimonialMinimalTemplate } from "@/components/blocks/TestimonialBlock";
-import StatsCounterBlock, { StatsCounterBlockType, StatsCounterHighlightTemplate } from "@/components/blocks/StatsCounterBlock";
+import StatsCounterBlock, { StatsCounterBlockType, StatsCounterAccentTemplate, StatsCounterHighlightTemplate } from "@/components/blocks/StatsCounterBlock";
 import ImageBlock, { ImageBlockType, ImageBlockRoundedTemplate } from "@/components/blocks/ImageBlock";
 import RenditionImageBlock, { RenditionImageBlockType } from "@/components/blocks/RenditionImageBlock";
 import OptiFormsContainer from "@/components/blocks/OptiFormsContainer";
@@ -29,8 +29,8 @@ import FaqItemBlock, { FaqItemBlockType, FaqItemFlatTemplate } from "@/component
 import FaqContainerBlock, { FaqContainerBlockType } from "@/components/blocks/FaqContainerBlock";
 import FeaturedContentBlock, { FeaturedContentBlockType, FeaturedContentCardTemplate } from "@/components/blocks/FeaturedContentBlock";
 import LogoGridBlock, { LogoGridBlockType, LogoGridColorTemplate } from "@/components/blocks/LogoGridBlock";
-import AuthorBlock, { AuthorBlockType, AuthorInlineTemplate } from "@/components/blocks/AuthorBlock";
-import OutcomeItemBlock, { OutcomeItemBlockType, OutcomeItemBrandTemplate } from "@/components/blocks/OutcomeItemBlock";
+import AuthorBlock, { AuthorBlockType, AuthorInlineTemplate, AuthorProfileTemplate } from "@/components/blocks/AuthorBlock";
+import OutcomeItemBlock, { OutcomeItemBlockType, OutcomeItemBrandTemplate, OutcomeItemInlineTemplate } from "@/components/blocks/OutcomeItemBlock";
 import PricingTierBlock, { PricingTierBlockType, PricingTierCompactTemplate } from "@/components/blocks/PricingTierBlock";
 import TimelineMilestoneBlock, { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
 import TimelineBlock, { TimelineBlockType } from "@/components/blocks/TimelineBlock";
@@ -186,22 +186,28 @@ export function initComponentRegistry() {
   initDisplayTemplateRegistry([
     HeroBlockDefaultTemplate,
     ProductHeroCompactTemplate,
+    SectionHeadingDefaultTemplate,
     SectionHeadingCenteredTemplate,
     TextBlockNarrowTemplate,
     CallToActionOutlineTemplate,
     CallToActionSurfaceTemplate,
+    CallToActionGhostTemplate,
     ProductCardDefaultTemplate,
     ProductCardFeaturedTemplate,
     FeatureItemOutlinedTemplate,
     FeatureItemFlatTemplate,
+    FeatureItemBrandTemplate,
     TestimonialCardTemplate,
     TestimonialMinimalTemplate,
     StatsCounterHighlightTemplate,
+    StatsCounterAccentTemplate,
     AuthorInlineTemplate,
+    AuthorProfileTemplate,
     FaqItemFlatTemplate,
     LogoGridColorTemplate,
     ImageBlockRoundedTemplate,
     OutcomeItemBrandTemplate,
+    OutcomeItemInlineTemplate,
     PricingTierCompactTemplate,
     TeamMemberHorizontalTemplate,
     FeaturedContentCardTemplate,
@@ -231,6 +237,7 @@ export function initComponentRegistry() {
         tags: {
           Outline: CallToActionBlock,
           Surface: CallToActionBlock,
+          Ghost: CallToActionBlock,
         },
       },
       TextBlock: {
@@ -250,6 +257,7 @@ export function initComponentRegistry() {
         tags: {
           Outlined: FeatureItemBlock,
           Flat: FeatureItemBlock,
+          Brand: FeatureItemBlock,
         },
       },
       SectionHeadingBlock: {
@@ -262,7 +270,7 @@ export function initComponentRegistry() {
       },
       StatsCounterBlock: {
         default: StatsCounterBlock,
-        tags: { Highlight: StatsCounterBlock },
+        tags: { Highlight: StatsCounterBlock, Accent: StatsCounterBlock },
       },
       ImageBlock: {
         default: ImageBlock,
@@ -289,11 +297,11 @@ export function initComponentRegistry() {
       },
       AuthorBlock: {
         default: AuthorBlock,
-        tags: { Inline: AuthorBlock },
+        tags: { Inline: AuthorBlock, Profile: AuthorBlock },
       },
       OutcomeItemBlock: {
         default: OutcomeItemBlock,
-        tags: { Brand: OutcomeItemBlock },
+        tags: { Brand: OutcomeItemBlock, Inline: OutcomeItemBlock },
       },
       PricingTierBlock: {
         default: PricingTierBlock,

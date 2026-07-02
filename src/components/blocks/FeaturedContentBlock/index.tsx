@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import {
+  HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE,
+  HEADING_CLASSES, TEXT_ALIGN_CLASSES, FONT_CLASSES, TEXT_SIZE_CLASSES,
+} from "../_shared/displayTemplateSettings";
 
 export const FeaturedContentBlockType = contentType({
   key: "FeaturedContentBlock",
@@ -18,7 +22,7 @@ export const FeaturedContentBlockType = contentType({
 export const FeaturedContentCardTemplate = displayTemplate({
   key: "FeaturedContentCardTemplate",
   isDefault: false,
-  displayName: "Card (with background)",
+  displayName: "Card",
   contentType: "FeaturedContentBlock",
   tag: "Card",
   settings: {
@@ -27,10 +31,14 @@ export const FeaturedContentCardTemplate = displayTemplate({
       displayName: "Background color",
       sortOrder: 0,
       choices: {
-        surface: { displayName: "Surface (white)", sortOrder: 0 },
-        brand:   { displayName: "Brand blue",      sortOrder: 1 },
+        surface: { displayName: "White", sortOrder: 0 },
+        brand:   { displayName: "Blue",  sortOrder: 1 },
       },
     },
+    ...HEADING_SIZE,
+    ...TEXT_ALIGN,
+    ...FONT_STYLE,
+    ...TEXT_SIZE,
   },
 });
 
@@ -69,6 +77,11 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   const isCard   = props.displayTemplateKey === "FeaturedContentCardTemplate";
   const isBrand  = isCard && ds?.theme === "brand";
 
+  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "lg"];
+  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
+  const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
+  const textSizeClass = TEXT_SIZE_CLASSES[(ds?.textSize as string) ?? "md"];
+
   const sectionClass = isCard
     ? `rounded-2xl p-10 ${isBrand ? "bg-gradient-brand" : "bg-surface-lowest border border-outline-variant"}`
     : "py-20";
@@ -81,7 +94,7 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
     : "bg-brand text-on-brand hover:opacity-90 transition-opacity";
 
   return (
-    <section data-component="FeaturedContentBlock" className={sectionClass}>
+    <section data-component="FeaturedContentBlock" className={`${sectionClass} ${alignClass}`}>
       <div className={innerClass}>
         {data.label && (
           <span
@@ -94,15 +107,15 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
 
         <h2
           {...pa("featuredPage")}
-          className={`font-display text-3xl md:text-4xl font-extrabold ${headingColor} mb-4`}
+          className={`${fontClass} ${headingClass} font-extrabold ${headingColor} mb-4`}
         >
-          {pageTitle ?? (isDev ? "← Set a featured page in the CMS" : null)}
+          {pageTitle ?? (isDev ? "Set a featured page in the CMS" : null)}
         </h2>
 
         {data.description && (
           <p
             {...pa("description")}
-            className={`text-base leading-relaxed ${bodyColor} mb-8`}
+            className={`${textSizeClass} leading-relaxed ${bodyColor} mb-8`}
           >
             {data.description}
           </p>

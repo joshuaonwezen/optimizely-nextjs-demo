@@ -1,6 +1,10 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import type { ReactNode } from "react";
+import {
+  HEADING_SIZE, FONT_STYLE,
+  HEADING_CLASSES, FONT_CLASSES,
+} from "../_shared/displayTemplateSettings";
 
 export const ProductCardBlockType = contentType({
   key: "ProductCardBlock",
@@ -16,12 +20,31 @@ export const ProductCardBlockType = contentType({
   },
 });
 
-const BACKGROUND_CHOICES = {
-  surfaceLowest: { displayName: "Surface (default)", sortOrder: 0 },
-  surfaceLow:    { displayName: "Surface Low",       sortOrder: 1 },
-  transparent:   { displayName: "Transparent",       sortOrder: 2 },
-  brand:         { displayName: "Brand Tinted",      sortOrder: 3 },
-  dark:          { displayName: "Dark",              sortOrder: 4 },
+const BACKGROUND_SETTING = {
+  background: {
+    editor: "select" as const,
+    displayName: "Background color",
+    sortOrder: 0,
+    choices: {
+      surfaceLowest: { displayName: "White",        sortOrder: 0 },
+      surfaceLow:    { displayName: "Off-white",    sortOrder: 1 },
+      transparent:   { displayName: "None",         sortOrder: 2 },
+      brand:         { displayName: "Blue tinted",  sortOrder: 3 },
+      dark:          { displayName: "Dark",         sortOrder: 4 },
+    },
+  },
+};
+
+const PRODUCT_CARD_SETTINGS = {
+  ...BACKGROUND_SETTING,
+  showIcon: {
+    editor: "checkbox" as const,
+    displayName: "Show icon",
+    sortOrder: 1,
+    choices: {},
+  },
+  ...HEADING_SIZE,
+  ...FONT_STYLE,
 };
 
 export const ProductCardDefaultTemplate = displayTemplate({
@@ -29,20 +52,7 @@ export const ProductCardDefaultTemplate = displayTemplate({
   isDefault: true,
   displayName: "Default",
   contentType: "ProductCardBlock",
-  settings: {
-    background: {
-      editor: "select",
-      displayName: "Background",
-      sortOrder: 0,
-      choices: BACKGROUND_CHOICES,
-    },
-    showIcon: {
-      editor: "checkbox",
-      displayName: "Show icon",
-      sortOrder: 1,
-      choices: {},
-    },
-  },
+  settings: PRODUCT_CARD_SETTINGS,
 });
 
 export const ProductCardFeaturedTemplate = displayTemplate({
@@ -51,20 +61,7 @@ export const ProductCardFeaturedTemplate = displayTemplate({
   displayName: "Featured (highlighted)",
   contentType: "ProductCardBlock",
   tag: "Featured",
-  settings: {
-    background: {
-      editor: "select",
-      displayName: "Background",
-      sortOrder: 0,
-      choices: BACKGROUND_CHOICES,
-    },
-    showIcon: {
-      editor: "checkbox",
-      displayName: "Show icon",
-      sortOrder: 1,
-      choices: {},
-    },
-  },
+  settings: PRODUCT_CARD_SETTINGS,
 });
 
 const ICON_MAP: Record<string, ReactNode> = {
@@ -136,8 +133,10 @@ export default function ProductCardBlock(props: ProductCardBlockProps) {
 
   const bgClass = BG[bg ?? "surfaceLowest"] ?? BG.surfaceLowest;
   const featuredClass = isFeatured ? "ring-2 ring-brand/30 shadow-ambient" : "";
+  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
+  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
 
-  const headingClass = isDark ? "text-surface" : "text-on-surface";
+  const headingColor = isDark ? "text-surface" : "text-on-surface";
   const bodyClass    = isDark ? "text-surface/70" : "text-on-surface-variant";
   const iconBgClass  = isDark ? "bg-white/10 text-brand" : isBrand ? "bg-brand/20 text-brand" : "bg-brand/10 text-brand";
 
@@ -157,7 +156,7 @@ export default function ProductCardBlock(props: ProductCardBlockProps) {
       {data.title && (
         <h3
           {...pa("title")}
-          className={`font-display text-lg font-bold mb-3 ${headingClass}`}
+          className={`${fontClass} ${headingClass} font-bold mb-3 ${headingColor}`}
         >
           {data.title}
         </h3>

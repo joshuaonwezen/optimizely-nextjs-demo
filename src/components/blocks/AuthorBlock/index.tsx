@@ -3,6 +3,10 @@ import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import {
+  BACKGROUND, FONT_STYLE,
+  BG_CLASSES, FONT_CLASSES,
+} from "../_shared/displayTemplateSettings";
 
 export const AuthorBlockType = contentType({
   key: "AuthorBlock",
@@ -21,7 +25,7 @@ export const AuthorBlockType = contentType({
 export const AuthorInlineTemplate = displayTemplate({
   key: "AuthorInlineTemplate",
   isDefault: false,
-  displayName: "Inline byline",
+  displayName: "Author byline",
   contentType: "AuthorBlock",
   tag: "Inline",
   settings: {
@@ -31,11 +35,29 @@ export const AuthorInlineTemplate = displayTemplate({
       sortOrder: 0,
       choices: {},
     },
+    ...BACKGROUND,
+    ...FONT_STYLE,
   },
 });
 
-// Graph returns { url: { default } } for image contentReferences; inline
-// composition snapshots return { _metadata: { url: { default } } }.
+export const AuthorProfileTemplate = displayTemplate({
+  key: "AuthorProfileTemplate",
+  isDefault: false,
+  displayName: "Profile card (photo and name, no bio)",
+  contentType: "AuthorBlock",
+  tag: "Profile",
+  settings: {
+    ...BACKGROUND,
+    ...FONT_STYLE,
+    showLinkedIn: {
+      editor: "checkbox" as const,
+      displayName: "Show LinkedIn link",
+      sortOrder: 5,
+      choices: {},
+    },
+  },
+});
+
 type ImageRef =
   | { url?: { default?: string | null } | null; _metadata?: { url?: { default?: string | null } | null } | null }
   | null;
@@ -45,7 +67,6 @@ interface AuthorData {
   role?:        string | null;
   bio?:         { json: unknown } | string | null;
   avatar?:      ImageRef;
-  // type: "url" returns { default } from Graph; raw strings from inline reads
   linkedinUrl?: string | { default?: string | null } | null;
   __context?:   { edit?: boolean } | null;
 }
@@ -75,17 +96,22 @@ export default function AuthorBlock(props: AuthorBlockProps) {
   const linkedinHref = resolveUrl(data.linkedinUrl);
 
   const isInline = props.displayTemplateKey === "AuthorInlineTemplate";
+  const isProfile = props.displayTemplateKey === "AuthorProfileTemplate";
 
   const bioContent =
     data.bio && typeof data.bio === "object" && "json" in data.bio
       ? (data.bio.json as RichTextProps["content"] | null)
       : null;
   const bioHtml = typeof data.bio === "string" ? data.bio : null;
+  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
 
   if (isInline) {
     const showSocial = ds?.showSocial === true;
+    const bgKey = (ds?.background as string) || "transparent";
+    const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.transparent;
+    const wrapperBg = bg.wrapper ? `${bg.wrapper} rounded-xl px-4 py-2` : "";
     return (
-      <div data-component="AuthorBlock" className="flex items-center gap-3">
+      <div data-component="AuthorBlock" className={`flex items-center gap-3 ${wrapperBg}`}>
         {avatarUrl && (
           <Image
             src={avatarUrl}
@@ -97,12 +123,12 @@ export default function AuthorBlock(props: AuthorBlockProps) {
         )}
         <div className="min-w-0">
           {data.name && (
-            <p {...pa("name")} className="text-sm font-semibold text-on-surface leading-tight">
+            <p {...pa("name")} className={`text-sm font-semibold ${bg.text || "text-on-surface"} leading-tight`}>
               {data.name}
             </p>
           )}
           {data.role && (
-            <p {...pa("role")} className="text-xs text-on-surface-variant">
+            <p {...pa("role")} className={`text-xs ${bg.textMuted || "text-on-surface-variant"}`}>
               {data.role}
             </p>
           )}
@@ -124,6 +150,48 @@ export default function AuthorBlock(props: AuthorBlockProps) {
     );
   }
 
+  if (isProfile) {
+    const bgKey = (ds?.background as string) || "white";
+    const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
+    const showLinkedIn = ds?.showLinkedIn === true;
+    return (
+      <div data-component="AuthorBlock" className={`rounded-2xl p-8 text-center ${bg.wrapper || "bg-surface-lowest border border-ghost-border"}`}>
+        {avatarUrl && (
+          <Image
+            src={avatarUrl}
+            alt={data.name ?? ""}
+            width={80}
+            height={80}
+            className="rounded-full object-cover mx-auto mb-4"
+          />
+        )}
+        {data.name && (
+          <h3 {...pa("name")} className={`${fontClass} text-lg font-bold ${bg.text || "text-on-surface"}`}>
+            {data.name}
+          </h3>
+        )}
+        {data.role && (
+          <p {...pa("role")} className={`text-sm mt-1 ${bg.textMuted || "text-on-surface-variant"}`}>
+            {data.role}
+          </p>
+        )}
+        {showLinkedIn && linkedinHref && (
+          <Link
+            href={linkedinHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-brand font-semibold mt-3 hover:opacity-80"
+          >
+            LinkedIn
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8H13M9 4L13 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        )}
+      </div>
+    );
+  }
+
   return (
     <article data-component="AuthorBlock" className="max-w-2xl mx-auto px-8 py-12 rounded-2xl bg-surface-lowest border border-ghost-border">
       <div className="flex items-start gap-5">
@@ -138,7 +206,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
         )}
         <div className="min-w-0">
           {data.name && (
-            <h3 {...pa("name")} className="font-display text-xl font-bold text-on-surface">
+            <h3 {...pa("name")} className={`${fontClass} text-xl font-bold text-on-surface`}>
               {data.name}
             </h3>
           )}

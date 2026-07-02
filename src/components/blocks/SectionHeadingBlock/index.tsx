@@ -1,5 +1,9 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import {
+  BACKGROUND, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE,
+  BG_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES, FONT_CLASSES,
+} from "../_shared/displayTemplateSettings";
 
 export const SectionHeadingBlockType = contentType({
   key: "SectionHeadingBlock",
@@ -12,29 +16,34 @@ export const SectionHeadingBlockType = contentType({
   },
 });
 
+const HEADING_BLOCK_SETTINGS = {
+  showAccent: {
+    editor: "checkbox" as const,
+    displayName: "Show accent bar",
+    sortOrder: 0,
+    choices: {},
+  },
+  ...BACKGROUND,
+  ...HEADING_SIZE,
+  ...TEXT_ALIGN,
+  ...FONT_STYLE,
+};
+
+export const SectionHeadingDefaultTemplate = displayTemplate({
+  key: "SectionHeadingDefaultTemplate",
+  isDefault: true,
+  displayName: "Default (left-aligned)",
+  contentType: "SectionHeadingBlock",
+  settings: HEADING_BLOCK_SETTINGS,
+});
+
 export const SectionHeadingCenteredTemplate = displayTemplate({
   key: "SectionHeadingCenteredTemplate",
   isDefault: false,
   displayName: "Centered heading",
   contentType: "SectionHeadingBlock",
   tag: "Centered",
-  settings: {
-    showAccent: {
-      editor: "checkbox" as const,
-      displayName: "Show accent bar",
-      sortOrder: 0,
-      choices: {},
-    },
-    size: {
-      editor: "select" as const,
-      displayName: "Heading size",
-      sortOrder: 1,
-      choices: {
-        default: { displayName: "Standard", sortOrder: 0 },
-        large:   { displayName: "Large",    sortOrder: 1 },
-      },
-    },
-  },
+  settings: HEADING_BLOCK_SETTINGS,
 });
 
 interface SectionHeadingData {
@@ -56,15 +65,24 @@ export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
 
   const isCentered = props.displayTemplateKey === "SectionHeadingCenteredTemplate";
   const showAccent = ds?.showAccent === true;
-  const isLarge = ds?.size === "large";
+
+  const bgKey = (ds?.background as string) || "transparent";
+  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.transparent;
+  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "lg"];
+  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
+  const alignKey = (ds?.textAlign as string) || (isCentered ? "center" : "left");
+  const alignClass = TEXT_ALIGN_CLASSES[alignKey] ?? "text-left";
+
+  const hasBg = bgKey !== "transparent" && bg.wrapper;
+  const outerPadding = hasBg ? "py-20 px-8 rounded-2xl" : "py-20";
 
   return (
-    <div data-component="SectionHeadingBlock" className={`py-20 ${isCentered ? "text-center" : ""}`}>
-      <div className={`${showAccent && !isCentered ? "insight-rail" : ""} ${isCentered ? "max-w-2xl mx-auto" : "max-w-2xl"}`}>
+    <div data-component="SectionHeadingBlock" className={`${outerPadding} ${hasBg ? bg.wrapper : ""} ${alignClass}`}>
+      <div className={`${showAccent && alignKey === "left" ? "insight-rail" : ""} ${alignKey === "center" ? "max-w-2xl mx-auto" : "max-w-2xl"}`}>
         {data.heading && (
           <h2
             {...pa("heading")}
-            className={`font-display ${isLarge ? "text-4xl md:text-5xl" : "text-3xl md:text-4xl"} font-extrabold mb-4 text-on-surface`}
+            className={`${fontClass} ${headingClass} font-extrabold mb-4 ${bg.text || "text-on-surface"}`}
           >
             {data.heading}
           </h2>
@@ -72,7 +90,7 @@ export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
         {data.subheading && (
           <p
             {...pa("subheading")}
-            className="text-base leading-relaxed text-on-surface-variant"
+            className={`text-base leading-relaxed ${bg.textMuted || "text-on-surface-variant"}`}
           >
             {data.subheading}
           </p>

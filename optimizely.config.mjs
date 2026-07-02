@@ -152,6 +152,22 @@ export const DefaultRowTemplate = displayTemplate({
         fullWidth: { displayName: "Full Width",        sortOrder: 2 },
       },
     },
+    reverse: {
+      editor: "checkbox",
+      displayName: "Reverse column order",
+      sortOrder: 3,
+      choices: {},
+    },
+    alignment: {
+      editor: "select",
+      displayName: "Vertical alignment",
+      sortOrder: 4,
+      choices: {
+        top:    { displayName: "Top",    sortOrder: 0 },
+        center: { displayName: "Center", sortOrder: 1 },
+        bottom: { displayName: "Bottom", sortOrder: 2 },
+      },
+    },
   },
 });
 
@@ -166,9 +182,12 @@ export const DefaultColumnTemplate = displayTemplate({
       displayName: "Background",
       sortOrder: 0,
       choices: {
-        transparent: { displayName: "Transparent", sortOrder: 0 },
-        surface: { displayName: "Surface", sortOrder: 1 },
-        surfaceLow: { displayName: "Surface Low", sortOrder: 2 },
+        transparent: { displayName: "None",         sortOrder: 0 },
+        surface:     { displayName: "White",        sortOrder: 1 },
+        surfaceLow:  { displayName: "Off-white",    sortOrder: 2 },
+        blue:        { displayName: "Blue",         sortOrder: 3 },
+        blueGrad:    { displayName: "Blue gradient", sortOrder: 4 },
+        purple:      { displayName: "Purple",       sortOrder: 5 },
       },
     },
     padding: {
@@ -202,11 +221,13 @@ export const DefaultSectionTemplate = displayTemplate({
       displayName: "Background",
       sortOrder: 0,
       choices: {
-        transparent: { displayName: "Transparent",  sortOrder: 0 },
-        surface:     { displayName: "Surface",      sortOrder: 1 },
-        surfaceLow:  { displayName: "Surface Low",  sortOrder: 2 },
-        brand:       { displayName: "Brand",        sortOrder: 3 },
-        dark:        { displayName: "Dark",         sortOrder: 4 },
+        transparent: { displayName: "None",          sortOrder: 0 },
+        surface:     { displayName: "White",         sortOrder: 1 },
+        surfaceLow:  { displayName: "Off-white",     sortOrder: 2 },
+        brand:       { displayName: "Blue",          sortOrder: 3 },
+        blueGrad:    { displayName: "Blue gradient", sortOrder: 4 },
+        purple:      { displayName: "Purple",        sortOrder: 5 },
+        dark:        { displayName: "Dark",          sortOrder: 6 },
       },
     },
     paddingY: {
@@ -229,6 +250,16 @@ export const DefaultSectionTemplate = displayTemplate({
         top:    { displayName: "Top",    sortOrder: 1 },
         bottom: { displayName: "Bottom", sortOrder: 2 },
         both:   { displayName: "Both",   sortOrder: 3 },
+      },
+    },
+    cornerRadius: {
+      editor: "select",
+      displayName: "Corner radius",
+      sortOrder: 3,
+      choices: {
+        none:  { displayName: "None",        sortOrder: 0 },
+        lg:    { displayName: "Large",       sortOrder: 1 },
+        xl:    { displayName: "Extra large", sortOrder: 2 },
       },
     },
   },

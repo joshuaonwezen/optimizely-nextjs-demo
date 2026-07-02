@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import {
+  BACKGROUND, FONT_STYLE,
+  BG_CLASSES, FONT_CLASSES,
+} from "../_shared/displayTemplateSettings";
 
 export const PricingTierBlockType = contentType({
   key: "PricingTierBlock",
@@ -26,10 +30,13 @@ export const PricingTierBlockType = contentType({
 export const PricingTierCompactTemplate = displayTemplate({
   key: "PricingTierCompactTemplate",
   isDefault: false,
-  displayName: "Compact (condensed)",
+  displayName: "Compact",
   contentType: "PricingTierBlock",
   tag: "Compact",
-  settings: {},
+  settings: {
+    ...BACKGROUND,
+    ...FONT_STYLE,
+  },
 });
 
 interface PricingTierData {
@@ -51,23 +58,38 @@ type PricingTierBlockProps = PricingTierData & {
 
 export default function PricingTierBlock(props: PricingTierBlockProps) {
   const data = props.content ?? props;
+  const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
   const features = (data.features ?? []).filter((f): f is string => Boolean(f));
 
   const isCompact = props.displayTemplateKey === "PricingTierCompactTemplate";
+  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const padding = isCompact ? "p-5" : "p-8";
   const nameSize = isCompact ? "text-lg" : "text-2xl";
   const priceSize = isCompact ? "text-3xl" : "text-5xl";
   const featureSpacing = isCompact ? "space-y-1.5 mb-5" : "space-y-3 mb-8";
 
-  const wrapperBase = `rounded-2xl ${padding} border h-full flex flex-col transition-shadow`;
-  const wrapperStyle = data.highlighted
-    ? `${wrapperBase} bg-brand text-on-brand border-brand shadow-lift`
-    : `${wrapperBase} bg-surface-lowest border-ghost-border hover-ambient`;
+  const bgKey = (ds?.background as string) || "";
+  const bg = bgKey ? BG_CLASSES[bgKey] : null;
+
+  let wrapperStyle: string;
+  if (bg) {
+    wrapperStyle = `rounded-2xl ${padding} border h-full flex flex-col transition-shadow ${bg.wrapper}`;
+  } else {
+    wrapperStyle = data.highlighted
+      ? `rounded-2xl ${padding} border h-full flex flex-col transition-shadow bg-brand text-on-brand border-brand shadow-lift`
+      : `rounded-2xl ${padding} border h-full flex flex-col transition-shadow bg-surface-lowest border-ghost-border hover-ambient`;
+  }
+
+  const textColor = bg ? bg.text : (data.highlighted ? "text-on-brand" : "text-on-surface");
+  const mutedColor = bg ? bg.textMuted : (data.highlighted ? "opacity-80" : "text-on-surface-variant");
+  const ctaClass = bg?.wrapper?.includes("gradient") || (data.highlighted && !bg)
+    ? "bg-on-brand text-brand hover:opacity-90"
+    : "bg-brand text-on-brand hover:opacity-90";
 
   return (
     <div data-component="PricingTierBlock" className={wrapperStyle}>
-      {data.highlighted && (
+      {data.highlighted && !bg && (
         <span className="inline-block text-xs font-bold uppercase tracking-widest opacity-80 mb-3">
           Recommended
         </span>
@@ -75,7 +97,7 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
       {data.name && (
         <h3
           {...pa("name")}
-          className={`font-display ${nameSize} font-extrabold mb-2`}
+          className={`${fontClass} ${nameSize} font-extrabold mb-2 ${textColor}`}
         >
           {data.name}
         </h3>
@@ -84,7 +106,7 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
         {data.price && (
           <span
             {...pa("price")}
-            className={`font-display ${priceSize} font-extrabold`}
+            className={`${fontClass} ${priceSize} font-extrabold ${textColor}`}
           >
             {data.price}
           </span>
@@ -92,7 +114,7 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
         {data.period && (
           <span
             {...pa("period")}
-            className={`text-sm ${data.highlighted ? "opacity-80" : "text-on-surface-variant"}`}
+            className={`text-sm ${mutedColor}`}
           >
             {data.period}
           </span>
@@ -107,11 +129,11 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
-                className={`flex-shrink-0 mt-0.5 ${data.highlighted ? "" : "text-brand"}`}
+                className={`flex-shrink-0 mt-0.5 ${data.highlighted && !bg ? "" : "text-brand"}`}
               >
                 <path d="M3 8L7 12L13 4" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span>{feature}</span>
+              <span className={textColor}>{feature}</span>
             </li>
           ))}
         </ul>
@@ -122,11 +144,7 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
           href={data.ctaLink}
           data-track-event="mb_pricing_tier_click"
           data-track-tags={JSON.stringify({ tier: data.name ?? "", label: data.ctaText ?? "", highlighted: !!data.highlighted })}
-          className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-opacity ${
-            data.highlighted
-              ? "bg-on-brand text-brand hover:opacity-90"
-              : "bg-brand text-on-brand hover:opacity-90"
-          }`}
+          className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-opacity ${ctaClass}`}
         >
           <span {...pa("ctaText")}>{data.ctaText}</span>
         </Link>

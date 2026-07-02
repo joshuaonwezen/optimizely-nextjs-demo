@@ -1,5 +1,9 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import {
+  BACKGROUND, HEADING_SIZE, FONT_STYLE,
+  BG_CLASSES, HEADING_CLASSES, FONT_CLASSES,
+} from "../_shared/displayTemplateSettings";
 
 export const FeatureItemBlockType = contentType({
   key: "FeatureItemBlock",
@@ -12,22 +16,37 @@ export const FeatureItemBlockType = contentType({
   },
 });
 
+const FEATURE_SETTINGS = {
+  ...BACKGROUND,
+  ...HEADING_SIZE,
+  ...FONT_STYLE,
+};
+
 export const FeatureItemOutlinedTemplate = displayTemplate({
   key: "FeatureItemOutlinedTemplate",
   isDefault: false,
-  displayName: "Outlined (with border)",
+  displayName: "Outlined card",
   contentType: "FeatureItemBlock",
   tag: "Outlined",
-  settings: {},
+  settings: FEATURE_SETTINGS,
+});
+
+export const FeatureItemBrandTemplate = displayTemplate({
+  key: "FeatureItemBrandTemplate",
+  isDefault: false,
+  displayName: "Coloured card",
+  contentType: "FeatureItemBlock",
+  tag: "Brand",
+  settings: FEATURE_SETTINGS,
 });
 
 export const FeatureItemFlatTemplate = displayTemplate({
   key: "FeatureItemFlatTemplate",
   isDefault: false,
-  displayName: "Flat (no border)",
+  displayName: "Flat (divider only)",
   contentType: "FeatureItemBlock",
   tag: "Flat",
-  settings: {},
+  settings: FEATURE_SETTINGS,
 });
 
 interface FeatureItemData {
@@ -42,30 +61,35 @@ type FeatureItemBlockProps = FeatureItemData & {
   displayTemplateKey?: string;
 };
 
-const VARIANT_CLASSES: Record<string, string> = {
-  card:     "rounded-2xl p-8 bg-surface-lowest",
-  flat:     "p-8 border-b border-outline-variant",
-  outlined: "rounded-2xl p-8 border border-outline-variant",
-};
-
 export default function FeatureItemBlock(props: FeatureItemBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
 
-  let variant = "card";
-  if (props.displayTemplateKey === "FeatureItemOutlinedTemplate") variant = "outlined";
-  else if (props.displayTemplateKey === "FeatureItemFlatTemplate") variant = "flat";
-  if (ds?.variant) variant = ds.variant as string;
+  const isOutlined = props.displayTemplateKey === "FeatureItemOutlinedTemplate";
+  const isFlat = props.displayTemplateKey === "FeatureItemFlatTemplate";
+  const isBrand = props.displayTemplateKey === "FeatureItemBrandTemplate";
 
-  const vs = VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.card;
+  const bgKey = (ds?.background as string) || (isBrand ? "blueGrad" : isFlat ? "transparent" : "white");
+  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
+  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
+  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
+
+  let structureClass: string;
+  if (isFlat) {
+    structureClass = "p-8 border-b border-outline-variant";
+  } else if (isOutlined) {
+    structureClass = `rounded-2xl p-8 border border-outline-variant ${bg.wrapper}`;
+  } else {
+    structureClass = `rounded-2xl p-8 ${bg.wrapper || "bg-surface-lowest"}`;
+  }
 
   return (
-    <div data-component="FeatureItemBlock" className={`h-full ${vs}`}>
+    <div data-component="FeatureItemBlock" className={`h-full ${structureClass}`}>
       {data.title && (
         <h3
           {...pa("title")}
-          className="font-display text-base font-bold mb-3 text-on-surface"
+          className={`${fontClass} ${headingClass} font-bold mb-3 ${bg.text || "text-on-surface"}`}
         >
           {data.title}
         </h3>
@@ -73,7 +97,7 @@ export default function FeatureItemBlock(props: FeatureItemBlockProps) {
       {data.description && (
         <p
           {...pa("description")}
-          className="text-sm leading-relaxed text-on-surface-variant"
+          className={`text-sm leading-relaxed ${bg.textMuted || "text-on-surface-variant"}`}
         >
           {data.description}
         </p>

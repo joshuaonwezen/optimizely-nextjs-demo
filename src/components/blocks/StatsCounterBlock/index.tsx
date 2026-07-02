@@ -1,5 +1,9 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import {
+  BACKGROUND, HEADING_SIZE, TEXT_ALIGN,
+  BG_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
+} from "../_shared/displayTemplateSettings";
 
 export const StatsCounterBlockType = contentType({
   key: "StatsCounterBlock",
@@ -13,6 +17,28 @@ export const StatsCounterBlockType = contentType({
   },
 });
 
+export const StatsCounterAccentTemplate = displayTemplate({
+  key: "StatsCounterAccentTemplate",
+  isDefault: false,
+  displayName: "Accent rail (left bar)",
+  contentType: "StatsCounterBlock",
+  tag: "Accent",
+  settings: {
+    ...HEADING_SIZE,
+    ...TEXT_ALIGN,
+    accentColor: {
+      editor: "select" as const,
+      displayName: "Number color",
+      sortOrder: 5,
+      choices: {
+        brand:    { displayName: "Blue",         sortOrder: 0 },
+        tertiary: { displayName: "Purple",       sortOrder: 1 },
+        surface:  { displayName: "Dark (default)", sortOrder: 2 },
+      },
+    },
+  },
+});
+
 export const StatsCounterHighlightTemplate = displayTemplate({
   key: "StatsCounterHighlightTemplate",
   isDefault: false,
@@ -20,19 +46,13 @@ export const StatsCounterHighlightTemplate = displayTemplate({
   contentType: "StatsCounterBlock",
   tag: "Highlight",
   settings: {
-    theme: {
-      editor: "select" as const,
-      displayName: "Box color",
-      sortOrder: 0,
-      choices: {
-        surface: { displayName: "Surface (white)", sortOrder: 0 },
-        brand:   { displayName: "Brand blue",      sortOrder: 1 },
-      },
-    },
+    ...BACKGROUND,
+    ...HEADING_SIZE,
+    ...TEXT_ALIGN,
     size: {
       editor: "select" as const,
-      displayName: "Number size",
-      sortOrder: 1,
+      displayName: "Layout density",
+      sortOrder: 5,
       choices: {
         default: { displayName: "Standard", sortOrder: 0 },
         compact: { displayName: "Compact",  sortOrder: 1 },
@@ -54,32 +74,65 @@ type StatsCounterBlockProps = StatsCounterData & {
   displayTemplateKey?: string;
 };
 
+const ACCENT_COLOR_CLASSES: Record<string, string> = {
+  brand:    "text-brand",
+  tertiary: "text-tertiary",
+  surface:  "text-on-surface",
+};
+
 export default function StatsCounterBlock(props: StatsCounterBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
 
   const isHighlight = props.displayTemplateKey === "StatsCounterHighlightTemplate";
-  const isBrand = isHighlight && ds?.theme === "brand";
+  const isAccent = props.displayTemplateKey === "StatsCounterAccentTemplate";
   const isCompact = ds?.size === "compact";
 
-  const valueClass = isCompact
-    ? "font-display text-3xl md:text-4xl font-extrabold mb-2"
-    : "font-display text-4xl md:text-5xl font-extrabold mb-2";
-  const suffixClass = isCompact ? "text-2xl md:text-3xl" : "text-3xl md:text-4xl";
-  const valueColor = isBrand ? "text-on-brand" : "text-brand";
-  const labelColor = isBrand ? "text-on-brand/80" : "text-on-surface-variant";
-  const boxClass = isHighlight
-    ? (isBrand ? "bg-gradient-brand rounded-xl" : "bg-surface-lowest rounded-xl border border-outline-variant")
-    : "";
+  if (isAccent) {
+    const headingSizeKey = (ds?.headingSize as string) ?? "lg";
+    const baseValueClass = HEADING_CLASSES[headingSizeKey];
+    const suffixSizeKey = headingSizeKey === "xl" ? "lg" : "md";
+    const suffixClass = HEADING_CLASSES[suffixSizeKey] ?? "text-3xl md:text-4xl";
+    const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
+    const valueColor = ACCENT_COLOR_CLASSES[(ds?.accentColor as string) ?? "brand"] ?? "text-brand";
+    return (
+      <div data-component="StatsCounterBlock" className={`insight-rail py-6 ${alignClass}`}>
+        {data.value && (
+          <p className={`font-display ${baseValueClass} font-extrabold mb-2 ${valueColor}`}>
+            <span {...pa("value")}>{data.value}</span>
+            {data.suffix && (
+              <span {...pa("suffix")} className={suffixClass}>{data.suffix}</span>
+            )}
+          </p>
+        )}
+        {data.label && (
+          <p {...pa("label")} className="text-sm font-medium uppercase tracking-wider text-on-surface-variant">
+            {data.label}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  const bgKey = (ds?.background as string) || (isHighlight ? "white" : "transparent");
+  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.transparent;
+
+  const headingSizeKey = (ds?.headingSize as string) ?? (isCompact ? "md" : "lg");
+  const baseValueClass = HEADING_CLASSES[headingSizeKey];
+  const suffixSizeKey = headingSizeKey === "xl" ? "lg" : headingSizeKey === "lg" ? "md" : "sm";
+  const suffixClass = HEADING_CLASSES[suffixSizeKey] ?? "text-3xl md:text-4xl";
+
+  const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "center"];
+  const boxClass = isHighlight ? `${bg.wrapper} rounded-xl` : "";
 
   return (
     <div
       data-component="StatsCounterBlock"
-      className={`text-center p-8 ${boxClass}`}
+      className={`p-8 ${alignClass} ${boxClass}`}
     >
       {data.value && (
-        <p className={`${valueClass} ${valueColor}`}>
+        <p className={`font-display ${baseValueClass} font-extrabold mb-2 ${bg.text || "text-brand"}`}>
           <span {...pa("value")}>{data.value}</span>
           {data.suffix && (
             <span {...pa("suffix")} className={suffixClass}>{data.suffix}</span>
@@ -89,7 +142,7 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
       {data.label && (
         <p
           {...pa("label")}
-          className={`text-sm font-medium uppercase tracking-wider ${labelColor}`}
+          className={`text-sm font-medium uppercase tracking-wider ${bg.textMuted || "text-on-surface-variant"}`}
         >
           {data.label}
         </p>

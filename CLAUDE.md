@@ -639,6 +639,72 @@ Do not use em dashes (`—`) anywhere in the demo pages: prose, JSX text, code s
 
 When adding a `displayTemplate({ key: "MyTemplate", ... })` to `optimizely.config.mjs`, also add `"MyTemplate"` to `KEEP_TEMPLATES` in `scripts/cleanup-types.ts`. Templates absent from `KEEP_TEMPLATES` (and whose key doesn't appear in `src/`) will be deleted the next time cleanup runs.
 
+---
+
+## Display Templates — Conventions
+
+Every new block component must export at least one `displayTemplate()` alongside its `contentType()`. Add templates in the same `index.tsx` as the content type definition.
+
+### Naming rules (for a non-technical editor audience)
+
+- **Template `displayName`**: plain English describing the visual layout, e.g. "Default", "Card", "Compact", "Horizontal card". Never include "Template", "Block", or technical class names.
+- **Setting `displayName`**: a label the editor would understand without any CMS knowledge, e.g. "Background color", "Heading size", "Text alignment".
+- **Choice `displayName`**: plain English only. Never expose CSS class names or design token names:
+  - Use "White" not "Surface (white)"
+  - Use "Blue" not "Brand blue"
+  - Use "Off-white" not "surfaceLow"
+  - Use "Extra large (H1)" not "xl" or "5xl"
+  - Use "None" not "Transparent"
+
+### Shared settings library
+
+Import from `src/components/blocks/_shared/displayTemplateSettings.ts` rather than defining the same settings inline. Spread the constants directly into the `settings` object:
+
+```ts
+import { BACKGROUND, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE } from "../_shared/displayTemplateSettings";
+
+export const MyBlockCardTemplate = displayTemplate({
+  key: "MyBlockCardTemplate",
+  settings: {
+    ...BACKGROUND,
+    ...HEADING_SIZE,
+    ...TEXT_ALIGN,
+    ...FONT_STYLE,
+    // block-specific settings below
+    showIcon: { editor: "checkbox" as const, displayName: "Show icon", sortOrder: 10, choices: {} },
+  },
+});
+```
+
+Available shared constants: `BACKGROUND`, `HEADING_SIZE`, `TEXT_ALIGN`, `FONT_STYLE`, `TEXT_SIZE`.
+Tailwind class lookup maps: `BG_CLASSES`, `HEADING_CLASSES`, `FONT_CLASSES`, `TEXT_SIZE_CLASSES`, `TEXT_ALIGN_CLASSES`.
+
+### Choosing which settings to include per block
+
+- Any block with a visible heading or title - add `HEADING_SIZE` and `FONT_STYLE`
+- Any block that renders with a card or section background - add `BACKGROUND`
+- Any block with multi-line text content - add `TEXT_ALIGN`
+- Any block with prose or body text - add `TEXT_SIZE`
+
+### Template variants
+
+If a block has more than one visual layout (e.g. card vs minimal, horizontal vs vertical), create a separate `displayTemplate()` for each with a `tag` value matching the resolver entry in `componentRegistry.ts`. Always set one template as `isDefault: true`.
+
+In `componentRegistry.ts`, register tag variants like this:
+
+```ts
+MyBlock: {
+  default: MyBlock,
+  tags: { Card: MyBlock, Minimal: MyBlock },
+},
+```
+
+### cleanup-types.ts
+
+When adding a new display template, add its `.key` string to `KEEP_TEMPLATES` in `scripts/cleanup-types.ts`. Templates absent from this set will be deleted by the cleanup script on the next run.
+
+---
+
 ## Writing a New Seed Script — Step-by-Step
 
 ### 1. Imports and setup

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { TEXT_ALIGN, TEXT_ALIGN_CLASSES } from "../_shared/displayTemplateSettings";
 
 export const LogoGridBlockType = contentType({
   key: "LogoGridBlock",
@@ -22,7 +23,7 @@ export const LogoGridBlockType = contentType({
 export const LogoGridColorTemplate = displayTemplate({
   key: "LogoGridColorTemplate",
   isDefault: false,
-  displayName: "Full color",
+  displayName: "Full color logos",
   contentType: "LogoGridBlock",
   tag: "Color",
   settings: {
@@ -42,6 +43,7 @@ export const LogoGridColorTemplate = displayTemplate({
       sortOrder: 1,
       choices: {},
     },
+    ...TEXT_ALIGN,
   },
 });
 
@@ -72,6 +74,12 @@ const LOGO_SIZES: Record<string, { wrapper: string; imgSizes: string }> = {
   lg:      { wrapper: "w-40 h-20", imgSizes: "160px" },
 };
 
+const FLEX_ALIGN: Record<string, string> = {
+  left:   "justify-start",
+  center: "justify-center",
+  right:  "justify-end",
+};
+
 export default function LogoGridBlock(props: LogoGridBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
@@ -82,11 +90,15 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
   const sizeKey = (ds?.size as string) || "default";
   const { wrapper: logoWrapper, imgSizes } = LOGO_SIZES[sizeKey] ?? LOGO_SIZES["default"];
 
+  const alignKey = (ds?.textAlign as string) || "center";
+  const textAlignClass = TEXT_ALIGN_CLASSES[alignKey] ?? "text-center";
+  const flexAlignClass = FLEX_ALIGN[alignKey] ?? "justify-center";
+
   const logos = (data.logos ?? []).filter((l): l is LogoItem => l !== null);
   const showPlaceholders = logos.length === 0;
 
   return (
-    <section data-component="LogoGridBlock" className="py-20 px-8 max-w-7xl mx-auto text-center">
+    <section data-component="LogoGridBlock" className={`py-20 px-8 max-w-7xl mx-auto ${textAlignClass}`}>
       {data.heading && (
         <h2
           {...pa("heading")}
@@ -104,7 +116,7 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
         </p>
       )}
 
-      <div className="flex flex-wrap items-center justify-center gap-8">
+      <div className={`flex flex-wrap items-center gap-8 ${flexAlignClass}`}>
         {showPlaceholders
           ? Array.from({ length: PLACEHOLDER_COUNT }).map((_, i) => (
               <div
