@@ -310,16 +310,30 @@ export default async function ExternalContentPage() {
                   with no off-the-shelf integration. Teams comfortable owning scheduling, retries,
                   and rebuilds.
                 </div>
-                <p className="text-xs text-on-surface-variant mt-auto">
-                  ⚠ Two undocumented-but-required fields:{" "}
-                  <code className="bg-surface-low px-1 rounded font-mono">"preset": "next"</code> on
-                  the schema and{" "}
-                  <code className="bg-surface-low px-1 rounded font-mono">displayName___searchable</code>{" "}
-                  in <code className="bg-surface-low px-1 rounded font-mono">_itemMetadata</code>.
-                  See <a href="#base-types" className="text-brand hover:underline">Base Type Contracts ↓</a> for full examples.
-                  Additional sources may need to be enabled by Optimizely - contact support if the
-                  types endpoint returns a source-limit error.
-                </p>
+                <div className="text-xs text-on-surface-variant mt-auto space-y-1.5">
+                  <p>
+                    ⚠ <strong className="text-on-surface">Undocumented-but-required fields.</strong>{" "}
+                    Schema registration needs{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono">"preset": "next"</code> and{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono">"useTypedFieldNames": true</code>.
+                    Data payloads need{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono">displayName___searchable</code>{" "}
+                    (not <code className="bg-surface-low px-1 rounded font-mono">displayName</code>) in <code className="bg-surface-low px-1 rounded font-mono">_itemMetadata</code>, a top-level{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono">_metadata</code> object with <code className="bg-surface-low px-1 rounded font-mono">types/locale/key/status</code>,
+                    and custom fields suffixed with their type:{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono">field$$String</code>, <code className="bg-surface-low px-1 rounded font-mono">field$$Float</code>, etc.
+                  </p>
+                  <p>
+                    ⚠ <strong className="text-on-surface">_rbac must be a string.</strong>{" "}
+                    Send <code className="bg-surface-low px-1 rounded font-mono">"_rbac": "r:Everyone:Read"</code> — not an object.
+                    Sending an object corrupts the Elasticsearch index mapping and silently drops all records until
+                    the source is deleted and re-registered.
+                  </p>
+                  <p>
+                    Additional sources may need to be enabled by Optimizely — contact support if the types endpoint returns a source-limit error.
+                    See <a href="#base-types" className="text-brand hover:underline">Base Type Contracts ↓</a> for full payload examples.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -478,6 +492,27 @@ export default async function ExternalContentPage() {
               Fields in <code className="bg-surface-low px-1 rounded text-xs font-mono">_assetMetadata</code> and{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">_imageMetadata</code> are not
               searchable and keep their original names.
+            </p>
+            <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed mt-3">
+              Three additional payload rules apply to every push. First,{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">_rbac</code> must be the
+              string <code className="bg-surface-low px-1 rounded text-xs font-mono">"r:Everyone:Read"</code> — sending
+              an object here (e.g. <code className="bg-surface-low px-1 rounded text-xs font-mono">{"{ read: [\"Everyone\"] }"}</code>) triggers an Elasticsearch
+              mapper_parsing_exception that corrupts the index and silently drops every record; the
+              only fix is to delete the entire source and re-register. Second, custom field names
+              must include a <code className="bg-surface-low px-1 rounded text-xs font-mono">$$Type</code> suffix
+              matching their schema type: <code className="bg-surface-low px-1 rounded text-xs font-mono">field$$String</code>,{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">field$$Float</code>,{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">field$$Boolean</code>, etc. — plain field
+              names are accepted but not indexed. Third, a top-level{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">_metadata</code> object is
+              required alongside <code className="bg-surface-low px-1 rounded text-xs font-mono">_itemMetadata</code>,
+              carrying <code className="bg-surface-low px-1 rounded text-xs font-mono">types</code>,{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">locale</code>,{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">key</code>, and{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">status</code>.
+              All three rules are absent from the official docs; the examples below reflect the
+              working format confirmed with Optimizely engineers.
             </p>
           </div>
 

@@ -29,7 +29,7 @@ const PANDAS_IMAGE_REF = {
   },
 };
 
-// Mock InferredContentReference for Otters.jpg — same shape as PANDAS_IMAGE_REF above.
+// Mock InferredContentReference for Otters.jpg - same shape as PANDAS_IMAGE_REF above.
 // Original is square (3402 × 3402); rendition heights estimated from aspect ratio.
 const OTTERS_IMAGE_REF = {
   key: "demo-otters",
@@ -455,7 +455,7 @@ export default function MediaDemoPage() {
                   In edit mode <code className="bg-surface-low px-1 rounded font-mono">getSrcset()</code> automatically appends the CMS preview token to each rendition URL so DAM images load correctly in Visual Builder without extra code.
                 </p>
                 <p>
-                  <code className="bg-surface-low px-1 rounded font-mono">getAlt()</code> returns <code className="bg-surface-low px-1 rounded font-mono">AltText</code> stored on the DAM asset, falling back to the string you provide — here <strong className="text-on-surface">&ldquo;{pandasAlt}&rdquo;</strong>.
+                  <code className="bg-surface-low px-1 rounded font-mono">getAlt()</code> returns <code className="bg-surface-low px-1 rounded font-mono">AltText</code> stored on the DAM asset, falling back to the string you provide - here <strong className="text-on-surface">&ldquo;{pandasAlt}&rdquo;</strong>.
                 </p>
               </div>
             </div>
@@ -529,9 +529,9 @@ export default function MediaDemoPage() {
             <div className="grid md:grid-cols-2 gap-8 items-start">
 
               <div>
-                <p className="text-xs font-semibold text-on-surface mb-1">Otters.jpg — srcset with original</p>
+                <p className="text-xs font-semibold text-on-surface mb-1">Otters.jpg - srcset with original</p>
                 <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
-                  3402 × 3402 original included as the largest candidate. Resize your browser viewport and hard reload — DevTools → Network → Img shows which URL was fetched.
+                  3402 × 3402 original included as the largest candidate. Resize your browser viewport and hard reload - DevTools → Network → Img shows which URL was fetched.
                 </p>
                 <div className="rounded-2xl overflow-hidden border border-ghost-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -549,7 +549,7 @@ export default function MediaDemoPage() {
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-on-surface mb-1">Pandas.jpg — original + three renditions</p>
+                <p className="text-xs font-semibold text-on-surface mb-1">Pandas.jpg - original + three renditions</p>
                 <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
                   5456 × 3632 original. Three pre-generated renditions from the same DAM instance.
                 </p>
@@ -673,7 +673,7 @@ export default function MediaDemoPage() {
               </div>
               <div className="space-y-3 text-xs text-on-surface-variant leading-relaxed">
                 <p>
-                  The image URL in the page HTML is <code className="bg-surface-low px-1 rounded font-mono">/api/image-proxy?src=...</code> — your own origin, not <code className="bg-surface-low px-1 rounded font-mono">images1.cmp.optimizely.com</code>.
+                  The image URL in the page HTML is <code className="bg-surface-low px-1 rounded font-mono">/api/image-proxy?src=...</code> - your own origin, not <code className="bg-surface-low px-1 rounded font-mono">images1.cmp.optimizely.com</code>.
                 </p>
                 <p>
                   Open DevTools → Network → Img and reload to confirm the request goes to <code className="bg-surface-low px-1 rounded font-mono">/api/image-proxy</code> and returns with your <code className="bg-surface-low px-1 rounded font-mono">Cache-Control: immutable</code> header.

@@ -4,6 +4,25 @@ import {
   displayTemplate,
 } from "@optimizely/cms-sdk";
 
+// SEO contract — metadata properties shared by every routable page type.
+// Same contract-by-spread pattern as EditorialContentContract below: when the SDK
+// exports contract(), this becomes contract({ key: "SEO", ... }) with extends:.
+// Consumed by generateMetadata() in src/app/[[...slug]]/page.tsx.
+const SEO_PROPERTIES = {
+  metaTitle:       { type: "string", displayName: "Meta Title",       isLocalized: true },
+  metaDescription: { type: "string", displayName: "Meta Description", isLocalized: true },
+  // No indexingType here — "disabled" on a _page contentReference would make the SDK
+  // skip the field in generated fragments and ogImage would always be null.
+  ogImage:         { type: "contentReference", displayName: "Social Share Image", allowedTypes: ["_image"] },
+};
+
+export const SEOContract = {
+  key: "SEO",
+  displayName: "SEO Properties",
+  description: "Shared SEO metadata for routable page types. Create this contract in the CMS to unlock a shared Graph interface.",
+  properties: SEO_PROPERTIES,
+};
+
 export const DynamicExperienceType = contentType({
   key: "DynamicExperience",
   displayName: "Dynamic Experience",
@@ -18,6 +37,7 @@ export const DynamicExperienceType = contentType({
     "NavigationItem", "Navigation",
   ],
   properties: {
+    ...SEO_PROPERTIES,
     lastSync: { type: "dateTime", displayName: "Last Sync" },
   },
 });
@@ -28,6 +48,7 @@ export const LandingPageType = contentType({
   baseType: "_page",
   mayContainTypes: ["_self"],
   properties: {
+    ...SEO_PROPERTIES,
     heading:    { type: "string",   displayName: "Heading",    indexingType: "searchable", isLocalized: true },
     subheading: { type: "string",   displayName: "Subheading", indexingType: "searchable", isLocalized: true },
     heroImage:  { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"] },
@@ -78,6 +99,7 @@ export const ArticlePageType = contentType({
   displayName: "Article",
   baseType: "_page",
   properties: {
+    ...SEO_PROPERTIES,
     ...EDITORIAL_CONTENT_PROPERTIES,
     body:        { type: "richText",         displayName: "Body",         indexingType: "searchable", isLocalized: true },
     author:      { type: "contentReference", displayName: "Author",       allowedTypes: ["AuthorBlock"] },
@@ -97,6 +119,7 @@ export const CaseStudyPageType = contentType({
   displayName: "Case Study",
   baseType: "_page",
   properties: {
+    ...SEO_PROPERTIES,
     ...EDITORIAL_CONTENT_PROPERTIES,
     clientName:  { type: "string",           displayName: "Client Name",  indexingType: "queryable",  isLocalized: true },
     industry:    { type: "string",           displayName: "Industry",     indexingType: "queryable",  enum: CATEGORY_ENUM },

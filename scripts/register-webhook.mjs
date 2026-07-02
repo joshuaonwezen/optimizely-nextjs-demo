@@ -10,6 +10,7 @@
  * Credentials are read from .env.local:
  *   OPTIMIZELY_APP_KEY
  *   OPTIMIZELY_APP_SECRET
+ *   OPTIMIZELY_REVALIDATE_SECRET (appended to the URL so /api/webhooks can verify the sender)
  */
 
 import { createInterface } from "readline";
@@ -36,7 +37,15 @@ const baseUrl = await question(
 );
 rl.close();
 
-const webhookUrl = `${baseUrl.trim().replace(/\/$/, "")}/api/webhooks`;
+const REVALIDATE_SECRET = process.env.OPTIMIZELY_REVALIDATE_SECRET;
+if (!REVALIDATE_SECRET) {
+  console.error(
+    "Error: OPTIMIZELY_REVALIDATE_SECRET must be set in .env.local — the receiver at /api/webhooks rejects unauthenticated calls"
+  );
+  process.exit(1);
+}
+
+const webhookUrl = `${baseUrl.trim().replace(/\/$/, "")}/api/webhooks?secret=${encodeURIComponent(REVALIDATE_SECRET)}`;
 const credentials = Buffer.from(`${APP_KEY}:${APP_SECRET}`).toString("base64");
 
 console.log(`\nRegistering webhook → ${webhookUrl}`);

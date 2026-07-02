@@ -27,7 +27,7 @@ export const BACKGROUND: { background: SelectSetting } = {
       blue:        { displayName: "Blue",            sortOrder: 2 },
       blueGrad:    { displayName: "Blue gradient",   sortOrder: 3 },
       purple:      { displayName: "Purple",          sortOrder: 4 },
-      dark:        { displayName: "Dark (inverted)", sortOrder: 5 },
+      dark:        { displayName: "Dark",            sortOrder: 5 },
       transparent: { displayName: "None",            sortOrder: 6 },
     },
   },

@@ -82,8 +82,9 @@ npx tsx scripts/seed-runner.ts --instance=onboarding
 | 6 | `seed-homepage-variations.ts` | Optional — needs Graph to have indexed the homepage (~60s lag) |
 | 7 | `seed-nav-strategy-demo.ts` | Optional — nav strategy demo pages |
 | 8 | `seed-quotes.ts` | Optional — quote content via Content Source API |
+| 9 | `seed-localization.ts` | Optional — Dutch (nl) versions of all pages, navigation, and FAQs. Translates via the exact-match dictionary in `scripts/translations-nl.ts`; needs Graph to have indexed everything above, so re-run individually after ~60s on a fresh seed |
 
-Steps 6-8 are optional: if they fail (usually Graph lag on a fresh seed), the runner warns and continues. Re-run them individually after ~60s if needed.
+Steps 6-9 are optional: if they fail (usually Graph lag on a fresh seed), the runner warns and continues. Re-run them individually after ~60s if needed.
 
 **seed-nav must run before seed-faqs** — seed-faqs Part 3 looks up the FAQs page in Graph to wire the FAQ container to it. The FAQs page is created by seed-nav. Running them out of order causes a warning ("FAQs page not found in Graph") and skips the wiring; re-run `npx tsx scripts/seed-faqs.ts` after seed-nav completes.
 

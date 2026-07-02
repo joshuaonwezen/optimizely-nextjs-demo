@@ -5,8 +5,8 @@ import {
   createStaticProjectConfigManager,
   OptimizelyDecideOption,
 } from "@optimizely/optimizely-sdk/universal";
+import { fetchDatafile } from "@/lib/optimizely/datafile";
 
-const DATAFILE_URL = `https://cdn.optimizely.com/datafiles/${process.env.OPTIMIZELY_FX_SDK_KEY}.json`;
 export const VARIATION_MARKER = "__v_";
 export const FLAG_VAR_SEP = "--";
 
@@ -39,9 +39,8 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.includes(".segments/")) return response;
 
   try {
-    const datafileRes = await fetch(DATAFILE_URL, { next: { revalidate: 60 }, signal: AbortSignal.timeout(3000) } as RequestInit);
-    if (!datafileRes.ok) return response;
-    const datafile = await datafileRes.text();
+    const datafile = await fetchDatafile(3000);
+    if (!datafile) return response;
 
     const ua = request.headers.get("user-agent") ?? "";
     const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";

@@ -33,7 +33,7 @@ export const StatsCounterAccentTemplate = displayTemplate({
       choices: {
         brand:    { displayName: "Blue",         sortOrder: 0 },
         tertiary: { displayName: "Purple",       sortOrder: 1 },
-        surface:  { displayName: "Dark (default)", sortOrder: 2 },
+        surface:  { displayName: "Dark",         sortOrder: 2 },
       },
     },
   },

@@ -31,8 +31,8 @@ export const FeaturedContentCardTemplate = displayTemplate({
       displayName: "Background color",
       sortOrder: 0,
       choices: {
-        surface: { displayName: "White", sortOrder: 0 },
-        brand:   { displayName: "Blue",  sortOrder: 1 },
+        surface: { displayName: "White",         sortOrder: 0 },
+        brand:   { displayName: "Blue gradient", sortOrder: 1 },
       },
     },
     ...HEADING_SIZE,

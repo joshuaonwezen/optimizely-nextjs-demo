@@ -301,6 +301,7 @@ interface PageDef {
   routeSegment?: string;
   container?: string; // parent page key; defaults to root CONTAINER
   nodes: CompNode[];
+  properties?: Record<string, unknown>; // page-level properties (e.g. SEO contract fields)
 }
 
 // Pre-declare keys so pages can cross-reference each other
@@ -342,6 +343,10 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.personal,
     displayName: "Personal Banking",
     routeSegment: "personal",
+    properties: {
+      metaTitle: "Personal Banking | Mosey Bank",
+      metaDescription: "Current accounts, savings, and mortgages designed around your everyday needs. Open an account in minutes with Mosey Bank.",
+    },
     nodes: buildCategoryPage(
       "Personal Banking",
       "Current accounts, savings, and mortgages designed around your everyday needs."
@@ -351,6 +356,10 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.business,
     displayName: "Business",
     routeSegment: "business",
+    properties: {
+      metaTitle: "Business Banking | Mosey Bank",
+      metaDescription: "Current accounts, lending, and payment solutions for UK businesses of every size. Free for your first 12 months.",
+    },
     nodes: buildCategoryPage(
       "Business Banking",
       "Current accounts, lending, and payment solutions for UK businesses of every size."
@@ -360,6 +369,10 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.investments,
     displayName: "Investments",
     routeSegment: "investments",
+    properties: {
+      metaTitle: "Investments & ISAs | Mosey Bank",
+      metaDescription: "Stocks & Shares ISAs, pensions, and long-term savings products. Start investing from £25 a month.",
+    },
     nodes: buildCategoryPage(
       "Investments",
       "Stocks & Shares ISAs, pensions, and long-term savings products."
@@ -369,6 +382,10 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.help,
     displayName: "Help & Support",
     routeSegment: "help",
+    properties: {
+      metaTitle: "Help & Support | Mosey Bank",
+      metaDescription: "FAQs, contact options, and branch finder. Speak to a real person seven days a week via in-app chat or phone.",
+    },
     nodes: buildCategoryPage(
       "Help & Support",
       "FAQs, contact us, and branch finder — we're here when you need us."
@@ -378,6 +395,10 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.about,
     displayName: "About Mosey",
     routeSegment: "about",
+    properties: {
+      metaTitle: "About Us | Mosey Bank",
+      metaDescription: "Our story, values, team, careers, and press. Mosey Bank is banking built around people, not branches.",
+    },
     nodes: buildCategoryPage(
       "About Mosey Bank",
       "Our story, values, team, careers, and press."
@@ -390,6 +411,10 @@ const pages: PageDef[] = [
     key: PAGE_KEYS.mortgage,
     displayName: "Mortgage",
     routeSegment: "mortgage",
+    properties: {
+      metaTitle: "Mortgages | Mosey Bank",
+      metaDescription: "Find your mortgage rate in minutes. Decision in principle online in 10 minutes without affecting your credit score.",
+    },
     nodes: buildProductPage(
       "Home Buying",
       "Mortgage",
@@ -410,6 +435,11 @@ const pages: PageDef[] = [
           authorName: "Marcus Webb",
           authorRole: "First-time buyer, Bristol",
         }),
+        sectionComponent("CalloutBlock", "Mortgage Risk Warning", {
+          variant: "warning",
+          label: "Important",
+          body: { html: "<p>Your home may be repossessed if you do not keep up repayments on your mortgage. Make sure you can afford the repayments before you apply.</p>" },
+        }),
       ]
     ),
   },
@@ -421,6 +451,10 @@ const pages: PageDef[] = [
     displayName: "Current Account",
     routeSegment: "current-account",
     container: PAGE_KEYS.personal,
+    properties: {
+      metaTitle: "Fee-Free Current Account | Mosey Bank",
+      metaDescription: "A fee-free everyday account with instant notifications, smart budgeting tools, and no hidden charges. Open in 10 minutes.",
+    },
     nodes: buildProductPage(
       "Personal Banking",
       "Current Account",
@@ -443,6 +477,10 @@ const pages: PageDef[] = [
     displayName: "Savings",
     routeSegment: "savings",
     container: PAGE_KEYS.personal,
+    properties: {
+      metaTitle: "Savings Accounts up to 5.1% AER | Mosey Bank",
+      metaDescription: "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £85,000.",
+    },
     nodes: buildProductPage(
       "Save Smarter",
       "Savings",
@@ -778,7 +816,11 @@ async function createPage(page: PageDef): Promise<void> {
           const patchRes = await fetch(`${CONTENT_ENDPOINT}/${graphKey}/versions/${version}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/merge-patch+json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ displayName: page.displayName, composition }),
+            body: JSON.stringify({
+              displayName: page.displayName,
+              composition,
+              ...(page.properties ? { properties: wrapProps(page.properties) } : {}),
+            }),
           });
           if (patchRes.ok) {
             // Republish after patch (PATCH on a published version may create a new draft)
@@ -817,6 +859,7 @@ async function createPage(page: PageDef): Promise<void> {
       locale: "en",
       displayName: page.displayName,
       ...(page.routeSegment ? { routeSegment: page.routeSegment } : {}),
+      ...(page.properties ? { properties: wrapProps(page.properties) } : {}),
       composition,
     },
   };
@@ -964,6 +1007,10 @@ async function main() {
   const homepageDef: PageDef = {
     key: PAGE_KEYS.homepage,
     displayName: "Homepage",
+    properties: {
+      metaTitle: "Mosey Bank | Banking Built Around You",
+      metaDescription: "Fee-free current accounts, savings up to 5.1% AER, and mortgages with a decision in principle in 10 minutes.",
+    },
     nodes: buildHomepage(savingsKey),
   };
 

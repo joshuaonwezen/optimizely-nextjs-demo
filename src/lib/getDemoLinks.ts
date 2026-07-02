@@ -28,7 +28,9 @@ export function getDemoCategories(): DemoCategory[] {
       links: [
         { href: "/demo/feature-experimentation", label: "Feature Experimentation", description: "A/B tests, flags, and bucketing" },
         { href: "/demo/personalization",          label: "Personalization",         description: "Audiences, personas, and variation filter" },
+        { href: "/demo/odp",                      label: "Data Platform (ODP)",     description: "Visitor profiles, segments, and event tracking" },
         { href: "/demo/external-content",         label: "External Content",        description: "Third-party data via Content Source API" },
+        { href: "/demo/webhooks",                 label: "Webhooks",                description: "Graph webhooks and on-demand revalidation" },
       ],
     },
     {

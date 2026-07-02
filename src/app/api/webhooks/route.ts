@@ -13,8 +13,9 @@ export async function GET() {
 /**
  * Optimizely Graph webhook receiver.
  *
- * Register this URL via `npm run webhook:register`.
- * Optimizely Graph will POST here whenever content changes (publish, expire, bulk sync).
+ * Register this URL via `npm run webhook:register` — the script appends
+ * ?secret=OPTIMIZELY_REVALIDATE_SECRET to the registered URL, since Graph
+ * webhook registration only controls the URL, not custom headers.
  *
  * Webhook payload types:
  *   - bulk.completed  – Graph finished processing a content sync
@@ -22,6 +23,14 @@ export async function GET() {
  *   - doc.expired     – a content item reached its StopPublish date
  */
 export async function POST(request: NextRequest) {
+  const secret =
+    request.nextUrl.searchParams.get("secret") ??
+    request.headers.get("x-revalidate-secret");
+
+  if (secret !== process.env.OPTIMIZELY_REVALIDATE_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
 

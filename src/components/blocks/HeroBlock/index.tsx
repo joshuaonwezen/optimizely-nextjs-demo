@@ -36,7 +36,7 @@ export const HeroBlockDefaultTemplate = displayTemplate({
   settings: {
     alignment: {
       editor: "select",
-      displayName: "Text Alignment",
+      displayName: "Text alignment",
       sortOrder: 0,
       choices: {
         left:   { displayName: "Left",   sortOrder: 0 },

@@ -316,7 +316,7 @@ export default function SeoDemoPage() {
                 reads above.
               </p>
               <Link
-                href="/demo/opal#seo-agents"
+                href="/demo/opal#geo-seo-agents"
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
               >
                 See the SEO agents in action →

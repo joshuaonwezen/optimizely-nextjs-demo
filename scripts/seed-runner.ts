@@ -115,6 +115,9 @@ async function main() {
     // Build out the block's elements first, then place it on the contact page.
     ["npx", ["tsx", "scripts/seed-form-block.ts"]],
     ["npx", ["tsx", "scripts/seed-contact-form.ts"]],
+    // Last: needs every page above to be in Graph already (~60s indexing lag on
+    // a fresh seed — re-run individually if many items are skipped/failed).
+    ["npx", ["tsx", "scripts/seed-localization.ts"]],
     // Excluded:
     // seed-business-banking-app-variation.ts — hardcoded version key, instance-specific
     // register-webhook.mjs                   — interactive prompt for public URL

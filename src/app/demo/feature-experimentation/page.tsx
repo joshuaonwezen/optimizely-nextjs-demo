@@ -23,10 +23,10 @@ export const metadata: Metadata = {
 
 
 const BUCKETING_SNIPPET = `// src/components/FxBucketingEvent.tsx
-// flagKey is passed in from the page — it was encoded in the URL by middleware:
+// flagKey is passed in from the page - it was encoded in the URL by middleware:
 //   /savings → /savings/__v_homepage--business
 // extractVariations() in page.tsx parses it back out.
-// No decideAll() here — the flagKey is already known from the route.
+// No decideAll() here - the flagKey is already known from the route.
 
 "use client";
 export function FxBucketingEvent({ flagKey }: { flagKey: string }) {

@@ -933,7 +933,7 @@ const decision = await getDecision("homepage", userId, {
               </div>
               <pre className="p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
                 <code>{`// Decouples ODP segment names from CMS variation names.
-// Update this map when either side renames something —
+// Update this map when either side renames something -
 // no changes needed in FX dashboard or CMS UI.
 export const ODP_SEGMENT_TO_VARIATION = {
 ${mappingEntries.length > 0

@@ -167,27 +167,27 @@ const milestones = await Promise.all(
 );`;
 
 const INDEXING_SNIPPET = `// indexingType controls how Graph indexes a property.
-// Only three values exist — and not all are valid on every type.
+// Only three values exist - and not all are valid on every type.
 
-// "searchable" — full-text search. Apply to prose a user would type.
+// "searchable" - full-text search. Apply to prose a user would type.
 headline:    { type: "string",   displayName: "Headline",     indexingType: "searchable" },
 bio:         { type: "richText", displayName: "Author Bio",   indexingType: "searchable" },
 question:    { type: "string",   displayName: "Question",     indexingType: "searchable" },
 
-// "queryable" — filter / sort in Graph. Apply to metadata, not prose.
+// "queryable" - filter / sort in Graph. Apply to metadata, not prose.
 publishDate: { type: "dateTime", displayName: "Publish Date", indexingType: "queryable" },
 category:    { type: "string",   displayName: "Category",     indexingType: "queryable" },
 navOrder:    { type: "integer",  displayName: "Nav Order",    indexingType: "queryable" },
 
-// "disabled" — exclude from the index. Required on image contentReferences.
-// contentReference fields only accept "disabled" — "searchable" / "queryable"
+// "disabled" - exclude from the index. Required on image contentReferences.
+// contentReference fields only accept "disabled" - "searchable" / "queryable"
 // are not valid on reference types and will be rejected by the CMS on push.
 heroImage:   { type: "contentReference", allowedTypes: ["_image"], indexingType: "disabled" },
 
-// omitting indexingType entirely — fine for fields you never query
+// omitting indexingType entirely - fine for fields you never query
 ctaText:     { type: "string",   displayName: "CTA Text" },`;
 
-const LOCALIZED_SNIPPET = `// isLocalized: true — editor stores a separate value per language.
+const LOCALIZED_SNIPPET = `// isLocalized: true - editor stores a separate value per language.
 // Add to every field a site visitor reads. Omit from structural fields.
 
 // Localize: all user-visible text
@@ -898,13 +898,13 @@ export default function ContentModellingPage() {
                   {
                     value: "queryable",
                     what: "Filter / sort in Graph queries",
-                    apply: "Metadata fields — dates, categories, flags, numbers",
+                    apply: "Metadata fields - dates, categories, flags, numbers",
                     examples: "publishDate, category, navOrder, includeInNavigation",
                   },
                   {
                     value: "disabled",
                     what: "Exclude from the Graph index entirely",
-                    apply: "Image contentReferences. Required — binary content cannot be indexed.",
+                    apply: "Image contentReferences. Required - binary content cannot be indexed.",
                     examples: "heroImage, backgroundImage, avatar, photo, logos",
                   },
                 ].map((row, i) => (
@@ -919,7 +919,7 @@ export default function ContentModellingPage() {
             </table>
           </div>
 
-          <Pre code={INDEXING_SNIPPET} label="indexingType — all three values with notes" />
+          <Pre code={INDEXING_SNIPPET} label="indexingType - all three values with notes" />
 
           {/* isLocalized */}
           <h3 className="font-display text-lg font-bold text-on-surface mb-2 mt-10">

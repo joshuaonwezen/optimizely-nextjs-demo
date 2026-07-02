@@ -72,8 +72,8 @@ export const GET_NAVIGATION_QUERY = /* GraphQL */ `
     }
   }
 
-  query GetNavigation {
-    Navigation(limit: 1) {
+  query GetNavigation($locale: [Locales]) {
+    Navigation(locale: $locale, limit: 1) {
       items {
         name
         navItems {
@@ -97,9 +97,10 @@ const GET_NAVIGATION_BY_KEY_QUERY = /* GraphQL */ `
     }
   }
 
-  query GetNavigationByKey($key: String!) {
+  query GetNavigationByKey($key: String!, $locale: [Locales]) {
     Navigation(
       where: { _metadata: { key: { eq: $key } } }
+      locale: $locale
       limit: 1
     ) {
       items {
@@ -149,13 +150,16 @@ export function toNavNode(raw: RawNavItem): NavNode {
 export async function getNavigation(options: {
   previewToken?: string;
   key?: string;
+  /** Content locale to fetch (defaults to "en"). Localized nav versions are
+   *  created by scripts/seed-localization.ts. */
+  locale?: string;
 } = {}): Promise<{ tree: NavNode[]; fromCms: boolean }> {
-  const { previewToken, key } = options;
+  const { previewToken, key, locale = "en" } = options;
 
   try {
     const result = await graphqlFetch<GetNavigationResult>(
       key ? GET_NAVIGATION_BY_KEY_QUERY : GET_NAVIGATION_QUERY,
-      key ? { key } : {},
+      key ? { key, locale: [locale] } : { locale: [locale] },
       previewToken
         ? { previewToken, cache: "no-store" }
         : { next: { revalidate: 300, tags: ["navigation"] } }

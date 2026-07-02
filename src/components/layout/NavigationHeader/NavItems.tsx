@@ -14,6 +14,8 @@ import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 
 interface Props {
   tree: NavNode[];
+  /** Per-locale nav trees (e.g. { nl: [...] }); locales not present fall back to `tree`. */
+  localizedTrees?: Record<string, NavNode[]>;
   demoCategories: DemoCategory[];
   locales: SupportedLocale[];
 }
@@ -59,7 +61,7 @@ function SearchIcon() {
   );
 }
 
-export default function NavItems({ tree, demoCategories, locales }: Props) {
+export default function NavItems({ tree: baseTree, localizedTrees, demoCategories, locales }: Props) {
   const [activeKey,     setActiveKey]     = useState<string | null>(null);
   const [searchOpen,    setSearchOpen]    = useState(false);
   const [mobileOpen,    setMobileOpen]    = useState(false);
@@ -67,6 +69,7 @@ export default function NavItems({ tree, demoCategories, locales }: Props) {
   const [isLoggedIn,    setIsLoggedIn]    = useState(false);
   const pathname = usePathname();
   const currentLocale = getCurrentLocale(pathname);
+  const tree = localizedTrees?.[currentLocale] ?? baseTree;
 
   // Logged-in state derives from the demo_bucketing_id cookie (read client-side so
   // the server render stays cacheable).

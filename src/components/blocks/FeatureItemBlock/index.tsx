@@ -34,7 +34,7 @@ export const FeatureItemOutlinedTemplate = displayTemplate({
 export const FeatureItemBrandTemplate = displayTemplate({
   key: "FeatureItemBrandTemplate",
   isDefault: false,
-  displayName: "Coloured card",
+  displayName: "Colored card",
   contentType: "FeatureItemBlock",
   tag: "Brand",
   settings: FEATURE_SETTINGS,

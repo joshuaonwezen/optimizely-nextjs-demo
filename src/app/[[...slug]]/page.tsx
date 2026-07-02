@@ -220,6 +220,14 @@ export async function generateStaticParams(): Promise<PageParams[]> {
     .filter(Boolean);
 }
 
+// SEO fields come from the SEO contract spread into every page type in
+// optimizely.config.mjs (metaTitle, metaDescription, ogImage).
+const SEO_FIELDS = /* GraphQL */ `
+  metaTitle
+  metaDescription
+  ogImage { url { default } }
+`;
+
 const GET_PAGE_META_QUERY = /* GraphQL */ `
   query GetPageMeta($urls: [String]) {
     _Page(
@@ -229,11 +237,44 @@ const GET_PAGE_META_QUERY = /* GraphQL */ `
       items {
         _metadata {
           displayName
+          url { default }
+        }
+        ... on DynamicExperience { ${SEO_FIELDS} }
+        ... on TraditionalPage { ${SEO_FIELDS} }
+        ... on ArticlePage { ${SEO_FIELDS} summary }
+        ... on CaseStudyPage { ${SEO_FIELDS} summary }
+      }
+    }
+  }
+`;
+
+// Fallback for instances where the SEO contract fields haven't been pushed to
+// the CMS yet — the extended query fails Graph validation there.
+const GET_PAGE_META_FALLBACK_QUERY = /* GraphQL */ `
+  query GetPageMetaFallback($urls: [String]) {
+    _Page(
+      where: { _metadata: { url: { default: { in: $urls } } } }
+      limit: 1
+    ) {
+      items {
+        _metadata {
+          displayName
+          url { default }
         }
       }
     }
   }
 `;
+
+interface PageMetaItem {
+  _metadata?: { displayName?: string | null; url?: { default?: string | null } | null } | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  ogImage?: { url?: { default?: string | null } | null } | null;
+  summary?: string | null;
+}
+
+type PageMetaResult = { _Page?: { items?: Array<PageMetaItem | null> | null } | null };
 
 export async function generateMetadata({
   params,
@@ -245,15 +286,39 @@ export async function generateMetadata({
   const { cleanSlug } = extractVariations(slug);
   const urls = buildUrlCandidates(cleanSlug);
 
-  let displayName: string | undefined;
+  let item: PageMetaItem | null = null;
   try {
-    const result = await graphqlFetch<any>(GET_PAGE_META_QUERY, { urls }, { next: { revalidate: 300 } });
-    displayName = result.data?._Page?.items?.[0]?._metadata?.displayName;
+    const result = await graphqlFetch<PageMetaResult>(GET_PAGE_META_QUERY, { urls }, { next: { revalidate: 300 } });
+    item = result.data?._Page?.items?.[0] ?? null;
   } catch {
-    // Graph unavailable — return fallback title
+    try {
+      const result = await graphqlFetch<PageMetaResult>(GET_PAGE_META_FALLBACK_QUERY, { urls }, { next: { revalidate: 300 } });
+      item = result.data?._Page?.items?.[0] ?? null;
+    } catch {
+      // Graph unavailable — return fallback title
+    }
   }
 
+  const title: string = item?.metaTitle ?? item?._metadata?.displayName ?? "Page";
+  const description: string | undefined = item?.metaDescription ?? item?.summary ?? undefined;
+  const ogImageUrl: string | undefined = item?.ogImage?.url?.default ?? undefined;
+
+  // Canonical: the Graph URL with the /en/ prefix stripped, matching how
+  // generateStaticParams exposes English pages at clean paths.
+  const graphUrl: string | undefined = item?._metadata?.url?.default ?? undefined;
+  const canonical = graphUrl
+    ? (graphUrl.split("/").filter(Boolean)[0] === "en" ? graphUrl.replace(/^\/en\//, "/") : graphUrl)
+    : undefined;
+
   return {
-    title: displayName ?? "Page",
+    title,
+    ...(description ? { description } : {}),
+    ...(canonical ? { alternates: { canonical } } : {}),
+    openGraph: {
+      title,
+      ...(description ? { description } : {}),
+      ...(ogImageUrl ? { images: [{ url: ogImageUrl }] } : {}),
+      type: "website",
+    },
   };
 }

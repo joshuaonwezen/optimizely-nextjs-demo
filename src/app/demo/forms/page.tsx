@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "Forms Demo",
 };
 
-const FRAGMENT_SNIPPET = `// Native Optimizely Forms types — no contentType() needed, they are pre-registered
+const FRAGMENT_SNIPPET = `// Native Optimizely Forms types - no contentType() needed, they are pre-registered
 // in the CMS after activation. The SDK auto-generates GraphQL fragments from the
 // schema hints in componentRegistry.ts so all properties are fetched automatically.
 
@@ -56,11 +56,11 @@ export default function OptiFormsSelection(props) {
   );
 }
 
-// src/components/blocks/OptiFormsSubmit/index.tsx — "use client"
+// src/components/blocks/OptiFormsSubmit/index.tsx - "use client"
 // Same DOM-scoped collection as before: scans closest("main") for all inputs,
 // reads data-form-submit-url, validates required fields, POSTs JSON payload.`;
 
-const SUBMIT_SNIPPET = `// OptiFormsSubmit — "use client"
+const SUBMIT_SNIPPET = `// OptiFormsSubmit - "use client"
 async function handleClick() {
   const scope     = ref.current?.closest("main") ?? document.body;
   const configEl  = scope.querySelector("[data-form-submit-url]");
@@ -180,7 +180,7 @@ export default function FormsPage() {
     <>
       <DemoHero
         title="Forms & Data Capture"
-        description="Native Optimizely Forms — activate in CMS settings, build forms in the form builder, drag them into any Visual Builder experience. Submissions post to your webhook endpoint and feed the personalization loop: capture to ODP profile to FX audience to targeted content."
+        description="Native Optimizely Forms - activate in CMS settings, build forms in the form builder, drag them into any Visual Builder experience. Submissions post to your webhook endpoint and feed the personalization loop: capture to ODP profile to FX audience to targeted content."
       >
         <div className="flex flex-wrap gap-3 mt-8">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
@@ -265,7 +265,7 @@ export default function FormsPage() {
             <p className="text-xs font-semibold text-on-surface mb-1">Important constraints</p>
             <ul className="text-xs text-on-surface-variant leading-relaxed space-y-1 list-disc list-inside">
               <li>Native forms only work inside <strong>DynamicExperience</strong> (Visual Builder). Dragging a form onto a ContentArea in a traditional page has no effect.</li>
-              <li>Do <strong>not</strong> run <code className="bg-surface px-1 rounded font-mono">opti:push</code> for native form types — they are already in the CMS. The SDK schema hints for fragment generation live in <code className="bg-surface px-1 rounded font-mono">componentRegistry.ts</code>, not in <code className="bg-surface px-1 rounded font-mono">src/components/**/*.tsx</code>.</li>
+              <li>Do <strong>not</strong> run <code className="bg-surface px-1 rounded font-mono">opti:push</code> for native form types - they are already in the CMS. The SDK schema hints for fragment generation live in <code className="bg-surface px-1 rounded font-mono">componentRegistry.ts</code>, not in <code className="bg-surface px-1 rounded font-mono">src/components/**/*.tsx</code>.</li>
               <li><strong>OptiFormsSelectionElement field names are not what you expect.</strong> The Graph schema uses <code className="bg-surface px-1 rounded font-mono">Options</code> (a JSON scalar, not an <code className="bg-surface px-1 rounded font-mono">Items</code> array) and <code className="bg-surface px-1 rounded font-mono">AllowMultiSelect</code> (not <code className="bg-surface px-1 rounded font-mono">AllowMultipleChoices</code>). Registering the wrong field names in <code className="bg-surface px-1 rounded font-mono">componentRegistry.ts</code> breaks the SDK&apos;s auto-generated composition fragment and causes <strong>every page</strong> to return 404 - Graph rejects the unknown fields at schema validation time.</li>
             </ul>
           </div>
@@ -278,7 +278,7 @@ export default function FormsPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             Native form elements render as flat siblings in a Visual Builder experience. The submit
-            element uses DOM-scoped field collection (the same approach as before) — no React
+            element uses DOM-scoped field collection (the same approach as before) - no React
             context or prop-drilling needed.
           </p>
 
@@ -340,7 +340,7 @@ export default function FormsPage() {
             3. Component Registration <a href="#registration" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            Native form types are already registered in the CMS after activation — no{" "}
+            Native form types are already registered in the CMS after activation - no{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">opti:push</code> needed for them.
             We provide schema hints to the SDK in{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">componentRegistry.ts</code> so it
@@ -362,7 +362,7 @@ export default function FormsPage() {
             Each native form type maps to a React component in{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">src/components/blocks/OptiFormsXxx/index.tsx</code>.
             Components do <strong>not</strong> call <code className="bg-surface-low px-1 rounded text-xs font-mono">contentType()</code>{" "}
-            — the schema is provided in <code className="bg-surface-low px-1 rounded text-xs font-mono">componentRegistry.ts</code>.
+            - the schema is provided in <code className="bg-surface-low px-1 rounded text-xs font-mono">componentRegistry.ts</code>.
             Property names are PascalCase to match the native CMS schema (
             <code className="bg-surface-low px-1 rounded text-xs font-mono">Label</code>,{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">Placeholder</code>,{" "}

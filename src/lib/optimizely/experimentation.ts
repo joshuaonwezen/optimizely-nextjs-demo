@@ -8,8 +8,7 @@ import {
   OptimizelyDecideOption,
   ERROR,
 } from "@optimizely/optimizely-sdk";
-
-const DATAFILE_URL = `https://cdn.optimizely.com/datafiles/${process.env.OPTIMIZELY_FX_SDK_KEY}.json`;
+import { fetchDatafile } from "./datafile";
 
 export type FxAttributes = Record<string, string | number | boolean | null | undefined>;
 
@@ -23,10 +22,9 @@ export type FxDecision = {
 
 // cache() memoises per request — all server components share one SDK instance.
 export const getOptimizelyClient = cache(async function getOptimizelyClient() {
-  const res = await fetch(DATAFILE_URL, { next: { revalidate: 60 } });
-  if (!res.ok) return null;
   // SDK v5 createStaticProjectConfigManager requires the datafile as a JSON string
-  const datafileText = await res.text();
+  const datafileText = await fetchDatafile();
+  if (!datafileText) return null;
   const projectConfigManager = createStaticProjectConfigManager({ datafile: datafileText });
   const logger = createLogger({ level: ERROR });
   const eventProcessor = createForwardingEventProcessor(eventDispatcher);
