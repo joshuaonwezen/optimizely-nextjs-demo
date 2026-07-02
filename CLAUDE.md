@@ -540,6 +540,38 @@ Fields marked searchable are indexed for full-text search but not stored as regu
 ### NdJSON sync format
 Each line must be a valid JSON object. Use `items.map(i => JSON.stringify({...})).join("\n")` — never pretty-print.
 
+Each record is two lines: an action line followed by a data line.
+
+```
+{"index": {"_id": 1, "language_routing": "en"}}
+{
+  "_rbac": "r:Everyone:Read",
+  "_itemMetadata": {
+    "key": "qt-1",
+    "displayName___searchable": "Quote - Sarah Chen",
+    "lastModified": "2026-07-02T00:00:00.000Z",
+    "type": "Quote"
+  },
+  "_metadata": {
+    "types": ["Quote", "_Item"],
+    "locale": "en",
+    "key": "qt-1",
+    "status": "Published"
+  },
+  "author$$String": "Sarah Chen",
+  "text$$String": "I moved my savings to Mosey...",
+  "ContentType": ["Quote"],
+  "Status": "Published",
+  "Language": { "DisplayName": "English", "Name": "en" }
+}
+```
+
+Key rules for the data line:
+- `_rbac`: must be the string `"r:Everyone:Read"` — NOT an object. Sending `{ "read": ["Everyone"] }` causes an Elasticsearch mapper_parsing_exception and silently drops the record.
+- Custom field names must have `$$Type` suffixes matching their schema type: `field$$String`, `field$$Float`, `field$$Integer`, `field$$Boolean`. Fields without the suffix are not indexed as typed properties.
+- `_metadata` (top-level, separate from `_itemMetadata`) is required for indexing to succeed. Include `types`, `locale`, `key`, and `status`.
+- `displayName` inside `_itemMetadata` must be written as `displayName___searchable` (three underscores + `searchable`).
+
 ### Auth for Content Source API
 Both `APP_KEY` and `APP_SECRET` are required. Key-only (trailing colon, no secret) returns 401.
 ```ts

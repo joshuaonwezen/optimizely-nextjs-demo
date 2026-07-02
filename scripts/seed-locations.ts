@@ -106,24 +106,30 @@ async function seedLocations(auth: string, instanceName: string): Promise<void> 
     lines.push(JSON.stringify({ index: { _id: loc.id, language_routing: "en" } }));
 
     const props: Record<string, unknown> = {
+      _rbac: "r:Everyone:Read",
       _itemMetadata: {
         key:                      `loc-${loc.id}`,
         displayName___searchable: `${loc.branchName} - ${loc.city}`,
         lastModified:             new Date().toISOString(),
         type:                     "BankLocation",
       },
-      branchName:  loc.branchName,
-      address:     loc.address,
-      city:        loc.city,
-      country:     loc.country,
-      phone:       loc.phone,
-      services:    loc.services,
+      _metadata: {
+        types:  ["BankLocation", "_Item"],
+        locale: "en",
+        key:    `loc-${loc.id}`,
+        status: "Published",
+      },
+      "branchName$$String": loc.branchName,
+      "address$$String":    loc.address,
+      "city$$String":       loc.city,
+      "country$$String":    loc.country,
+      "phone$$String":      loc.phone,
+      "services$$String":   loc.services,
+      "lat$$Float":         loc.coordinates.lat,
+      "lon$$Float":         loc.coordinates.lon,
       ContentType: ["BankLocation"],
       Status:      "Published",
       Language:    { DisplayName: "English", Name: "en" },
-      RolesWithReadAccess: "Everyone",
-      lat:         loc.coordinates.lat,
-      lon:         loc.coordinates.lon,
     };
 
     lines.push(JSON.stringify(props));

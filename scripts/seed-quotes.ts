@@ -63,18 +63,24 @@ async function seedQuotes(): Promise<void> {
   for (const q of QUOTES) {
     lines.push(JSON.stringify({ index: { _id: q.id, language_routing: "en" } }));
     lines.push(JSON.stringify({
+      _rbac: "r:Everyone:Read",
       _itemMetadata: {
         key:                      `qt-${q.id}`,
         displayName___searchable: `Quote - ${q.author}`,
         lastModified:             new Date().toISOString(),
         type:                     "Quote",
       },
-      author:      q.author,
-      text:        q.text,
+      _metadata: {
+        types:  ["Quote", "_Item"],
+        locale: "en",
+        key:    `qt-${q.id}`,
+        status: "Published",
+      },
+      "author$$String": q.author,
+      "text$$String":   q.text,
       ContentType: ["Quote"],
       Status:      "Published",
       Language:    { DisplayName: "English", Name: "en" },
-      RolesWithReadAccess: "Everyone",
     }));
   }
 

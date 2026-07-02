@@ -32,18 +32,24 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
 
 {"index": {"_id": 1, "language_routing": "en"}}
 {
+  "_rbac": "r:Everyone:Read",
   "_itemMetadata": {
     "key": "qt-1",
     "displayName___searchable": "Quote - Sarah Chen",
     "lastModified": "2026-06-07T00:00:00.000Z",
     "type": "Quote"
   },
-  "author": "Sarah Chen",
-  "text": "I moved my savings to Mosey after seeing their 5.1% AER rate...",
+  "_metadata": {
+    "types": ["Quote", "_Item"],
+    "locale": "en",
+    "key": "qt-1",
+    "status": "Published"
+  },
+  "author$$String": "Sarah Chen",
+  "text$$String": "I moved my savings to Mosey after seeing their 5.1% AER rate...",
   "ContentType": ["Quote"],
   "Status": "Published",
-  "Language": { "DisplayName": "English", "Name": "en" },
-  "RolesWithReadAccess": "Everyone"
+  "Language": { "DisplayName": "English", "Name": "en" }
 }`;
 
 const ASSET_TYPE_SNIPPET = `PUT https://cg.optimizely.com/api/content/v3/types?id=docs
@@ -70,23 +76,29 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
 
 {"index": {"_id": 1, "language_routing": "en"}}
 {
+  "_rbac": "r:Everyone:Read",
   "_itemMetadata": {
     "key": "doc-1",
     "displayName___searchable": "Product Datasheet",
     "lastModified": "2026-05-26T00:00:00.000Z",
     "type": "Document"
   },
+  "_metadata": {
+    "types": ["Document", "_AssetItem", "_Item"],
+    "locale": "en",
+    "key": "doc-1",
+    "status": "Published"
+  },
   "_assetMetadata": {
     "fileSize": 245760,
     "mimeType": "application/pdf",
     "url": "https://example.com/docs/product-datasheet.pdf"
   },
-  "title": "Product Datasheet",
-  "description": "Full technical specifications for the Enterprise plan.",
+  "title$$String": "Product Datasheet",
+  "description$$String": "Full technical specifications for the Enterprise plan.",
   "ContentType": ["Document"],
   "Status": "Published",
-  "Language": { "DisplayName": "English", "Name": "en" },
-  "RolesWithReadAccess": "Everyone"
+  "Language": { "DisplayName": "English", "Name": "en" }
 }`;
 
 const IMAGE_TYPE_SNIPPET = `PUT https://cg.optimizely.com/api/content/v3/types?id=photos
@@ -113,11 +125,18 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
 
 {"index": {"_id": 1, "language_routing": "en"}}
 {
+  "_rbac": "r:Everyone:Read",
   "_itemMetadata": {
     "key": "photo-1",
     "displayName___searchable": "Product Hero Image",
     "lastModified": "2026-05-26T00:00:00.000Z",
     "type": "Photo"
+  },
+  "_metadata": {
+    "types": ["Photo", "_ImageItem", "_AssetItem", "_Item"],
+    "locale": "en",
+    "key": "photo-1",
+    "status": "Published"
   },
   "_assetMetadata": {
     "fileSize": 1048576,
@@ -128,12 +147,11 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
     "width": 1920,
     "height": 1080
   },
-  "altText": "Optimizely platform dashboard screenshot",
-  "caption": "The Visual Builder interface showing a live page edit.",
+  "altText$$String": "Optimizely platform dashboard screenshot",
+  "caption$$String": "The Visual Builder interface showing a live page edit.",
   "ContentType": ["Photo"],
   "Status": "Published",
-  "Language": { "DisplayName": "English", "Name": "en" },
-  "RolesWithReadAccess": "Everyone"
+  "Language": { "DisplayName": "English", "Name": "en" }
 }`;
 
 
