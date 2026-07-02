@@ -63,7 +63,7 @@ function buildInstances(): Instance[] {
 }
 
 async function registerContentType(auth: string, instanceName: string): Promise<void> {
-  console.log("  Part 1: Registering BankLocation content type (lat/lon Float fields)");
+  console.log("  Part 1: Registering BankLocation content type (GeoPoint location field)");
 
   const body = {
     label: "Bank Locations",
@@ -78,8 +78,7 @@ async function registerContentType(auth: string, instanceName: string): Promise<
           country:    { type: "String" },
           phone:      { type: "String" },
           services:   { type: "String" },
-          lat:        { type: "Float" },
-          lon:        { type: "Float" },
+          location:   { type: "GeoPoint" },
         },
       },
     },
@@ -125,8 +124,7 @@ async function seedLocations(auth: string, instanceName: string): Promise<void> 
       "country$$String":    loc.country,
       "phone$$String":      loc.phone,
       "services$$String":   loc.services,
-      "lat$$Float":         loc.coordinates.lat,
-      "lon$$Float":         loc.coordinates.lon,
+      "location$$GeoPoint":  { lat: loc.coordinates.lat, lon: loc.coordinates.lon },
       ContentType: ["BankLocation"],
       Status:      "Published",
       Language:    { DisplayName: "English", Name: "en" },
@@ -154,10 +152,15 @@ async function verifyIndexed(singleKey: string): Promise<void> {
   console.log("  Part 3: Verifying indexed data (waiting 10s for Graph)");
   await new Promise((r) => setTimeout(r, 10000));
 
+  // Geo search sample: branches within 500km of Amsterdam, ranked nearest-first.
   const query = /* GraphQL */`
     query {
-      BankLocation(limit: 3, orderBy: { city: ASC }) {
-        items { branchName city country lat lon }
+      BankLocation(
+        where: { location: { distance: { origin: { lat: 52.3676, lon: 4.9041 }, radius: 500, unit: KM } } }
+        orderBy: { location: { origin: { lat: 52.3676, lon: 4.9041 } } }
+      ) {
+        total
+        items { branchName city country location { lat lon } }
       }
     }
   `;
@@ -169,7 +172,8 @@ async function verifyIndexed(singleKey: string): Promise<void> {
   });
   const json = await res.json() as { data?: unknown; errors?: unknown };
   if (json.errors) console.warn("  [GraphQL errors]", JSON.stringify(json.errors, null, 2));
-  console.log("  [indexed sample]", JSON.stringify(json.data, null, 2));
+  console.log("  [geo search sample: within 500km of Amsterdam, nearest first]");
+  console.log("  " + JSON.stringify(json.data, null, 2));
 }
 
 async function main() {

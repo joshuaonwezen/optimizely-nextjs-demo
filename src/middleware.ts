@@ -35,6 +35,7 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api/")) return response;
   if (request.nextUrl.pathname.startsWith("/preview")) return response;
   if (/^\/demo(\/|$)/.test(request.nextUrl.pathname)) return response;
+  if (/^\/locations(\/|$)/.test(request.nextUrl.pathname)) return response;
   if (request.nextUrl.pathname.includes(VARIATION_MARKER)) return response;
   if (request.nextUrl.pathname.includes(".segments/")) return response;
 

@@ -292,6 +292,18 @@ See `scripts/update-homepage-variations.ts` for a full working example.
 
 The `demo_persona` cookie bypass (injecting the variation key directly into Graph's filter) works today even without CMS variations — Graph returns the original page via `includeOriginal: true` as the fallback until real variations exist in the CMS.
 
+### Geo search IS supported — use a single `GeoPoint` field, not two floats
+
+Geo search works in Optimizely Graph (a common misconception says it doesn't). The catch: geo operators (`distance`, `withIn`, `orderBy` by distance) only attach to a single field of `type: "GeoPoint"` — they do **not** work on two separate `lat`/`lon` `Float` fields. Trying them on plain floats returns nothing, which is why people conclude geo search is unavailable.
+
+- Content Source schema: `location: { type: "GeoPoint" }`
+- Data (with `useTypedFieldNames: true`): `"location$$GeoPoint": { lat, lon }`
+- Query: `where: { location: { distance: { origin: { lat, lon }, radius, unit: KM } } }` and `orderBy: { location: { origin: { lat, lon } } }` (nearest-first, ASC default).
+
+**The `radius` argument is typed `Int`, not `Float`.** A `$radius: Float` variable is rejected with `Variable "$radius" of type "Float" used in position expecting type "Int"`. Declare `$radius: Int` and round the value before passing it.
+
+Graph returns only `location { lat lon }` — **no computed distance** — so compute the "X km away" label yourself with Haversine (see `src/lib/geo.ts`). Reference implementation: `BankLocation` source, `getNearbyLocations()` in `src/lib/graphql/queries/GetLocations.ts`, `/api/locations/nearby`, and the `/locations` page.
+
 ---
 
 ## Management API — Content Format Rules
@@ -534,6 +546,17 @@ const { pa, src } = getPreviewUtils(content);
 
 ### Account activation required for data indexing
 Schema registration (`PUT /api/content/v3/types`) works without any special setup. Data indexing (`POST /api/content/v2/data`) requires the external content sources pipeline to be enabled for the account by Optimizely. Without activation, data pushes return 200 OK with a `journalId` but items never appear in Graph queries. Contact Optimizely support to enable this if data never indexes despite correct auth and schema registration.
+
+### Corrupted index mapping — delete the source and re-register
+
+If a data sync returns `200` with a `journalId` but the data never appears (queries return `total: 0`) **and the account is activated**, the source's Elasticsearch mapping is corrupted — e.g. from a changed field type (Float→GeoPoint) or a prior bad payload (see the `_rbac` object gotcha above). ES rejects every document while the sync endpoint still accepts the push (200), so the failure is invisible. The only fix is to delete the entire source and re-register:
+
+```
+DELETE https://cg.optimizely.com/api/content/v3/sources?id=<sourceId>
+Authorization: Basic <base64(APP_KEY:APP_SECRET)>
+```
+
+Default mode deletes both types and data (`mode=types` or `mode=data` scope it). **`id` is REQUIRED — an empty `id` deletes ALL sources.** Confirm with `GET /api/content/v3/types?id=<sourceId>` → should return `404 Source 'X' not found`. Then re-run the seed (re-register the type, re-push the data). A healthy sibling instance can be left alone — recreate only the broken one.
 
 ### `searchable: true` fields return null on direct retrieval
 Fields marked searchable are indexed for full-text search but not stored as regular properties. Duplicate the field without `searchable: true` if you need to retrieve it in a query.
