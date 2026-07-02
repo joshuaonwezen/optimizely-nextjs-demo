@@ -6,6 +6,8 @@ import CodeBlock from "@/components/demo/CodeBlock";
 import SectionAnchor from "@/components/demo/SectionAnchor";
 import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
+import LiveDemoShell from "@/components/demo/LiveDemoShell";
+import SeedCmsPanel from "@/components/demo/SeedCmsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -369,6 +371,29 @@ export default function ManagementApiDemoPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section id="seed-cms">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Reseed this CMS instance
+            <SectionAnchor id="seed-cms" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant leading-relaxed max-w-3xl">
+            Use this to seed a fresh CMS instance or reseed an existing one without leaving the
+            browser. It runs the full seed orchestration (npx tsx scripts/seed-runner.ts) on the
+            server and streams its output live. Fields left blank fall back to the values in
+            .env.local for the selected instance. The client ID and secret must be a content API
+            key with write access (Settings → API Keys) - CLI-only credentials fail at the config
+            push and content creation steps. Available in local development only; the API route
+            returns 403 in production builds.
+          </p>
+
+          <LiveDemoShell
+            badge="Internal Tool"
+            label="Runs the full seed orchestration and streams its output"
+          >
+            <SeedCmsPanel />
+          </LiveDemoShell>
         </section>
 
         <KeyPoints points={[

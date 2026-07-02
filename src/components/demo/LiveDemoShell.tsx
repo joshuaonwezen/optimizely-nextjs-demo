@@ -2,15 +2,17 @@ export default function LiveDemoShell({
   children,
   label,
   action,
+  badge = "Live Demo",
 }: {
   children: React.ReactNode;
   label: string;
   action?: React.ReactNode;
+  badge?: string;
 }) {
   return (
     <div data-component="LiveDemoShell" className="mt-8 rounded-2xl border border-brand/20 overflow-hidden">
       <div className="bg-brand/5 border-b border-brand/20 px-5 py-3 flex items-center gap-3">
-        <span className="text-xs font-semibold uppercase tracking-widest text-brand">Live Demo</span>
+        <span className="text-xs font-semibold uppercase tracking-widest text-brand">{badge}</span>
         <span className="text-xs text-on-surface-variant">{label}</span>
         {action && <span className="ml-auto">{action}</span>}
       </div>
