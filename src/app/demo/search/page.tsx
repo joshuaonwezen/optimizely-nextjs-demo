@@ -604,8 +604,8 @@ export default function SearchDemoPage() {
             <SectionAnchor id="geo" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            Graph supports geospatial search - a common misconception says it doesn&apos;t. The catch is
-            the data model: geo operators (<code className="bg-surface-low px-1 rounded font-mono text-xs">distance</code>,{" "}
+            Graph supports geospatial search. The key is the data model: geo operators
+            (<code className="bg-surface-low px-1 rounded font-mono text-xs">distance</code>,{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">withIn</code>,{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">orderBy</code> by distance) only
             attach to a single field of type{" "}
