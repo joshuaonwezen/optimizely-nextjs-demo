@@ -7,6 +7,8 @@ interface NearbyLocation {
   country: string;
   phone: string;
   services: string;
+  lat: number | null;
+  lon: number | null;
   distanceKm: number | null;
 }
 
@@ -18,14 +20,12 @@ interface NearbyResponse {
 
 const RADIUS_OPTIONS = [250, 500, 1000, 2500];
 
-export default function LocationsFinder() {
+export default function BranchFinder() {
   const [query, setQuery] = useState("");
   const [radius, setRadius] = useState(500);
-  const [results, setResults] = useState<NearbyLocation[]>([]);
-  const [originLabel, setOriginLabel] = useState<string | null>(null);
+  const [data, setData] = useState<NearbyResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [searched, setSearched] = useState(false);
 
   const search = useCallback(
     async (e: FormEvent) => {
@@ -37,19 +37,13 @@ export default function LocationsFinder() {
       setMessage(null);
       try {
         const res = await fetch(`/api/locations/nearby?q=${encodeURIComponent(q)}&radius=${radius}`);
-        const data: NearbyResponse = await res.json();
+        const json: NearbyResponse = await res.json();
+        setData(json);
 
-        setSearched(true);
-        setResults(data.items ?? []);
-        setOriginLabel(data.origin?.label ?? null);
-
-        if (data.error) {
-          setMessage(data.error);
-        } else if (!data.origin) {
-          setMessage("We couldn't find that location. Try a city name or full address.");
-        }
+        if (json.error) setMessage(json.error);
+        else if (!json.origin) setMessage("We couldn't find that location. Try a city name or full address.");
       } catch {
-        setResults([]);
+        setData(null);
         setMessage("Something went wrong. Please try again.");
       } finally {
         setLoading(false);
@@ -58,9 +52,14 @@ export default function LocationsFinder() {
     [query, radius]
   );
 
+  const results = data?.items ?? [];
+
   return (
-    <div data-component="LocationsFinder" className="space-y-6">
-      <form onSubmit={search} className="flex flex-col sm:flex-row gap-3">
+    <div data-component="BranchFinder" className="space-y-6">
+      <form
+        onSubmit={search}
+        className="flex flex-col sm:flex-row gap-3 bg-surface-lowest border border-ghost-border rounded-2xl p-5"
+      >
         <input
           type="text"
           value={query}
@@ -89,18 +88,17 @@ export default function LocationsFinder() {
         </button>
       </form>
 
-      {originLabel && !message && (
+      {data?.origin && !message && (
         <p className="text-xs text-on-surface-variant">
-          Nearest branches to <strong className="text-on-surface">{originLabel}</strong>
+          Nearest branches to <strong className="text-on-surface">{data.origin.label}</strong>
+          {" "}({data.origin.lat.toFixed(4)}, {data.origin.lon.toFixed(4)})
         </p>
       )}
 
       {message && <p className="text-sm text-on-surface-variant">{message}</p>}
 
-      {!loading && searched && !message && results.length === 0 && (
-        <p className="text-sm text-on-surface-variant">
-          No branches within {radius} km. Try a larger radius.
-        </p>
+      {!loading && data && !message && results.length === 0 && (
+        <p className="text-sm text-on-surface-variant">No branches within {radius} km. Try a larger radius.</p>
       )}
 
       {results.length > 0 && (
@@ -112,20 +110,28 @@ export default function LocationsFinder() {
             >
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-on-surface">{loc.branchName}</p>
-                <p className="text-xs text-on-surface-variant">
-                  {loc.city}, {loc.country}
-                </p>
+                <p className="text-xs text-on-surface-variant">{loc.city}, {loc.country}</p>
                 <p className="text-xs text-on-surface-variant">{loc.services}</p>
                 <p className="text-xs text-on-surface-variant">{loc.phone}</p>
               </div>
               {loc.distanceKm != null && (
-                <span className="shrink-0 text-xs font-medium text-brand whitespace-nowrap">
-                  {loc.distanceKm} km away
-                </span>
+                <span className="shrink-0 text-xs font-medium text-brand whitespace-nowrap">{loc.distanceKm} km away</span>
               )}
             </li>
           ))}
         </ul>
+      )}
+
+      {data && (
+        <details className="group border border-ghost-border rounded-2xl overflow-hidden">
+          <summary className="flex items-center justify-between px-5 py-3 cursor-pointer bg-surface-low hover:bg-surface-low/80 transition-colors list-none select-none">
+            <span className="text-xs font-semibold text-on-surface">Underlying response — GET /api/locations/nearby</span>
+            <span className="text-xs text-on-surface-variant">JSON</span>
+          </summary>
+          <pre className="bg-surface-lowest p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
+            <code>{JSON.stringify(data, null, 2)}</code>
+          </pre>
+        </details>
       )}
     </div>
   );

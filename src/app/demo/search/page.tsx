@@ -7,6 +7,7 @@ import SectionAnchor from "@/components/demo/SectionAnchor";
 import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 import SearchDemo from "./SearchDemo";
+import BranchFinder from "./BranchFinder";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,22 @@ const searchDemoTs = fs.readFileSync(
 );
 const searchOverlayTs = fs.readFileSync(
   path.join(process.cwd(), "src/components/layout/SearchOverlay/index.tsx"),
+  "utf8"
+);
+const locationsQueryTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/graphql/queries/GetLocations.ts"),
+  "utf8"
+);
+const nearbyRouteTs = fs.readFileSync(
+  path.join(process.cwd(), "src/app/api/locations/nearby/route.ts"),
+  "utf8"
+);
+const geocodeTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/geocode.ts"),
+  "utf8"
+);
+const branchFinderTs = fs.readFileSync(
+  path.join(process.cwd(), "src/app/demo/search/BranchFinder.tsx"),
   "utf8"
 );
 
@@ -277,6 +294,47 @@ const results = await graphqlFetch(SEARCH_QUERY, { query: q });
 // Compare with navigation, which IS cacheable because
 // it's always the same query with no user-provided variables:
 graphqlFetch(GET_NAV_QUERY, {}, { next: { revalidate: 300, tags: ["navigation"] } });`;
+
+const GEO_SCHEMA_SNIPPET = `# Content Source schema — a single GeoPoint field, NOT two floats.
+# Geo operators only attach to a field of type "GeoPoint".
+
+PUT https://cg.optimizely.com/api/content/v3/types?id=locs
+{
+  "contentTypes": {
+    "BankLocation": {
+      "contentType": ["_Item"],
+      "properties": {
+        "branchName": { "type": "String" },
+        "location":   { "type": "GeoPoint" }
+      }
+    }
+  },
+  "useTypedFieldNames": true
+}
+
+# Data payload (NdJSON) — GeoPoint is a nested { lat, lon } object:
+"location$$GeoPoint": { "lat": 52.3676, "lon": 4.9041 }`;
+
+const GEO_QUERY_SNIPPET = `# distance filters by radius from an origin; orderBy sorts nearest-first.
+# NOTE: the radius argument is typed Int, not Float — a $radius: Float
+# variable is rejected with "used in position expecting type Int".
+
+query GetNearbyBankLocations($lat: Float!, $lon: Float!, $radius: Int) {
+  BankLocation(
+    where: {
+      location: {
+        distance: { origin: { lat: $lat, lon: $lon }, radius: $radius, unit: KM }
+      }
+    }
+    orderBy: { location: { origin: { lat: $lat, lon: $lon } } }
+  ) {
+    items {
+      branchName
+      city
+      location { lat lon }   # Graph returns coords only — no computed distance
+    }
+  }
+}`;
 
 export default function SearchDemoPage() {
   return (
@@ -540,6 +598,40 @@ export default function SearchDemoPage() {
           </div>
         </section>
 
+        <section id="geo">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Geo search with <code className="font-mono text-xl">GeoPoint</code>
+            <SectionAnchor id="geo" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            Graph supports geospatial search - a common misconception says it doesn&apos;t. The catch is
+            the data model: geo operators (<code className="bg-surface-low px-1 rounded font-mono text-xs">distance</code>,{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">withIn</code>,{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">orderBy</code> by distance) only
+            attach to a single field of type{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">GeoPoint</code> - never to two
+            separate <code className="bg-surface-low px-1 rounded font-mono text-xs">lat</code>/
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">lon</code> floats. The Mosey Bank
+            branches are pushed as an external content source with a{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">GeoPoint</code> field.{" "}
+            <a href="https://docs.developers.optimizely.com/platform-optimizely/docs/geo-search" target="_blank" rel="noopener" className="text-brand hover:underline">Geo search docs ↗</a>
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            The input below calls <code className="bg-surface-low px-1 rounded font-mono text-xs">/api/locations/nearby</code>,
+            which geocodes your text to coordinates (OpenStreetMap Nominatim), runs the{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">distance</code> query, and attaches a
+            Haversine <code className="bg-surface-low px-1 rounded font-mono text-xs">distanceKm</code> to each
+            result (Graph ranks by distance but does not return the value). Try{" "}
+            &ldquo;Berlin&rdquo;, &ldquo;London&rdquo;, or &ldquo;Stockholm&rdquo; and expand the response
+            panel to see the raw JSON.
+          </p>
+          <BranchFinder />
+          <div className="grid md:grid-cols-2 gap-6 mt-6">
+            <CodeBlock code={GEO_SCHEMA_SNIPPET} label="GeoPoint schema + NdJSON data payload" />
+            <CodeBlock code={GEO_QUERY_SNIPPET} label="distance filter + nearest-first orderBy" />
+          </div>
+        </section>
+
         <KeyPoints points={[
           <><strong className="text-on-surface">_fulltext searches indexed text fields automatically.</strong> String properties are indexed by default. Opt out per-field with <code className="bg-surface-low px-1 rounded font-mono text-xs">indexingType: &quot;disabled&quot;</code>.</>,
           <><strong className="text-on-surface">RELEVANCE = BM25 keyword matching.</strong> Fast, deterministic. SEMANTIC = vector similarity - slower but understands meaning and synonyms.</>,
@@ -550,6 +642,7 @@ export default function SearchDemoPage() {
           <><strong className="text-on-surface">Add <code className="bg-surface-low px-1 rounded font-mono text-xs">tracking</code> to record search phrases.</strong> Each result item returns a <code className="bg-surface-low px-1 rounded font-mono text-xs">_track</code> URL - call it with a GET request when the user clicks a result. Tracking should never block or interrupt navigation.</>,
           <><strong className="text-on-surface">Use <code className="bg-surface-low px-1 rounded font-mono text-xs">pinned</code> to guarantee editorial picks appear first.</strong> Create a collection, add items with trigger phrases, then pass <code className="bg-surface-low px-1 rounded font-mono text-xs">pinned: &#123; phrase, collections &#125;</code> in the GraphQL query. Up to 5 pinned items are prepended before organic results.</>,
           <><strong className="text-on-surface">Synonyms reduce zero-result searches by expanding query terms.</strong> Upload a CSV to slot ONE or TWO via REST, then enable synonym expansion per field using <code className="bg-surface-low px-1 rounded font-mono text-xs">synonyms: ONE</code> on <code className="bg-surface-low px-1 rounded font-mono text-xs">contains</code>, <code className="bg-surface-low px-1 rounded font-mono text-xs">in</code>, or <code className="bg-surface-low px-1 rounded font-mono text-xs">eq</code> operators.</>,
+          <><strong className="text-on-surface">Geo search needs a single <code className="bg-surface-low px-1 rounded font-mono text-xs">GeoPoint</code> field, not two floats.</strong> Filter with <code className="bg-surface-low px-1 rounded font-mono text-xs">distance</code> and sort with <code className="bg-surface-low px-1 rounded font-mono text-xs">orderBy</code> by origin. The <code className="bg-surface-low px-1 rounded font-mono text-xs">radius</code> argument is typed <code className="bg-surface-low px-1 rounded font-mono text-xs">Int</code>, not Float. Graph returns coordinates only - compute distance labels yourself with Haversine.</>,
         ]} />
 
         <SourcePanel
@@ -559,6 +652,10 @@ export default function SearchDemoPage() {
             { label: "search/route.ts", path: "src/app/api/search/route.ts", content: searchRouteTs },
             { label: "SearchDemo.tsx", path: "src/app/demo/search/SearchDemo.tsx", content: searchDemoTs },
             { label: "SearchOverlay/index.tsx", path: "src/components/layout/SearchOverlay/index.tsx", content: searchOverlayTs },
+            { label: "GetLocations.ts", path: "src/lib/graphql/queries/GetLocations.ts", content: locationsQueryTs },
+            { label: "locations/nearby/route.ts", path: "src/app/api/locations/nearby/route.ts", content: nearbyRouteTs },
+            { label: "geocode.ts", path: "src/lib/geocode.ts", content: geocodeTs },
+            { label: "BranchFinder.tsx", path: "src/app/demo/search/BranchFinder.tsx", content: branchFinderTs },
           ]}
         />
 
