@@ -121,7 +121,7 @@ async function seedLocations(auth: string, instanceName: string): Promise<void> 
       ContentType: ["BankLocation"],
       Status:      "Published",
       Language:    { DisplayName: "English", Name: "en" },
-      _rbac:       { read: ["Everyone"] },
+      RolesWithReadAccess: "Everyone",
       lat:         loc.coordinates.lat,
       lon:         loc.coordinates.lon,
     };

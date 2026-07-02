@@ -74,7 +74,7 @@ async function seedQuotes(): Promise<void> {
       ContentType: ["Quote"],
       Status:      "Published",
       Language:    { DisplayName: "English", Name: "en" },
-      _rbac:       { read: ["Everyone"] },
+      RolesWithReadAccess: "Everyone",
     }));
   }
 

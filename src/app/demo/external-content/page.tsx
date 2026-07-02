@@ -43,7 +43,7 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
   "ContentType": ["Quote"],
   "Status": "Published",
   "Language": { "DisplayName": "English", "Name": "en" },
-  "_rbac": { "read": ["Everyone"] }
+  "RolesWithReadAccess": "Everyone"
 }`;
 
 const ASSET_TYPE_SNIPPET = `PUT https://cg.optimizely.com/api/content/v3/types?id=docs
@@ -86,7 +86,7 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
   "ContentType": ["Document"],
   "Status": "Published",
   "Language": { "DisplayName": "English", "Name": "en" },
-  "_rbac": { "read": ["Everyone"] }
+  "RolesWithReadAccess": "Everyone"
 }`;
 
 const IMAGE_TYPE_SNIPPET = `PUT https://cg.optimizely.com/api/content/v3/types?id=photos
@@ -133,7 +133,7 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
   "ContentType": ["Photo"],
   "Status": "Published",
   "Language": { "DisplayName": "English", "Name": "en" },
-  "_rbac": { "read": ["Everyone"] }
+  "RolesWithReadAccess": "Everyone"
 }`;
 
 
