@@ -2,8 +2,8 @@ import Image from "next/image";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, HEADING_SIZE, TEXT_SIZE, TEXT_ALIGN, FONT_STYLE,
-  BG_CLASSES, HEADING_CLASSES, TEXT_SIZE_CLASSES, TEXT_ALIGN_CLASSES, FONT_CLASSES,
+  BACKGROUND, TEXT_SIZE, TEXT_ALIGN, FONT_STYLE,
+  BG_CLASSES, TEXT_SIZE_CLASSES, TEXT_ALIGN_CLASSES, FONT_CLASSES,
 } from "../_shared/displayTemplateSettings";
 
 export const TestimonialBlockType = contentType({
@@ -27,7 +27,6 @@ export const TestimonialCardTemplate = displayTemplate({
   tag: "Card",
   settings: {
     ...BACKGROUND,
-    ...HEADING_SIZE,
     ...TEXT_SIZE,
   },
 });
@@ -78,12 +77,11 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
   if (isCard) {
     const bgKey = (ds?.background as string) || "white";
     const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
-    const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
     const textSizeClass = TEXT_SIZE_CLASSES[(ds?.textSize as string) ?? "md"];
     wrapperClass = `${bg.wrapper} rounded-2xl p-10`;
     textColor = bg.text;
     mutedColor = bg.textMuted;
-    quoteClass = `font-display ${headingClass.startsWith("text-2xl") ? "text-sm" : textSizeClass} leading-relaxed mb-8`;
+    quoteClass = `font-display ${textSizeClass} leading-relaxed mb-8`;
   } else if (isMinimal) {
     const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
     const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
