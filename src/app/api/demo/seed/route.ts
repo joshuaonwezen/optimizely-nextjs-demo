@@ -2,7 +2,8 @@ import { spawn } from "child_process";
 import type { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
-export const maxDuration = 800;
+// Vercel hobby plan caps maxDuration at 300; the route 403s in production anyway
+export const maxDuration = 300;
 
 const FIELDS = [
   "OPTIMIZELY_CMS_URL",
