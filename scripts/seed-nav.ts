@@ -14,7 +14,7 @@
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
-import { discoverRootContainer, wrapProps } from "./_shared";
+import { discoverGlobalRoot, discoverRootContainer, wrapProps } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -27,6 +27,9 @@ const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
+// Global content root — the Navigation block + NavigationItems are shared blocks
+// and live here so they appear in "Shared Blocks → For All Applications". Set in main().
+let BLOCKS_CONTAINER = "";
 // Optional: when set, seed-nav will delete this specific Navigation block and
 // recreate it in the same container with the correct navItems. If not set,
 // the script searches CONTAINER for an existing Navigation block or creates a
@@ -371,7 +374,7 @@ async function createNavItem(node: NavDef): Promise<void> {
   const makeBody = (includeHref: boolean): Record<string, unknown> => ({
     key: node.key,
     contentType: "NavigationItem",
-    container: CONTAINER,
+    container: BLOCKS_CONTAINER,
     initialVersion: {
       locale: "en",
       displayName: node.label,
@@ -427,7 +430,7 @@ async function createNavTree(nodes: NavDef[]): Promise<void> {
 async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
   const navItemRefs = topLevelNodes.map((n) => ({ reference: `cms://content/${n.key}` }));
   let targetKey = noHyphens();
-  let targetContainer = CONTAINER;
+  let targetContainer = BLOCKS_CONTAINER;
 
   if (NAV_BLOCK_KEY) {
     // Explicit override: look up this block's container, then delete it.
@@ -441,8 +444,8 @@ async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
     targetKey = NAV_BLOCK_KEY;
     await new Promise((r) => setTimeout(r, 3000));
   } else {
-    // Auto-discover: look for an existing Navigation block in CONTAINER.
-    const { ok, body: listBody } = await apiFetch(`/${CONTAINER}/items?contentTypes=Navigation`);
+    // Auto-discover: look for an existing Navigation block in the blocks container.
+    const { ok, body: listBody } = await apiFetch(`/${BLOCKS_CONTAINER}/items?contentTypes=Navigation`);
     if (ok) {
       const navItems = (listBody as { items?: Array<{ key: string; container?: string }> }).items ?? [];
       if (navItems.length > 0) {
@@ -500,7 +503,9 @@ async function main() {
 
   console.log("--- Discovering root container ---");
   CONTAINER = await discoverRootContainer();
+  BLOCKS_CONTAINER = await discoverGlobalRoot();
   console.log(`  container: ${CONTAINER}`);
+  console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}`);
 
   await cleanupNavItems();
 

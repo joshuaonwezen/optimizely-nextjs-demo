@@ -178,6 +178,40 @@ export async function discoverRootContainer(): Promise<string> {
   return key;
 }
 
+let cachedGlobalRoot = "";
+
+/**
+ * Returns the global content root key — the parent container of the application
+ * entry point. Standalone/shared blocks created under this container appear in
+ * the CMS "Shared Blocks → For All Applications" picker, so they can be reused
+ * in content areas on any page. (Blocks created under the entry point itself are
+ * only bindable by reference and never show in that picker.)
+ *
+ * Discovered by reading the entry point (via discoverRootContainer) and
+ * returning its `.container`.
+ */
+export async function discoverGlobalRoot(): Promise<string> {
+  if (cachedGlobalRoot) return cachedGlobalRoot;
+
+  const entryPoint = await discoverRootContainer();
+  const token = await getManagementToken();
+  const res = await fetch(`${CONTENT_ENDPOINT}/${entryPoint}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`GET /content/${entryPoint} failed: ${res.status} ${await res.text()}`);
+  }
+  const data = (await res.json()) as { container?: string };
+  const globalRoot = (data.container ?? "").replace(/-/g, "");
+  if (!globalRoot) {
+    throw new Error(`Entry point ${entryPoint} has no parent container (global root)`);
+  }
+
+  cachedGlobalRoot = globalRoot;
+  console.log(`  [auto-discovered] global root (For All Applications): ${globalRoot}`);
+  return globalRoot;
+}
+
 // ---------------------------------------------------------------------------
 // Generic Management API helpers
 // ---------------------------------------------------------------------------

@@ -9,13 +9,17 @@
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
-import { discoverRootContainer, wrapProps } from "./_shared";
+import { createContent, discoverGlobalRoot, discoverRootContainer, wrapProps } from "./_shared";
+import { FAQ_ITEMS } from "./faq-data";
 
 config({ path: ".env.local" });
 
 const API_BASE = "https://api.cms.optimizely.com";
 const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
+// Global content root — shared blocks (FAQ items + container) live here so they
+// appear in the "Shared Blocks → For All Applications" picker. Set in main().
+let BLOCKS_CONTAINER = "";
 
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
@@ -24,55 +28,8 @@ function noHyphens(): string {
   return randomUUID().replace(/-/g, "");
 }
 
-// ---------------------------------------------------------------------------
-// Shared FAQ items — these exist as standalone content items in the CMS and
-// can be referenced from any page with a content area.
-// ---------------------------------------------------------------------------
-
-const FAQ_ITEMS = [
-  {
-    key: noHyphens(),
-    displayName: "FAQ: How do I open a current account?",
-    question: "How do I open a current account?",
-    answer:
-      "You can open a Mosey current account online in around 10 minutes. All you need is a smartphone, a valid UK address, and proof of identity. We run a soft credit check that won't affect your credit score.",
-  },
-  {
-    key: noHyphens(),
-    displayName: "FAQ: What savings rates do you offer?",
-    question: "What savings rates do you offer?",
-    answer:
-      "We currently offer an easy-access savings account at 4.6% AER and a 1-year fixed-rate account at 5.1% AER. Rates are variable on easy-access accounts and fixed for the term on fixed-rate accounts.",
-  },
-  {
-    key: noHyphens(),
-    displayName: "FAQ: How does the mortgage application work?",
-    question: "How does the mortgage application work?",
-    answer:
-      "Start by getting a decision in principle online — it takes around 10 minutes and won't affect your credit score. One of our advisors will then call you to discuss your options and guide you through the full application.",
-  },
-  {
-    key: noHyphens(),
-    displayName: "FAQ: Is my money protected?",
-    question: "Is my money protected?",
-    answer:
-      "Yes. Mosey Bank is authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority. Eligible deposits are protected by the FSCS up to £85,000 per person.",
-  },
-  {
-    key: noHyphens(),
-    displayName: "FAQ: How do I switch banks to Mosey?",
-    question: "How do I switch banks to Mosey?",
-    answer:
-      "We use the Current Account Switch Service (CASS), which moves all your direct debits and standing orders automatically within 7 working days. Your old account closes on the switch date and any payments to or from your old account are forwarded for 3 years.",
-  },
-  {
-    key: noHyphens(),
-    displayName: "FAQ: What do I do if my card is lost or stolen?",
-    question: "What do I do if my card is lost or stolen?",
-    answer:
-      "Open the Mosey app and go to Card Controls to freeze your card immediately. If you're sure it's lost or stolen, tap 'Cancel card' to order a replacement, which arrives within 3–5 working days. You can also call our 24/7 fraud line.",
-  },
-];
+// FAQ item definitions live in ./faq-data and are shared with seed-content.ts
+// (the homepage). Both reference the same standalone items via stable keys.
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -105,34 +62,18 @@ async function apiFetch(
 async function createFaqItems(): Promise<void> {
   console.log("--- Part 1: Creating standalone FaqItemBlock content items ---");
 
+  // createContent 409-skips items that already exist (e.g. seed-content.ts
+  // created them first when building the homepage), publishes, and wraps props.
   for (const item of FAQ_ITEMS) {
-    const { ok, status, text, json: result } = await apiFetch("", {
-      method: "POST",
-      body: JSON.stringify({
-        key: item.key,
-        contentType: "FaqItemBlock",
-        container: CONTAINER,
-        initialVersion: {
-          locale: "en",
-          displayName: item.displayName,
-          properties: wrapProps({
-            question: item.question,
-            answer: item.answer,
-          }),
-        },
-      }),
-    });
-    if (!ok) {
-      console.error(`  [ERROR] ${item.displayName}: ${status} ${text.slice(0, 200)}`);
-      throw new Error("Failed to create FaqItemBlock");
-    }
-    let version = ((result as Record<string, unknown>)?.initialVersion as Record<string, unknown> | undefined)?.version as string | undefined;
-    if (!version) {
-      const vRes = await apiFetch(`/${item.key}/versions?pageSize=1`);
-      version = ((vRes.json as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version;
-    }
-    if (version) await apiFetch(`/${item.key}/versions/${version}:publish`, { method: "POST" });
-    console.log(`  [created] ${item.displayName} → key=${item.key}`);
+    await createContent({
+      key: item.key,
+      contentType: "FaqItemBlock",
+      container: BLOCKS_CONTAINER,
+      locale: "en",
+      displayName: item.displayName,
+      properties: { question: item.question, answer: item.answer },
+    }, item.displayName);
+    console.log(`  [ok] ${item.displayName} → key=${item.key}`);
   }
 }
 
@@ -147,34 +88,18 @@ async function createFaqContainer(): Promise<void> {
 
   const faqItemRefs = FAQ_ITEMS.map((item) => ({ reference: `cms://content/${item.key}` }));
 
-  const { ok, status, text, json: result } = await apiFetch("", {
-    method: "POST",
-    body: JSON.stringify({
-      key: CONTAINER_KEY,
-      contentType: "FaqContainerBlock",
-      container: CONTAINER,
-      initialVersion: {
-        locale: "en",
-        displayName: "FAQs Container",
-        properties: wrapProps({
-          heading: "Frequently asked questions",
-          subheading: "Quick answers to the things we hear most.",
-          faqItems: faqItemRefs,
-        }),
-      },
-    }),
-  });
-
-  if (!ok) {
-    console.error(`  [ERROR] FaqContainerBlock: ${status} ${text.slice(0, 300)}`);
-    throw new Error("Failed to create FaqContainerBlock");
-  }
-  let version = ((result as Record<string, unknown>)?.initialVersion as Record<string, unknown> | undefined)?.version as string | undefined;
-  if (!version) {
-    const vRes = await apiFetch(`/${CONTAINER_KEY}/versions?pageSize=1`);
-    version = ((vRes.json as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version;
-  }
-  if (version) await apiFetch(`/${CONTAINER_KEY}/versions/${version}:publish`, { method: "POST" });
+  await createContent({
+    key: CONTAINER_KEY,
+    contentType: "FaqContainerBlock",
+    container: BLOCKS_CONTAINER,
+    locale: "en",
+    displayName: "FAQs Container",
+    properties: {
+      heading: "Frequently asked questions",
+      subheading: "Quick answers to the things we hear most.",
+      faqItems: faqItemRefs,
+    },
+  }, "FAQs Container");
   console.log(`  [created] FaqContainerBlock → key=${CONTAINER_KEY}`);
   console.log(`  [linked] ${FAQ_ITEMS.length} FAQ items via content area`);
 }
@@ -203,18 +128,28 @@ async function wireFaqsPage(): Promise<void> {
   }
   console.log(`  [found] FAQs page: "${faqsName}" (key=${faqsKey})`);
 
-  // Find the latest version for this page, PATCH its properties, then republish.
-  const { ok: vOk, json: vData } = await apiFetch(`/${faqsKey}/locales/en?pageSize=1`);
-  const version = vOk
-    ? ((vData as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version
-    : undefined;
-
+  // Create a fresh draft (copying the published page), patch featuredBlock onto
+  // it, then publish. The page's latest version is usually already published,
+  // and a published version cannot be patched directly — so we make a new draft.
+  const { ok: newOk, status: newStatus, text: newText, json: newVer } = await apiFetch(
+    `/${faqsKey}/versions?locale=en`,
+    { method: "POST", body: JSON.stringify({ displayName: faqsName ?? "FAQs" }) }
+  );
+  if (!newOk) {
+    console.error(`  [ERROR] Could not create draft for FAQs page: ${newStatus} ${newText.slice(0, 200)}`);
+    return;
+  }
+  let version = (newVer as Record<string, unknown>)?.version as string | undefined;
   if (!version) {
-    console.error(`  [ERROR] Could not find a version for FAQs page key=${faqsKey}`);
+    const vRes = await apiFetch(`/${faqsKey}/locales/en?pageSize=1`);
+    version = ((vRes.json as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version;
+  }
+  if (!version) {
+    console.error(`  [ERROR] Could not find the new draft version for FAQs page key=${faqsKey}`);
     return;
   }
 
-  const { ok, status, text, json: patched } = await apiFetch(`/${faqsKey}/versions/${version}`, {
+  const { ok, status, text } = await apiFetch(`/${faqsKey}/versions/${version}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/merge-patch+json" },
     body: JSON.stringify({
@@ -229,13 +164,8 @@ async function wireFaqsPage(): Promise<void> {
     return;
   }
 
-  // Republish if PATCH moved the version to draft
-  const patchedStatus = (patched as Record<string, unknown>)?.status as string | undefined;
-  if (patchedStatus && patchedStatus !== "published") {
-    const newVersion = (patched as Record<string, unknown>)?.version as string | undefined;
-    await apiFetch(`/${faqsKey}/versions/${newVersion ?? version}:publish`, { method: "POST" });
-  }
-  console.log(`  [patched] FAQs page featuredBlock → FaqContainerBlock`);
+  await apiFetch(`/${faqsKey}/versions/${version}:publish`, { method: "POST" });
+  console.log(`  [patched] FAQs page featuredBlock → FaqContainerBlock (version ${version})`);
 }
 
 // ---------------------------------------------------------------------------
@@ -245,7 +175,9 @@ async function wireFaqsPage(): Promise<void> {
 async function main() {
   console.log("=== FAQ Content Area Seed Script ===\n");
   CONTAINER = await discoverRootContainer();
-  console.log(`  container: ${CONTAINER}\n`);
+  BLOCKS_CONTAINER = await discoverGlobalRoot();
+  console.log(`  container: ${CONTAINER}`);
+  console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}\n`);
   await createFaqItems();
   await createFaqContainer();
   await wireFaqsPage();

@@ -18,7 +18,8 @@
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
-import { discoverRootContainer, wrapProps } from "./_shared";
+import { createContent, discoverGlobalRoot, discoverRootContainer, wrapProps } from "./_shared";
+import { FAQ_ITEMS } from "./faq-data";
 
 config({ path: ".env.local" });
 
@@ -29,6 +30,18 @@ config({ path: ".env.local" });
 const API_BASE = "https://api.cms.optimizely.com";
 const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
+// Global content root — where standalone/shared blocks live so they appear in
+// the CMS "Shared Blocks → For All Applications" picker. Set in main().
+let BLOCKS_CONTAINER = "";
+
+// Standalone block types created across the seed scripts. cleanSharedBlocks()
+// only ever deletes these types under the global root, so pages (DynamicExperience,
+// TraditionalPage), folders, native forms, and any other content are never touched.
+const MANAGED_BLOCK_TYPES = new Set([
+  "FaqItemBlock", "FaqContainerBlock", "NavigationItem", "Navigation",
+  "AuthorBlock", "OutcomeItemBlock", "TestimonialBlock",
+  "TimelineMilestoneBlock", "TeamMemberBlock", "ContactFormBlock",
+]);
 
 // The Management API rate-limits bursts (429) - retry with backoff so a burst
 // of page creates doesn't abort the whole seed.
@@ -44,6 +57,38 @@ async function fetchRetry(url: string, init: RequestInit = {}): Promise<Response
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Ensure the latest version of a content item is published. createContent
+ * publishes on creation, but that step can be silently skipped when the
+ * post-POST version lookup lags (v1 sometimes returns 201 with an empty body).
+ * A content reference to a still-draft item fails to resolve, so items that
+ * other content references (e.g. shared FAQ items) must be reliably published.
+ */
+async function ensurePublished(key: string): Promise<void> {
+  const token = await getManagementToken();
+  // Publishing a version can 404 if the create hasn't committed yet, so retry
+  // and verify the item actually reaches "published" before giving up.
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const vRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (vRes.ok) {
+      const vData = await vRes.json() as { items?: Array<{ version?: string; status?: string }> };
+      const v = vData.items?.[0];
+      if (v?.status === "published") return;
+      if (v?.version) {
+        const pubRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions/${v.version}:publish`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (pubRes.ok) return;
+      }
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  console.warn(`  [warn] Could not publish ${key} after retries — homepage FAQ reference may not resolve.`);
+}
 
 function uid(): string {
   return randomUUID(); // keep hyphens — the composition API expects them
@@ -228,29 +273,10 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
         "Our fixed-rate savings account now offers 5.1% AER. Lock in your rate today and watch your money grow — FSCS protected up to £85,000.",
       ctaText: "See savings rates",
     })] : []),
-    sectionComponent("SectionHeadingBlock", "FAQ Heading", {
+    rootComponent("FaqContainerBlock", "Homepage FAQs", {
       heading: "Frequently asked questions",
       subheading: "Quick answers to the things we hear most.",
-    }),
-    sectionComponent("FaqItemBlock", "FAQ 1", {
-      question: "How do I open a current account?",
-      answer:
-        "You can open a Mosey current account online in around 10 minutes. All you need is a smartphone, a valid UK address, and proof of identity. We run a soft credit check that won't affect your credit score.",
-    }),
-    sectionComponent("FaqItemBlock", "FAQ 2", {
-      question: "What savings rates do you offer?",
-      answer:
-        "We currently offer an easy-access savings account at 4.6% AER and a 1-year fixed-rate account at 5.1% AER. Rates are variable on easy-access accounts and fixed for the term on fixed-rate accounts.",
-    }),
-    sectionComponent("FaqItemBlock", "FAQ 3", {
-      question: "How does the mortgage application work?",
-      answer:
-        "Start by getting a decision in principle online — it takes around 10 minutes and won't affect your credit score. One of our advisors will then call you to discuss your options and guide you through the full application.",
-    }),
-    sectionComponent("FaqItemBlock", "FAQ 4", {
-      question: "Is my money protected?",
-      answer:
-        "Yes. Mosey Bank is authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority. Eligible deposits are protected by the FSCS up to £85,000 per person.",
+      faqItems: FAQ_ITEMS.map((i) => ({ reference: `cms://content/${i.key}` })),
     }),
     sectionComponent("CallToAction", "Home CTA", {
       label: "Open an account today",
@@ -810,54 +836,56 @@ async function createPage(page: PageDef): Promise<void> {
     nodes: page.nodes,
   };
 
-  // Homepage has no routeSegment — always try to patch the existing start page at /
+  // Homepage has no routeSegment — always update the existing start page at /
   // rather than creating a duplicate at /en/homepage/. CONTAINER itself may be the
   // start page (e.g. ONBOARDING), so fall back to CONTAINER when Graph hasn't indexed
   // the start page yet (Graph indexing lag of ~30-60s on fresh instances).
+  //
+  // We create a brand-new draft version carrying our composition, then publish it —
+  // instead of PATCHing the latest version. The latest version is often already
+  // published (which cannot be patched), and creating a draft by copying it fails
+  // when that published composition references pages this run just deleted. Posting
+  // a fresh version with our own composition sidesteps both problems.
   if (!page.routeSegment) {
     const graphKey = (await findHomepageKey()) ?? (CONTAINER || null);
     if (graphKey) {
-      const versionsRes = await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const createRes = await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions?locale=en`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          displayName: page.displayName,
+          composition,
+          ...(page.properties ? { properties: wrapProps(page.properties) } : {}),
+        }),
       });
-      if (versionsRes.ok) {
-        const versionsData = await versionsRes.json() as { items?: Array<{ version?: string }> };
-        const version = versionsData.items?.[0]?.version;
-        if (version) {
-          const patchRes = await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions/${version}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/merge-patch+json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({
-              displayName: page.displayName,
-              composition,
-              ...(page.properties ? { properties: wrapProps(page.properties) } : {}),
-            }),
-          });
-          if (patchRes.ok) {
-            // Republish after patch (PATCH on a published version may create a new draft)
-            // v1 API may return empty body on success — handle gracefully.
-            const patchBody = await patchRes.text();
-            let patchedVersion: string | undefined = version;
-            let patchedStatus: string | undefined;
-            if (patchBody.trim()) {
-              const patched = JSON.parse(patchBody) as { version?: string; status?: string };
-              patchedVersion = patched.version ?? version;
-              patchedStatus = patched.status;
-            }
-            if (!patchedStatus || patchedStatus !== "published") {
-              await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions/${patchedVersion}:publish`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-              });
-            }
-            console.log(`  [patched] ${page.displayName} → key=${graphKey} route=/ (version ${version})`);
-            return;
-          }
-          const patchText = await patchRes.text();
-          console.warn(`  [warn] PATCH /versions/${version}: ${patchRes.status} ${patchText.slice(0, 200)}`);
+      if (createRes.ok) {
+        // v1 API may return an empty body — look up the version separately.
+        const createBody = await createRes.text();
+        let newVersion: string | undefined;
+        if (createBody.trim()) {
+          newVersion = (JSON.parse(createBody) as { version?: string }).version;
         }
+        if (!newVersion) {
+          const vRes = await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions?pageSize=1`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (vRes.ok) {
+            const vData = await vRes.json() as { items?: Array<{ version?: string }> };
+            newVersion = vData.items?.[0]?.version;
+          }
+        }
+        if (newVersion) {
+          await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions/${newVersion}:publish`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        }
+        console.log(`  [updated] ${page.displayName} → key=${graphKey} route=/ (new version ${newVersion ?? "?"})`);
+        return;
       }
-      console.warn(`  [warn] Could not patch homepage at key=${graphKey} — update it manually in Visual Builder.`);
+      const createText = await createRes.text();
+      console.warn(`  [warn] Create homepage draft: ${createRes.status} ${createText.slice(0, 200)}`);
+      console.warn(`  [warn] Could not update homepage at key=${graphKey} — update it manually in Visual Builder.`);
     }
   }
 
@@ -931,35 +959,69 @@ async function createPage(page: PageDef): Promise<void> {
   console.log(`  [created] ${page.displayName} → key=${contentKey} route=${page.routeSegment ?? "/"}`);
 }
 
+/** Permanently delete one content item, retrying on 429 rate-limit bursts. */
+async function permanentDelete(key: string): Promise<boolean> {
+  const token = await getManagementToken();
+  // The Management API rate-limits delete bursts (429). A 429'd delete is NOT
+  // deleted - its routeSegment stays taken and every dependent create fails -
+  // so retry with backoff and pace the loop.
+  let delRes: Response | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    delRes = await fetch(`${CONTENT_ENDPOINT}/${key}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
+    });
+    if (delRes.status !== 429) break;
+    const retryAfter = Number(delRes.headers.get("retry-after"));
+    await new Promise((r) => setTimeout(r, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2000 * (attempt + 1)));
+  }
+  if (!delRes || !delRes.ok) undeletableKeys.set(key, key);
+  console.log(`  [deleted] ${key} (${delRes?.status})`);
+  await new Promise((r) => setTimeout(r, 150));
+  return !!delRes?.ok;
+}
+
+/** Delete every content item directly under the app entry point (pages + any
+ *  leftover blocks from older runs). Shared blocks now live under the global
+ *  root and are cleaned by cleanSharedBlocks(). */
 async function deleteExisting(): Promise<void> {
   const token = await getManagementToken();
-
   const res = await fetch(`${CONTENT_ENDPOINT}/${CONTAINER}/items`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-
   if (!res.ok) return;
 
   const data = await res.json() as { items?: Array<{ key: string }> };
-  for (const item of data.items ?? []) {
-    // The Management API rate-limits delete bursts (429). A 429'd delete is NOT
-    // deleted - its routeSegment stays taken and every dependent create fails -
-    // so retry with backoff and pace the loop.
-    let delRes: Response | null = null;
-    for (let attempt = 0; attempt < 5; attempt++) {
-      delRes = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
-      });
-      if (delRes.status !== 429) break;
-      const retryAfter = Number(delRes.headers.get("retry-after"));
-      await new Promise((r) => setTimeout(r, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2000 * (attempt + 1)));
+  for (const item of data.items ?? []) await permanentDelete(item.key);
+}
+
+/** Delete stale standalone/shared blocks under the global root so re-seeds don't
+ *  accumulate duplicates. Deletes ONLY managed block types (never pages, folders,
+ *  native forms, or unknown content) and preserves the stable-key FAQ items to
+ *  avoid the same-key recreate race. */
+async function cleanSharedBlocks(globalRoot: string): Promise<void> {
+  const token = await getManagementToken();
+  const preserve = new Set(FAQ_ITEMS.map((i) => i.key));
+
+  let items: Array<{ key: string; contentType?: string }> = [];
+  for (let pageIndex = 0; ; pageIndex++) {
+    const res = await fetchRetry(`${CONTENT_ENDPOINT}/${globalRoot}/items?pageSize=100&pageIndex=${pageIndex}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) break;
+    const data = await res.json() as { items?: Array<{ key: string; contentType?: string }> };
+    const batch = data.items ?? [];
+    items = items.concat(batch);
+    if (batch.length < 100) break;
+  }
+
+  for (const item of items) {
+    if (!item.contentType || !MANAGED_BLOCK_TYPES.has(item.contentType)) continue; // never touch pages/folders/forms/unknown
+    if (preserve.has(item.key)) {
+      console.log(`  [kept] ${item.key} (shared FAQ item)`);
+      continue;
     }
-    if (!delRes || !delRes.ok) {
-      undeletableKeys.set(item.key, item.key);
-    }
-    console.log(`  [deleted] ${item.key} (${delRes?.status})`);
-    await new Promise((r) => setTimeout(r, 150));
+    await permanentDelete(item.key);
   }
 }
 
@@ -985,10 +1047,15 @@ async function main() {
 
   console.log("--- Discovering root container ---");
   CONTAINER = await discoverRootContainer();
+  BLOCKS_CONTAINER = await discoverGlobalRoot();
   console.log(`  container: ${CONTAINER}`);
+  console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}`);
 
   console.log("\n--- Cleaning existing content ---");
   await deleteExisting();
+  // Also sweep stale shared blocks under the global root (legacy duplicates +
+  // prior-run blocks). Runs first so the other seeds recreate blocks cleanly.
+  await cleanSharedBlocks(BLOCKS_CONTAINER);
 
   // Wait for CMS to free up routeSegments from deleted pages before re-creating
   console.log("\n  Waiting 8s for routeSegments to be released...");
@@ -1019,6 +1086,27 @@ async function main() {
 
   console.log(`\n--- Creating ${level3.length} level-3 pages ---`);
   for (const page of level3) await createPage(page);
+
+  // Create the shared standalone FAQ items before the homepage so its
+  // FaqContainerBlock node can reference them. seed-faqs.ts reuses the same
+  // items (same stable keys) for the FAQs page — editing one updates both.
+  console.log(`\n--- Creating ${FAQ_ITEMS.length} shared FAQ items ---`);
+  // Create as drafts (skipPublish), then publish in a second pass. Publishing a
+  // version immediately after creating it can 404 if the write hasn't committed
+  // yet; separating the passes lets each item settle before we publish it.
+  for (const item of FAQ_ITEMS) {
+    await createContent({
+      key: item.key,
+      contentType: "FaqItemBlock",
+      container: BLOCKS_CONTAINER,
+      locale: "en",
+      displayName: item.displayName,
+      properties: { question: item.question, answer: item.answer },
+    }, item.displayName, { skipPublish: true });
+  }
+  // Guarantee every item is published before the homepage references them —
+  // an unpublished item makes the homepage's faqItems reference unresolvable.
+  for (const item of FAQ_ITEMS) await ensurePublished(item.key);
 
   // Look up the actual savings key (might differ if savings was skipped)
   const savingsKey = await findSavingsKey() ?? PAGE_KEYS.savings;

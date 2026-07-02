@@ -13,7 +13,7 @@
 
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
-import { createContent, discoverRootContainer, findPageKeyByUrl } from "./_shared";
+import { createContent, discoverGlobalRoot, discoverRootContainer, findPageKeyByUrl } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -22,7 +22,10 @@ function noHyphens(): string {
 }
 
 async function main() {
-  const container = process.env.OPTIMIZELY_ROOT_CONTAINER || (await discoverRootContainer());
+  await discoverRootContainer();
+  // ContactFormBlock is a shared block — create it under the global root so it
+  // appears in "Shared Blocks → For All Applications".
+  const blocksContainer = await discoverGlobalRoot();
 
   // Step 1: create the shared ContactFormBlock content item.
   const blockKey = noHyphens();
@@ -30,7 +33,7 @@ async function main() {
     {
       key: blockKey,
       contentType: "ContactFormBlock",
-      container,
+      container: blocksContainer,
       locale: "en",
       displayName: "Contact Form",
       properties: {

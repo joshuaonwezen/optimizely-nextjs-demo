@@ -121,7 +121,15 @@ const DISCOVERY_QUERY = /* GraphQL */ `
 interface DiscoveredItem {
   key: string;
   label: string;
+  // The start page (site root) keeps a stable key across re-seeds, so its nl
+  // version persists and goes stale when the EN composition changes (e.g. new
+  // FAQ references). Force it to re-localize every run instead of skipping it.
+  isHomepage: boolean;
 }
+
+// The start page is served at the site root, which Graph reports per-locale as
+// "/", "/en/", "/nl/", etc. Match a bare root with an optional locale segment.
+const HOMEPAGE_URL_RE = /^\/([a-z]{2}\/)?$/;
 
 async function discover(): Promise<DiscoveredItem[]> {
   const res = await fetch(GRAPH_ENDPOINT, {
@@ -134,7 +142,7 @@ async function discover(): Promise<DiscoveredItem[]> {
   });
   if (!res.ok) throw new Error(`Graph discovery failed: ${res.status} ${await res.text()}`);
 
-  type Meta = { key?: string; displayName?: string; variation?: string | null };
+  type Meta = { key?: string; displayName?: string; variation?: string | null; url?: { default?: string } };
   const { data } = (await res.json()) as {
     data?: Record<string, { items?: Array<{ _metadata?: Meta }> }>;
   };
@@ -148,7 +156,11 @@ async function discover(): Promise<DiscoveredItem[]> {
       if (meta.variation) continue; // variation versions are localized via their base
       if (seen.has(meta.key)) continue;
       seen.add(meta.key);
-      items.push({ key: meta.key, label: meta.displayName ?? meta.key });
+      items.push({
+        key: meta.key,
+        label: meta.displayName ?? meta.key,
+        isHomepage: HOMEPAGE_URL_RE.test(meta.url?.default ?? ""),
+      });
     }
   }
   return items;
@@ -159,19 +171,25 @@ type Result = "created" | "exists" | "untranslated" | "failed";
 async function localizeItem(item: DiscoveredItem): Promise<Result> {
   // Skip if a published nl version already exists (idempotency). A stranded
   // nl draft (e.g. publish failed on a previous run) is published instead.
-  const nlRes = await api(`/${item.key}/locales/${TARGET_LOCALE}?pageSize=10`);
-  if (nlRes.ok) {
-    const nlData = (await nlRes.json()) as {
-      items?: Array<{ version?: string; status?: string }>;
-    };
-    const nlVersions = nlData.items ?? [];
-    if (nlVersions.some((v) => v.status === "published")) return "exists";
-    const draft = nlVersions[0];
-    if (draft?.version) {
-      const pubRes = await api(`/${item.key}/versions/${draft.version}:publish`, { method: "POST" });
-      if (pubRes.ok) {
-        console.log(`  [published] ${item.label} (existing nl draft)`);
-        return "created";
+  //
+  // The homepage is the exception: its key is stable across re-seeds, so its nl
+  // version persists and goes stale when the EN composition changes. Always
+  // re-localize it from the current EN version below.
+  if (!item.isHomepage) {
+    const nlRes = await api(`/${item.key}/locales/${TARGET_LOCALE}?pageSize=10`);
+    if (nlRes.ok) {
+      const nlData = (await nlRes.json()) as {
+        items?: Array<{ version?: string; status?: string }>;
+      };
+      const nlVersions = nlData.items ?? [];
+      if (nlVersions.some((v) => v.status === "published")) return "exists";
+      const draft = nlVersions[0];
+      if (draft?.version) {
+        const pubRes = await api(`/${item.key}/versions/${draft.version}:publish`, { method: "POST" });
+        if (pubRes.ok) {
+          console.log(`  [published] ${item.label} (existing nl draft)`);
+          return "created";
+        }
       }
     }
   }
@@ -265,6 +283,10 @@ async function main() {
   console.log("=== Dutch (nl) Localization Seeding ===\n");
   console.log("--- Discovering EN content via Graph ---");
   const items = await discover();
+  // Localize the homepage last: its FaqContainerBlock references the shared FAQ
+  // items, whose nl versions must be published before the nl homepage can
+  // resolve them.
+  items.sort((a, b) => Number(a.isHomepage) - Number(b.isHomepage));
   console.log(`  found ${items.length} items\n`);
 
   const tally: Record<Result, number> = { created: 0, exists: 0, untranslated: 0, failed: 0 };

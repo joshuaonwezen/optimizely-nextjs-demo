@@ -20,6 +20,7 @@ import {
   createContent,
   deleteContentByKey,
   deletePageByUrlIfExists,
+  discoverGlobalRoot,
   discoverRootContainer,
   findItemsInContainerByName,
   findPageKeyByUrl,
@@ -29,6 +30,10 @@ import {
 } from "./_shared";
 
 let CONTAINER = "";
+// Global content root — standalone blocks (authors, outcomes, testimonials,
+// milestones, team members) live here so they appear in "Shared Blocks → For
+// All Applications". Pages stay under CONTAINER / hub keys. Set in main().
+let BLOCKS_CONTAINER = "";
 
 config({ path: ".env.local" });
 
@@ -200,7 +205,7 @@ async function seedAuthors(): Promise<void> {
       key: author.key,
       contentType: "AuthorBlock",
       locale: "en",
-      container: CONTAINER,
+      container: BLOCKS_CONTAINER,
       status: "published",
       displayName: author.displayName,
       properties: {
@@ -245,7 +250,7 @@ async function seedOutcomes(): Promise<void> {
       key: o.key,
       contentType: "OutcomeItemBlock",
       locale: "en",
-      container: CONTAINER,
+      container: BLOCKS_CONTAINER,
       status: "published",
       displayName: o.displayName,
       properties: { stat: o.stat, suffix: o.suffix, label: o.label },
@@ -293,7 +298,7 @@ async function seedTestimonials(): Promise<void> {
       key: t.key,
       contentType: "TestimonialBlock",
       locale: "en",
-      container: CONTAINER,
+      container: BLOCKS_CONTAINER,
       status: "published",
       displayName: t.displayName,
       properties: {
@@ -786,7 +791,7 @@ async function seedMilestones(): Promise<void> {
       key: m.key,
       contentType: "TimelineMilestoneBlock",
       locale: "en",
-      container: CONTAINER,
+      container: BLOCKS_CONTAINER,
       status: "published",
       displayName: m.displayName,
       properties: { date: m.date, title: m.title, description: m.description },
@@ -825,7 +830,7 @@ async function seedTeamMembers(): Promise<void> {
       key: t.key,
       contentType: "TeamMemberBlock",
       locale: "en",
-      container: CONTAINER,
+      container: BLOCKS_CONTAINER,
       status: "published",
       displayName: t.displayName,
       properties: {
@@ -1165,7 +1170,9 @@ async function main(): Promise<void> {
   console.log("=== Content Modeling Demo Seeding ===\n");
 
   CONTAINER = await discoverRootContainer();
-  console.log(`  container: ${CONTAINER}\n`);
+  BLOCKS_CONTAINER = await discoverGlobalRoot();
+  console.log(`  container: ${CONTAINER}`);
+  console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}\n`);
 
   await cleanupPreviousModelingContent();
 
