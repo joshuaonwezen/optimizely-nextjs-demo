@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { trackEvent } from "@/lib/optimizely/track";
+import { trackEvent } from "@/lib/tracking";
 
 interface ContactFormBlockData {
   heading?: string | null;

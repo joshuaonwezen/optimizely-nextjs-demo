@@ -19,6 +19,53 @@ export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
   }
 `;
 
+export const SEARCH_FACETED_QUERY = /* GraphQL */ `
+  query SearchFaceted($query: String!, $categories: [String!], $tags: [String!]) {
+    ArticlePage(
+      where: {
+        _fulltext: { match: $query }
+        category: { in: $categories }
+        tags: { in: $tags }
+      }
+      orderBy: { _ranking: RELEVANCE }
+      limit: 10
+      tracking: { phrase: $query, source: "/demo/faceted-search" }
+    ) {
+      total
+      items {
+        _score
+        category
+        tags
+        _metadata {
+          displayName
+          url { default }
+        }
+      }
+      facets {
+        category(orderType: COUNT, orderBy: DESC, limit: 10) { name count }
+        tags(orderType: COUNT, orderBy: DESC, limit: 12) { name count }
+      }
+    }
+  }
+`;
+
+export const AUTOCOMPLETE_QUERY = /* GraphQL */ `
+  query Autocomplete($value: String!) {
+    ArticlePage {
+      autocomplete {
+        tags(limit: 5, value: $value)
+      }
+    }
+    _Content {
+      autocomplete {
+        _metadata {
+          url { default(limit: 6, value: $value) }
+        }
+      }
+    }
+  }
+`;
+
 export const SEARCH_SEMANTIC_QUERY = /* GraphQL */ `
   query SearchSemantic($query: String!, $weight: Float!) {
     _Content(

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { trackEvent } from "@/lib/optimizely/track";
+import { trackEvent } from "@/lib/tracking";
 
 function parseTags(raw: string | null): Record<string, unknown> {
   if (!raw) return {};

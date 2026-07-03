@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { trackEvent } from "@/lib/optimizely/track";
+import { trackEvent } from "@/lib/tracking";
 
 const PERSONAS = [
   { key: "",          label: "Default" },

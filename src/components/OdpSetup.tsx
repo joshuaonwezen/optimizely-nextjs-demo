@@ -3,14 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
-declare global {
-  interface Window {
-    zaius?: {
-      entity: (type: string, attrs: Record<string, string>) => void;
-      event: (type: string) => void;
-    };
-  }
-}
+import "@/lib/tracking/destinations/odp";
 
 function getCookie(name: string): string | undefined {
   return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1];

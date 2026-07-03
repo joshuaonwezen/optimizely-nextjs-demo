@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { trackEvent } from "@/lib/optimizely/track";
+import { trackEvent } from "@/lib/tracking";
 
 interface OptiFormsSubmitData {
   Label?: string | null;

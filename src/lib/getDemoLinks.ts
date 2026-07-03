@@ -29,6 +29,7 @@ export function getDemoCategories(): DemoCategory[] {
       links: [
         { href: "/demo/feature-experimentation", label: "Feature Experimentation", description: "A/B tests, flags, and bucketing" },
         { href: "/demo/personalization",          label: "Personalization",         description: "Audiences, personas, and variation filter" },
+        { href: "/demo/event-tracking",           label: "Event Tracking",          description: "Global tracking layer and conversion events" },
         { href: "/demo/odp",                      label: "Data Platform (ODP)",     description: "Visitor profiles, segments, and event tracking" },
         { href: "/demo/external-content",         label: "External Content",        description: "Third-party data via Content Source API" },
         { href: "/demo/webhooks",                 label: "Webhooks",                description: "Graph webhooks and on-demand revalidation" },
@@ -40,6 +41,7 @@ export function getDemoCategories(): DemoCategory[] {
         { href: "/demo/caching",      label: "Caching",         description: "ISR, revalidation tags, and webhooks" },
         { href: "/demo/graph-queries", label: "Graph Queries",  description: "Querying patterns and @recursive" },
         { href: "/demo/search",        label: "Search",          description: "Full-text search with Graph filtering" },
+        { href: "/demo/faceted-search", label: "Facets & Autocomplete", description: "Facet drill-down filtering and type-ahead suggestions" },
         { href: "/demo/listing",       label: "Content Listing", description: "Paginated lists with cursor pagination" },
       ],
     },
