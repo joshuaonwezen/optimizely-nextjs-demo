@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useFxDecision } from "@/lib/optimizely/useFxDecision";
+import { getCurrentLocale, localizeHref } from "@/lib/localeUrl";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 
 export function FooterCtaClient() {
+  const pathname = usePathname();
   const decision = useFxDecision("footer_cta");
   if (!decision?.enabled) return null;
 
@@ -21,7 +24,7 @@ export function FooterCtaClient() {
                 <p className="text-sm text-on-surface-variant mt-1">Open an account in 3 minutes. No fees, no minimums.</p>
               </div>
               <Link
-                href="/personal/checking"
+                href={localizeHref("/personal/checking", getCurrentLocale(pathname))}
                 className="flex-shrink-0 px-6 py-3 rounded-full bg-brand text-on-brand text-sm font-semibold hover:bg-brand-dim transition-colors"
               >
                 Open an account &rarr;

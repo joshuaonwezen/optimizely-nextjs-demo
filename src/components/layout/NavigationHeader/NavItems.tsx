@@ -11,6 +11,7 @@ import SearchOverlay from "@/components/layout/SearchOverlay";
 import MoseyBankLogo from "@/components/MoseyBankLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useFxDecision } from "@/lib/optimizely/useFxDecision";
+import { buildLocaleUrl, getCurrentLocale, localizeHref } from "@/lib/localeUrl";
 
 interface Props {
   tree: NavNode[];
@@ -20,35 +21,18 @@ interface Props {
   locales: SupportedLocale[];
 }
 
-const LOCALE_RE = /^[a-z]{2}(-[a-z]{2})?$/;
-
 function getCookie(name: string): string | undefined {
   return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1];
-}
-
-function getCurrentLocale(pathname: string): string {
-  const first = pathname.split("/").filter(Boolean)[0] ?? "";
-  return LOCALE_RE.test(first) ? first : "en";
-}
-
-function buildLocaleUrl(pathname: string, targetLocale: string): string {
-  const segments = pathname.split("/").filter(Boolean);
-  const hasPrefix = segments.length > 0 && LOCALE_RE.test(segments[0]);
-  const rest = hasPrefix ? segments.slice(1) : segments;
-  if (targetLocale === "en") {
-    return rest.length > 0 ? `/${rest.join("/")}` : "/";
-  }
-  return rest.length > 0 ? `/${targetLocale}/${rest.join("/")}` : `/${targetLocale}`;
 }
 
 // Nav hrefs from the CMS carry English (or unprefixed) paths. Rewrite every
 // internal link to the active locale so navigating from an /nl page stays on
 // /nl - even when the localized nav tree isn't in Graph yet and the English
-// tree is serving as the fallback.
+// tree is serving as the fallback. /demo links are left unprefixed.
 function localizeTree(nodes: NavNode[], locale: string): NavNode[] {
   return nodes.map((node) => ({
     ...node,
-    href: node.href.startsWith("/") ? buildLocaleUrl(node.href, locale) : node.href,
+    href: localizeHref(node.href, locale),
     children: localizeTree(node.children, locale),
   }));
 }
@@ -125,7 +109,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
 
           {/* Drawer header */}
           <div className="flex items-center justify-between px-5 h-16 border-b border-ghost-border flex-shrink-0">
-            <Link href="/" aria-label="Mosey Bank home" onClick={() => setMobileOpen(false)}>
+            <Link href={buildLocaleUrl(pathname, currentLocale)} aria-label="Mosey Bank home" onClick={() => setMobileOpen(false)}>
               <MoseyBankLogo />
             </Link>
             <button
@@ -556,8 +540,8 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
             {activeKey === "__account__" && (
               <div className="absolute top-full right-0 pt-2 z-50">
                 <div className="bg-surface-lowest border border-ghost-border rounded-xl shadow-lg py-2 min-w-44">
-                  <Link href="/personal" className="block px-4 py-2 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors">Dashboard</Link>
-                  <Link href="/personal/savings" className="block px-4 py-2 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors">My Accounts</Link>
+                  <Link href={localizeHref("/personal", currentLocale)} className="block px-4 py-2 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors">Dashboard</Link>
+                  <Link href={localizeHref("/personal/savings", currentLocale)} className="block px-4 py-2 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors">My Accounts</Link>
                   <div className="border-t border-ghost-border my-1" />
                   <Link href="/demo/personalization" className="block px-4 py-2 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors">Sign Out</Link>
                 </div>
@@ -626,7 +610,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
             { href: "/demo",                label: "Demo",     icon: <><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5"/><path d="M9.5 8.5l5 3.5-5 3.5V8.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></> },
             { href: "/demo/personalization",label: "Account",  icon: <><circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></> },
           ].map(({ href, label, icon }) => (
-            <Link key={href} href={href} className="flex-1 flex flex-col items-center py-3 gap-1 text-on-surface-variant hover:text-brand transition-colors">
+            <Link key={href} href={localizeHref(href, currentLocale)} className="flex-1 flex flex-col items-center py-3 gap-1 text-on-surface-variant hover:text-brand transition-colors">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">{icon}</svg>
               <span className="text-[10px] font-medium">{label}</span>
             </Link>
