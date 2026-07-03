@@ -22,7 +22,7 @@ export const CalloutBlockType = contentType({
   },
 });
 
-// ---- Visual component (used by demo pages with hardcoded children) ----
+// Visual component (used by demo pages with hardcoded children)
 
 type CalloutVariant = "note" | "warning" | "do";
 
@@ -49,7 +49,7 @@ export function Callout({ variant = "note", label, className, children, ...rest 
   );
 }
 
-// ---- CMS block component (renders richText body from Graph) ----
+// CMS block component (renders richText body from Graph)
 
 interface CalloutBlockData {
   variant?: string | null;

@@ -32,9 +32,7 @@ let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 
-// ---------------------------------------------------------------------------
 // Composition node builders (same as seed-content.ts)
-// ---------------------------------------------------------------------------
 
 interface CompNode {
   id: string;
@@ -108,9 +106,7 @@ function rootComponent(
   };
 }
 
-// ---------------------------------------------------------------------------
 // Variation compositions
-// ---------------------------------------------------------------------------
 
 function buildPersonalVariation(): CompNode[] {
   return [
@@ -376,9 +372,7 @@ function buildNewVisitorVariation(): CompNode[] {
   ];
 }
 
-// ---------------------------------------------------------------------------
 // Graph — find homepage key
-// ---------------------------------------------------------------------------
 
 async function findHomepageKey(): Promise<string | null> {
   if (!SINGLE_KEY) return null;
@@ -406,9 +400,7 @@ async function findHomepageKey(): Promise<string | null> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Create variation
-// ---------------------------------------------------------------------------
 
 interface VariationDef {
   variationKey: string;
@@ -499,10 +491,6 @@ async function createVariation(
 
   return false;
 }
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
 
 async function main() {
   console.log("=== Homepage Variation Seeding ===\n");

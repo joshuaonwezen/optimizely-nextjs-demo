@@ -3,10 +3,6 @@ import DemoHero from "@/components/demo/DemoHero";
 
 export const metadata: Metadata = { title: "Draft Mode & Preview Demo" };
 
-// ---------------------------------------------------------------------------
-// Code snippets
-// ---------------------------------------------------------------------------
-
 const PREVIEW_PARAMS_SNIPPET = `// CMS is configured with Preview URL: https://your-app.com/preview
 // It appends these query params automatically:
 
@@ -133,10 +129,6 @@ return (
     <OptimizelyComponent content={content} />
   </>
 );`;
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 export default function PreviewDemoPage() {
   return (

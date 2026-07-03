@@ -16,9 +16,7 @@ const API_BASE = "https://api.cms.optimizely.com";
 const TYPES_ENDPOINT = `${API_BASE}/v1/contenttypes`;
 const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 
-// ---------------------------------------------------------------------------
 // Content types actively used by this application — keep all of these.
-// ---------------------------------------------------------------------------
 
 const KEEP = new Set([
   // Experience / page types — use the content type KEY, not the variable name
@@ -84,10 +82,8 @@ const KEEP = new Set([
   "Video",
 ]);
 
-// ---------------------------------------------------------------------------
 // Orphaned NavigationItems created manually in the CMS (no longer referenced
 // by any Navigation block). Container: e56f85d0e8334e02976a2d11fe4d598c
-// ---------------------------------------------------------------------------
 
 const ORPHANED_NAV_ITEM_KEYS = [
   "9c38633f13404395bb7a5ac61e58348c", // 1st Level Navigation - Product
@@ -97,9 +93,7 @@ const ORPHANED_NAV_ITEM_KEYS = [
   "4f044c56bbde4ca1a8c558c32d73fe26", // 2nd Level Navigation - Experimentation
 ];
 
-// ---------------------------------------------------------------------------
 // Display templates actively used by this application — keep all of these.
-// ---------------------------------------------------------------------------
 
 const KEEP_TEMPLATES = new Set([
   "HeroBlockDefaultTemplate",
@@ -133,10 +127,6 @@ const KEEP_TEMPLATES = new Set([
   "DefaultColumnTemplate",
   "DefaultSectionTemplate",
 ]);
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 /**
  * Returns true if the given key appears as a string literal anywhere in src/.
@@ -175,9 +165,7 @@ async function deleteItem(token: string, key: string, label: string): Promise<"d
   return "error";
 }
 
-// ---------------------------------------------------------------------------
 // Part 1 — Content type cleanup
-// ---------------------------------------------------------------------------
 
 async function cleanupContentTypes(token: string): Promise<void> {
   console.log("--- Part 1: Content type audit ---");
@@ -263,9 +251,7 @@ async function cleanupContentTypes(token: string): Promise<void> {
   console.log();
 }
 
-// ---------------------------------------------------------------------------
 // Part 2 — Orphaned NavigationItem cleanup
-// ---------------------------------------------------------------------------
 
 async function cleanupOrphanedNavItems(token: string): Promise<void> {
   console.log("--- Part 2: Orphaned NavigationItems ---");
@@ -281,9 +267,7 @@ async function cleanupOrphanedNavItems(token: string): Promise<void> {
   console.log(`  Summary: ${deleted} deleted, ${gone} already gone, ${errors} errors.\n`);
 }
 
-// ---------------------------------------------------------------------------
 // Part 3 — Display template cleanup
-// ---------------------------------------------------------------------------
 
 async function cleanupDisplayTemplates(token: string): Promise<void> {
   console.log("--- Part 3: Display template audit ---");
@@ -347,10 +331,6 @@ async function cleanupDisplayTemplates(token: string): Promise<void> {
   }
   console.log(`  Summary: ${totalDeleted} deleted, ${totalErrors} errors.\n`);
 }
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
 
 async function main() {
   console.log("=== CMS Cleanup ===\n");

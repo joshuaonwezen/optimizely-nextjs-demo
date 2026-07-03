@@ -325,12 +325,12 @@ export default async function ExternalContentPage() {
                   </p>
                   <p>
                     ⚠ <strong className="text-on-surface">_rbac must be a string.</strong>{" "}
-                    Send <code className="bg-surface-low px-1 rounded font-mono">"_rbac": "r:Everyone:Read"</code> — not an object.
+                    Send <code className="bg-surface-low px-1 rounded font-mono">"_rbac": "r:Everyone:Read"</code> - not an object.
                     Sending an object corrupts the Elasticsearch index mapping and silently drops all records until
                     the source is deleted and re-registered.
                   </p>
                   <p>
-                    Additional sources may need to be enabled by Optimizely — contact support if the types endpoint returns a source-limit error.
+                    Additional sources may need to be enabled by Optimizely - contact support if the types endpoint returns a source-limit error.
                     See <a href="#base-types" className="text-brand hover:underline">Base Type Contracts ↓</a> for full payload examples.
                   </p>
                 </div>
@@ -496,14 +496,14 @@ export default async function ExternalContentPage() {
             <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed mt-3">
               Three additional payload rules apply to every push. First,{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">_rbac</code> must be the
-              string <code className="bg-surface-low px-1 rounded text-xs font-mono">"r:Everyone:Read"</code> — sending
+              string <code className="bg-surface-low px-1 rounded text-xs font-mono">"r:Everyone:Read"</code> - sending
               an object here (e.g. <code className="bg-surface-low px-1 rounded text-xs font-mono">{"{ read: [\"Everyone\"] }"}</code>) triggers an Elasticsearch
               mapper_parsing_exception that corrupts the index and silently drops every record; the
               only fix is to delete the entire source and re-register. Second, custom field names
               must include a <code className="bg-surface-low px-1 rounded text-xs font-mono">$$Type</code> suffix
               matching their schema type: <code className="bg-surface-low px-1 rounded text-xs font-mono">field$$String</code>,{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">field$$Float</code>,{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">field$$Boolean</code>, etc. — plain field
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">field$$Boolean</code>, etc. - plain field
               names are accepted but not indexed. Third, a top-level{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">_metadata</code> object is
               required alongside <code className="bg-surface-low px-1 rounded text-xs font-mono">_itemMetadata</code>,

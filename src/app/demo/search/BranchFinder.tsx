@@ -125,7 +125,7 @@ export default function BranchFinder() {
       {data && (
         <details className="group border border-ghost-border rounded-2xl overflow-hidden">
           <summary className="flex items-center justify-between px-5 py-3 cursor-pointer bg-surface-low hover:bg-surface-low/80 transition-colors list-none select-none">
-            <span className="text-xs font-semibold text-on-surface">Underlying response — GET /api/locations/nearby</span>
+            <span className="text-xs font-semibold text-on-surface">Underlying response - GET /api/locations/nearby</span>
             <span className="text-xs text-on-surface-variant">JSON</span>
           </summary>
           <pre className="bg-surface-lowest p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">

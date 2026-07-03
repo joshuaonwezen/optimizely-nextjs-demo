@@ -119,8 +119,7 @@ async function main() {
     // a fresh seed — re-run individually if many items are skipped/failed).
     ["npx", ["tsx", "scripts/seed-localization.ts"]],
     // Excluded:
-    // seed-business-banking-app-variation.ts — hardcoded version key, instance-specific
-    // register-webhook.mjs                   — interactive prompt for public URL
+    // register-webhook.mjs — interactive prompt for public URL
     // FX flags/experiments are managed via the Optimizely Experimentation MCP server.
   ];
 

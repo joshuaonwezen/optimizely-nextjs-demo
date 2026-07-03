@@ -7,33 +7,28 @@
  */
 
 import { config } from "dotenv";
-import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
-import { createContent, discoverGlobalRoot, discoverRootContainer, wrapProps } from "./_shared";
+import {
+  CONTENT_ENDPOINT,
+  GRAPH_ENDPOINT,
+  SINGLE_KEY,
+  createContent,
+  discoverGlobalRoot,
+  discoverRootContainer,
+  wrapProps,
+  noHyphens,
+} from "./_shared";
 import { FAQ_ITEMS } from "./faq-data";
 
 config({ path: ".env.local" });
 
-const API_BASE = "https://api.cms.optimizely.com";
-const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 // Global content root — shared blocks (FAQ items + container) live here so they
 // appear in the "Shared Blocks → For All Applications" picker. Set in main().
 let BLOCKS_CONTAINER = "";
 
-const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
-const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
-
-function noHyphens(): string {
-  return randomUUID().replace(/-/g, "");
-}
-
 // FAQ item definitions live in ./faq-data and are shared with seed-content.ts
 // (the homepage). Both reference the same standalone items via stable keys.
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 async function apiFetch(
   path: string,
@@ -55,9 +50,7 @@ async function apiFetch(
   return { ok: res.ok, status: res.status, text, json };
 }
 
-// ---------------------------------------------------------------------------
 // Part 1 — Create standalone FaqItemBlock content items
-// ---------------------------------------------------------------------------
 
 async function createFaqItems(): Promise<void> {
   console.log("--- Part 1: Creating standalone FaqItemBlock content items ---");
@@ -77,9 +70,7 @@ async function createFaqItems(): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Part 2 — Create FaqContainerBlock referencing all FAQ items
-// ---------------------------------------------------------------------------
 
 const CONTAINER_KEY = noHyphens();
 
@@ -104,9 +95,7 @@ async function createFaqContainer(): Promise<void> {
   console.log(`  [linked] ${FAQ_ITEMS.length} FAQ items via content area`);
 }
 
-// ---------------------------------------------------------------------------
 // Part 3 — Find the FAQs TraditionalPage and set featuredBlock
-// ---------------------------------------------------------------------------
 
 async function wireFaqsPage(): Promise<void> {
   console.log("\n--- Part 3: Wiring FaqContainerBlock to FAQs page ---");
@@ -154,7 +143,9 @@ async function wireFaqsPage(): Promise<void> {
     headers: { "Content-Type": "application/merge-patch+json" },
     body: JSON.stringify({
       properties: wrapProps({
-        featuredBlock: `cms://content/${CONTAINER_KEY}`,
+        // featuredBlock is type "content" - requires the reference object form,
+        // a plain "cms://content/..." string 400s ("Expected object").
+        featuredBlock: { reference: `cms://content/${CONTAINER_KEY}` },
       }),
     }),
   });
@@ -167,10 +158,6 @@ async function wireFaqsPage(): Promise<void> {
   await apiFetch(`/${faqsKey}/versions/${version}:publish`, { method: "POST" });
   console.log(`  [patched] FAQs page featuredBlock → FaqContainerBlock (version ${version})`);
 }
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
 
 async function main() {
   console.log("=== FAQ Content Area Seed Script ===\n");

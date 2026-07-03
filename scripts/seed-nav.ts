@@ -12,20 +12,19 @@
  */
 
 import { config } from "dotenv";
-import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
-import { discoverGlobalRoot, discoverRootContainer, wrapProps } from "./_shared";
+import {
+  CONTENT_ENDPOINT,
+  GRAPH_ENDPOINT,
+  SINGLE_KEY,
+  discoverGlobalRoot,
+  discoverRootContainer,
+  wrapProps,
+  noHyphens,
+} from "./_shared";
 
 config({ path: ".env.local" });
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
-const API_BASE = "https://api.cms.optimizely.com";
-const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
-const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
-const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 // Global content root — the Navigation block + NavigationItems are shared blocks
 // and live here so they appear in "Shared Blocks → For All Applications". Set in main().
@@ -42,33 +41,6 @@ const NAV_BLOCK_KEY = (process.env.OPTIMIZELY_NAV_BLOCK_KEY ?? "").replace(/-/g,
 //       the only reliable pattern is DELETE → wait → POST with the payload.
 const NAV_BLOCK_NAME = "Seeded Navigation";
 
-function noHyphens(): string {
-  return randomUUID().replace(/-/g, "");
-}
-
-function uid(): string {
-  return randomUUID();
-}
-
-interface CompNode {
-  id: string;
-  displayName: string;
-  nodeType: string;
-  component?: { contentType: string; properties: Record<string, unknown> };
-  nodes?: CompNode[];
-}
-
-function section(contentType: string, displayName: string, properties: Record<string, unknown>): CompNode {
-  return { id: uid(), displayName, nodeType: "component", component: { contentType, properties: wrapProps(properties) } };
-}
-
-function buildNavPageComposition(heading: string, subheading: string, ctaLabel: string, ctaLink: string): CompNode[] {
-  return [
-    section("SectionHeadingBlock", "Page Heading", { heading, subheading }),
-    section("CallToAction", "Page CTA", { label: ctaLabel, link: ctaLink }),
-  ];
-}
-
 const PAGE_CONTENT: Record<string, { heading: string; subheading: string; ctaLabel: string; ctaLink: string }> = {
   loans:               { heading: "Personal Loans",            subheading: "Borrow from £1,000 to £25,000 with a fixed rate and no early repayment fees. Get a decision in minutes.", ctaLabel: "Check My Rate",           ctaLink: "/en/personal/loans" },
   "merchant-services": { heading: "Merchant Services",         subheading: "Accept card payments in-store and online. Competitive rates, next-day settlement, and 24/7 support.",      ctaLabel: "Get Started",             ctaLink: "/en/business/merchant-services" },
@@ -82,9 +54,7 @@ const PAGE_CONTENT: Record<string, { heading: string; subheading: string; ctaLab
   press:               { heading: "Press & Media",             subheading: "Latest news, press releases, and media resources from Mosey Bank.",                                         ctaLabel: "View Press Releases",     ctaLink: "/en/about/press" },
 };
 
-// ---------------------------------------------------------------------------
 // Nav tree definition
-// ---------------------------------------------------------------------------
 
 interface NavDef {
   key: string;            // CMS key for the NavigationItem (no-hyphens UUID, pre-assigned)
@@ -186,9 +156,7 @@ const NAV_TREE: NavDef[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
 // Graph query: build url → CMS key map for all pages/experiences
-// ---------------------------------------------------------------------------
 
 async function buildPageKeyMap(): Promise<Map<string, string>> {
   const query = `
@@ -231,9 +199,7 @@ async function buildPageKeyMap(): Promise<Map<string, string>> {
   return map;
 }
 
-// ---------------------------------------------------------------------------
 // Management API helpers
-// ---------------------------------------------------------------------------
 
 async function apiFetch(path: string, options: RequestInit = {}): Promise<{ ok: boolean; status: number; body: unknown }> {
   const token = await getManagementToken();
@@ -252,9 +218,7 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<{ ok: 
   return { ok: res.ok, status: res.status, body };
 }
 
-// ---------------------------------------------------------------------------
 // Cleanup: delete existing NavigationItem / Navigation / stub page items
-// ---------------------------------------------------------------------------
 
 async function cleanupNavItems(): Promise<void> {
   console.log("--- Cleaning up existing Navigation / NavigationItem items ---");
@@ -271,9 +235,7 @@ async function cleanupNavItems(): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Create a LandingPage — returns its CMS key
-// ---------------------------------------------------------------------------
 
 async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>, parentKey = CONTAINER): Promise<string | undefined> {
   // Page already in Graph → reuse its key
@@ -335,9 +297,7 @@ async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>, pare
   return key;
 }
 
-// ---------------------------------------------------------------------------
 // Walk tree: resolve page keys for all nodes
-// ---------------------------------------------------------------------------
 
 async function resolvePageKeys(nodes: NavDef[], pageKeyMap: Map<string, string>, parentKey = CONTAINER): Promise<void> {
   for (const node of nodes) {
@@ -363,9 +323,7 @@ async function resolvePageKeys(nodes: NavDef[], pageKeyMap: Map<string, string>,
   }
 }
 
-// ---------------------------------------------------------------------------
 // Create NavigationItem (leaf-first)
-// ---------------------------------------------------------------------------
 
 async function createNavItem(node: NavDef): Promise<void> {
   const childRefs = node.children.map((c) => ({ reference: `cms://content/${c.key}` }));
@@ -423,9 +381,7 @@ async function createNavTree(nodes: NavDef[]): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Create Navigation block
-// ---------------------------------------------------------------------------
 
 async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
   const navItemRefs = topLevelNodes.map((n) => ({ reference: `cms://content/${n.key}` }));
@@ -493,10 +449,6 @@ async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
 
   console.log(`  [nav-block] Created "${NAV_BLOCK_NAME}" (key ${targetKey}) with ${topLevelNodes.length} top-level items`);
 }
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
 
 async function main() {
   console.log("=== Nav Seeding Script ===\n");

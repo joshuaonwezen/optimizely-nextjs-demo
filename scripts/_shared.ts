@@ -1,9 +1,6 @@
 /**
  * Shared utilities for Optimizely CMS Management API seed scripts.
- *
- * New seed scripts should import constants, types, and helpers from here.
- * Existing seed scripts (seed-content, seed-nav, seed-faqs) inline their own
- * copies of these helpers — kept untouched to avoid behavioral regressions.
+ * All seed scripts import constants, types, and helpers from here.
  */
 
 import { randomUUID } from "crypto";
@@ -16,10 +13,6 @@ loadEnv({ path: ".env.local" });
 
 export { getManagementToken };
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 export const API_BASE = "https://api.cms.optimizely.com";
 export const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 export const GRAPH_ENDPOINT =
@@ -30,9 +23,7 @@ export const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 // scripts call discoverRootContainer() to look it up via GET /v1/applications.
 export const CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 
-// ---------------------------------------------------------------------------
 // ID helpers
-// ---------------------------------------------------------------------------
 
 /** UUID with hyphens — the composition API expects this format for node IDs. */
 export function uid(): string {
@@ -61,9 +52,7 @@ export function wrapProps(
   return out;
 }
 
-// ---------------------------------------------------------------------------
 // Composition node builders
-// ---------------------------------------------------------------------------
 
 export interface CompNode {
   id: string;
@@ -137,9 +126,7 @@ export function rootComponent(
   };
 }
 
-// ---------------------------------------------------------------------------
 // Root container auto-discovery
-// ---------------------------------------------------------------------------
 
 /**
  * Returns the root container key for the current CMS instance.
@@ -212,9 +199,7 @@ export async function discoverGlobalRoot(): Promise<string> {
   return globalRoot;
 }
 
-// ---------------------------------------------------------------------------
 // Generic Management API helpers
-// ---------------------------------------------------------------------------
 
 /**
  * POST a new content item using the v1 API.

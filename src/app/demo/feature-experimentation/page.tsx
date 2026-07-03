@@ -773,7 +773,6 @@ export default async function FeatureFlagsDemoPage() {
             <strong>version</strong> - you can discover the version number via{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">GET /content/{"{key}"}/versions</code>{" "}
             and PATCH it with the correct composition + <code className="bg-surface-low px-1 rounded font-mono text-xs">status: &quot;published&quot;</code>.
-            See <code className="bg-surface-low px-1 rounded font-mono text-xs">scripts/update-homepage-variations.ts</code>.
           </Callout>
 
           {/* Current session's variation keys → Graph */}
@@ -823,15 +822,15 @@ export default async function FeatureFlagsDemoPage() {
               <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_persona</code> cookie by the Audience Switcher.
             </Step>
 
-            <Step number={2} title="Create variations in Visual Builder, then update via script">
+            <Step number={2} title="Create variations in Visual Builder, then set their compositions">
               Open the homepage in the CMS Visual Builder. In the right-hand panel, click{" "}
               <strong>Add variation</strong>. Create two variations named exactly{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code> and{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code>{" "}
-              (case-sensitive - must match the FX variation keys exactly). Each becomes a new draft version in the CMS. Then run{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">npx tsx scripts/update-homepage-variations.ts</code>{" "}
-              to PATCH those versions with the correct compositions and publish them - no manual composition
-              editing in the UI needed.
+              (case-sensitive - must match the FX variation keys exactly). Each becomes a new draft version in the CMS.
+              Edit each variation&apos;s composition in Visual Builder and publish it - or discover the version numbers via{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">GET /content/{"{key}"}/versions</code>{" "}
+              and PATCH them programmatically as described above.
             </Step>
 
             <Step number={3} title="Validate with the Audience Switcher">

@@ -1,8 +1,6 @@
 import { graphqlFetch } from "@/lib/optimizely/client";
 
-// ---------------------------------------------------------------------------
 // Public tree type — used by NestedNavMenu and the demo page
-// ---------------------------------------------------------------------------
 
 export interface NavNode {
   key: string;
@@ -13,9 +11,7 @@ export interface NavNode {
   children: NavNode[];
 }
 
-// ---------------------------------------------------------------------------
 // Raw GraphQL response types
-// ---------------------------------------------------------------------------
 
 export interface RawNavItem {
   __typename?: string;
@@ -38,13 +34,11 @@ interface GetNavigationResult {
   } | null;
 }
 
-// ---------------------------------------------------------------------------
 // Query
 //
 // A named fragment captures the repeated scalar fields so the nesting levels
 // stay readable. GraphQL does not allow recursive fragments, so each level is
 // written out explicitly — this makes the depth limit clear and intentional.
-// ---------------------------------------------------------------------------
 
 /**
  * The @recursive directive tells Optimizely Graph to apply this fragment to
@@ -113,9 +107,7 @@ const GET_NAVIGATION_BY_KEY_QUERY = /* GraphQL */ `
   }
 `;
 
-// ---------------------------------------------------------------------------
 // Response mapper
-// ---------------------------------------------------------------------------
 
 export function toNavNode(raw: RawNavItem): NavNode {
   return {
@@ -130,9 +122,7 @@ export function toNavNode(raw: RawNavItem): NavNode {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Fetch helper
-// ---------------------------------------------------------------------------
 
 /**
  * Fetch the Navigation shared block and map its navItems into a typed NavNode
@@ -179,10 +169,8 @@ export async function getNavigation(options: {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Static fallback nav — mirrors the CMS nav seeded by seed-nav.ts.
 // Hrefs match the nested page URLs created by seed-content.ts.
-// ---------------------------------------------------------------------------
 
 export const DEMO_NAV_DATA: NavNode[] = [
   {

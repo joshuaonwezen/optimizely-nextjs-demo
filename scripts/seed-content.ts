@@ -16,19 +16,25 @@
  */
 
 import { config } from "dotenv";
-import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
-import { createContent, discoverGlobalRoot, discoverRootContainer, wrapProps } from "./_shared";
+import {
+  CONTENT_ENDPOINT,
+  createContent,
+  discoverGlobalRoot,
+  discoverRootContainer,
+  wrapProps,
+  uid,
+  noHyphens,
+  sectionComponent,
+  gridSection,
+  elementComponent,
+  rootComponent,
+  type CompNode,
+} from "./_shared";
 import { FAQ_ITEMS } from "./faq-data";
 
 config({ path: ".env.local" });
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
-const API_BASE = "https://api.cms.optimizely.com";
-const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 // Global content root — where standalone/shared blocks live so they appear in
 // the CMS "Shared Blocks → For All Applications" picker. Set in main().
@@ -53,10 +59,6 @@ async function fetchRetry(url: string, init: RequestInit = {}): Promise<Response
     await new Promise((r) => setTimeout(r, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2000 * (attempt + 1)));
   }
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 /**
  * Ensure the latest version of a content item is published. createContent
@@ -90,91 +92,10 @@ async function ensurePublished(key: string): Promise<void> {
   console.warn(`  [warn] Could not publish ${key} after retries — homepage FAQ reference may not resolve.`);
 }
 
-function uid(): string {
-  return randomUUID(); // keep hyphens — the composition API expects them
-}
+// Composition node builders (uid, noHyphens, sectionComponent, gridSection,
+// elementComponent, rootComponent, CompNode) come from ./_shared.
 
-function noHyphens(): string {
-  return randomUUID().replace(/-/g, "");
-}
-
-// Composition node builders
-
-interface CompNode {
-  id: string;
-  displayName: string;
-  nodeType: string;
-  component?: { contentType: string; properties: Record<string, unknown> };
-  nodes?: CompNode[];
-  layoutType?: string;
-}
-
-/** A single-column section wrapping a full-width component */
-function sectionComponent(
-  contentType: string,
-  displayName: string,
-  properties: Record<string, unknown>
-): CompNode {
-  return gridSection(displayName, [
-    elementComponent(contentType, displayName, properties),
-  ]);
-}
-
-/** A section containing a row of element components in a grid layout */
-function gridSection(displayName: string, items: CompNode[]): CompNode {
-  return {
-    id: uid(),
-    displayName,
-    nodeType: "section",
-    layoutType: "grid",
-    component: { contentType: "BlankSection", properties: {} },
-    nodes: [
-      {
-        id: uid(),
-        displayName: "Row",
-        nodeType: "row",
-        nodes: items.map((item) => ({
-          id: uid(),
-          displayName: "Column",
-          nodeType: "column",
-          nodes: [item],
-        })),
-      },
-    ],
-  };
-}
-
-/** An element component node (goes inside a section, needs elementEnabled) */
-function elementComponent(
-  contentType: string,
-  displayName: string,
-  properties: Record<string, unknown>
-): CompNode {
-  return {
-    id: uid(),
-    displayName,
-    nodeType: "component",
-    component: { contentType, properties: wrapProps(properties) },
-  };
-}
-
-/** A root-level component node for sectionEnabled-only blocks (no elementEnabled) */
-function rootComponent(
-  contentType: string,
-  displayName: string,
-  properties: Record<string, unknown>
-): CompNode {
-  return {
-    id: uid(),
-    displayName,
-    nodeType: "component",
-    component: { contentType, properties: wrapProps(properties) },
-  };
-}
-
-// ---------------------------------------------------------------------------
 // Page compositions
-// ---------------------------------------------------------------------------
 
 /** Minimal composition for a category landing page (personal, business, etc.) */
 function buildCategoryPage(heading: string, subheading: string): CompNode[] {
@@ -328,9 +249,7 @@ function buildProductPage(
   ];
 }
 
-// ---------------------------------------------------------------------------
 // All pages
-// ---------------------------------------------------------------------------
 
 interface PageDef {
   key: string;
@@ -802,10 +721,6 @@ const pages: PageDef[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// API
-// ---------------------------------------------------------------------------
-
 /** Keys of items that could not be deleted (e.g. homepage / start page). */
 const undeletableKeys = new Map<string, string>(); // displayName → existing CMS key
 
@@ -1024,10 +939,6 @@ async function cleanSharedBlocks(globalRoot: string): Promise<void> {
     await permanentDelete(item.key);
   }
 }
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
 
 /** Find the CMS key of the savings page already in Graph. */
 async function findSavingsKey(): Promise<string | null> {

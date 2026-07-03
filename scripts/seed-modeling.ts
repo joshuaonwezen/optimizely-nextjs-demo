@@ -37,9 +37,7 @@ let BLOCKS_CONTAINER = "";
 
 config({ path: ".env.local" });
 
-// ---------------------------------------------------------------------------
 // Pre-allocated keys
-// ---------------------------------------------------------------------------
 
 export const AUTHOR_KEYS = {
   evieMarsh:  noHyphens(),
@@ -107,9 +105,7 @@ const PHASE_D_PAGE_KEYS = {
   compareAccounts:noHyphens(),
 };
 
-// ---------------------------------------------------------------------------
 // Idempotent cleanup
-// ---------------------------------------------------------------------------
 //
 // All items seeded by this script use display names beginning with one of the
 // sentinel prefixes below, so the cleanup pass can find and delete them
@@ -155,9 +151,7 @@ async function cleanupPreviousModelingContent(): Promise<void> {
   if (matches.length === 0) console.log("  (root-container content already clean)");
 }
 
-// ---------------------------------------------------------------------------
 // Phase B: Authors
-// ---------------------------------------------------------------------------
 
 interface AuthorDef {
   key: string;
@@ -220,9 +214,7 @@ async function seedAuthors(): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Phase C — Part 1: Outcome stats (reference targets for case studies)
-// ---------------------------------------------------------------------------
 
 interface OutcomeDef {
   key: string;
@@ -260,9 +252,7 @@ async function seedOutcomes(): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Phase C — Part 2: Testimonials (one per case study)
-// ---------------------------------------------------------------------------
 
 interface TestimonialDef {
   key: string;
@@ -312,9 +302,7 @@ async function seedTestimonials(): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Phase C — Part 3: Hub pages (provide URL hierarchy)
-// ---------------------------------------------------------------------------
 //
 // The /en/insights/ DynamicExperience is created here as a minimal placeholder
 // so its child URLs resolve. Phase E will REPLACE its composition with the
@@ -523,9 +511,7 @@ async function seedHubPages(): Promise<void> {
   console.log("  [created] Insights Hub: Case Studies → /en/insights/case-studies/");
 }
 
-// ---------------------------------------------------------------------------
 // Phase C — Part 4: Articles (TraditionalPage subtype)
-// ---------------------------------------------------------------------------
 
 interface ArticleDef {
   key: string;
@@ -654,9 +640,7 @@ async function seedArticles(): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Phase C — Part 5: Case Studies
-// ---------------------------------------------------------------------------
 
 interface CaseStudyDef {
   key: string;
@@ -761,9 +745,7 @@ async function seedCaseStudies(): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Phase D — Part 1: Timeline Milestones (reference targets for TimelineBlock)
-// ---------------------------------------------------------------------------
 
 interface MilestoneDef {
   key: string;
@@ -801,9 +783,7 @@ async function seedMilestones(): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Phase D — Part 2: Team Members
-// ---------------------------------------------------------------------------
 
 interface TeamMemberDef {
   key: string;
@@ -845,9 +825,7 @@ async function seedTeamMembers(): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Phase D — Part 3: Modeling-demo pages (Our Story, Team, Pricing, Compare)
-// ---------------------------------------------------------------------------
 //
 // These pages live under existing seed-content.ts containers — about, business,
 // personal. We look up the parent page keys in Graph at seed time.
@@ -1161,10 +1139,6 @@ async function seedCompareAccountsPage(parentKey: string): Promise<void> {
   );
   console.log("  [created] /en/personal/compare-accounts/");
 }
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
   console.log("=== Content Modeling Demo Seeding ===\n");

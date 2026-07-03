@@ -1,3 +1,4 @@
+// Demo reference implementation for /demo/navigation - production nav uses GetNavigation.ts
 import { graphqlFetch } from "@/lib/optimizely/client";
 import type { NavNode } from "./GetNavigation";
 

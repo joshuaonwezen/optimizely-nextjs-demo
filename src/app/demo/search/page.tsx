@@ -295,7 +295,7 @@ const results = await graphqlFetch(SEARCH_QUERY, { query: q });
 // it's always the same query with no user-provided variables:
 graphqlFetch(GET_NAV_QUERY, {}, { next: { revalidate: 300, tags: ["navigation"] } });`;
 
-const GEO_SCHEMA_SNIPPET = `# Content Source schema — a single GeoPoint field, NOT two floats.
+const GEO_SCHEMA_SNIPPET = `# Content Source schema - a single GeoPoint field, NOT two floats.
 # Geo operators only attach to a field of type "GeoPoint".
 
 PUT https://cg.optimizely.com/api/content/v3/types?id=locs
@@ -312,11 +312,11 @@ PUT https://cg.optimizely.com/api/content/v3/types?id=locs
   "useTypedFieldNames": true
 }
 
-# Data payload (NdJSON) — GeoPoint is a nested { lat, lon } object:
+# Data payload (NdJSON) - GeoPoint is a nested { lat, lon } object:
 "location$$GeoPoint": { "lat": 52.3676, "lon": 4.9041 }`;
 
 const GEO_QUERY_SNIPPET = `# distance filters by radius from an origin; orderBy sorts nearest-first.
-# NOTE: the radius argument is typed Int, not Float — a $radius: Float
+# NOTE: the radius argument is typed Int, not Float - a $radius: Float
 # variable is rejected with "used in position expecting type Int".
 
 query GetNearbyBankLocations($lat: Float!, $lon: Float!, $radius: Int) {
@@ -331,7 +331,7 @@ query GetNearbyBankLocations($lat: Float!, $lon: Float!, $radius: Int) {
     items {
       branchName
       city
-      location { lat lon }   # Graph returns coords only — no computed distance
+      location { lat lon }   # Graph returns coords only - no computed distance
     }
   }
 }`;

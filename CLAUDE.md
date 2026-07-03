@@ -102,10 +102,21 @@ These are normal — they are not failures:
 
 ### Scripts excluded from the runner
 
-- `seed-business-banking-app-variation.ts` — hardcoded version key for personal instance only
 - `register-webhook.mjs` — interactive prompt for public URL; run manually when needed
 
 FX flags and experiments are managed through the Optimizely Experimentation MCP server (`mcp__exp__*` tools), not via a local seed script.
+
+### Contact form seed scripts — which one to use
+
+Three scripts cover the contact-form demos; they are complementary, not alternatives:
+
+| Script | What it does | Prerequisite |
+|---|---|---|
+| `seed-contact-pages.ts` | Creates the "Contact (Classic)" TraditionalPage with a custom `ContactFormBlock` | None |
+| `seed-form-block.ts` | Populates a native OptiForms container with form elements (text, email, select, textarea, submit) | A published "Form Container" shared block created manually in the CMS UI (native forms cannot be created via the API) |
+| `seed-contact-form.ts` | Wires that OptiForms container into the `/en/help/contact` DynamicExperience composition | `seed-form-block.ts` |
+
+All three run in the runner's optional phase in this order. If no Form Container block exists in the CMS, `seed-form-block.ts` and `seed-contact-form.ts` warn and skip.
 
 ### Two instances
 
@@ -259,6 +270,12 @@ The SDK exposes `getClient().request(query, variables, previewToken?, cache?)` f
 ### Content area arrays ARE inline-expanded
 `type: "array"` content areas (e.g., `faqItems`, `navItems`) return full typed fields from Graph. Use arrays when you need Graph to resolve referenced content.
 
+### Navigation query strategies — one production, three demo-only
+`src/lib/graphql/queries/` contains four navigation queries. Only one is used by the site chrome:
+
+- `GetNavigation.ts` — **production**. Fetches the shared `Navigation` block by display name `"Seeded Navigation"`; used by `NavigationHeader`. Use this pattern for new work.
+- `GetNavigationFromHierarchy.ts`, `GetNavigationFromContentType.ts`, `GetNavigationFromFlags.ts` — reference implementations consumed only by the `/demo/navigation` comparison page. Do not wire these into site chrome.
+
 ### Variation filter always needs `includeOriginal: true`
 Without it, visitors who don't match any variation key get no content at all. Always set:
 ```ts
@@ -287,8 +304,6 @@ Workflow:
 1. Create each variation in Visual Builder (each becomes a new draft version)
 2. Find version numbers: `GET ${CONTENT_ENDPOINT}/${key}/versions`
 3. PATCH the version with the correct composition + `status: "published"` to set the content and publish
-
-See `scripts/update-homepage-variations.ts` for a full working example.
 
 The `demo_persona` cookie bypass (injecting the variation key directly into Graph's filter) works today even without CMS variations — Graph returns the original page via `includeOriginal: true` as the fallback until real variations exist in the CMS.
 
@@ -320,9 +335,14 @@ faqItems: [{ key: "abc123" }]
 
 Error for wrong format: `"A content component must have either 'reference' or 'contentType' and 'properties' set"`
 
-### Single content reference properties
+### Single content reference properties — format depends on the property type
 ```ts
+// type: "content" (Content component) — MUST be a reference object.
+// A plain string fails: 400 "Could not read value as Content component. Expected object."
 featuredBlock: { reference: "cms://content/abc123" }
+
+// type: "contentReference" — a plain string works.
+author: "cms://content/abc123"
 ```
 
 ### Management API base URL
@@ -350,32 +370,27 @@ TypeScript will surface this as: `Type '"FaqItemBlock"' is not assignable to typ
 
 Adding a content area to an `elementEnabled` block will be silently ignored or rejected by the CMS.
 
-### `contract()` — reusable property sets (SDK 2.0.0)
-Use `contract()` to define shared property groups (SEO fields, authoring metadata, etc.) that multiple content types can extend:
+### Contracts (shared property sets) — `contract()` is NOT exported by the SDK
+The SDK documentation describes a `contract()` helper for reusable property groups, but `@optimizely/cms-sdk` 2.0.0 does not export it — `import { contract }` fails at runtime. Use the property-spread pattern instead: define the shared properties as a plain object and spread it into each content type.
 
 ```ts
-import { contract } from "@optimizely/cms-sdk";
+// Shared property group, defined once
+const EDITORIAL_CONTENT_PROPERTIES = {
+  title:   { type: "string", displayName: "Title",   indexingType: "searchable", isLocalized: true },
+  summary: { type: "string", displayName: "Summary", indexingType: "searchable", isLocalized: true },
+};
 
-export const SEOContract = contract({
-  key: "seo",
-  displayName: "SEO Properties",
-  properties: {
-    metaTitle:       { type: "string", displayName: "Meta Title", maxLength: 60 },
-    metaDescription: { type: "string", displayName: "Meta Description", maxLength: 160 },
-    ogImage:         { type: "contentReference", allowedTypes: ["_image"] },
-  },
-});
-
-// Extend in a content type:
 export const ArticlePageType = contentType({
   key: "ArticlePage",
   baseType: "_page",
-  extends: SEOContract,  // single or array: extends: [SEOContract, AuthorContract]
-  properties: { heading: { type: "string" } },
+  properties: {
+    ...EDITORIAL_CONTENT_PROPERTIES,   // contract fields
+    body: { type: "richText", displayName: "Body", indexingType: "searchable", isLocalized: true },
+  },
 });
 ```
 
-Register contracts in `initContentTypeRegistry` before the types that extend them.
+See `src/app/demo/contracts/page.tsx` for the full working pattern and the `contract()` syntax to switch to once the SDK exports it.
 
 ### `component` property type — inline embedded component
 ```ts
@@ -639,6 +654,8 @@ Do not introduce these patterns — they were cleaned up in a codebase pass and 
 ```
 This is an AI code-generation artifact. File structure (constants → helpers → page export) is self-evident. Never use horizontal rule comments as section dividers.
 
+The ban is on the horizontal-rule *decoration*, not on section comments themselves. A plain single-line comment (e.g. `// Part 2 — Create FaqContainerBlock referencing all FAQ items`) is fine — keep or add one wherever it genuinely helps a reader (human or Claude) understand what a section does; drop labels that restate the obvious (`// Main` above `main()`).
+
 ### Multi-line JSDoc file headers on utility modules
 ```ts
 /**
@@ -806,7 +823,8 @@ await createContent({
 - For inline composition nodes, call `wrapProps({...})` yourself on `component.properties`
 - `richText` typed properties must be `{ html: "<p>...</p>" }` objects, not plain strings
 - Content area arrays: `[{ reference: "cms://content/{key}" }]`
-- Single content references: `"cms://content/{key}"` string directly
+- Single references, `type: "contentReference"`: `"cms://content/{key}"` string directly
+- Single references, `type: "content"`: `{ reference: "cms://content/{key}" }` object — a plain string 400s with "Expected object"
 
 ### 3. Creating a DynamicExperience page with a composition
 
