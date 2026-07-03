@@ -109,7 +109,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
 
           {/* Drawer header */}
           <div className="flex items-center justify-between px-5 h-16 border-b border-ghost-border flex-shrink-0">
-            <Link href={buildLocaleUrl(pathname, currentLocale)} aria-label="Mosey Bank home" onClick={() => setMobileOpen(false)}>
+            <Link href={buildLocaleUrl("/", currentLocale)} aria-label="Mosey Bank home" onClick={() => setMobileOpen(false)}>
               <MoseyBankLogo />
             </Link>
             <button
