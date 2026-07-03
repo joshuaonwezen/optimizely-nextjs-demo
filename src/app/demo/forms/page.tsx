@@ -5,6 +5,7 @@ import OptiFormsTextbox from "@/components/blocks/OptiFormsTextbox";
 import OptiFormsTextarea from "@/components/blocks/OptiFormsTextarea";
 import OptiFormsSelection from "@/components/blocks/OptiFormsSelection";
 import OptiFormsSubmit from "@/components/blocks/OptiFormsSubmit";
+import CodeBlock from "@/components/demo/CodeBlock";
 
 export const metadata: Metadata = {
   title: "Forms Demo",
@@ -327,9 +328,7 @@ export default function FormsPage() {
 
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Submit element - DOM-scoped collection</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed h-full">
-                <code>{SUBMIT_SNIPPET}</code>
-              </pre>
+              <CodeBlock code={SUBMIT_SNIPPET} className="h-full" />
             </div>
           </div>
         </section>
@@ -348,9 +347,7 @@ export default function FormsPage() {
             the React rendering components under each native type key.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
-          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{REGISTRY_SNIPPET}</code>
-          </pre>
+          <CodeBlock code={REGISTRY_SNIPPET} />
         </section>
 
         {/* Component implementations */}
@@ -368,9 +365,7 @@ export default function FormsPage() {
             <code className="bg-surface-low px-1 rounded text-xs font-mono">Placeholder</code>,{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">SubmitUrl</code>, etc.).
           </p>
-          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{FRAGMENT_SNIPPET}</code>
-          </pre>
+          <CodeBlock code={FRAGMENT_SNIPPET} />
         </section>
 
         {/* API route */}
@@ -386,9 +381,7 @@ export default function FormsPage() {
             CMS form builder. Swap the console log for any integration - CRM, email service, or
             Optimizely Data Platform.
           </p>
-          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{API_ROUTE_SNIPPET}</code>
-          </pre>
+          <CodeBlock code={API_ROUTE_SNIPPET} />
         </section>
 
         {/* Personalization loop */}
@@ -417,9 +410,7 @@ Next page request (same user, identified by cookie)
                         +-> OptimizelyComponent renders it - zero extra code`}</pre>
           </div>
 
-          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{PERSONALIZATION_SNIPPET}</code>
-          </pre>
+          <CodeBlock code={PERSONALIZATION_SNIPPET} />
         </section>
 
       </div>

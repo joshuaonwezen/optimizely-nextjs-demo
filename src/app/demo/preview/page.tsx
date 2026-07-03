@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
 
 export const metadata: Metadata = { title: "Draft Mode & Preview Demo" };
 
@@ -224,15 +225,11 @@ export default function PreviewDemoPage() {
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">/preview query params</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed h-full">
-                <code>{PREVIEW_PARAMS_SNIPPET}</code>
-              </pre>
+              <CodeBlock code={PREVIEW_PARAMS_SNIPPET} className="h-full" />
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">graphqlFetch - cache bypass with previewToken</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed h-full">
-                <code>{GRAPHQL_PREVIEW_SNIPPET}</code>
-              </pre>
+              <CodeBlock code={GRAPHQL_PREVIEW_SNIPPET} className="h-full" />
             </div>
           </div>
         </section>
@@ -250,9 +247,7 @@ export default function PreviewDemoPage() {
             exactly as the published page does. No separate preview renderer needed.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/7-live-preview.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
-          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{PREVIEW_PAGE_SNIPPET}</code>
-          </pre>
+          <CodeBlock code={PREVIEW_PAGE_SNIPPET} />
         </section>
 
         {/* communicationinjector + data-epi-block-id */}
@@ -265,9 +260,7 @@ export default function PreviewDemoPage() {
               Every preview render is wrapped in a &ldquo;shell&rdquo; that injects the two
               pieces the CMS needs to communicate with the page.
             </p>
-            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-              <code>{SHELL_SNIPPET}</code>
-            </pre>
+            <CodeBlock code={SHELL_SNIPPET} />
           </div>
           <div>
             <h2 className="font-display text-xl font-bold text-on-surface mb-2">
@@ -279,9 +272,7 @@ export default function PreviewDemoPage() {
               property panel to open when an editor clicks on the page.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/7-live-preview.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
             </p>
-            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-              <code>{EPI_BLOCK_SNIPPET}</code>
-            </pre>
+            <CodeBlock code={EPI_BLOCK_SNIPPET} />
           </div>
         </section>
 
@@ -296,9 +287,7 @@ export default function PreviewDemoPage() {
             CMS editor iframe, so keeping it scoped to <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code>{" "}
             avoids loading it on every visitor page.
           </p>
-          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{VB_LAYOUT_SNIPPET}</code>
-          </pre>
+          <CodeBlock code={VB_LAYOUT_SNIPPET} />
         </section>
 
         {/* Setup guide */}

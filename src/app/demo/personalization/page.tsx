@@ -7,6 +7,7 @@ import { queryOdpSegments, resolveVariationKey, ODP_SEGMENT_TO_VARIATION } from 
 import SourcePanel from "@/components/demo/SourcePanel";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
 
 export const dynamic = "force-dynamic";
 
@@ -220,8 +221,7 @@ export default async function PersonalizationDemoPage() {
               <div className="px-4 py-3 border-b border-ghost-border bg-surface-low">
                 <span className="text-xs font-mono text-on-surface-variant">src/lib/optimizely/visitor.ts</span>
               </div>
-              <pre className="p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                <code>{`// Audience Switcher → POST /api/demo/set-persona
+              <CodeBlock code={`// Audience Switcher → POST /api/demo/set-persona
 // Sets demo_persona cookie (1-day maxAge)
 
 // visitor.ts reads it on every server request:
@@ -235,8 +235,7 @@ const loggedIn =
 // FX evaluates these against audience conditions:
 //   persona == "personal"  → variation key: "personal"
 //   persona == "business"  → variation key: "business"
-//   logged_in == true      → your custom audience`}</code>
-              </pre>
+//   logged_in == true      → your custom audience`} />
             </div>
           </div>
 
@@ -399,8 +398,7 @@ const loggedIn =
                     <strong className="text-on-surface font-mono">{device}</strong>
                   </p>
                 </div>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                  <code>{`// src/lib/optimizely/visitor.ts
+                <CodeBlock code={`// src/lib/optimizely/visitor.ts
 // No cookie - derived from headers() on every request
 const ua = headerStore.get("user-agent") ?? "";
 const device = /mobile|android|iphone|ipad/i.test(ua)
@@ -408,8 +406,7 @@ const device = /mobile|android|iphone|ipad/i.test(ua)
   : "desktop";
 
 // Included automatically in getOptimizelyUser() attributes
-// FX audience condition: device = "mobile"`}</code>
-                </pre>
+// FX audience condition: device = "mobile"`} />
               </div>
             </div>
 
@@ -437,8 +434,7 @@ const device = /mobile|android|iphone|ipad/i.test(ua)
                     </strong>
                   </p>
                 </div>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                  <code>{`// src/lib/optimizely/visitor.ts
+                <CodeBlock code={`// src/lib/optimizely/visitor.ts
 const persona = cookieStore.get("demo_persona")?.value;
 
 // In production: replace cookie with real enrichment
@@ -447,8 +443,7 @@ const persona = cookieStore.get("demo_persona")?.value;
 
 // FX audience conditions:
 //   persona = "personal"
-//   persona = "business"`}</code>
-                </pre>
+//   persona = "business"`} />
               </div>
             </div>
 
@@ -473,8 +468,7 @@ const persona = cookieStore.get("demo_persona")?.value;
                     </strong>
                   </p>
                 </div>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                  <code>{`import { getServerSession } from "next-auth";
+                <CodeBlock code={`import { getServerSession } from "next-auth";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
 import { getDecision } from "@/lib/optimizely/experimentation";
 
@@ -493,8 +487,7 @@ const decision = await getDecision("premium_feature", userId, {
 // FX audiences:
 //   logged_in = true
 //   plan = "premium"
-//   role = "admin"`}</code>
-                </pre>
+//   role = "admin"`} />
               </div>
             </div>
 
@@ -516,8 +509,7 @@ const decision = await getDecision("premium_feature", userId, {
                     Common use cases: region-specific promotions, GDPR consent audiences, local pricing.
                   </p>
                 </div>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                  <code>{`// src/lib/optimizely/visitor.ts - extend with geo
+                <CodeBlock code={`// src/lib/optimizely/visitor.ts - extend with geo
 import { headers } from "next/headers";
 
 const hdrs = await headers();
@@ -531,8 +523,7 @@ return {
   userId,
   attributes: { device, persona, logged_in, country },
 };
-// FX audience: country = "GB"`}</code>
-                </pre>
+// FX audience: country = "GB"`} />
               </div>
             </div>
 
@@ -555,8 +546,7 @@ return {
                     arriving from a Google Ads campaign.
                   </p>
                 </div>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                  <code>{`// src/app/[[...slug]]/page.tsx
+                <CodeBlock code={`// src/app/[[...slug]]/page.tsx
 export default async function CmsPage({
   params,
   searchParams,
@@ -571,8 +561,7 @@ export default async function CmsPage({
     utm_campaign: sp.utm_campaign ?? "none",
   });
   // FX audience: utm_source = "google"
-}`}</code>
-                </pre>
+}`} />
               </div>
             </div>
 
@@ -596,8 +585,7 @@ export default async function CmsPage({
                     <li>→ <strong className="text-on-surface">Numeric range:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">account_age_days &gt; 30</code></li>
                   </ul>
                 </div>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                  <code>{`// Pass everything you know about the user
+                <CodeBlock code={`// Pass everything you know about the user
 const { userId, attributes } = await getVisitorContext();
 const decision = await getDecision("homepage", userId, {
   // From getVisitorContext() (device, persona, logged_in)
@@ -615,8 +603,7 @@ const decision = await getDecision("homepage", userId, {
   utm_source: sp.utm_source ?? "direct",
 });
 // FX evaluates ALL of these server-side.
-// Zero client-side data exposure.`}</code>
-                </pre>
+// Zero client-side data exposure.`} />
               </div>
             </div>
 
@@ -931,8 +918,7 @@ const decision = await getDecision("homepage", userId, {
               <div className="px-4 py-3 border-b border-ghost-border bg-surface-low">
                 <span className="text-xs font-mono text-on-surface-variant">src/lib/optimizely/odp.ts</span>
               </div>
-              <pre className="p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                <code>{`// Decouples ODP segment names from CMS variation names.
+              <CodeBlock code={`// Decouples ODP segment names from CMS variation names.
 // Update this map when either side renames something -
 // no changes needed in FX dashboard or CMS UI.
 export const ODP_SEGMENT_TO_VARIATION = {
@@ -940,8 +926,7 @@ ${mappingEntries.length > 0
   ? mappingEntries.map(([seg, v]) => `  "${seg}": "${v}",`).join("\n")
   : `  // "high-value-customers": "business",
   // "retail-consumer":      "personal",`}
-};`}</code>
-              </pre>
+};`} />
             </div>
           </div>
 

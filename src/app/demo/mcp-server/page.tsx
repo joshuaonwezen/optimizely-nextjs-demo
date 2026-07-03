@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
 
 export const metadata: Metadata = {
   title: "CMS MCP Server",
@@ -127,16 +128,14 @@ export default function McpServerDemoPage() {
               <div className="px-4 py-2.5 border-b border-ghost-border bg-surface-low">
                 <span className="text-xs font-mono text-on-surface-variant">.mcp.json</span>
               </div>
-              <pre className="p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                <code>{`{
+              <CodeBlock language="json" code={`{
   "mcpServers": {
     "cms": {
       "type": "http",
       "url": "https://cms.mcp.opal.optimizely.com/mcp"
     }
   }
-}`}</code>
-              </pre>
+}`} />
             </div>
 
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">

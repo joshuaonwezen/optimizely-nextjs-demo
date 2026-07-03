@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getQuotes, GET_QUOTES_QUERY } from "@/lib/graphql/queries/GetQuotes";
 import { GET_LOCATIONS_QUERY } from "@/lib/graphql/queries/GetLocations";
 import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
 
 export const metadata: Metadata = {
   title: "External Content Sync Demo",
@@ -226,15 +227,11 @@ export default async function ExternalContentPage() {
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Quotes</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                <code>{GET_QUOTES_QUERY.trim()}</code>
-              </pre>
+              <CodeBlock code={GET_QUOTES_QUERY.trim()} />
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Bank Locations</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                <code>{GET_LOCATIONS_QUERY.trim()}</code>
-              </pre>
+              <CodeBlock code={GET_LOCATIONS_QUERY.trim()} />
             </div>
           </div>
         </section>
@@ -529,15 +526,11 @@ export default async function ExternalContentPage() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Type Registration</p>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{ITEM_TYPE_SNIPPET}</code>
-                </pre>
+                <CodeBlock code={ITEM_TYPE_SNIPPET} />
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Data Payload (NdJSON)</p>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{ITEM_DATA_SNIPPET}</code>
-                </pre>
+                <CodeBlock code={ITEM_DATA_SNIPPET} />
               </div>
             </div>
           </div>
@@ -559,15 +552,11 @@ export default async function ExternalContentPage() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Type Registration</p>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{ASSET_TYPE_SNIPPET}</code>
-                </pre>
+                <CodeBlock code={ASSET_TYPE_SNIPPET} />
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Data Payload (NdJSON)</p>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{ASSET_DATA_SNIPPET}</code>
-                </pre>
+                <CodeBlock code={ASSET_DATA_SNIPPET} />
               </div>
             </div>
           </div>
@@ -590,15 +579,11 @@ export default async function ExternalContentPage() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Type Registration</p>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{IMAGE_TYPE_SNIPPET}</code>
-                </pre>
+                <CodeBlock code={IMAGE_TYPE_SNIPPET} />
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Data Payload (NdJSON)</p>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{IMAGE_DATA_SNIPPET}</code>
-                </pre>
+                <CodeBlock code={IMAGE_DATA_SNIPPET} />
               </div>
             </div>
           </div>

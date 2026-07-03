@@ -3,6 +3,7 @@ import path from "path";
 import type { Metadata } from "next";
 import SourcePanel from "@/components/demo/SourcePanel";
 import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
 
 const heroBlockTs = fs.readFileSync(
   path.join(process.cwd(), "src/components/blocks/HeroBlock/index.tsx"),
@@ -308,9 +309,7 @@ export default function VisualBuilderPage() {
             initialises request-scoped context storage required for preview utilities.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
-          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{SDK_QUERY_SNIPPET}</code>
-          </pre>
+          <CodeBlock code={SDK_QUERY_SNIPPET} />
         </section>
 
         {/* Registry */}
@@ -327,9 +326,7 @@ export default function VisualBuilderPage() {
             automatically - no manual <code className="bg-surface-low px-1 rounded text-xs font-mono">if/switch</code> on the template key in components.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/6-rendering-react.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
-          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{REGISTRY_SNIPPET}</code>
-          </pre>
+          <CodeBlock code={REGISTRY_SNIPPET} />
         </section>
 
         {/* Experience and Section components */}
@@ -349,17 +346,13 @@ export default function VisualBuilderPage() {
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
                 DynamicExperience - top-level composition entry point
               </p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                <code>{EXPERIENCE_SNIPPET}</code>
-              </pre>
+              <CodeBlock code={EXPERIENCE_SNIPPET} />
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
                 BlankSection - row/column grid rendering
               </p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                <code>{SECTION_SNIPPET}</code>
-              </pre>
+              <CodeBlock code={SECTION_SNIPPET} />
             </div>
           </div>
         </section>
@@ -383,9 +376,7 @@ export default function VisualBuilderPage() {
             as the published page - no separate preview renderer.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/7-live-preview.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
-          <pre className="bg-surface-low rounded-2xl p-6 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-            <code>{PREVIEW_SNIPPET}</code>
-          </pre>
+          <CodeBlock code={PREVIEW_SNIPPET} />
         </section>
 
         {/* Building a block */}
@@ -406,15 +397,11 @@ export default function VisualBuilderPage() {
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Content type + display template</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                <code>{CONTENT_TYPE_SNIPPET}</code>
-              </pre>
+              <CodeBlock code={CONTENT_TYPE_SNIPPET} />
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">React component (typed props + display settings)</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                <code>{COMPONENT_SNIPPET}</code>
-              </pre>
+              <CodeBlock code={COMPONENT_SNIPPET} />
             </div>
           </div>
           <div className="mt-6 bg-surface-low border border-ghost-border rounded-2xl p-5 max-w-3xl">

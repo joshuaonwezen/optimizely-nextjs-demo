@@ -9,6 +9,7 @@ import { getNavigationFromHierarchy, GET_CHILDREN_BY_ANCESTOR_QUERY } from "@/li
 import { getNavigationFromContentType, GET_NAVIGATION_FROM_CONTENT_TYPE_QUERY } from "@/lib/graphql/queries/GetNavigationFromContentType";
 import SourcePanel from "@/components/demo/SourcePanel";
 import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
 
 function readSource(relPath: string): string {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
@@ -252,9 +253,7 @@ export default async function NavigationDemoPage() {
               <p className="text-sm text-on-surface-variant mb-3 max-w-xl">
                 One fragment applied at every nesting level up to the given depth. No repeated inline fragments.
               </p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed max-h-72">
-                <code>{GET_NAVIGATION_QUERY.trim()}</code>
-              </pre>
+              <CodeBlock code={GET_NAVIGATION_QUERY.trim()} maxHeight="max-h-72" />
             </div>
             <div>
               <h3 className="font-display text-lg font-bold text-on-surface mb-1">
@@ -266,9 +265,7 @@ export default async function NavigationDemoPage() {
                 only other NavigationItems can be nested inside it.{" "}
                 <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
               </p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed max-h-72">
-                <code>{S1_CONTENT_TYPE_SNIPPET}</code>
-              </pre>
+              <CodeBlock code={S1_CONTENT_TYPE_SNIPPET} maxHeight="max-h-72" />
             </div>
           </div>
 
@@ -323,21 +320,15 @@ export default async function NavigationDemoPage() {
             <div className="space-y-4">
               <div>
                 <h3 className="font-display text-base font-bold text-on-surface mb-2">Content type additions</h3>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{S2_CONTENT_TYPE_SNIPPET}</code>
-                </pre>
+                <CodeBlock code={S2_CONTENT_TYPE_SNIPPET} />
               </div>
               <div>
                 <h3 className="font-display text-base font-bold text-on-surface mb-2">Graph query</h3>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{GET_NAVIGATION_FROM_FLAGS_QUERY.trim()}</code>
-                </pre>
+                <CodeBlock code={GET_NAVIGATION_FROM_FLAGS_QUERY.trim()} />
               </div>
               <div>
                 <h3 className="font-display text-base font-bold text-on-surface mb-2">Server-side tree builder</h3>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed max-h-60">
-                  <code>{S2_TREE_BUILDER_SNIPPET}</code>
-                </pre>
+                <CodeBlock code={S2_TREE_BUILDER_SNIPPET} maxHeight="max-h-60" />
               </div>
             </div>
 
@@ -400,15 +391,11 @@ export default async function NavigationDemoPage() {
             <div className="space-y-4">
               <div>
                 <h3 className="font-display text-base font-bold text-on-surface mb-2">How it works</h3>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{S3_HOW_IT_WORKS}</code>
-                </pre>
+                <CodeBlock code={S3_HOW_IT_WORKS} />
               </div>
               <div>
                 <h3 className="font-display text-base font-bold text-on-surface mb-2">Children query</h3>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{GET_CHILDREN_BY_ANCESTOR_QUERY.trim()}</code>
-                </pre>
+                <CodeBlock code={GET_CHILDREN_BY_ANCESTOR_QUERY.trim()} />
               </div>
             </div>
 
@@ -473,15 +460,11 @@ export default async function NavigationDemoPage() {
             <div className="space-y-4">
               <div>
                 <h3 className="font-display text-base font-bold text-on-surface mb-2">How it works</h3>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{S4_HOW_IT_WORKS}</code>
-                </pre>
+                <CodeBlock code={S4_HOW_IT_WORKS} />
               </div>
               <div>
                 <h3 className="font-display text-base font-bold text-on-surface mb-2">Graph query</h3>
-                <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-                  <code>{GET_NAVIGATION_FROM_CONTENT_TYPE_QUERY.trim()}</code>
-                </pre>
+                <CodeBlock code={GET_NAVIGATION_FROM_CONTENT_TYPE_QUERY.trim()} />
               </div>
             </div>
 

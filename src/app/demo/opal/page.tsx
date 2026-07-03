@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
 
 export const metadata: Metadata = {
   title: "Opal AI Agents",
@@ -452,8 +453,7 @@ export default function OpalDemoPage() {
                   <div className="px-4 py-2.5 border-b border-ghost-border bg-surface-low">
                     <span className="text-xs font-mono text-on-surface-variant">tools/productData.ts</span>
                   </div>
-                  <pre className="p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                    <code>{`import { OpalTool, param } from "optimizely-opal/sdk";
+                  <CodeBlock code={`import { OpalTool, param } from "optimizely-opal/sdk";
 
 export const productDataTool = new OpalTool({
   name: "fetch_product_data",
@@ -467,8 +467,7 @@ export const productDataTool = new OpalTool({
     const res = await fetch(\`/api/products/\${productId}\`);
     return res.json();
   },
-});`}</code>
-                  </pre>
+});`} />
                 </div>
               </div>
             </div>
@@ -499,8 +498,7 @@ export const productDataTool = new OpalTool({
                   <div className="px-4 py-2.5 border-b border-ghost-border bg-surface-low">
                     <span className="text-xs font-mono text-on-surface-variant">server.ts</span>
                   </div>
-                  <pre className="p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-                    <code>{`import express from "express";
+                  <CodeBlock code={`import express from "express";
 import { opalToolsMiddleware } from "optimizely-opal/sdk";
 import { productDataTool } from "./tools/productData";
 
@@ -511,8 +509,7 @@ const tools = [productDataTool];
 // POST /execute/:toolName - Opal calls this at runtime
 app.use(opalToolsMiddleware({ tools }));
 
-app.listen(3001);`}</code>
-                  </pre>
+app.listen(3001);`} />
                 </div>
               </div>
             </div>

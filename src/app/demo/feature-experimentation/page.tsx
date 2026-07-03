@@ -784,13 +784,11 @@ export default async function FeatureFlagsDemoPage() {
               This is what the live page route is passing to{" "}
               <code className="bg-surface-low px-1 rounded font-mono">getContentByPath</code> for your session right now.
             </p>
-            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant leading-relaxed overflow-auto">
-              <code>
-                {activeVariations.length === 0
-                  ? `// No active variation keys - flags disabled, or user not bucketed into\n// any active variation. The "off" delivery rule is excluded: it returns\n// variationKey: "off" but no CMS variation named "off" exists.\nvariationOption = undefined`
-                  : `variationOption = {\n  variation: {\n    include: "SOME",\n    value: ${JSON.stringify(activeVariations)},\n    includeOriginal: true,\n  },\n}`}
-              </code>
-            </pre>
+            <CodeBlock
+              code={activeVariations.length === 0
+                ? `// No active variation keys - flags disabled, or user not bucketed into\n// any active variation. The "off" delivery rule is excluded: it returns\n// variationKey: "off" but no CMS variation named "off" exists.\nvariationOption = undefined`
+                : `variationOption = {\n  variation: {\n    include: "SOME",\n    value: ${JSON.stringify(activeVariations)},\n    includeOriginal: true,\n  },\n}`}
+            />
             {activeVariations.length === 0 && (
               <p className="text-xs text-on-surface-variant mt-3">
                 Enable a flag and run an experiment in the FX dashboard, then reload - your variation key will appear above and start influencing CMS content delivery.
@@ -892,16 +890,14 @@ export default async function FeatureFlagsDemoPage() {
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">getDecision()</code>.
                 Then define matching audience conditions in the FX dashboard.
               </p>
-              <pre className="bg-surface-low rounded-xl p-3 text-xs font-mono text-on-surface-variant leading-relaxed">
-                <code>{`// Base attributes (device, logged_in, persona) are automatic.
+              <CodeBlock code={`// Base attributes (device, logged_in, persona) are automatic.
 // For extra attributes, spread after getVisitorContext():
 const { userId, attributes } = await getVisitorContext();
 await getDecision("my_flag", userId, {
   ...attributes,
   plan: "premium",  // from your database
   country: "GB",    // from geo header
-});`}</code>
-              </pre>
+});`} />
             </div>
           </div>
         </section>

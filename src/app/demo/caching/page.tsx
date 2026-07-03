@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import SourcePanel from "@/components/demo/SourcePanel";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
 
 export const metadata: Metadata = { title: "ISR Caching & Webhooks Demo" };
 
@@ -447,15 +448,11 @@ export default function CachingDemoPage() {
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Core helper (caching logic)</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed h-full">
-                <code>{GRAPHQL_FETCH_SNIPPET}</code>
-              </pre>
+              <CodeBlock code={GRAPHQL_FETCH_SNIPPET} className="h-full" />
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Callers override per data type</p>
-              <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed h-full">
-                <code>{CALLER_SNIPPET}</code>
-              </pre>
+              <CodeBlock code={CALLER_SNIPPET} className="h-full" />
             </div>
           </div>
         </section>
@@ -498,9 +495,7 @@ export default function CachingDemoPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
               Why request() cannot participate in Next.js ISR
             </p>
-            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-              <code>{SDK_REQUEST_SNIPPET}</code>
-            </pre>
+            <CodeBlock code={SDK_REQUEST_SNIPPET} />
           </div>
 
           <div>
@@ -628,9 +623,7 @@ export default function CachingDemoPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
               Bypassing Graph&apos;s cache - raw URL vs SDK
             </p>
-            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-              <code>{GRAPH_CACHE_SNIPPET}</code>
-            </pre>
+            <CodeBlock code={GRAPH_CACHE_SNIPPET} />
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -745,9 +738,7 @@ export default function CachingDemoPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
               Pattern - server fetches static data, client handles cookies
             </p>
-            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-              <code>{NO_STORE_PATTERN}</code>
-            </pre>
+            <CodeBlock code={NO_STORE_PATTERN} />
           </div>
 
           <Callout label="Initialise from props to avoid layout shift">
@@ -814,9 +805,7 @@ export default function CachingDemoPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
               When to use prefetch={"{false}"}
             </p>
-            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-              <code>{PREFETCH_SNIPPET}</code>
-            </pre>
+            <CodeBlock code={PREFETCH_SNIPPET} />
           </div>
         </section>
 
@@ -846,9 +835,7 @@ export default function CachingDemoPage() {
               <strong>CMS Settings → Events → Content Published</strong>.
               Requires the <code className="bg-surface-low px-1 rounded text-xs font-mono">x-revalidate-secret</code> header.
             </p>
-            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-              <code>{REVALIDATE_SNIPPET}</code>
-            </pre>
+            <CodeBlock code={REVALIDATE_SNIPPET} />
           </div>
 
           {/* /api/webhooks */}
@@ -873,9 +860,7 @@ export default function CachingDemoPage() {
               <code className="bg-surface-low px-1 rounded font-mono text-xs">revalidateTag</code> - an unauthenticated endpoint lets anyone trigger
               a full-site cache bust on demand.
             </Callout>
-            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed mt-4">
-              <code>{WEBHOOKS_SNIPPET}</code>
-            </pre>
+            <CodeBlock code={WEBHOOKS_SNIPPET} className="mt-4" />
           </div>
 
           {/* /api/publish */}
@@ -890,9 +875,7 @@ export default function CachingDemoPage() {
               "fire and forget" publish hook with no payload parsing. Register in{" "}
               <strong>CMS Settings → Events</strong> alongside <code className="bg-surface-low px-1 rounded text-xs font-mono">/api/revalidate</code>.
             </p>
-            <pre className="bg-surface-low rounded-xl p-4 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-              <code>{PUBLISH_SNIPPET}</code>
-            </pre>
+            <CodeBlock code={PUBLISH_SNIPPET} />
           </div>
         </section>
 

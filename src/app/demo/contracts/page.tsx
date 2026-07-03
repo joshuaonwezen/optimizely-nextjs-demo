@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Callout } from "@/components/blocks/CalloutBlock";
+import CodeBlock from "@/components/demo/CodeBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import LiveDemoShell from "@/components/demo/LiveDemoShell";
 import { getEditorialContent, type EditorialItem } from "@/lib/graphql/queries/GetEditorialContent";
@@ -263,21 +264,6 @@ function Code({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Pre({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-5 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
 function EditorialCard({ item }: { item: EditorialItem }) {
   const url = item._metadata?.url?.default ?? "#";
   const type = item._metadata?.__typename ?? "Content";
@@ -388,7 +374,7 @@ export default async function ContractsMappingsBindingsPage() {
                 <Code>optimizely.config.mjs</Code>, the manual equivalent of a contract
                 until the SDK exports <Code>contract()</Code>.
               </p>
-              <Pre code={CONTRACT_DEFINE_SNIPPET} label="optimizely.config.mjs" />
+              <CodeBlock code={CONTRACT_DEFINE_SNIPPET} label="optimizely.config.mjs" />
               <Callout variant="warning" label="SDK version">
                 <Code>contract()</Code> is documented in the SDK but may not be exported
                 in your installed version; verify with{" "}
@@ -407,12 +393,12 @@ export default async function ContractsMappingsBindingsPage() {
                 When <Code>contract()</Code> is available, replace the spread with{" "}
                 <Code>extends: EditorialContentContract</Code>.
               </p>
-              <Pre code={CONTRACT_EXTEND_SNIPPET} label="optimizely.config.mjs" />
+              <CodeBlock code={CONTRACT_EXTEND_SNIPPET} label="optimizely.config.mjs" />
             </div>
 
             <div id="contracts-register" className="space-y-3">
               <SubHeading id="contracts-register">Registration order</SubHeading>
-              <Pre code={CONTRACT_REGISTER_SNIPPET} label="src/lib/optimizely/componentRegistry.ts" />
+              <CodeBlock code={CONTRACT_REGISTER_SNIPPET} label="src/lib/optimizely/componentRegistry.ts" />
               <Callout variant="warning" label="Order matters">
                 Contracts must appear in <Code>initContentTypeRegistry</Code>{" "}
                 <em>before</em> any content type that extends them. The registry processes
@@ -430,8 +416,8 @@ export default async function ContractsMappingsBindingsPage() {
                 in code) versus <em>after</em> (one interface field, sorted by Graph).
               </p>
               <div className="grid md:grid-cols-2 gap-4">
-                <Pre code={CONTRACT_GRAPH_BEFORE_SNIPPET} label="Before: two queries merged in code" />
-                <Pre code={CONTRACT_GRAPH_AFTER_SNIPPET} label="After: one interface query" />
+                <CodeBlock code={CONTRACT_GRAPH_BEFORE_SNIPPET} label="Before: two queries merged in code" />
+                <CodeBlock code={CONTRACT_GRAPH_AFTER_SNIPPET} label="After: one interface query" />
               </div>
             </div>
 
@@ -490,12 +476,12 @@ export default async function ContractsMappingsBindingsPage() {
                 with the source type (<Code>from</Code>), target type (<Code>to</Code>), and
                 the property mappings. This is typically done once in a seeding script.
               </p>
-              <Pre code={BINDING_CREATE_SNIPPET} label="scripts/seed-bindings.ts" />
+              <CodeBlock code={BINDING_CREATE_SNIPPET} label="scripts/seed-bindings.ts" />
             </div>
 
             <div id="bindings-manage" className="space-y-3">
               <SubHeading id="bindings-manage">Reading and updating bindings</SubHeading>
-              <Pre code={BINDING_PATCH_SNIPPET} label="REST API: binding management" />
+              <CodeBlock code={BINDING_PATCH_SNIPPET} label="REST API: binding management" />
             </div>
 
             <div id="mappings-compat" className="space-y-3">
@@ -505,7 +491,7 @@ export default async function ContractsMappingsBindingsPage() {
                 table uses CMS-internal type names; the comment block maps them to their
                 SDK equivalents.
               </p>
-              <Pre code={BINDING_COMPAT_SNIPPET} label="Property type compatibility" />
+              <CodeBlock code={BINDING_COMPAT_SNIPPET} label="Property type compatibility" />
             </div>
 
           </div>
@@ -524,7 +510,7 @@ export default async function ContractsMappingsBindingsPage() {
 
             <div id="binding-content-instance" className="space-y-3">
               <SubHeading id="binding-content-instance">Binding a top-level content item</SubHeading>
-              <Pre code={BIND_INSTANCE_SNIPPET} label="scripts/bind-content.ts" />
+              <CodeBlock code={BIND_INSTANCE_SNIPPET} label="scripts/bind-content.ts" />
               <Callout variant="note" label="Source URI format">
                 <Code>source</Code> uses the CMS permanent URI:{" "}
                 <Code>{"cms://content/<contentKey>?loc=<locale>"}</Code>. Use the
@@ -540,7 +526,7 @@ export default async function ContractsMappingsBindingsPage() {
                 the whole content item, useful when only one slot on a page should pull from
                 an external source.
               </p>
-              <Pre code={BIND_COMPONENT_SNIPPET} label="Bind a component property" />
+              <CodeBlock code={BIND_COMPONENT_SNIPPET} label="Bind a component property" />
             </div>
 
             <Callout variant="note" label="Bindings vs. contentReference">

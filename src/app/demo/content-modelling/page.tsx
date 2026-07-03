@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
+import CodeBlock from "@/components/demo/CodeBlock";
 
 export const metadata: Metadata = {
   title: "Content Modelling Demo",
@@ -221,21 +222,6 @@ function SectionHeading({ id, children }: { id: string; children: React.ReactNod
 function Code({ children }: { children: React.ReactNode }) {
   return (
     <code className="bg-surface-low px-1 rounded text-xs font-mono">{children}</code>
-  );
-}
-
-function Pre({ code, label }: { code: string; label?: string }) {
-  return (
-    <div className="rounded-xl overflow-hidden border border-ghost-border">
-      {label && (
-        <div className="bg-surface-low border-b border-ghost-border px-4 py-2">
-          <span className="text-xs font-mono text-on-surface-variant">{label}</span>
-        </div>
-      )}
-      <pre className="bg-surface-lowest p-5 text-xs font-mono text-on-surface-variant overflow-auto leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
   );
 }
 
@@ -517,8 +503,8 @@ export default function ContentModellingPage() {
           </p>
 
           <div className="grid md:grid-cols-2 gap-4">
-            <Pre code={ELEMENT_SNIPPET} label="elementEnabled - leaf block" />
-            <Pre code={SECTION_SNIPPET} label="sectionEnabled - container block" />
+            <CodeBlock code={ELEMENT_SNIPPET} label="elementEnabled - leaf block" />
+            <CodeBlock code={SECTION_SNIPPET} label="sectionEnabled - container block" />
           </div>
         </section>
 
@@ -554,8 +540,8 @@ export default function ContentModellingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-            <Pre code={NAMING_GOOD} label="semantic naming" />
-            <Pre code={NAMING_BAD} label="presentation naming - avoid" />
+            <CodeBlock code={NAMING_GOOD} label="semantic naming" />
+            <CodeBlock code={NAMING_BAD} label="presentation naming - avoid" />
           </div>
         </section>
 
@@ -589,7 +575,7 @@ export default function ContentModellingPage() {
             </Callout>
           </div>
 
-          <Pre code={DISPLAY_TEMPLATE_SNIPPET} label="one content type, two display templates" />
+          <CodeBlock code={DISPLAY_TEMPLATE_SNIPPET} label="one content type, two display templates" />
         </section>
 
         {/* 6. Reuse patterns */}
@@ -641,8 +627,8 @@ export default function ContentModellingPage() {
           </Callout>
 
           <div className="grid md:grid-cols-2 gap-4 mt-4">
-            <Pre code={INLINE_SNIPPET} label="inline - array content area (Graph auto-expands)" />
-            <Pre code={REFERENCE_SNIPPET} label="referenced - parent resolves via getClient().getContent()" />
+            <CodeBlock code={INLINE_SNIPPET} label="inline - array content area (Graph auto-expands)" />
+            <CodeBlock code={REFERENCE_SNIPPET} label="referenced - parent resolves via getClient().getContent()" />
           </div>
 
           <div className="mt-6 grid md:grid-cols-2 gap-5">
@@ -780,11 +766,11 @@ export default function ContentModellingPage() {
           </Callout>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Pre code={PROPERTY_STRING} label="string" />
-            <Pre code={PROPERTY_RICH}   label="richText" />
-            <Pre code={PROPERTY_URL}    label="url" />
-            <Pre code={PROPERTY_REF}    label="contentReference" />
-            <Pre code={PROPERTY_ARRAY}  label="array (content area)" />
+            <CodeBlock code={PROPERTY_STRING} label="string" />
+            <CodeBlock code={PROPERTY_RICH}   label="richText" />
+            <CodeBlock code={PROPERTY_URL}    label="url" />
+            <CodeBlock code={PROPERTY_REF}    label="contentReference" />
+            <CodeBlock code={PROPERTY_ARRAY}  label="array (content area)" />
           </div>
         </section>
 
@@ -837,8 +823,8 @@ export default function ContentModellingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-            <Pre code={GET_CONTENT_SINGLE} label="single reference - ArticlePage fetching its author" />
-            <Pre code={GET_CONTENT_ARRAY}  label="reference array - TimelineBlock fetching its milestones" />
+            <CodeBlock code={GET_CONTENT_SINGLE} label="single reference - ArticlePage fetching its author" />
+            <CodeBlock code={GET_CONTENT_ARRAY}  label="reference array - TimelineBlock fetching its milestones" />
           </div>
 
           <Callout label="Which blocks use this in this demo" className="mt-4 max-w-3xl">
@@ -919,7 +905,7 @@ export default function ContentModellingPage() {
             </table>
           </div>
 
-          <Pre code={INDEXING_SNIPPET} label="indexingType - all three values with notes" />
+          <CodeBlock code={INDEXING_SNIPPET} label="indexingType - all three values with notes" />
 
           {/* isLocalized */}
           <h3 className="font-display text-lg font-bold text-on-surface mb-2 mt-10">
@@ -950,7 +936,7 @@ export default function ContentModellingPage() {
             </Callout>
           </div>
 
-          <Pre code={LOCALIZED_SNIPPET} label="isLocalized - what to set and what to leave unset" />
+          <CodeBlock code={LOCALIZED_SNIPPET} label="isLocalized - what to set and what to leave unset" />
 
           <Callout label="Gotcha - breaking change" className="mt-4 max-w-3xl">
             <p>

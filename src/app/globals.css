@@ -104,6 +104,27 @@ body {
   @apply bg-surface text-on-surface font-body antialiased;
 }
 
+/* Code samples: Shiki syntax highlighting (VS Code Light+/Dark+).
+   defaultColor:false emits --shiki-light / --shiki-dark vars; pick per theme. */
+.code-block-body .shiki {
+  margin: 0;
+  padding: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: inherit;
+  line-height: inherit;
+  background-color: transparent !important;
+}
+.code-block-body .shiki,
+.code-block-body .shiki span {
+  color: var(--shiki-light);
+}
+
+/* Switch to the dark theme colors under the site's dark mode attribute */
+html[data-theme="dark"] .code-block-body .shiki,
+html[data-theme="dark"] .code-block-body .shiki span {
+  color: var(--shiki-dark);
+}
+
 /* Utility: brand gradient background */
 .bg-gradient-brand {
   background: var(--gradient-brand);
