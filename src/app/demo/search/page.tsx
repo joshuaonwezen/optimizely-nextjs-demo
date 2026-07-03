@@ -300,20 +300,51 @@ const GEO_SCHEMA_SNIPPET = `# Content Source schema - a single GeoPoint field, N
 
 PUT https://cg.optimizely.com/api/content/v3/types?id=locs
 {
+  "label": "Bank Locations",
+  "languages": ["en"],
   "contentTypes": {
     "BankLocation": {
       "contentType": ["_Item"],
       "properties": {
         "branchName": { "type": "String" },
+        "address":    { "type": "String" },
+        "city":       { "type": "String" },
+        "country":    { "type": "String" },
+        "phone":      { "type": "String" },
+        "services":   { "type": "String" },
         "location":   { "type": "GeoPoint" }
       }
     }
   },
+  "preset": "next",
   "useTypedFieldNames": true
-}
+}`;
 
-# Data payload (NdJSON) - GeoPoint is a nested { lat, lon } object:
-"location$$GeoPoint": { "lat": 52.3676, "lon": 4.9041 }`;
+const GEO_DATA_SNIPPET = `# Data push (NdJSON) - two lines per record: an action line, then the data line.
+# POST https://cg.optimizely.com/api/content/v2/data?id=locs
+# Content-Type: text/plain   (NdJSON, not application/json)
+
+{"index":{"_id":1,"language_routing":"en"}}
+{
+  "_rbac": "r:Everyone:Read",
+  "_itemMetadata": {
+    "key": "loc-1",
+    "displayName___searchable": "Mosey Bank Amsterdam Central - Amsterdam",
+    "lastModified": "2026-07-03T00:00:00.000Z",
+    "type": "BankLocation"
+  },
+  "_metadata": { "types": ["BankLocation", "_Item"], "locale": "en", "key": "loc-1", "status": "Published" },
+  "branchName$$String": "Mosey Bank Amsterdam Central",
+  "address$$String": "Damrak 101",
+  "city$$String": "Amsterdam",
+  "country$$String": "Netherlands",
+  "phone$$String": "+31 20 555 0100",
+  "services$$String": "Current accounts, mortgages, investments",
+  "location$$GeoPoint": { "lat": 52.3676, "lon": 4.9041 },
+  "ContentType": ["BankLocation"],
+  "Status": "Published",
+  "Language": { "DisplayName": "English", "Name": "en" }
+}`;
 
 const GEO_QUERY_SNIPPET = `# distance filters by radius from an origin; orderBy sorts nearest-first.
 # NOTE: the radius argument is typed Int, not Float - a $radius: Float
@@ -627,7 +658,8 @@ export default function SearchDemoPage() {
           </p>
           <BranchFinder />
           <div className="grid md:grid-cols-2 gap-6 mt-6">
-            <CodeBlock code={GEO_SCHEMA_SNIPPET} label="GeoPoint schema + NdJSON data payload" />
+            <CodeBlock code={GEO_SCHEMA_SNIPPET} label="Content Source schema (GeoPoint field)" />
+            <CodeBlock code={GEO_DATA_SNIPPET} label="Full NdJSON data push payload" />
             <CodeBlock code={GEO_QUERY_SNIPPET} label="distance filter + nearest-first orderBy" />
           </div>
         </section>
