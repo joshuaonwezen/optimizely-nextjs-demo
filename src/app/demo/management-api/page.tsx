@@ -382,7 +382,7 @@ export default function ManagementApiDemoPage() {
             Use this to seed a fresh CMS instance or reseed an existing one without leaving the
             browser. It runs the full seed orchestration (npx tsx scripts/seed-runner.ts) on the
             server and streams its output live. Fields left blank fall back to the values in
-            .env.local for the selected instance. The client ID and secret must be a content API
+            .env.local. The client ID and secret must be a content API
             key with write access (Settings → API Keys) - CLI-only credentials fail at the config
             push and content creation steps. Available in local development only; the API route
             returns 403 in production builds.

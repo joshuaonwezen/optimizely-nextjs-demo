@@ -61,7 +61,7 @@ const FIELDS: FieldDef[] = [
 ];
 
 export default function SeedCmsPanel() {
-  const [values, setValues] = useState<Record<string, string>>({ instance: "personal" });
+  const [values, setValues] = useState<Record<string, string>>({});
   const [log, setLog] = useState("");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<"success" | "failure" | null>(null);
@@ -111,21 +111,6 @@ export default function SeedCmsPanel() {
   return (
     <div data-component="SeedCmsPanel" className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-on-surface">Instance</span>
-          <select
-            value={values.instance}
-            onChange={(e) => setField("instance", e.target.value)}
-            disabled={running}
-            className="bg-surface border border-ghost-border rounded-lg px-3 py-2 text-sm text-on-surface"
-          >
-            <option value="personal">personal</option>
-            <option value="onboarding">onboarding</option>
-          </select>
-          <span className="text-xs text-on-surface-variant">
-            Fallback credentials from .env.local
-          </span>
-        </label>
         {FIELDS.map((field) => (
           <label key={field.name} className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold text-on-surface">{field.label}</span>

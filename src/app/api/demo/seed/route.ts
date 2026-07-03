@@ -36,12 +36,11 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => ({}))) as Record<string, string>;
-  const suffix = body.instance === "onboarding" ? "_ONBOARDING" : "";
 
-  // User-typed value wins; blank falls back to .env.local (suffixed, then base)
+  // User-typed value wins; blank falls back to .env.local
   const env: NodeJS.ProcessEnv = { ...process.env };
   for (const name of FIELDS) {
-    const value = body[name]?.trim() || process.env[`${name}${suffix}`] || process.env[name];
+    const value = body[name]?.trim() || process.env[name];
     if (value) env[name] = value;
   }
 
@@ -55,8 +54,8 @@ export async function POST(request: NextRequest) {
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      // Always --instance=personal: the env above already resolved the instance,
-      // and --instance=onboarding would clobber it with _ONBOARDING values
+      // --instance=personal selects the base (unsuffixed) variable names in
+      // seed-runner.ts; the env above is already resolved from .env.local + form inputs
       const child = spawn("npx", ["tsx", "scripts/seed-runner.ts", "--instance=personal"], {
         cwd: process.cwd(),
         env,

@@ -63,13 +63,14 @@ function run(cmd: string, args: string[], env: NodeJS.ProcessEnv): Promise<void>
 
 async function main() {
   const instance = await pickInstance();
-  console.log(`\nSeeding → ${instance}\n`);
 
   const overrides = INSTANCES[instance];
   const env: NodeJS.ProcessEnv = { ...process.env };
   for (const [key, value] of Object.entries(overrides)) {
     if (value !== undefined) env[key] = value;
   }
+
+  console.log(`\nSeeding → ${env.OPTIMIZELY_CMS_URL ?? "(OPTIMIZELY_CMS_URL not set)"}\n`);
 
   // Fail fast if core credentials are missing — avoids cryptic errors deep in subprocesses.
   const REQUIRED_VARS = [
