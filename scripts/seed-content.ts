@@ -21,7 +21,7 @@ import {
   CONTENT_ENDPOINT,
   createContent,
   discoverGlobalRoot,
-  discoverRootContainer,
+  ensureExperienceStartPage,
   wrapProps,
   uid,
   noHyphens,
@@ -727,17 +727,82 @@ const undeletableKeys = new Map<string, string>(); // displayName → existing C
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 
-/** Find the CMS key of whichever DynamicExperience is served at the root URL. */
-async function findHomepageKey(): Promise<string | null> {
-  const query = `{ _Page(where:{_metadata:{url:{default:{in:["/","/en/","/en/homepage/"]}}}},limit:3) { items { _metadata { key } } } }`;
-  const res = await fetch(GRAPH_ENDPOINT, {
+/**
+ * Push a composition onto an existing start-page DynamicExperience.
+ *
+ * The start page is usually already published, and POSTing a composition inline
+ * to /versions is rejected (400) on a published experience. So we create a fresh
+ * draft version WITHOUT a composition, merge-PATCH the composition onto that draft
+ * (the shape the CMS accepts for compositions - same as the variation workflow),
+ * then publish. Returns true on success; false lets the caller fall back to a
+ * sibling homepage. Any failed step logs the full response body.
+ */
+async function updateStartPageComposition(
+  key: string,
+  page: PageDef,
+  composition: Record<string, unknown>,
+  token: string,
+): Promise<boolean | "not-an-experience"> {
+  // 1. Create a new draft version (no composition - inline composition 400s here).
+  const createRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions?locale=en`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
-    body: JSON.stringify({ query }),
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      displayName: page.displayName,
+      ...(page.properties ? { properties: wrapProps(page.properties) } : {}),
+    }),
   });
-  if (!res.ok) return null;
-  const { data } = await res.json() as { data?: { _Page?: { items?: Array<{ _metadata?: { key?: string } }> } } };
-  return data?._Page?.items?.[0]?._metadata?.key ?? null;
+  if (!createRes.ok) {
+    const errText = await createRes.text();
+    console.warn(`  [warn] POST ${key}/versions: ${createRes.status} ${errText.slice(0, 600)}`);
+    // A BlankExperience (folder) rejects the homepage's metaTitle/metaDescription and
+    // cannot hold a composition - signal the caller to print actionable guidance.
+    if (errText.includes("BlankExperience") || /is not defined on content type/.test(errText)) {
+      return "not-an-experience";
+    }
+    return false;
+  }
+
+  const createBody = await createRes.text();
+  let version: string | undefined = createBody.trim()
+    ? (JSON.parse(createBody) as { version?: string }).version
+    : undefined;
+  if (!version) {
+    const vRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (vRes.ok) {
+      const vData = await vRes.json() as { items?: Array<{ version?: string }> };
+      version = vData.items?.[0]?.version;
+    }
+  }
+  if (!version) {
+    console.warn(`  [warn] Could not resolve a new draft version for start page ${key}`);
+    return false;
+  }
+
+  // 2. Merge-PATCH the composition onto the draft.
+  const patchRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/merge-patch+json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ composition }),
+  });
+  if (!patchRes.ok) {
+    console.warn(`  [warn] PATCH ${key}/versions/${version} composition: ${patchRes.status} ${(await patchRes.text()).slice(0, 600)}`);
+    return false;
+  }
+
+  // 3. Publish the draft.
+  const pubRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions/${version}:publish`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!pubRes.ok) {
+    console.warn(`  [warn] Publish ${key}/versions/${version}: ${pubRes.status} ${(await pubRes.text()).slice(0, 600)}`);
+    return false;
+  }
+
+  return true;
 }
 
 async function createPage(page: PageDef): Promise<void> {
@@ -751,56 +816,25 @@ async function createPage(page: PageDef): Promise<void> {
     nodes: page.nodes,
   };
 
-  // Homepage has no routeSegment — always update the existing start page at /
-  // rather than creating a duplicate at /en/homepage/. CONTAINER itself may be the
-  // start page (e.g. ONBOARDING), so fall back to CONTAINER when Graph hasn't indexed
-  // the start page yet (Graph indexing lag of ~30-60s on fresh instances).
-  //
-  // We create a brand-new draft version carrying our composition, then publish it —
-  // instead of PATCHing the latest version. The latest version is often already
-  // published (which cannot be patched), and creating a draft by copying it fails
-  // when that published composition references pages this run just deleted. Posting
-  // a fresh version with our own composition sidesteps both problems.
+  // Homepage has no routeSegment - it updates the existing start page at / rather
+  // than creating a duplicate at /en/homepage/. CONTAINER itself may be the start
+  // page, so fall back to CONTAINER when Graph hasn't indexed the start page yet
+  // (indexing lag of ~30-60s on fresh instances).
   if (!page.routeSegment) {
-    const graphKey = (await findHomepageKey()) ?? (CONTAINER || null);
-    if (graphKey) {
-      const createRes = await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions?locale=en`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          displayName: page.displayName,
-          composition,
-          ...(page.properties ? { properties: wrapProps(page.properties) } : {}),
-        }),
-      });
-      if (createRes.ok) {
-        // v1 API may return an empty body — look up the version separately.
-        const createBody = await createRes.text();
-        let newVersion: string | undefined;
-        if (createBody.trim()) {
-          newVersion = (JSON.parse(createBody) as { version?: string }).version;
-        }
-        if (!newVersion) {
-          const vRes = await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions?pageSize=1`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (vRes.ok) {
-            const vData = await vRes.json() as { items?: Array<{ version?: string }> };
-            newVersion = vData.items?.[0]?.version;
-          }
-        }
-        if (newVersion) {
-          await fetchRetry(`${CONTENT_ENDPOINT}/${graphKey}/versions/${newVersion}:publish`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        }
-        console.log(`  [updated] ${page.displayName} → key=${graphKey} route=/ (new version ${newVersion ?? "?"})`);
+    // CONTAINER is guaranteed by ensureExperienceStartPage to be the site start page
+    // (a DynamicExperience entry point), so put the homepage composition directly on it.
+    // Do NOT resolve the homepage via Graph: after a start-page repoint, Graph can still
+    // have a stale/old page indexed at "/", and we'd update that instead of the real root.
+    if (CONTAINER) {
+      const result = await updateStartPageComposition(CONTAINER, page, composition, token);
+      if (result === true) {
+        console.log(`  [updated] ${page.displayName} → key=${CONTAINER} route=/`);
         return;
       }
-      const createText = await createRes.text();
-      console.warn(`  [warn] Create homepage draft: ${createRes.status} ${createText.slice(0, 200)}`);
-      console.warn(`  [warn] Could not update homepage at key=${graphKey} — update it manually in Visual Builder.`);
+      console.warn(
+        `  [warn] Could not set the homepage composition on start page ${CONTAINER} (see the [warn] response ` +
+        `above) - creating a sibling homepage instead; the site root may still be empty.`,
+      );
     }
   }
 
@@ -906,8 +940,20 @@ async function deleteExisting(): Promise<void> {
   });
   if (!res.ok) return;
 
+  // Never delete the root container itself or the global root, even if a corrupted
+  // hierarchy lists them as children here - permanent-deleting them cascades and
+  // breaks the instance (discoverGlobalRoot then 404s).
+  const norm = (k: string) => k.replace(/-/g, "");
+  const protectedKeys = new Set([norm(CONTAINER), norm(BLOCKS_CONTAINER)]);
+
   const data = await res.json() as { items?: Array<{ key: string }> };
-  for (const item of data.items ?? []) await permanentDelete(item.key);
+  for (const item of data.items ?? []) {
+    if (protectedKeys.has(norm(item.key))) {
+      console.log(`  [protected] ${item.key} - skipped (root/global container, not deleted)`);
+      continue;
+    }
+    await permanentDelete(item.key);
+  }
 }
 
 /** Delete stale standalone/shared blocks under the global root so re-seeds don't
@@ -957,7 +1003,10 @@ async function main() {
   console.log("=== Mosey Bank Content Seeding Script ===\n");
 
   console.log("--- Discovering root container ---");
-  CONTAINER = await discoverRootContainer();
+  // Guarantees the site start page is a DynamicExperience (creates one and points
+  // the app at it if the entry point is missing or a BlankExperience folder), so the
+  // homepage can be seeded onto it and renders at /.
+  CONTAINER = await ensureExperienceStartPage();
   BLOCKS_CONTAINER = await discoverGlobalRoot();
   console.log(`  container: ${CONTAINER}`);
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}`);

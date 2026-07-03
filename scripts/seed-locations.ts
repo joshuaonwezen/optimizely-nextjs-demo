@@ -30,39 +30,7 @@ const LOCATIONS: Location[] = [
   { id: 10, branchName: "Mosey Bank Gothenburg Port",    address: "Ostra Hamngatan 22",     city: "Gothenburg", country: "Sweden",         phone: "+46 31 555 1000",   services: "Corporate banking, trade finance",            coordinates: { lat: 57.7089, lon: 11.9746 } },
 ];
 
-interface Instance {
-  name: string;
-  auth: string;
-  singleKey: string;
-}
-
-function buildInstances(): Instance[] {
-  const instances: Instance[] = [];
-
-  const key1    = process.env.OPTIMIZELY_APP_KEY;
-  const secret1 = process.env.OPTIMIZELY_APP_SECRET;
-  if (key1 && secret1) {
-    instances.push({
-      name:      "personal",
-      auth:      `Basic ${Buffer.from(`${key1}:${secret1}`).toString("base64")}`,
-      singleKey: process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "",
-    });
-  }
-
-  const key2    = process.env.OPTIMIZELY_APP_KEY_ONBOARDING;
-  const secret2 = process.env.OPTIMIZELY_APP_SECRET_ONBOARDING;
-  if (key2 && secret2) {
-    instances.push({
-      name:      "onboarding",
-      auth:      `Basic ${Buffer.from(`${key2}:${secret2}`).toString("base64")}`,
-      singleKey: process.env.OPTIMIZELY_GRAPH_SINGLE_KEY_ONBOARDING ?? "",
-    });
-  }
-
-  return instances;
-}
-
-async function registerContentType(auth: string, instanceName: string): Promise<void> {
+async function registerContentType(auth: string): Promise<void> {
   console.log("  Part 1: Registering BankLocation content type (GeoPoint location field)");
 
   const body = {
@@ -93,11 +61,11 @@ async function registerContentType(auth: string, instanceName: string): Promise<
   });
 
   const text = await res.text();
-  if (!res.ok) throw new Error(`Schema registration failed on ${instanceName}: ${res.status} ${text.slice(0, 300)}`);
+  if (!res.ok) throw new Error(`Schema registration failed: ${res.status} ${text.slice(0, 300)}`);
   console.log(`  [ok] BankLocation type registered (${res.status})`);
 }
 
-async function seedLocations(auth: string, instanceName: string): Promise<void> {
+async function seedLocations(auth: string): Promise<void> {
   console.log(`  Part 2: Seeding ${LOCATIONS.length} bank locations`);
 
   const lines: string[] = [];
@@ -137,14 +105,14 @@ async function seedLocations(auth: string, instanceName: string): Promise<void> 
     method:  "POST",
     headers: {
       "Content-Type": "text/plain",
-      "og-job-id":    `seed-locations-${instanceName}-${Date.now()}`,
+      "og-job-id":    `seed-locations-${Date.now()}`,
       Authorization:  auth,
     },
     body: lines.join("\n"),
   });
 
   const text = await res.text();
-  if (!res.ok) throw new Error(`Data sync failed on ${instanceName}: ${res.status} ${text.slice(0, 300)}`);
+  if (!res.ok) throw new Error(`Data sync failed: ${res.status} ${text.slice(0, 300)}`);
   console.log(`  [ok] ${LOCATIONS.length} locations synced (${res.status})`);
 }
 
@@ -177,21 +145,19 @@ async function verifyIndexed(singleKey: string): Promise<void> {
 }
 
 async function main() {
-  const instances = buildInstances();
-  if (instances.length === 0) {
-    console.error("Missing OPTIMIZELY_APP_KEY/APP_SECRET in .env.local");
+  const appKey    = process.env.OPTIMIZELY_APP_KEY;
+  const appSecret = process.env.OPTIMIZELY_APP_SECRET;
+  const singleKey = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
+  if (!appKey || !appSecret) {
+    console.error("Missing OPTIMIZELY_APP_KEY / OPTIMIZELY_APP_SECRET");
     process.exit(1);
   }
+  const auth = `Basic ${Buffer.from(`${appKey}:${appSecret}`).toString("base64")}`;
 
-  console.log(`=== Location Seed Script (${instances.map((i) => i.name).join(", ")}) ===\n`);
-
-  for (const instance of instances) {
-    console.log(`\n--- ${instance.name} ---`);
-    await registerContentType(instance.auth, instance.name);
-    await seedLocations(instance.auth, instance.name);
-    await verifyIndexed(instance.singleKey);
-  }
-
+  console.log("=== Location Seed Script ===\n");
+  await registerContentType(auth);
+  await seedLocations(auth);
+  await verifyIndexed(singleKey);
   console.log("\n=== Done ===");
 }
 

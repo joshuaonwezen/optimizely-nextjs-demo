@@ -180,23 +180,215 @@ let cachedGlobalRoot = "";
 export async function discoverGlobalRoot(): Promise<string> {
   if (cachedGlobalRoot) return cachedGlobalRoot;
 
-  const entryPoint = await discoverRootContainer();
   const token = await getManagementToken();
-  const res = await fetch(`${CONTENT_ENDPOINT}/${entryPoint}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error(`GET /content/${entryPoint} failed: ${res.status} ${await res.text()}`);
-  }
-  const data = (await res.json()) as { container?: string };
-  const globalRoot = (data.container ?? "").replace(/-/g, "");
+  const entryPoint = await discoverRootContainer();
+
+  // Walk up from the entry point to the top-level global root. If that chain is broken
+  // (e.g. the entry point's own container was deleted), recover by walking up from a
+  // stable seeded item instead - so a corrupted/repointed instance still resolves.
+  let globalRoot = await walkToGlobalRoot(token, entryPoint);
   if (!globalRoot) {
-    throw new Error(`Entry point ${entryPoint} has no parent container (global root)`);
+    for (const anchor of RECOVERY_ANCHORS) {
+      globalRoot = await walkToGlobalRoot(token, anchor);
+      if (globalRoot) break;
+    }
+  }
+  if (!globalRoot) {
+    throw new Error(
+      `Could not determine the global root from entry point ${entryPoint} or seeded anchors.`,
+    );
   }
 
   cachedGlobalRoot = globalRoot;
   console.log(`  [auto-discovered] global root (For All Applications): ${globalRoot}`);
   return globalRoot;
+}
+
+// Stable content keys that survive re-seeds (the shared FAQ items, preserved by
+// cleanSharedBlocks). Used to recover the global root by walking up their container
+// chain when the app entry point is missing or points at deleted content.
+const RECOVERY_ANCHORS = [
+  "fb900000000000000000000000000001",
+  "fb900000000000000000000000000002",
+  "fb900000000000000000000000000003",
+];
+
+/**
+ * Walk up the `container` chain from `startKey` to the top-level content root - the
+ * item that has no `container` (the global "For All Applications" root). Returns "" if
+ * the start item is missing or the chain is broken. Capped to avoid looping forever on
+ * a corrupted (cyclic) hierarchy.
+ */
+async function walkToGlobalRoot(token: string, startKey: string): Promise<string> {
+  let key = (startKey ?? "").replace(/-/g, "");
+  const seen = new Set<string>();
+  for (let i = 0; i < 12 && key && !seen.has(key); i++) {
+    seen.add(key);
+    const r = await fetch(`${CONTENT_ENDPOINT}/${key}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!r.ok) return "";
+    const c = (await r.json()) as { container?: string };
+    const parent = (c.container ?? "").replace(/-/g, "");
+    if (!parent) return key; // no container -> this is the global root
+    key = parent;
+  }
+  return "";
+}
+
+/** Point the given application's start page (entry point) at a content key. */
+async function patchEntryPoint(token: string, appKey: string, contentKey: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/v1/applications/${appKey}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/merge-patch+json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ entryPoint: `cms://content/${contentKey}` }),
+  });
+  if (!res.ok) {
+    throw new Error(
+      `PATCH /v1/applications/${appKey} entryPoint failed: ${res.status} ${(await res.text()).slice(0, 300)}`,
+    );
+  }
+}
+
+/**
+ * Returns the key of a DynamicExperience that is the site start page, CREATING one
+ * and pointing the default application at it when the current entry point is missing
+ * or is not a DynamicExperience (e.g. a BlankExperience folder, which cannot hold a
+ * homepage composition and does not render at /).
+ *
+ * The Management API can set the start page - this avoids the manual "create a
+ * DynamicExperience and set it as Settings > Site > Start page" onboarding step:
+ *   PATCH /v1/applications/{key}  (application/merge-patch+json)
+ *   { "entryPoint": "cms://content/{key}" }   -> 204
+ *
+ * Handles four cases:
+ *  - entry point is a DynamicExperience  -> reuse it as-is (fresh or populated instance)
+ *  - entry point is a BlankExperience    -> walk up to the global root, create/reuse a
+ *                                           DynamicExperience there, repoint the app
+ *  - entry point is missing/deleted      -> recover the global root by walking up from a
+ *                                           stable seeded item, then create/reuse + repoint
+ *  - nothing recoverable                 -> throw with a clear manual-fix message
+ *
+ * The start page lives directly under the global root (alongside shared blocks). All page
+ * seeding then uses this key as the root container, and the homepage becomes its composition.
+ */
+export async function ensureExperienceStartPage(): Promise<string> {
+  const token = await getManagementToken();
+
+  const appsRes = await fetch(`${API_BASE}/v1/applications`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!appsRes.ok) {
+    throw new Error(`GET /v1/applications failed: ${appsRes.status} ${await appsRes.text()}`);
+  }
+  const appData = (await appsRes.json()) as {
+    items?: Array<{ key: string; isDefault?: boolean; entryPoint?: string }>;
+  };
+  const apps = appData.items ?? [];
+  if (apps.length === 0) {
+    throw new Error(
+      "No applications found in CMS - create a website/application in the CMS first (the API cannot create one).",
+    );
+  }
+  const app = apps.find((a) => a.isDefault) ?? apps[0];
+  const entryKey = (app.entryPoint?.split("/").pop() ?? "").replace(/-/g, "");
+
+  // If a root container is explicitly provided (OPTIMIZELY_ROOT_CONTAINER / the seed
+  // tool's Root Container field), honor it so every seed script agrees on the root. It
+  // must be an existing DynamicExperience; we point the app start page at it.
+  const envKey = (process.env.OPTIMIZELY_ROOT_CONTAINER ?? "").replace(/-/g, "");
+  if (envKey) {
+    const cRes = await fetch(`${CONTENT_ENDPOINT}/${envKey}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!cRes.ok) {
+      throw new Error(
+        `OPTIMIZELY_ROOT_CONTAINER ${envKey} was not found (${cRes.status}). Use an existing DynamicExperience ` +
+        `key, or leave the Root Container field blank to auto-provision one.`,
+      );
+    }
+    const c = (await cRes.json()) as { contentType?: string };
+    if (c.contentType !== "DynamicExperience") {
+      throw new Error(
+        `OPTIMIZELY_ROOT_CONTAINER ${envKey} is a ${c.contentType ?? "?"}, not a DynamicExperience. Use a ` +
+        `DynamicExperience key, or leave the Root Container field blank to auto-provision one.`,
+      );
+    }
+    if (entryKey !== envKey) {
+      await patchEntryPoint(token, app.key, envKey);
+      console.log(`  [start-page] pointed the '${app.key}' start page at provided DynamicExperience ${envKey}`);
+    }
+    return envKey;
+  }
+
+  // Find the global root to create the start page under. If the entry point is already
+  // a DynamicExperience, use it as-is (fresh or populated instance).
+  let globalRoot = "";
+  if (entryKey) {
+    const cRes = await fetch(`${CONTENT_ENDPOINT}/${entryKey}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (cRes.ok) {
+      const c = (await cRes.json()) as { contentType?: string };
+      if (c.contentType === "DynamicExperience") return entryKey;
+      console.log(
+        `  [start-page] entry point ${entryKey} is a ${c.contentType ?? "?"}, not a DynamicExperience - creating one`,
+      );
+      globalRoot = await walkToGlobalRoot(token, entryKey);
+    }
+  }
+
+  // Entry point missing or deleted (broken instance): recover the global root by
+  // walking up from a stable seeded item so we can still create a start page.
+  if (!globalRoot) {
+    for (const anchor of RECOVERY_ANCHORS) {
+      globalRoot = await walkToGlobalRoot(token, anchor);
+      if (globalRoot) break;
+    }
+    if (globalRoot) {
+      console.log(`  [start-page] entry point missing or deleted - recovered global root ${globalRoot} from a seeded item`);
+    }
+  }
+
+  if (!globalRoot) {
+    throw new Error(
+      "Could not determine the content root to create a start page under (entry point is broken and no seeded " +
+      "anchor was found). In the CMS, set Settings > Site > Start page to a valid DynamicExperience, then reseed.",
+    );
+  }
+
+  // Reuse an existing DynamicExperience directly under the global root if one is there
+  // (from a prior recovery), so repeated recovery runs don't pile up duplicate start
+  // pages. Otherwise create a fresh one.
+  let newKey = "";
+  const itemsRes = await fetch(`${CONTENT_ENDPOINT}/${globalRoot}/items?pageSize=100`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (itemsRes.ok) {
+    const d = (await itemsRes.json()) as { items?: Array<{ key: string; contentType?: string }> };
+    const existing = (d.items ?? []).find((i) => i.contentType === "DynamicExperience");
+    if (existing) {
+      newKey = existing.key.replace(/-/g, "");
+      console.log(`  [start-page] reusing existing DynamicExperience ${newKey} under the global root`);
+    }
+  }
+  if (!newKey) {
+    newKey = noHyphens();
+    await createContent(
+      {
+        key: newKey,
+        contentType: "DynamicExperience",
+        container: globalRoot,
+        locale: "en",
+        displayName: "Home",
+      },
+      "Home (site start page)",
+    );
+  }
+
+  // Point the default application at the DynamicExperience.
+  await patchEntryPoint(token, app.key, newKey);
+
+  console.log(`  [start-page] pointed the '${app.key}' start page at DynamicExperience ${newKey}`);
+  return newKey;
 }
 
 // Generic Management API helpers

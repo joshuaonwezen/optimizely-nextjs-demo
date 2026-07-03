@@ -54,9 +54,9 @@ export async function POST(request: NextRequest) {
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      // --instance=personal selects the base (unsuffixed) variable names in
-      // seed-runner.ts; the env above is already resolved from .env.local + form inputs
-      const child = spawn("npx", ["tsx", "scripts/seed-runner.ts", "--instance=personal"], {
+      // env above is already resolved from .env.local + form inputs; the runner
+      // just inherits it and seeds whatever OPTIMIZELY_CMS_URL points to
+      const child = spawn("npx", ["tsx", "scripts/seed-runner.ts"], {
         cwd: process.cwd(),
         env,
         shell: false,
