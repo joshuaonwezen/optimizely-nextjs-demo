@@ -309,26 +309,14 @@ export default async function ExternalContentPage() {
                 </div>
                 <div className="text-xs text-on-surface-variant mt-auto space-y-1.5">
                   <p>
-                    ⚠ <strong className="text-on-surface">Undocumented-but-required fields.</strong>{" "}
-                    Schema registration needs{" "}
-                    <code className="bg-surface-low px-1 rounded font-mono">"preset": "next"</code> and{" "}
-                    <code className="bg-surface-low px-1 rounded font-mono">"useTypedFieldNames": true</code>.
-                    Data payloads need{" "}
-                    <code className="bg-surface-low px-1 rounded font-mono">displayName___searchable</code>{" "}
-                    (not <code className="bg-surface-low px-1 rounded font-mono">displayName</code>) in <code className="bg-surface-low px-1 rounded font-mono">_itemMetadata</code>, a top-level{" "}
-                    <code className="bg-surface-low px-1 rounded font-mono">_metadata</code> object with <code className="bg-surface-low px-1 rounded font-mono">types/locale/key/status</code>,
-                    and custom fields suffixed with their type:{" "}
-                    <code className="bg-surface-low px-1 rounded font-mono">field$$String</code>, <code className="bg-surface-low px-1 rounded font-mono">field$$Float</code>, etc.
-                  </p>
-                  <p>
-                    ⚠ <strong className="text-on-surface">_rbac must be a string.</strong>{" "}
-                    Send <code className="bg-surface-low px-1 rounded font-mono">"_rbac": "r:Everyone:Read"</code> - not an object.
-                    Sending an object corrupts the Elasticsearch index mapping and silently drops all records until
-                    the source is deleted and re-registered.
+                    ⚠ <strong className="text-on-surface">The payload format has several undocumented requirements</strong>{" "}
+                    (schema flags, typed field names, metadata objects,{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono">_rbac</code>) - see{" "}
+                    <a href="#base-types" className="text-brand hover:underline">Base Type Contracts ↓</a>{" "}
+                    for the full rules and working examples.
                   </p>
                   <p>
                     Additional sources may need to be enabled by Optimizely - contact support if the types endpoint returns a source-limit error.
-                    See <a href="#base-types" className="text-brand hover:underline">Base Type Contracts ↓</a> for full payload examples.
                   </p>
                 </div>
               </div>
