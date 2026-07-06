@@ -19,6 +19,7 @@ import {
   SINGLE_KEY,
   discoverGlobalRoot,
   discoverRootContainer,
+  sweepMisplacedSharedBlocks,
   wrapProps,
   noHyphens,
 } from "./_shared";
@@ -34,12 +35,13 @@ let BLOCKS_CONTAINER = "";
 // the script searches CONTAINER for an existing Navigation block or creates a
 // new one there.
 const NAV_BLOCK_KEY = (process.env.OPTIMIZELY_NAV_BLOCK_KEY ?? "").replace(/-/g, "");
-// Sentinel name for the seeded Navigation block. The app queries by this name so
-// re-runs can delete the old block (soft-delete → Graph removes it) and POST a
-// fresh one with a new random key without conflicting with the Recycle Bin.
+// Display name for the seeded Navigation block — what editors see in the
+// Shared Blocks tab. The app's Graph query fetches by type (Navigation, limit 1),
+// not by name, so re-runs can delete the old block and POST a fresh one with a
+// new random key without conflicting with the Recycle Bin.
 // NOTE: Optimizely Management API PATCH does not persist content-area properties;
 //       the only reliable pattern is DELETE → wait → POST with the payload.
-const NAV_BLOCK_NAME = "Seeded Navigation";
+const NAV_BLOCK_NAME = "Navigation Menu";
 
 const PAGE_CONTENT: Record<string, { heading: string; subheading: string; ctaLabel: string; ctaLink: string }> = {
   loans:               { heading: "Personal Loans",            subheading: "Borrow from £1,000 to £25,000 with a fixed rate and no early repayment fees. Get a decision in minutes.", ctaLabel: "Check My Rate",           ctaLink: "/en/personal/loans" },
@@ -325,9 +327,13 @@ async function resolvePageKeys(nodes: NavDef[], pageKeyMap: Map<string, string>,
 
 // Create NavigationItem (leaf-first)
 
-async function createNavItem(node: NavDef): Promise<void> {
+async function createNavItem(node: NavDef, ancestors: string[]): Promise<void> {
   const childRefs = node.children.map((c) => ({ reference: `cms://content/${c.key}` }));
   const hrefRef = node.pageKey ? `cms://content/${node.pageKey}` : null;
+  // Shared Blocks is a flat list — encode the type and the tree position in the
+  // display name so editors can tell "Navigation Item - Personal / Savings"
+  // from a page or another item with the same label.
+  const displayName = `Navigation Item - ${[...ancestors, node.label].join(" / ")}`;
 
   const makeBody = (includeHref: boolean): Record<string, unknown> => ({
     key: node.key,
@@ -335,7 +341,7 @@ async function createNavItem(node: NavDef): Promise<void> {
     container: BLOCKS_CONTAINER,
     initialVersion: {
       locale: "en",
-      displayName: node.label,
+      displayName,
       properties: wrapProps({
         label: node.label,
         ...(includeHref && hrefRef ? { href: hrefRef } : {}),
@@ -374,10 +380,10 @@ async function createNavItem(node: NavDef): Promise<void> {
   console.log(`  [nav-item] ${node.label} ${hrefInfo} (${childCount} children)`);
 }
 
-async function createNavTree(nodes: NavDef[]): Promise<void> {
+async function createNavTree(nodes: NavDef[], ancestors: string[] = []): Promise<void> {
   for (const node of nodes) {
-    if (node.children.length > 0) await createNavTree(node.children);
-    await createNavItem(node);
+    if (node.children.length > 0) await createNavTree(node.children, [...ancestors, node.label]);
+    await createNavItem(node, ancestors);
   }
 }
 
@@ -460,6 +466,12 @@ async function main() {
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}`);
 
   await cleanupNavItems();
+
+  // Remove nav blocks stranded at the top-level root by earlier seed versions
+  // (they were plain content items there, invisible to the Shared Blocks tab)
+  // and any leftovers in the blocks folder from prior runs.
+  console.log("--- Sweeping misplaced/stale Navigation shared blocks ---");
+  await sweepMisplacedSharedBlocks(["Navigation", "NavigationItem"]);
 
   console.log("\n--- Fetching existing page keys from Graph ---");
   const pageKeyMap = await buildPageKeyMap();

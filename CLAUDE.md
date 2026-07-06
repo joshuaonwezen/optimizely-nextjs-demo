@@ -149,11 +149,15 @@ The seed script handles both setups automatically: it always tries to patch the 
 
 **Graph indexing lag** — newly created content takes ~30-60s to appear in Graph. Scripts that look up keys via Graph (seed-faqs wiring, seed-homepage-variations, Phase D pages in seed-modeling) will skip/warn on a fresh seed run. Re-run those individual scripts after waiting.
 
+**Content-area expansions can be stale in Graph** — Graph materializes a parent's content-area expansion (e.g. a NavigationItem's `children`) when it indexes the parent. If a referenced child's doc wasn't indexed yet at that moment, the child stays missing from the parent's expansion even after the child appears in the index. Fix: force a reindex by republishing the parent — but beware: `POST /content/{key}/versions` creates a **blank** version, NOT a copy of the current one. Publishing it as-is wipes the item's properties. The safe sequence is: `GET` the current version's `properties` → `POST /versions?locale=en` to create the draft → `PATCH` the draft with those properties (merge-patch+json) → `:publish`. Deleted items can also linger in the index for a while as stale docs; they don't affect queries that go through a live parent's references.
+
 **API keys need content write scope** — CLI credentials (used for `opti:push`) only have config-push scope and will get `403 Required access is 'create'` on content operations. Content seeding requires a dedicated API key created in **Settings → API Keys** with write access granted in **Settings → Set Access Rights**.
 
 **Container key format** — the `OPTIMIZELY_ROOT_CONTAINER` value must be a UUID without hyphens (e.g. `bac6997fb4594e9ebcd93349de583fee`), not the hyphenated form from the CMS UI URL.
 
-**Navigation is a shared application-level block, not a composition node** — `NavigationItem` and `Navigation` blocks live as standalone CMS items under the root container. They are fetched by the Next.js app via a Graph query (by display name `"Seeded Navigation"`), not embedded in any page composition. `DynamicExperienceType.mayContainTypes` must include `NavigationItem` and `Navigation` for this to work when the root container is a DynamicExperience.
+**Shared blocks vs content items — two different kinds of CMS items**. *Shared blocks* live inside the "For All Applications" system folder (`SysContentFolder`, well-known key `e56f85d0e8334e02976a2d11fe4d598c`, a child of the top-level content root), show up in the **Shared Blocks** tab, and are what editors bind into **content areas** (`type: "array"` of `content`). *Content items* live elsewhere in the tree, show up in the **Content Manager** tab, and are the targets of **contentReference** properties. A block created directly under the top-level root is a plain content item — it never appears in the Shared Blocks tab. `discoverGlobalRoot()` in `scripts/_shared.ts` resolves the shared-blocks folder; every seed script uses it as the container for shared blocks, and `sweepMisplacedSharedBlocks()` migrates blocks stranded at the root by older seeds.
+
+**Navigation is a shared block, not a composition node** — `NavigationItem` and `Navigation` blocks live in the shared-blocks folder (see above). The `Navigation` block is named `"Navigation Menu"` and is fetched by the Next.js app via a Graph query (by type, `Navigation(limit: 1)` — the display name is not used for filtering), not embedded in any page composition. `DynamicExperienceType.mayContainTypes` must include `NavigationItem` and `Navigation` for this to work when the root container is a DynamicExperience.
 
 **Permanently deleting all children may delete the container itself** — if you `DELETE /content/{key}?permanent=true` every child of a DynamicExperience container, the CMS may cascade-delete the container too. If the container key starts returning 404, create a new DynamicExperience, set it as the start page, and update `OPTIMIZELY_ROOT_CONTAINER` in `.env.local`. Never use `permanent=true` on the container itself.
 
@@ -273,7 +277,7 @@ The SDK exposes `getClient().request(query, variables, previewToken?, cache?)` f
 ### Navigation query strategies — one production, three demo-only
 `src/lib/graphql/queries/` contains four navigation queries. Only one is used by the site chrome:
 
-- `GetNavigation.ts` — **production**. Fetches the shared `Navigation` block by display name `"Seeded Navigation"`; used by `NavigationHeader`. Use this pattern for new work.
+- `GetNavigation.ts` — **production**. Fetches the shared `Navigation` block (named `"Navigation Menu"`) by type via `Navigation(limit: 1)`; used by `NavigationHeader`. Use this pattern for new work.
 - `GetNavigationFromHierarchy.ts`, `GetNavigationFromContentType.ts`, `GetNavigationFromFlags.ts` — reference implementations consumed only by the `/demo/navigation` comparison page. Do not wire these into site chrome.
 
 ### Variation filter always needs `includeOriginal: true`

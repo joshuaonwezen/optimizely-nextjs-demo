@@ -48,10 +48,10 @@ interface GetNavigationResult {
  *
  * depth: 5 → NavRoot → L1 → L2 → L3 → L4 → L5
  */
-// Sentinel name written by seed-nav.ts — used as the CMS displayName so editors
-// can identify the seeded Navigation block in the CMS UI. Not used for querying
-// (Graph doesn't index the name property for filtering).
-export const SEEDED_NAV_NAME = "Seeded Navigation";
+// Display name written by seed-nav.ts — how editors identify the Navigation
+// block in the Shared Blocks tab. Not used for querying (Graph doesn't index
+// the name property for filtering).
+export const NAV_BLOCK_NAME = "Navigation Menu";
 
 export const GET_NAVIGATION_QUERY = /* GraphQL */ `
   fragment NavItemFields on _IContent {
@@ -67,7 +67,9 @@ export const GET_NAVIGATION_QUERY = /* GraphQL */ `
   }
 
   query GetNavigation($locale: [Locales]) {
-    Navigation(locale: $locale, limit: 1) {
+    # Newest first: deleted blocks can linger in the Graph index for a while
+    # after a re-seed; ordering by lastModified guarantees the live block wins.
+    Navigation(locale: $locale, orderBy: { _metadata: { lastModified: DESC } }, limit: 1) {
       items {
         name
         navItems {

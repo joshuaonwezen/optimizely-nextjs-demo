@@ -167,15 +167,24 @@ export async function discoverRootContainer(): Promise<string> {
 
 let cachedGlobalRoot = "";
 
+// Well-known key of the "For All Applications" SysContentFolder — used as a
+// fallback when the top-level root's children cannot be listed.
+const FOR_ALL_APPLICATIONS_KEY = "e56f85d0e8334e02976a2d11fe4d598c";
+
 /**
- * Returns the global content root key — the parent container of the application
- * entry point. Standalone/shared blocks created under this container appear in
- * the CMS "Shared Blocks → For All Applications" picker, so they can be reused
- * in content areas on any page. (Blocks created under the entry point itself are
- * only bindable by reference and never show in that picker.)
+ * Returns the key of the "For All Applications" shared-blocks folder (the
+ * SysContentFolder child of the top-level content root).
  *
- * Discovered by reading the entry point (via discoverRootContainer) and
- * returning its `.container`.
+ * The CMS distinguishes two kinds of items: SHARED BLOCKS live inside this
+ * system folder and show up in the "Shared Blocks" tab, where editors can bind
+ * them into content areas (`type: "array"` of `content`). CONTENT ITEMS live
+ * anywhere else in the tree, show up in the Content Manager tab, and are the
+ * targets of `contentReference` properties. Blocks created directly under the
+ * top-level root are plain content items — they never appear in the Shared
+ * Blocks tab, so every seeded shared block must use this folder as container.
+ *
+ * Discovered by walking up the container chain from the entry point to the
+ * top-level root, then selecting its SysContentFolder child.
  */
 export async function discoverGlobalRoot(): Promise<string> {
   if (cachedGlobalRoot) return cachedGlobalRoot;
@@ -199,9 +208,90 @@ export async function discoverGlobalRoot(): Promise<string> {
     );
   }
 
-  cachedGlobalRoot = globalRoot;
-  console.log(`  [auto-discovered] global root (For All Applications): ${globalRoot}`);
-  return globalRoot;
+  const blocksFolder = await findSharedBlocksFolder(token, globalRoot);
+  cachedGlobalRoot = blocksFolder;
+  console.log(`  [auto-discovered] shared blocks folder (For All Applications): ${blocksFolder}`);
+  return blocksFolder;
+}
+
+/**
+ * Returns the key of the SysContentFolder child of the top-level root — the
+ * folder the Shared Blocks tab renders as "For All Applications". Falls back
+ * to the well-known key when the listing fails.
+ */
+async function findSharedBlocksFolder(token: string, topRoot: string): Promise<string> {
+  const res = await fetch(`${CONTENT_ENDPOINT}/${topRoot}/items?pageSize=100`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.ok) {
+    const data = (await res.json()) as { items?: Array<{ key: string; contentType?: string }> };
+    const folder = (data.items ?? []).find((i) => i.contentType === "SysContentFolder");
+    if (folder) return folder.key.replace(/-/g, "");
+  }
+  console.warn(
+    `  [warn] Could not find a SysContentFolder under root ${topRoot} — falling back to well-known key`,
+  );
+  return FOR_ALL_APPLICATIONS_KEY;
+}
+
+/**
+ * Returns the top-level content root key (the item with no container). This is
+ * NOT where shared blocks belong — see discoverGlobalRoot — but earlier seed
+ * versions created blocks here, so migration sweeps need it.
+ */
+export async function discoverTopLevelRoot(): Promise<string> {
+  const token = await getManagementToken();
+  const entryPoint = await discoverRootContainer();
+  let topRoot = await walkToGlobalRoot(token, entryPoint);
+  if (!topRoot) {
+    for (const anchor of RECOVERY_ANCHORS) {
+      topRoot = await walkToGlobalRoot(token, anchor);
+      if (topRoot) break;
+    }
+  }
+  if (!topRoot) {
+    throw new Error(
+      `Could not determine the top-level root from entry point ${entryPoint} or seeded anchors.`,
+    );
+  }
+  return topRoot;
+}
+
+/**
+ * Migration + idempotency sweep for seeded shared blocks. Permanently deletes
+ * items of the given content types found (a) directly under the top-level root,
+ * where earlier seed versions created them as plain content items (the UI never
+ * creates blocks there, so everything of these types at the root is seed
+ * legacy), and (b) inside the shared-blocks folder, so re-runs don't pile up
+ * duplicates. Pass `includeBlocksFolder: false` when the folder may hold
+ * manually created blocks of the same types that must survive — the caller is
+ * then responsible for folder-side cleanup (e.g. by display-name sentinel).
+ */
+export async function sweepMisplacedSharedBlocks(
+  contentTypes: string[],
+  options: { includeBlocksFolder?: boolean } = {}
+): Promise<void> {
+  const token = await getManagementToken();
+  const topRoot = await discoverTopLevelRoot();
+  const blocksFolder = await discoverGlobalRoot();
+  const wanted = new Set(contentTypes);
+  const containers = options.includeBlocksFolder === false ? [topRoot] : [topRoot, blocksFolder];
+
+  for (const container of containers) {
+    const res = await fetch(`${CONTENT_ENDPOINT}/${container}/items?pageSize=100`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) continue;
+    const data = (await res.json()) as { items?: Array<{ key: string; contentType?: string }> };
+    for (const item of data.items ?? []) {
+      if (!wanted.has(item.contentType ?? "")) continue;
+      const del = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
+      });
+      console.log(`  [sweep] deleted ${item.contentType} ${item.key} from ${container} (${del.status})`);
+    }
+  }
 }
 
 // Stable content keys that survive re-seeds (the shared FAQ items, preserved by

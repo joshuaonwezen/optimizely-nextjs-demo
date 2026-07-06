@@ -22,6 +22,7 @@ import {
   deletePageByUrlIfExists,
   discoverGlobalRoot,
   discoverRootContainer,
+  sweepMisplacedSharedBlocks,
   findItemsInContainerByName,
   findPageKeyByUrl,
   noHyphens,
@@ -137,18 +138,25 @@ const PHASE_D_PAGE_URLS = [
 
 async function cleanupPreviousModelingContent(): Promise<void> {
   console.log("--- Cleaning previously seeded modeling content ---");
-  const matches = await findItemsInContainerByName(
-    (displayName) => MODELING_SENTINELS.some((re) => re.test(displayName)),
-    CONTAINER
-  );
-  for (const item of matches) {
-    await deleteContentByKey(item.key);
-    console.log(`  [deleted] ${item.displayName}`);
+  // Sweep by display-name sentinel in both the start-page container and the
+  // shared-blocks folder — sentinel matching (em-dash prefixes) leaves
+  // manually created blocks of the same content types untouched.
+  let deleted = 0;
+  for (const container of [CONTAINER, BLOCKS_CONTAINER]) {
+    const matches = await findItemsInContainerByName(
+      (displayName) => MODELING_SENTINELS.some((re) => re.test(displayName)),
+      container
+    );
+    for (const item of matches) {
+      await deleteContentByKey(item.key);
+      console.log(`  [deleted] ${item.displayName}`);
+      deleted++;
+    }
   }
   for (const url of PHASE_D_PAGE_URLS) {
     await deletePageByUrlIfExists([url]);
   }
-  if (matches.length === 0) console.log("  (root-container content already clean)");
+  if (deleted === 0) console.log("  (containers already clean)");
 }
 
 // Phase B: Authors
@@ -1149,6 +1157,16 @@ async function main(): Promise<void> {
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}\n`);
 
   await cleanupPreviousModelingContent();
+
+  // Remove modeling blocks stranded at the top-level root by earlier seed
+  // versions. Root only — the blocks folder may hold manually created blocks
+  // of the same types (e.g. an editor's own TeamMemberBlock); folder-side
+  // leftovers are cleaned by sentinel in cleanupPreviousModelingContent.
+  console.log("--- Sweeping misplaced modeling shared blocks at the top-level root ---");
+  await sweepMisplacedSharedBlocks(
+    ["AuthorBlock", "OutcomeItemBlock", "TestimonialBlock", "TimelineMilestoneBlock", "TeamMemberBlock"],
+    { includeBlocksFolder: false }
+  );
 
   // Pause to let CMS release routeSegments from deleted pages.
   await new Promise((r) => setTimeout(r, 4000));

@@ -13,7 +13,14 @@
 
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
-import { createContent, discoverGlobalRoot, discoverRootContainer, findPageKeyByUrl } from "./_shared";
+import {
+  createContent,
+  discoverGlobalRoot,
+  discoverRootContainer,
+  findPageKeyByUrl,
+  patchContentProperties,
+  sweepMisplacedSharedBlocks,
+} from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -23,9 +30,15 @@ function noHyphens(): string {
 
 async function main() {
   await discoverRootContainer();
-  // ContactFormBlock is a shared block — create it under the global root so it
-  // appears in "Shared Blocks → For All Applications".
+  // ContactFormBlock is a shared block — it must live inside the shared-blocks
+  // folder ("Shared Blocks → For All Applications") to show up in that tab.
   const blocksContainer = await discoverGlobalRoot();
+
+  // Remove blocks stranded at the top-level root by earlier seed versions and
+  // stale copies in the folder (keys are random per run). The existing
+  // Contact (Classic) page is re-pointed at the fresh block below.
+  console.log("--- Sweeping misplaced/stale ContactFormBlock shared blocks ---");
+  await sweepMisplacedSharedBlocks(["ContactFormBlock"]);
 
   // Step 1: create the shared ContactFormBlock content item.
   const blockKey = noHyphens();
@@ -49,6 +62,18 @@ async function main() {
   );
 
   // Step 2: create the TraditionalPage under /help, referencing the block via featuredBlock.
+  // On re-runs the page already exists (routeSegment in use → create skips), but its
+  // old block was just swept — re-point featuredBlock at the fresh block instead.
+  const existingPageKey = await findPageKeyByUrl(["/en/help/contact-classic", "/en/help/contact-classic/"]);
+  if (existingPageKey) {
+    await patchContentProperties(existingPageKey, {
+      featuredBlock: { reference: `cms://content/${blockKey}` },
+    });
+    console.log("  [patched] existing Contact (Classic) page → new ContactFormBlock");
+    console.log("\nDone — ContactFormBlock reseeded and re-linked.");
+    return;
+  }
+
   const helpKey = await findPageKeyByUrl(["/en/help", "/en/help/"]);
   if (!helpKey) {
     console.warn(

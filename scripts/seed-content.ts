@@ -21,6 +21,7 @@ import {
   CONTENT_ENDPOINT,
   createContent,
   discoverGlobalRoot,
+  discoverTopLevelRoot,
   ensureExperienceStartPage,
   wrapProps,
   uid,
@@ -1013,9 +1014,13 @@ async function main() {
 
   console.log("\n--- Cleaning existing content ---");
   await deleteExisting();
-  // Also sweep stale shared blocks under the global root (legacy duplicates +
-  // prior-run blocks). Runs first so the other seeds recreate blocks cleanly.
-  await cleanSharedBlocks(BLOCKS_CONTAINER);
+  // Sweep stale shared blocks at the top-level root, where earlier seed
+  // versions created them as plain content items (invisible to the Shared
+  // Blocks tab). Type-based deletion is safe there — the UI never creates
+  // blocks at the root. Inside the shared-blocks folder each seed script
+  // cleans its own types (seed-nav/seed-faqs by type, seed-modeling by
+  // sentinel), so manually created blocks of managed types survive.
+  await cleanSharedBlocks(await discoverTopLevelRoot());
 
   // Wait for CMS to free up routeSegments from deleted pages before re-creating
   console.log("\n  Waiting 8s for routeSegments to be released...");

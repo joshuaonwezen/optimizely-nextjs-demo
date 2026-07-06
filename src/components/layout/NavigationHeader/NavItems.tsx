@@ -343,42 +343,54 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
 
               {hasChildren && isActive && (
                 <div className="absolute top-full left-0 pt-2 z-50">
-                  <div className="bg-surface-lowest border border-ghost-border rounded-xl shadow-lg py-2 min-w-52">
+                  <div className="bg-surface-lowest border border-ghost-border rounded-xl shadow-lg p-3 min-w-72 max-w-[min(24rem,calc(100vw-3rem))]">
+                    <Link
+                      href={node.href}
+                      target={node.openInNewTab ? "_blank" : undefined}
+                      rel={node.openInNewTab ? "noopener noreferrer" : undefined}
+                      className="mb-2 flex items-center justify-between border-b border-ghost-border px-3 pb-2.5 pt-1 text-sm font-semibold text-on-surface transition-colors hover:text-brand"
+                    >
+                      {node.label}
+                    </Link>
+                    <div className="space-y-2">
                     {node.children.map((child) =>
                       child.children.length > 0 ? (
-                        <div key={child.key}>
+                        <section key={child.key} className="rounded-lg bg-surface-lowest">
                           <Link
                             href={child.href}
                             target={child.openInNewTab ? "_blank" : undefined}
                             rel={child.openInNewTab ? "noopener noreferrer" : undefined}
-                            className="block px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-brand transition-colors"
+                            className="block rounded-lg px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-low hover:text-brand"
                           >
                             {child.label}
                           </Link>
-                          {child.children.map((grandchild) => (
-                            <Link
-                              key={grandchild.key}
-                              href={grandchild.href}
-                              target={grandchild.openInNewTab ? "_blank" : undefined}
-                              rel={grandchild.openInNewTab ? "noopener noreferrer" : undefined}
-                              className="block px-4 py-1.5 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
-                            >
-                              {grandchild.label}
-                            </Link>
-                          ))}
-                        </div>
+                          <div className="ml-3 border-l border-ghost-border pl-3 pb-1">
+                            {child.children.map((grandchild) => (
+                              <Link
+                                key={grandchild.key}
+                                href={grandchild.href}
+                                target={grandchild.openInNewTab ? "_blank" : undefined}
+                                rel={grandchild.openInNewTab ? "noopener noreferrer" : undefined}
+                                className="block rounded-md px-3 py-1.5 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-brand"
+                              >
+                                {grandchild.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </section>
                       ) : (
                         <Link
                           key={child.key}
                           href={child.href}
                           target={child.openInNewTab ? "_blank" : undefined}
                           rel={child.openInNewTab ? "noopener noreferrer" : undefined}
-                          className="block px-4 py-1.5 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
+                          className="block rounded-lg px-3 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-low hover:text-brand"
                         >
                           {child.label}
                         </Link>
                       )
                     )}
+                    </div>
                   </div>
                 </div>
               )}

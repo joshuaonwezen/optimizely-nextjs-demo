@@ -15,6 +15,7 @@ import {
   createContent,
   discoverGlobalRoot,
   discoverRootContainer,
+  sweepMisplacedSharedBlocks,
   wrapProps,
   noHyphens,
 } from "./_shared";
@@ -165,6 +166,14 @@ async function main() {
   BLOCKS_CONTAINER = await discoverGlobalRoot();
   console.log(`  container: ${CONTAINER}`);
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}\n`);
+
+  // Relocate FAQ blocks stranded at the top-level root by earlier seed versions.
+  // The items use stable keys (createContent 409-skips existing ones), so without
+  // this sweep a misplaced item would never move into the shared-blocks folder.
+  console.log("--- Sweeping misplaced/stale FAQ shared blocks ---");
+  await sweepMisplacedSharedBlocks(["FaqItemBlock", "FaqContainerBlock"]);
+  await new Promise((r) => setTimeout(r, 3000));
+
   await createFaqItems();
   await createFaqContainer();
   await wireFaqsPage();

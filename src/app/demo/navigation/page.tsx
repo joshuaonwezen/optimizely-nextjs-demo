@@ -55,18 +55,24 @@ export const NavigationRootType = contentType({
   },
 });`;
 
-const S1_CMS_SETUP = `1. Create one "Navigation Root" item in the CMS (e.g. "Main Nav").
+const S1_CMS_SETUP = `1. Create one "Navigation Root" as a SHARED BLOCK: open the Shared Blocks
+   tab, select "For All Applications", and create the block there (e.g.
+   "Main Nav"). Blocks created elsewhere are plain content items and will
+   not appear in the Shared Blocks tab or in content-area pickers.
 
-2. Open it and add NavigationItem entries to the "Top-level Items" content area.
-   Each NavigationItem has a "Child Items" content area for the next level.
+2. Open it and add NavigationItem entries to the "Top-level Items" content
+   area. Content areas bind shared blocks; each NavigationItem's "URL" is a
+   contentReference that points at a content item (a page) from the
+   Content Manager tab.
 
-3. Nest down to 5 levels - the @recursive directive handles any depth:
+3. Nest down to 5 levels via each item's "Child Items" content area - the
+   @recursive directive handles any depth:
 
-   NavigationRoot
+   NavigationRoot  (shared block)
    └── navItems  (content area)
-       └── NavigationItem  (L1)
+       └── NavigationItem  (L1, shared block)
            └── children  (content area)
-               └── NavigationItem  (L2)
+               └── NavigationItem  (L2, shared block)
 
 4. Publish. The query fetches all levels in one round-trip.
    On-demand revalidation: revalidateTag("navigation") from a webhook.`;
@@ -220,12 +226,28 @@ export default async function NavigationDemoPage() {
             </h2>
           </div>
           <p className="text-sm text-on-surface-variant mb-2 max-w-3xl">
-            A standalone <code className="bg-surface-low px-1 rounded text-xs font-mono">NavigationRoot</code> content item
-            holds the entire tree. Editors build it once and maintain it independently of page content.
+            A <code className="bg-surface-low px-1 rounded text-xs font-mono">NavigationRoot</code> shared block,
+            living in the Shared Blocks tab under &quot;For All Applications&quot;, holds the entire tree.
+            Editors build it once and maintain it independently of page content.
             Optimizely Graph&apos;s{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">@recursive</code> directive
             fetches all 5 levels in one round-trip.
           </p>
+          <div className="bg-surface-lowest rounded-2xl border border-ghost-border p-5 mb-4 max-w-3xl">
+            <p className="text-sm font-semibold text-on-surface mb-1">Shared blocks vs content items</p>
+            <p className="text-sm text-on-surface-variant">
+              The CMS distinguishes two kinds of items. <strong>Shared blocks</strong> live in the{" "}
+              <em>Shared Blocks</em> tab (nested under &quot;For All Applications&quot; or &quot;For This Page&quot;)
+              and are what editors bind into <strong>content areas</strong> like{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">navItems</code> and{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">children</code>.{" "}
+              <strong>Content items</strong> live in the <em>Content Manager</em> tab and are the targets of{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">contentReference</code> properties
+              like each item&apos;s <code className="bg-surface-low px-1 rounded text-xs font-mono">href</code>.
+              A block created outside the shared-blocks folder is a plain content item - it can still be
+              referenced, but editors will never find it in the Shared Blocks tab.
+            </p>
+          </div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand mb-6">
             {s1FromCms ? "✓ Live from CMS" : "◎ Demo data - add a NavigationRoot in the CMS"}
           </span>
