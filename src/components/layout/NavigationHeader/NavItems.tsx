@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -62,6 +62,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
   const [searchOpen,    setSearchOpen]    = useState(false);
   const [mobileOpen,    setMobileOpen]    = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const [mobileDemoCategory, setMobileDemoCategory] = useState<string | null>(null);
   const [isLoggedIn,    setIsLoggedIn]    = useState(false);
   const pathname = usePathname();
   const currentLocale = getCurrentLocale(pathname);
@@ -94,6 +95,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
 
   function toggleMobile(key: string) {
     setMobileExpanded(prev => prev === key ? null : key);
+    setMobileDemoCategory(null);
   }
 
   return (
@@ -204,27 +206,41 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
                 <Chevron open={mobileExpanded === "__demo__"} />
               </button>
               {mobileExpanded === "__demo__" && (
-                <div className="mt-3 space-y-5 px-3">
-                  {demoCategories.map((category) => (
-                    <div key={category.label}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
-                        {category.label}
-                      </p>
-                      <ul className="space-y-0.5">
-                        {category.links.map((link) => (
-                          <li key={link.href}>
-                            <Link
-                              href={link.href}
-                              className="block py-1.5 text-sm font-medium text-on-surface hover:text-brand transition-colors"
-                            >
-                              {link.label}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                  <Link href="/demo" className="text-sm text-brand hover:underline font-medium">
+                <div className="mt-2 px-3">
+                  {demoCategories.map((category) => {
+                    const isOpen = mobileDemoCategory === category.label;
+                    return (
+                      <div key={category.label}>
+                        <button
+                          onClick={() => setMobileDemoCategory(isOpen ? null : category.label)}
+                          className="w-full flex items-center justify-between py-2.5 text-left"
+                        >
+                          <span className="text-sm font-semibold text-on-surface">
+                            {category.label}
+                            <span className="ml-2 text-xs font-normal text-on-surface-variant">
+                              {category.links.length}
+                            </span>
+                          </span>
+                          <Chevron open={isOpen} />
+                        </button>
+                        {isOpen && (
+                          <ul className="ml-3 pl-3 border-l-2 border-ghost-border space-y-0.5 mb-2">
+                            {category.links.map((link) => (
+                              <li key={link.href}>
+                                <Link
+                                  href={link.href}
+                                  className="block py-1.5 text-sm font-medium text-on-surface-variant hover:text-brand transition-colors"
+                                >
+                                  {link.label}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <Link href="/demo" className="inline-block mt-2 text-sm text-brand hover:underline font-medium">
                     View all demos →
                   </Link>
                 </div>
@@ -386,7 +402,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
 
           {activeKey === "__demo__" && (
             <div className="absolute top-full right-0 pt-2 z-50">
-              <div className="bg-surface-lowest border border-ghost-border rounded-2xl shadow-xl p-5 w-[860px] max-h-[calc(100vh-5rem)] overflow-y-auto">
+              <div className="bg-surface-lowest border border-ghost-border rounded-2xl shadow-xl p-5 w-[540px] lg:w-[700px] xl:w-[860px] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-5rem)] overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-xs font-semibold text-on-surface">Developer demos</p>
                   <Link href="/demo" className="text-xs text-brand hover:underline font-medium">
@@ -394,14 +410,18 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
                   </Link>
                 </div>
                 {(() => {
-                  const rest = demoCategories.slice(1);
-                  const mid = Math.ceil(rest.length / 2);
-                  const col2 = rest.slice(0, mid);
-                  const col3 = rest.slice(mid);
+                  // Split the remaining categories into two stacks balanced by link count
+                  const stacks: [DemoCategory[], DemoCategory[]] = [[], []];
+                  const counts = [0, 0];
+                  for (const cat of demoCategories.slice(1)) {
+                    const i = counts[0] <= counts[1] ? 0 : 1;
+                    stacks[i].push(cat);
+                    counts[i] += cat.links.length;
+                  }
                   return (
                     <div className="flex gap-5">
                       {demoCategories[0] && (
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-[2] min-w-0">
                           <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
                             {demoCategories[0].label}
                           </p>
@@ -415,7 +435,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
                                 <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
                                   {link.label}
                                 </span>
-                                <span className="block text-xs text-on-surface-variant leading-snug mt-0.5">
+                                <span className="hidden xl:block text-xs text-on-surface-variant leading-snug mt-0.5">
                                   {link.description}
                                 </span>
                               </Link>
@@ -423,60 +443,37 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
                           </div>
                         </div>
                       )}
-                      <div className="w-px bg-ghost-border flex-shrink-0" />
-                      <div className="w-[180px] flex-shrink-0 flex flex-col gap-5">
-                        {col2.map((category) => (
-                          <div key={category.label}>
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
-                              {category.label}
-                            </p>
-                            <ul className="space-y-0.5">
-                              {category.links.map((link) => (
-                                <li key={link.href}>
-                                  <Link
-                                    href={link.href}
-                                    className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
-                                  >
-                                    <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
-                                      {link.label}
-                                    </span>
-                                    <span className="block text-xs text-on-surface-variant leading-snug mt-0.5">
-                                      {link.description}
-                                    </span>
-                                  </Link>
-                                </li>
-                              ))}
-                            </ul>
+                      {stacks.map((stack, i) => (
+                        <Fragment key={i}>
+                          <div className="w-px bg-ghost-border flex-shrink-0" />
+                          <div className="flex-1 min-w-0 flex flex-col gap-5">
+                            {stack.map((category) => (
+                              <div key={category.label}>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
+                                  {category.label}
+                                </p>
+                                <ul className="space-y-0.5">
+                                  {category.links.map((link) => (
+                                    <li key={link.href}>
+                                      <Link
+                                        href={link.href}
+                                        className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
+                                      >
+                                        <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
+                                          {link.label}
+                                        </span>
+                                        <span className="hidden xl:block text-xs text-on-surface-variant leading-snug mt-0.5">
+                                          {link.description}
+                                        </span>
+                                      </Link>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                      <div className="w-px bg-ghost-border flex-shrink-0" />
-                      <div className="w-[180px] flex-shrink-0 flex flex-col gap-5">
-                        {col3.map((category) => (
-                          <div key={category.label}>
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
-                              {category.label}
-                            </p>
-                            <ul className="space-y-0.5">
-                              {category.links.map((link) => (
-                                <li key={link.href}>
-                                  <Link
-                                    href={link.href}
-                                    className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
-                                  >
-                                    <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
-                                      {link.label}
-                                    </span>
-                                    <span className="block text-xs text-on-surface-variant leading-snug mt-0.5">
-                                      {link.description}
-                                    </span>
-                                  </Link>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
+                        </Fragment>
+                      ))}
                     </div>
                   );
                 })()}
