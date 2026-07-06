@@ -1,6 +1,5 @@
 import { contentType } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import MoseyBankLogo from "@/components/MoseyBankLogo";
 
 export const NavigationItemType = contentType({
   key: "NavigationItem",
@@ -83,14 +82,6 @@ function NewTabBadge() {
     <span className="shrink-0 text-[10px] font-medium text-brand bg-surface-low rounded-full px-2 py-0.5">
       new tab ↗
     </span>
-  );
-}
-
-function Chevron() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" className="opacity-60">
-      <path d="M2 3.5 L5 6.5 L8 3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
   );
 }
 
@@ -200,23 +191,6 @@ export function NavigationBlock(props: NavigationBlockProps) {
 
   return (
     <div data-component="NavigationBlock" className="bg-surface min-h-full">
-      <header className="border-b border-ghost-border bg-nav-glass">
-        <nav className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-          <MoseyBankLogo />
-          <div className="flex items-center gap-1">
-            {items.map((item, i) => (
-              <span
-                key={`${item.label}-${i}`}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium font-body text-on-surface-variant"
-              >
-                {item.label}
-                {item.children.length > 0 && <Chevron />}
-              </span>
-            ))}
-          </div>
-        </nav>
-      </header>
-
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
         <p className="text-xs text-on-surface-variant opacity-70 mb-3">
           Dropdown panels are shown expanded for editing - on the live site they open on hover.
