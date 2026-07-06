@@ -1029,7 +1029,7 @@ await getDecision("my_flag", userId, {
                 React apps where a single SDK instance lives in the browser and flags are evaluated in the client. That SDK also has an{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">isServerSide</code> prop on{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">OptimizelyProvider</code> that disables background polling
-                and event batching during SSR so the SDK doesn&apos;t try to run browser-only logic - it was deprecated in react-sdk v4 in favour
+                and event batching during SSR so the SDK doesn&apos;t try to run browser-only logic - it was removed in react-sdk v4 in favour
                 of configuring a static per-request instance directly.
               </p>
               <p className="text-sm text-on-surface-variant mb-4 leading-relaxed">
@@ -1050,7 +1050,7 @@ await getDecision("my_flag", userId, {
                 <div className="bg-surface-low rounded-xl p-4">
                   <p className="font-semibold text-on-surface mb-2">Two-layer architecture</p>
                   <div className="space-y-1 text-on-surface-variant">
-                    <p><code className="font-mono">getOptimizelyClient()</code> - SDK instance, cached 60s by Next.js fetch. One datafile download per minute regardless of traffic.</p>
+                    <p><code className="font-mono">getOptimizelyClient()</code> - SDK instance built per request from a datafile cached 60s by Next.js fetch. One datafile download per minute regardless of traffic.</p>
                     <p className="mt-2"><code className="font-mono">getOptimizelyUser()</code> - user context, scoped to the current HTTP request via React <code className="font-mono">cache()</code>. Isolated per visitor, never shared.</p>
                   </div>
                 </div>
@@ -1058,7 +1058,7 @@ await getDecision("my_flag", userId, {
                   <p className="font-semibold text-on-surface mb-2">When to use what</p>
                   <div className="space-y-1 text-on-surface-variant">
                     <p><code className="font-mono">user.decide(flagKey)</code> - preferred. Full visitor context already resolved. Supports <code className="font-mono">{"{ bucketingId }"}</code> and <code className="font-mono">{"{ attributes }"}</code> overrides.</p>
-                    <p className="mt-2"><code className="font-mono">getDecision(flagKey, userId, attrs)</code> - low-level, for standalone calls outside a component tree (e.g. middleware, API routes).</p>
+                    <p className="mt-2"><code className="font-mono">getDecision(flagKey, userId, attrs)</code> - low-level, for standalone server calls where you pass userId and attributes yourself (always suppresses impressions). The edge middleware uses the SDK&apos;s <code className="font-mono">/universal</code> entry directly instead.</p>
                   </div>
                 </div>
               </div>

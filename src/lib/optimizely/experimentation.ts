@@ -22,7 +22,7 @@ export type FxDecision = {
 
 // cache() memoises per request — all server components share one SDK instance.
 export const getOptimizelyClient = cache(async function getOptimizelyClient() {
-  // SDK v5 createStaticProjectConfigManager requires the datafile as a JSON string
+  // createStaticProjectConfigManager requires the datafile as a JSON string
   const datafileText = await fetchDatafile();
   if (!datafileText) return null;
   const projectConfigManager = createStaticProjectConfigManager({ datafile: datafileText });
