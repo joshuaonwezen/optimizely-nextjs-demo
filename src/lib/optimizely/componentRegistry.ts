@@ -25,6 +25,9 @@ import OptiFormsTextarea from "@/components/blocks/OptiFormsTextarea";
 import OptiFormsSelection from "@/components/blocks/OptiFormsSelection";
 import OptiFormsSubmit from "@/components/blocks/OptiFormsSubmit";
 import { NavigationItemType, NavigationType, NavigationBlock, NavigationItemPreview } from "@/components/blocks/NavigationItemBlock";
+import { FooterType, FooterPreview } from "@/components/layout/Footer";
+import { SiteSettingsType, SiteSettingsPreview } from "@/components/layout/SiteSettings";
+import { SiteBannerType, SiteBannerBlock } from "@/components/layout/GlobalBanner";
 import FaqItemBlock, { FaqItemBlockType, FaqItemFlatTemplate } from "@/components/blocks/FaqItemBlock";
 import FaqContainerBlock, { FaqContainerBlockType } from "@/components/blocks/FaqContainerBlock";
 import FeaturedContentBlock, { FeaturedContentBlockType, FeaturedContentCardTemplate } from "@/components/blocks/FeaturedContentBlock";
@@ -164,6 +167,9 @@ export function initComponentRegistry() {
     OptiFormsSubmitElementType,
     NavigationItemType,
     NavigationType,
+    FooterType,
+    SiteSettingsType,
+    SiteBannerType,
     FaqItemBlockType,
     FaqContainerBlockType,
     FeaturedContentBlockType,
@@ -319,6 +325,9 @@ export function initComponentRegistry() {
       ContactFormBlock,
       Navigation: NavigationBlock,
       NavigationItem: NavigationItemPreview,
+      Footer: FooterPreview,
+      SiteSettings: SiteSettingsPreview,
+      SiteBanner: SiteBannerBlock,
       // Fallback: unknown types from the CMS (stale seeds, deleted types) — render nothing
       _Component: () => null,
     },

@@ -40,6 +40,8 @@ export async function POST(request: NextRequest) {
     revalidateTag("page");
     revalidateTag("navigation");
     revalidateTag("banner");
+    revalidateTag("footer");
+    revalidateTag("settings");
     revalidateTag("quotes");
 
     return NextResponse.json({ received: true, timestamp: Date.now() });

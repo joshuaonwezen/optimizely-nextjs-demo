@@ -62,6 +62,8 @@ const KEEP = new Set([
   "Navigation",
   // Layout types (src/components/layout/)
   "SiteBanner",
+  "Footer",
+  "SiteSettings",
   // Built-in Optimizely system types — never delete these
   "BlankExperience",
   "BlankSection",

@@ -468,4 +468,17 @@ export const NL: Record<string, string> = {
   "Mosey Bank | Banking Built Around You": "Mosey Bank | Bankieren dat om jou draait",
   "Fee-free current accounts, savings up to 5.1% AER, and mortgages with a decision in principle in 10 minutes.":
     "Gratis betaalrekeningen, sparen tot 5,1% AER en hypotheken met een voorlopig akkoord binnen 10 minuten.",
+
+  // Footer block (seed-footer.ts)
+  "Banking built around you · Mosey Bank": "Bankieren dat om jou draait · Mosey Bank",
+
+  // SiteSettings block (seed-settings.ts)
+  "Search pages…": "Zoek pagina's…",
+  "Searching…": "Zoeken…",
+  "No results for “{query}”": "Geen resultaten voor “{query}”",
+  "Type at least 2 characters to search": "Typ minstens 2 tekens om te zoeken",
+
+  // SiteBanner block (seed-settings.ts)
+  "New: instant payments are now available": "Nieuw: directe betalingen zijn nu beschikbaar",
+  "Learn more": "Meer informatie",
 };

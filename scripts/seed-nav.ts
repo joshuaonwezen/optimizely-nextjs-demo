@@ -17,8 +17,10 @@ import {
   CONTENT_ENDPOINT,
   GRAPH_ENDPOINT,
   SINGLE_KEY,
+  deleteContentByKey,
   discoverGlobalRoot,
   discoverRootContainer,
+  findItemsInContainerByName,
   sweepMisplacedSharedBlocks,
   wrapProps,
   noHyphens,
@@ -468,10 +470,20 @@ async function main() {
   await cleanupNavItems();
 
   // Remove nav blocks stranded at the top-level root by earlier seed versions
-  // (they were plain content items there, invisible to the Shared Blocks tab)
-  // and any leftovers in the blocks folder from prior runs.
+  // (they were plain content items there, invisible to the Shared Blocks tab).
+  // The blocks folder is NOT swept by content type: seed-footer.ts also creates
+  // NavigationItem blocks there ("Footer - ..."), which must survive nav
+  // re-seeds. Folder leftovers are deleted by display-name sentinel instead.
   console.log("--- Sweeping misplaced/stale Navigation shared blocks ---");
-  await sweepMisplacedSharedBlocks(["Navigation", "NavigationItem"]);
+  await sweepMisplacedSharedBlocks(["Navigation", "NavigationItem"], { includeBlocksFolder: false });
+  const staleNavBlocks = await findItemsInContainerByName(
+    (name) => name.startsWith("Navigation Item - ") || name === NAV_BLOCK_NAME,
+    BLOCKS_CONTAINER
+  );
+  for (const item of staleNavBlocks) {
+    await deleteContentByKey(item.key);
+    console.log(`  [deleted] ${item.displayName} (${item.key})`);
+  }
 
   console.log("\n--- Fetching existing page keys from Graph ---");
   const pageKeyMap = await buildPageKeyMap();

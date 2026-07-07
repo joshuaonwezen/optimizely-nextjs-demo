@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import type { NavNode } from "@/lib/graphql/queries/GetNavigation";
 import type { DemoCategory } from "@/lib/getDemoLinks";
 import type { SupportedLocale } from "@/lib/graphql/queries/GetSupportedLocales";
+import { DEFAULT_SITE_SETTINGS, type SiteSettingsStrings } from "@/lib/siteSettings";
 import SearchOverlay from "@/components/layout/SearchOverlay";
 import MoseyBankLogo from "@/components/MoseyBankLogo";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -19,6 +20,9 @@ interface Props {
   localizedTrees?: Record<string, NavNode[]>;
   demoCategories: DemoCategory[];
   locales: SupportedLocale[];
+  /** UI strings from the SiteSettings block; defaults keep the chrome working without CMS data. */
+  siteSettings?: SiteSettingsStrings;
+  localizedSiteSettings?: Record<string, SiteSettingsStrings>;
 }
 
 function getCookie(name: string): string | undefined {
@@ -57,7 +61,7 @@ function SearchIcon() {
   );
 }
 
-export default function NavItems({ tree: baseTree, localizedTrees, demoCategories, locales }: Props) {
+export default function NavItems({ tree: baseTree, localizedTrees, demoCategories, locales, siteSettings, localizedSiteSettings }: Props) {
   const [activeKey,     setActiveKey]     = useState<string | null>(null);
   const [searchOpen,    setSearchOpen]    = useState(false);
   const [mobileOpen,    setMobileOpen]    = useState(false);
@@ -70,6 +74,10 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
     currentLocale === "en"
       ? baseTree
       : localizeTree(localizedTrees?.[currentLocale] ?? baseTree, currentLocale);
+  const settings =
+    (currentLocale === "en"
+      ? siteSettings
+      : localizedSiteSettings?.[currentLocale] ?? siteSettings) ?? DEFAULT_SITE_SETTINGS;
 
   // Logged-in state derives from the demo_bucketing_id cookie (read client-side so
   // the server render stays cacheable).
@@ -101,7 +109,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
   return (
     <>
       {searchOpen && createPortal(
-        <SearchOverlay onClose={() => setSearchOpen(false)} />,
+        <SearchOverlay onClose={() => setSearchOpen(false)} labels={settings} />,
         document.body
       )}
 
@@ -111,8 +119,8 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
 
           {/* Drawer header */}
           <div className="flex items-center justify-between px-5 h-16 border-b border-ghost-border flex-shrink-0">
-            <Link href={buildLocaleUrl("/", currentLocale)} aria-label="Mosey Bank home" onClick={() => setMobileOpen(false)}>
-              <MoseyBankLogo />
+            <Link href={buildLocaleUrl("/", currentLocale)} aria-label={`${settings.logoTextPrimary} ${settings.logoTextSecondary} home`} onClick={() => setMobileOpen(false)}>
+              <MoseyBankLogo primary={settings.logoTextPrimary} secondary={settings.logoTextSecondary} />
             </Link>
             <button
               onClick={() => setMobileOpen(false)}
@@ -577,7 +585,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
             className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm text-on-surface-variant bg-surface-low border border-ghost-border hover:border-brand/40 hover:text-brand transition-colors min-w-[140px]"
           >
             <SearchIcon />
-            <span className="text-xs">Search…</span>
+            <span className="text-xs">{settings.searchPlaceholder}</span>
           </button>
         ) : (
           <button

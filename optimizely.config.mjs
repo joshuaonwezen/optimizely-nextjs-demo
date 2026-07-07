@@ -35,6 +35,7 @@ export const DynamicExperienceType = contentType({
     "TimelineMilestoneBlock", "TeamMemberBlock",
     "ContactFormBlock",
     "NavigationItem", "Navigation",
+    "Footer", "SiteSettings", "SiteBanner",
   ],
   properties: {
     ...SEO_PROPERTIES,

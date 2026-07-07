@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import { DEFAULT_SITE_SETTINGS, type SiteSettingsStrings } from "@/lib/siteSettings";
 
 interface SearchResult {
   title:    string;
@@ -14,9 +15,11 @@ type SearchMode = "relevance" | "semantic";
 
 interface Props {
   onClose: () => void;
+  /** UI strings from the SiteSettings block; defaults keep the overlay working without CMS data. */
+  labels?: SiteSettingsStrings;
 }
 
-export default function SearchOverlay({ onClose }: Props) {
+export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS }: Props) {
   const [query,   setQuery]   = useState("");
   const [mode,    setMode]    = useState<SearchMode>("relevance");
   const [weight,  setWeight]  = useState(0.5);
@@ -84,7 +87,7 @@ export default function SearchOverlay({ onClose }: Props) {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search pages…"
+            placeholder={labels.searchPlaceholder}
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             className="flex-1 bg-transparent text-sm text-on-surface placeholder:text-on-surface-variant outline-none"
@@ -141,13 +144,13 @@ export default function SearchOverlay({ onClose }: Props) {
         <div className="max-h-96 overflow-y-auto">
           {loading && (
             <div className="px-5 py-8 text-sm text-center text-on-surface-variant">
-              Searching…
+              {labels.searchLoadingText}
             </div>
           )}
 
           {!loading && query.length >= 2 && results.length === 0 && (
             <div className="px-5 py-8 text-sm text-center text-on-surface-variant">
-              No results for &ldquo;{query}&rdquo;
+              {labels.searchNoResultsText.replace("{query}", query)}
             </div>
           )}
 
@@ -185,7 +188,7 @@ export default function SearchOverlay({ onClose }: Props) {
 
           {!loading && query.length < 2 && (
             <div className="px-5 py-8 text-sm text-center text-on-surface-variant">
-              Type at least 2 characters to search
+              {labels.searchMinCharsText}
             </div>
           )}
         </div>

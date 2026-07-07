@@ -1,6 +1,6 @@
 import { graphqlFetch } from "@/lib/optimizely/client";
 
-interface SiteBannerItem {
+export interface SiteBannerItem {
   message?: string | null;
   enabled?: boolean | null;
   variant?: string | null;
@@ -14,9 +14,12 @@ interface GetSiteBannerResult {
   } | null;
 }
 
+// No Graph-side filter on enabled: a where clause on a field the Graph schema
+// hasn't marked queryable errors the whole query, so the enabled check happens
+// here instead. Newest first so a re-seeded banner wins over stale index docs.
 const GET_SITE_BANNER_QUERY = /* GraphQL */ `
-  query GetSiteBanner {
-    SiteBanner(limit: 1, where: { enabled: { eq: true } }) {
+  query GetSiteBanner($locale: [Locales]) {
+    SiteBanner(locale: $locale, orderBy: { _metadata: { lastModified: DESC } }, limit: 10) {
       items {
         message
         enabled
@@ -28,14 +31,15 @@ const GET_SITE_BANNER_QUERY = /* GraphQL */ `
   }
 `;
 
-export async function getSiteBanner(): Promise<SiteBannerItem | null> {
+export async function getSiteBanner(options: { locale?: string } = {}): Promise<SiteBannerItem | null> {
+  const { locale = "en" } = options;
   try {
     const result = await graphqlFetch<GetSiteBannerResult>(
       GET_SITE_BANNER_QUERY,
-      {},
+      { locale: [locale] },
       { next: { revalidate: 60, tags: ["banner"] } }
     );
-    return result.data?.SiteBanner?.items?.[0] ?? null;
+    return result.data?.SiteBanner?.items?.find((item) => item?.enabled) ?? null;
   } catch {
     return null;
   }

@@ -1,40 +1,118 @@
-import Link from "next/link";
-import { getDemoCategories } from "@/lib/getDemoLinks";
+import { contentType } from "@optimizely/cms-sdk";
+import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { getFooter, type FooterData } from "@/lib/graphql/queries/GetFooter";
+import { getSupportedLocales } from "@/lib/graphql/queries/GetSupportedLocales";
+import { NavigationItemType } from "@/components/blocks/NavigationItemBlock";
 import { FooterCtaClient } from "./FooterCtaClient";
+import FooterColumns, { FooterTagline } from "./FooterColumns";
 
-export default function Footer() {
-  const categories = getDemoCategories();
+export const FooterType = contentType({
+  key: "Footer",
+  displayName: "Footer",
+  baseType: "_component",
+  properties: {
+    tagline: { type: "string", displayName: "Tagline", isLocalized: true },
+    // Content area - each column is one NavigationItem (label = column
+    // heading, children = links), reusing the header nav's content type.
+    columns: {
+      type: "array",
+      displayName: "Link Columns",
+      items: { type: "content", allowedTypes: [NavigationItemType] },
+    },
+  },
+});
+
+const FALLBACK_TAGLINE = "Banking built around you · Mosey Bank";
+
+// Raw column shape as the CMS preview route receives it from Graph.
+interface RawFooterColumn {
+  label?: string | null;
+  href?: { url?: { default?: string | null } | null } | null;
+  children?: Array<RawFooterColumn | null | undefined> | null;
+}
+
+interface FooterPreviewData {
+  tagline?: string | null;
+  columns?: Array<RawFooterColumn | null | undefined> | null;
+}
+
+type FooterPreviewProps = FooterPreviewData & { content?: FooterPreviewData };
+
+// Editor preview for the Footer block: the tagline plus each link column
+// rendered as it appears at the bottom of the live site.
+export function FooterPreview(props: FooterPreviewProps) {
+  const data = props.content ?? props;
+  const { pa } = getPreviewUtils(data as Parameters<typeof getPreviewUtils>[0]);
+  const columns = (data.columns ?? []).filter((c): c is RawFooterColumn => Boolean(c));
+
+  return (
+    <div data-component="FooterPreview" className="bg-surface-low min-h-full p-8">
+      <div className="max-w-3xl mx-auto">
+        <div {...pa("columns")} className="grid gap-8 md:grid-cols-3">
+          {columns.map((column, i) => (
+            <div key={`${column.label}-${i}`}>
+              <p className="text-sm font-semibold text-on-surface">{column.label ?? "(untitled)"}</p>
+              <ul className="mt-3 space-y-2">
+                {(column.children ?? [])
+                  .filter((l): l is RawFooterColumn => Boolean(l))
+                  .map((link, j) => (
+                    <li key={`${link.label}-${j}`} className="text-sm text-on-surface-variant">
+                      {link.label ?? "(untitled)"}
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        {columns.length === 0 && (
+          <p className="text-sm text-on-surface-variant">
+            No columns yet - drop NavigationItem blocks into &quot;Link Columns&quot;. Each item&apos;s
+            label becomes a column heading and its child items become the links.
+          </p>
+        )}
+        <p {...pa("tagline")} className="mt-8 pt-6 border-t border-ghost-border text-sm text-on-surface-variant text-center">
+          {data.tagline ?? FALLBACK_TAGLINE}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Link columns + tagline come from the CMS Footer block (ISR-cacheable) and
+// fall back to the hardcoded tagline when the block doesn't exist. The GitHub
+// link and the FX-driven CTA stay code-driven.
+export default async function Footer() {
+  const [footer, locales] = await Promise.all([getFooter(), getSupportedLocales()]);
+
+  // Localized footers for non-English locales (seeded by
+  // scripts/seed-localization.ts). Locales without CMS footer content fall
+  // back to the English data client-side.
+  const localizedFooters: Record<string, FooterData> = {};
+  await Promise.all(
+    locales
+      .filter((l) => l.code !== "en")
+      .map(async (l) => {
+        const localized = await getFooter({ locale: l.code });
+        if (localized) localizedFooters[l.code] = localized;
+      })
+  );
 
   return (
     <footer data-component="Footer" data-track-event="mb_nav_click" data-track-tags={JSON.stringify({ source: "footer" })} className="bg-surface-low">
       <FooterCtaClient />
       <div className="py-16">
         <div className="max-w-7xl mx-auto px-8">
-          <div className="flex flex-wrap justify-center gap-x-12 gap-y-6 mb-8">
-            {categories.map((category) => (
-              <div key={category.label} className="flex flex-col items-center gap-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant/60">
-                  {category.label}
-                </p>
-                <div className="flex flex-wrap justify-center gap-x-5 gap-y-1">
-                  {category.links.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      prefetch={false}
-                      className="text-xs text-on-surface-variant hover:text-brand transition-colors font-mono"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          {footer && footer.columns.length > 0 && (
+            <FooterColumns footer={footer} localizedFooters={localizedFooters} />
+          )}
           <div className="flex items-center justify-center gap-4 flex-wrap">
-            <p className="text-sm text-on-surface-variant">
-              Banking built around you &middot; Mosey Bank
-            </p>
+            <FooterTagline
+              fallback={FALLBACK_TAGLINE}
+              tagline={footer?.tagline ?? null}
+              localizedTaglines={Object.fromEntries(
+                Object.entries(localizedFooters).map(([code, f]) => [code, f.tagline])
+              )}
+            />
             <a
               href="https://github.com/joshuaonwezen/optimizely-nextjs-demo"
               target="_blank"

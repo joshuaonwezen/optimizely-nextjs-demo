@@ -115,6 +115,15 @@ const DISCOVERY_QUERY = /* GraphQL */ `
     FaqContainerBlock(limit: 10) {
       items { _metadata { key displayName variation } }
     }
+    Footer(limit: 10) {
+      items { _metadata { key displayName variation } }
+    }
+    SiteSettings(limit: 10) {
+      items { _metadata { key displayName variation } }
+    }
+    SiteBanner(limit: 10) {
+      items { _metadata { key displayName variation } }
+    }
   }
 `;
 
