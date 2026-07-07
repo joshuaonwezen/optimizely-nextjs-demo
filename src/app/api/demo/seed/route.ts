@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import type { NextRequest } from "next/server";
+import { SEED_INSTANCES } from "@/lib/optimizely/seedInstances";
 
 export const runtime = "nodejs";
 // Vercel hobby plan caps maxDuration at 300; the route 403s in production anyway
@@ -37,14 +38,37 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json().catch(() => ({}))) as Record<string, string>;
 
-  // User-typed value wins; blank falls back to .env.local
   const env: NodeJS.ProcessEnv = { ...process.env };
-  for (const name of FIELDS) {
-    const value = body[name]?.trim() || process.env[name];
-    if (value) env[name] = value;
+  let missing: string[] = [];
+
+  if (body.instance) {
+    // Named instance: resolve all credentials server-side from the suffixed
+    // .env.local vars; the form fields are ignored.
+    const instance = SEED_INSTANCES.find((i) => i.id === body.instance);
+    if (!instance) {
+      return new Response(`Unknown instance: ${body.instance}`, { status: 400 });
+    }
+    for (const name of FIELDS) {
+      // The Graph gateway is shared across instances; everything else must come
+      // from the suffixed var - never fall back to another instance's keys.
+      const shared = name === "OPTIMIZELY_GRAPH_GATEWAY";
+      const value =
+        process.env[`${name}${instance.suffix}`] || (shared ? process.env[name] : undefined);
+      if (value) env[name] = value;
+      else delete env[name];
+    }
+    missing = REQUIRED.filter((name) => !env[name]).map((name) =>
+      name === "OPTIMIZELY_GRAPH_GATEWAY" ? name : `${name}${instance.suffix}`
+    );
+  } else {
+    // Manual path: user-typed value wins; blank falls back to .env.local
+    for (const name of FIELDS) {
+      const value = body[name]?.trim() || process.env[name];
+      if (value) env[name] = value;
+    }
+    missing = REQUIRED.filter((name) => !env[name]);
   }
 
-  const missing = REQUIRED.filter((name) => !env[name]);
   if (missing.length > 0) {
     return new Response(`Missing required values: ${missing.join(", ")}`, { status: 400 });
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SEED_INSTANCES } from "@/lib/optimizely/seedInstances";
 
 type FieldDef = {
   name: string;
@@ -61,6 +62,7 @@ const FIELDS: FieldDef[] = [
 ];
 
 export default function SeedCmsPanel() {
+  const [instance, setInstance] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
   const [log, setLog] = useState("");
   const [running, setRunning] = useState(false);
@@ -83,7 +85,7 @@ export default function SeedCmsPanel() {
       const res = await fetch("/api/demo/seed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(instance ? { instance } : values),
       });
       if (!res.ok || !res.body) {
         setLog(await res.text());
@@ -110,6 +112,27 @@ export default function SeedCmsPanel() {
 
   return (
     <div data-component="SeedCmsPanel" className="space-y-5">
+      <label className="flex flex-col gap-1.5 max-w-sm">
+        <span className="text-xs font-semibold text-on-surface">Instance</span>
+        <select
+          value={instance}
+          onChange={(e) => setInstance(e.target.value)}
+          disabled={running}
+          className="bg-surface border border-ghost-border rounded-lg px-3 py-2 text-sm font-mono text-on-surface"
+        >
+          <option value="">No instance - enter values manually</option>
+          {SEED_INSTANCES.map(({ id, label }) => (
+            <option key={id} value={id}>{label}</option>
+          ))}
+        </select>
+        <span className="text-xs text-on-surface-variant">
+          {instance
+            ? "Credentials are resolved from .env.local on the server"
+            : "Pick a stored instance, or fill in the fields below"}
+        </span>
+      </label>
+
+      {!instance && (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {FIELDS.map((field) => (
           <label key={field.name} className="flex flex-col gap-1.5">
@@ -129,6 +152,7 @@ export default function SeedCmsPanel() {
           </label>
         ))}
       </div>
+      )}
 
       <div className="flex items-center gap-4">
         <button

@@ -381,7 +381,9 @@ export default function ManagementApiDemoPage() {
           <p className="text-sm text-on-surface-variant leading-relaxed max-w-3xl">
             Use this to seed a fresh CMS instance or reseed an existing one without leaving the
             browser. It runs the full seed orchestration (npx tsx scripts/seed-runner.ts) on the
-            server and streams its output live. Fields left blank fall back to the values in
+            server and streams its output live. Pick a stored instance from the dropdown to have
+            its credentials resolved server-side from .env.local, or choose no instance to enter
+            values manually - manual fields left blank fall back to the values in
             .env.local. The client ID and secret must be a content API
             key with write access (Settings → API Keys) - CLI-only credentials fail at the config
             push and content creation steps. Available in local development only; the API route
