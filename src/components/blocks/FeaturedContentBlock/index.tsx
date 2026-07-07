@@ -3,7 +3,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE,
-  HEADING_CLASSES, TEXT_ALIGN_CLASSES, FONT_CLASSES, TEXT_SIZE_CLASSES,
+  HEADING_CLASSES, TEXT_ALIGN_CLASSES, FONT_CLASSES,
 } from "../_shared/displayTemplateSettings";
 
 export const FeaturedContentBlockType = contentType({
@@ -12,10 +12,7 @@ export const FeaturedContentBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    label:        { type: "string",           displayName: "Label (e.g. Case Study, Featured Article)", isLocalized: true },
     featuredPage: { type: "contentReference", displayName: "Featured Page", allowedTypes: ["_page"], indexingType: "disabled" },
-    description:  { type: "string",           displayName: "Override Description", indexingType: "searchable", isLocalized: true },
-    ctaText:      { type: "string",           displayName: "CTA Button Text", isLocalized: true },
   },
 });
 
@@ -50,10 +47,7 @@ interface FeaturedPageRef {
 }
 
 interface FeaturedContentData {
-  label?:        string | null;
   featuredPage?: FeaturedPageRef | null;
-  description?:  string | null;
-  ctaText?:      string | null;
   __context?: { edit?: boolean } | null;
 }
 
@@ -80,15 +74,12 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "lg"];
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
-  const textSizeClass = TEXT_SIZE_CLASSES[(ds?.textSize as string) ?? "md"];
 
   const sectionClass = isCard
     ? `rounded-2xl p-10 ${isBrand ? "bg-gradient-brand" : "bg-surface-lowest border border-outline-variant"}`
     : "py-20";
   const innerClass   = isBrand ? "max-w-2xl" : "insight-rail max-w-2xl";
-  const labelColor   = isBrand ? "text-on-brand/70" : "text-brand";
   const headingColor = isBrand ? "text-on-brand" : "text-on-surface";
-  const bodyColor    = isBrand ? "text-on-brand/80" : "text-on-surface-variant";
   const ctaClass     = isBrand
     ? "bg-on-brand text-brand hover:opacity-90 transition-opacity"
     : "bg-brand text-on-brand hover:opacity-90 transition-opacity";
@@ -96,15 +87,6 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   return (
     <section data-component="FeaturedContentBlock" className={`${sectionClass} ${alignClass}`}>
       <div className={innerClass}>
-        {data.label && (
-          <span
-            {...pa("label")}
-            className={`inline-block text-xs font-semibold uppercase tracking-widest ${labelColor} mb-4`}
-          >
-            {data.label}
-          </span>
-        )}
-
         <h2
           {...pa("featuredPage")}
           className={`${fontClass} ${headingClass} font-extrabold ${headingColor} mb-4`}
@@ -112,21 +94,12 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
           {pageTitle ?? (isDev ? "Set a featured page in the CMS" : null)}
         </h2>
 
-        {data.description && (
-          <p
-            {...pa("description")}
-            className={`${textSizeClass} leading-relaxed ${bodyColor} mb-8`}
-          >
-            {data.description}
-          </p>
-        )}
-
-        {(data.ctaText || data.__context?.edit) && (
+        {(pageUrl || data.__context?.edit) && (
           <Link
             href={data.__context?.edit ? "#" : (pageUrl ?? "#")}
             className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm ${ctaClass}`}
           >
-            <span {...pa("ctaText")}>{data.ctaText ?? "Read More"}</span>
+            <span>Read More</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M3 8H13M9 4L13 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

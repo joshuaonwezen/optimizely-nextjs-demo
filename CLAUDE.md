@@ -17,18 +17,18 @@ CLI credentials (used by `opti:push`) cannot create content. You need a separate
 2. CMS → Settings → Set Access Rights → grant the new key content read/write
 3. Copy the Client ID and Client Secret
 
-**Step 2 — Set up the root container (ONBOARDING only)**
+**Step 2 — Set up the root container (JOSHCMS only)**
 
 The seed needs a DynamicExperience set as the site start page. This must be created manually once:
 1. CMS → Visual Builder → New page → DynamicExperience → name it anything (e.g. "Site Root")
 2. CMS → Settings → Site → Start page → select the DynamicExperience you just created
-3. Note the content key from the CMS UI URL (the UUID in the address bar, without hyphens) — this is `OPTIMIZELY_ROOT_CONTAINER_ONBOARDING`
+3. Note the content key from the CMS UI URL (the UUID in the address bar, without hyphens) — this is `OPTIMIZELY_ROOT_CONTAINER_JOSHCMS`
 
 You can skip step 3 — the seed auto-discovers the root container via `GET /v1/applications` and prints it on every run. Setting the env var is a convenience to avoid the API call.
 
 **Step 3 — Populate `.env.local`**
 
-The runner reads credentials from `.env.local`. For the `personal` instance use the base name; for `onboarding` append `_ONBOARDING`.
+The runner reads credentials from `.env.local`. For the `personal` instance use the base name; for the other instances append the instance suffix (`_JOSHCMS`, `_HARRYNEWCMS`, `_MOSTINNEWCMS` — see the instances table below). Known instances are registered in `src/lib/optimizely/seedInstances.ts`.
 
 | Variable | Required | Where to get it |
 |---|---|---|
@@ -41,34 +41,30 @@ The runner reads credentials from `.env.local`. For the `personal` instance use 
 | `OPTIMIZELY_APP_SECRET` | For webhooks + Content Source API | Same API key |
 | `OPTIMIZELY_ROOT_CONTAINER` | No — auto-discovered | UUID (no hyphens) of the root container; set to skip the discovery call |
 
-Suffix every variable name with `_ONBOARDING` for the onboarding instance. Example:
+Suffix every variable name with the instance suffix for non-personal instances. Example:
 ```
 OPTIMIZELY_CMS_CLIENT_ID=abc123
-OPTIMIZELY_CMS_CLIENT_ID_ONBOARDING=xyz789
+OPTIMIZELY_CMS_CLIENT_ID_JOSHCMS=xyz789
 ```
 
 **Step 4 — Run the seed**
 
+Use the seed tool on `/demo/management-api` (pick the instance from the dropdown), or from the CLI inject the instance's suffixed values as base names:
+
 ```bash
-npx tsx scripts/seed-runner.ts --instance=onboarding
+OPTIMIZELY_CMS_URL=$OPTIMIZELY_CMS_URL_JOSHCMS \
+OPTIMIZELY_CMS_CLIENT_ID=$OPTIMIZELY_CMS_CLIENT_ID_JOSHCMS \
+... npx tsx scripts/seed-runner.ts
 ```
 
 ---
 
 ### How to seed
 
-Always use the seed runner — never call individual seed scripts directly:
+Always use the seed runner — never call individual seed scripts directly. The runner does NOT parse an `--instance` flag; it reads only the base env var names from its environment. Two ways to target an instance:
 
-```bash
-npm run seed:all   # prompts: "Which instance? (personal / onboarding)"
-```
-
-Or pass the instance directly (Claude should always do this after asking the user):
-
-```bash
-npx tsx scripts/seed-runner.ts --instance=personal
-npx tsx scripts/seed-runner.ts --instance=onboarding
-```
+1. **Seed tool (preferred):** `/demo/management-api` → "Reseed this CMS instance" → pick the instance from the dropdown. The API route resolves the suffixed `.env.local` vars server-side and injects them as base names before spawning the runner.
+2. **CLI:** `npm run seed:all` seeds whatever the base vars in `.env.local` point to (the personal instance). For another instance, override the base vars on the command line with that instance's suffixed values.
 
 ### What the runner does (in order)
 
@@ -94,7 +90,7 @@ These are normal — they are not failures:
 
 | Warning | Why | What to do |
 |---|---|---|
-| `[warn] PATCH /versions/1422: 400 Only versions in status 'draft' can be patched` | The ONBOARDING root container is a DynamicExperience set as the start page. It was created manually and is already published. The seed can't patch its composition. | A separate homepage page is created at route `/` as a sibling — that's what the app serves. Ignore this warning. |
+| `[warn] PATCH /versions/1422: 400 Only versions in status 'draft' can be patched` | The joshCMS root container is a DynamicExperience set as the start page. It was created manually and is already published. The seed can't patch its composition. | A separate homepage page is created at route `/` as a sibling — that's what the app serves. Ignore this warning. |
 | `[warn] Could not patch homepage at key=... — update it manually in Visual Builder` | Same as above. | Ignore. The app uses the newly created homepage, not the container itself. |
 | `[warn] FAQs page not found in Graph — run seed:nav first, then re-run this script` | seed-faqs ran before Graph indexed the FAQs page created by seed-nav. | Re-run `npx tsx scripts/seed-faqs.ts` after the full seed completes. |
 | `[indexed sample] { "Quote": { "items": [] } }` | Graph hasn't indexed the quotes yet (10s polling started immediately after sync). | Wait 30-60s, then visit `/demo/content-source` to verify. |
@@ -118,26 +114,28 @@ Three scripts cover the contact-form demos; they are complementary, not alternat
 
 All three run in the runner's optional phase in this order. If no Form Container block exists in the CMS, `seed-form-block.ts` and `seed-contact-form.ts` warn and skip.
 
-### Two instances
+### Instances
 
-Credentials for each instance live in `.env.local` with suffixes:
+Credentials for each instance live in `.env.local` with suffixes. The registry in `src/lib/optimizely/seedInstances.ts` maps instance ids to suffixes and drives the dropdown in the `/demo/management-api` seed tool.
 
-| Instance | Suffix | CMS URL |
-|---|---|---|
-| personal | _(none)_ | `app-ocstjoshuac8je4ft002.cms.optimizely.com` |
-| onboarding | `_ONBOARDING` | `app-opononboard15smbt002.cms.optimizely.com` |
+| Instance | Suffix | CMS URL | Hosted URL |
+|---|---|---|---|
+| personal | _(none)_ | `app-ocstjoshuac8je4ft002.cms.optimizely.com` | — |
+| joshCMS (formerly "onboarding") | `_JOSHCMS` | `app-opononboard15smbt002.cms.optimizely.com` | — |
+| harryNewCMS | `_HARRYNEWCMS` | `app-opon10saas39t5rt001.cms.optimizely.com` | `harry-cms.vercel.app` |
+| mostinNewCMS | `_MOSTINNEWCMS` | `app-opon10saas39t5rt002.cms.optimizely.com` | `mostin-cms.vercel.app` |
 
 Each instance needs its own `OPTIMIZELY_ROOT_CONTAINER_<SUFFIX>` — a UUID **without hyphens** pointing to the root container for that instance. It must exist before seeding. Two supported container setups:
 
 | Setup | When to use | Notes |
 |---|---|---|
 | BlankExperience / folder | Organizational container only, not a page itself | Traditional approach; container is never visited directly |
-| DynamicExperience as start page | Container IS the site start page at `/` | ONBOARDING uses this; seed patches the container's own composition |
+| DynamicExperience as start page | Container IS the site start page at `/` | joshCMS uses this; seed patches the container's own composition |
 
 For the DynamicExperience-as-start-page setup, the CMS admin must:
 1. Create a DynamicExperience in the CMS (Settings → Content or Visual Builder)
 2. Set it as the site start page (Settings → Site → Start page)
-3. Copy its key (from the CMS UI URL, without hyphens) into `OPTIMIZELY_ROOT_CONTAINER_ONBOARDING`
+3. Copy its key (from the CMS UI URL, without hyphens) into `OPTIMIZELY_ROOT_CONTAINER_JOSHCMS`
 
 The seed script handles both setups automatically: it always tries to patch the container key directly with the homepage composition when Graph hasn't indexed the start page yet.
 
@@ -191,7 +189,7 @@ For content seeding you need a dedicated **API key** created in the CMS UI:
 | `OPTIMIZELY_CMS_CLIENT_ID` / `_SECRET` | Content management (seed scripts, Management API) | Settings → API Keys in CMS UI |
 | `OPTIMIZELY_APP_KEY` / `_SECRET` | Graph webhook registration (Basic auth) | Settings → API Keys in CMS UI |
 
-For a second CMS instance, suffix both sets with `_ONBOARDING` (or another label) and the seed runner picks the right pair automatically.
+For additional CMS instances, suffix both sets with the instance suffix (`_JOSHCMS`, `_HARRYNEWCMS`, `_MOSTINNEWCMS`, ...) and register the instance in `src/lib/optimizely/seedInstances.ts` so the `/demo/management-api` seed tool can resolve the right pair.
 
 ### v1 API — endpoint and payload rules
 
@@ -369,10 +367,14 @@ allowedTypes: [FaqItemBlockType]
 TypeScript will surface this as: `Type '"FaqItemBlock"' is not assignable to type 'PermittedTypes'`.
 
 ### `compositionBehaviors` — elementEnabled vs sectionEnabled
-- `"elementEnabled"` — leaf block, cannot have content area (`type: "array"`) properties
-- `"sectionEnabled"` — container block, can have content area properties
+- `"elementEnabled"` — leaf block, can be placed inside a grid column; cannot have content area (`type: "array"`) properties
+- `"sectionEnabled"` — container block, can have content area properties; can NOT be placed inside a grid column
 
-Adding a content area to an `elementEnabled` block will be silently ignored or rejected by the CMS.
+These constraints trap block designs on both sides:
+- A content area on an `elementEnabled` block fails at push time: `"The property 'items' is not allowed when content type has ElementEnabled."` Declaring both behaviors does not help — the push still fails.
+- A `sectionEnabled`-only block placed as an element (seed `elementComponent()`, or gridSection columns) fails at content creation: `400 "Only element enabled components are allowed within an section."`
+
+So a block that must sit inside a grid column (anything used with `elementComponent()`) can never have a content area — use plain properties, or restructure so the container block is a section.
 
 ### Contracts (shared property sets) — `contract()` is NOT exported by the SDK
 The SDK documentation describes a `contract()` helper for reusable property groups, but `@optimizely/cms-sdk` 2.0.0 does not export it — `import { contract }` fails at runtime. Use the property-spread pattern instead: define the shared properties as a plain object and spread it into each content type.

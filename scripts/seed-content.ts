@@ -189,11 +189,7 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
       }),
     ]),
     ...(savingsKey ? [sectionComponent("FeaturedContentBlock", "Featured Savings", {
-      label: "Our best rate",
       featuredPage: `cms://content/${savingsKey}`,
-      description:
-        "Our fixed-rate savings account now offers 5.1% AER. Lock in your rate today and watch your money grow — FSCS protected up to £85,000.",
-      ctaText: "See savings rates",
     })] : []),
     rootComponent("FaqContainerBlock", "Homepage FAQs", {
       heading: "Frequently asked questions",
