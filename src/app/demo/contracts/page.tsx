@@ -14,34 +14,32 @@ export const metadata: Metadata = {
 const CONTRACT_DEFINE_SNIPPET = `// optimizely.config.mjs
 //
 // Properties shared by ArticlePage and CaseStudyPage, defined once.
-// When @optimizely/cms-sdk exports contract(), replace this with:
-//   export const EditorialContentContract = contract({ key: "EditorialContent", ... })
-// and add  extends: EditorialContentContract  to each content type.
+// contract() is exported by @optimizely/cms-sdk since 2.1.0.
 
-const EDITORIAL_CONTENT_PROPERTIES = {
-  title:     { type: "string",           displayName: "Title",     indexingType: "searchable", isLocalized: true },
-  summary:   { type: "string",           displayName: "Summary",   indexingType: "searchable", isLocalized: true },
-  heroImage: { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"] },
-  tags:      { type: "array",            displayName: "Tags",      indexingType: "queryable",  items: { type: "string" } },
-};
+import { contract } from "@optimizely/cms-sdk";
 
-// Export the contract shape for reference and for seeding via the REST API.
-export const EditorialContentContract = {
+export const EditorialContentContract = contract({
   key: "EditorialContent",
   displayName: "Editorial Content",
-  properties: EDITORIAL_CONTENT_PROPERTIES,
-};`;
+  properties: {
+    title:     { type: "string",           displayName: "Title",     indexingType: "searchable", isLocalized: true },
+    summary:   { type: "string",           displayName: "Summary",   indexingType: "searchable", isLocalized: true },
+    heroImage: { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"] },
+    tags:      { type: "array",            displayName: "Tags",      indexingType: "queryable",  items: { type: "string" } },
+  },
+});`;
 
 const CONTRACT_EXTEND_SNIPPET = `// optimizely.config.mjs
 //
-// Both types spread EDITORIAL_CONTENT_PROPERTIES, the manual equivalent
-// of  extends: EditorialContentContract.  No duplicated field definitions.
+// Both types declare  extends: [SEOContract, EditorialContentContract].
+// No duplicated field definitions - contentType() merges the contract
+// properties into the type at definition time.
 
 export const ArticlePageType = contentType({
   key: "ArticlePage",
   baseType: "_page",
+  extends: [SEOContract, EditorialContentContract],
   properties: {
-    ...EDITORIAL_CONTENT_PROPERTIES,      // ← contract fields
     body:        { type: "richText",         displayName: "Body",         indexingType: "searchable", isLocalized: true },
     author:      { type: "contentReference", displayName: "Author",       allowedTypes: ["AuthorBlock"] },
     publishDate: { type: "dateTime",         displayName: "Publish Date", indexingType: "queryable" },
@@ -53,8 +51,8 @@ export const ArticlePageType = contentType({
 export const CaseStudyPageType = contentType({
   key: "CaseStudyPage",
   baseType: "_page",
+  extends: [SEOContract, EditorialContentContract],
   properties: {
-    ...EDITORIAL_CONTENT_PROPERTIES,      // ← same contract fields
     clientName: { type: "string",   displayName: "Client Name", indexingType: "queryable", isLocalized: true },
     industry:   { type: "string",   displayName: "Industry",    indexingType: "queryable", enum: CATEGORY_ENUM },
     challenge:  { type: "richText", displayName: "Challenge",   indexingType: "searchable", isLocalized: true },
@@ -65,13 +63,14 @@ export const CaseStudyPageType = contentType({
 
 const CONTRACT_REGISTER_SNIPPET = `// src/lib/optimizely/componentRegistry.ts
 //
-// Once the SDK exports contract(), register contracts before the types
-// that extend them. Order matters: the registry processes the array sequentially.
+// Contracts do NOT need to be registered. contentType() merges the
+// contract's properties into the type object at definition time, so the
+// registry (and the SDK's generated Graph fragments) see the full
+// property set on each type.
 
 initContentTypeRegistry([
-  EditorialContentContract,   // ← contract first  (when SDK supports it)
-  ArticlePageType,            // ← extends EditorialContentContract
-  CaseStudyPageType,          // ← extends EditorialContentContract
+  ArticlePageType,            // ← extends [SEOContract, EditorialContentContract]
+  CaseStudyPageType,          // ← extends [SEOContract, EditorialContentContract]
   // ...other types
 ]);`;
 
@@ -370,40 +369,36 @@ export default async function ContractsMappingsBindingsPage() {
                 In this project, <Code>ArticlePage</Code> and <Code>CaseStudyPage</Code>{" "}
                 both need <Code>title</Code>, <Code>summary</Code>, <Code>heroImage</Code>,
                 and <Code>tags</Code>. Instead of duplicating those definitions, they live
-                in a single <Code>EDITORIAL_CONTENT_PROPERTIES</Code> object in{" "}
-                <Code>optimizely.config.mjs</Code>, the manual equivalent of a contract
-                until the SDK exports <Code>contract()</Code>.
+                in a single <Code>EditorialContentContract</Code> defined with{" "}
+                <Code>contract()</Code> in <Code>optimizely.config.mjs</Code>.
               </p>
               <CodeBlock code={CONTRACT_DEFINE_SNIPPET} label="optimizely.config.mjs" />
-              <Callout variant="warning" label="SDK version">
-                <Code>contract()</Code> is documented in the SDK but may not be exported
-                in your installed version; verify with{" "}
-                <Code>{"import { contract } from \"@optimizely/cms-sdk\""}</Code>. If not
-                available, create the contract in the CMS UI (Settings → Content Types →
-                Create New → Contract) or via the REST API, and use the property spread
-                pattern shown here in code.
+              <Callout variant="note" label="SDK version">
+                <Code>contract()</Code> requires <Code>@optimizely/cms-sdk</Code> 2.1.0 or
+                later. On 2.0.0 the import fails at runtime - there, fall back to defining
+                the shared properties as a plain object and spreading it into each
+                type&apos;s <Code>properties</Code> block.
               </Callout>
             </div>
 
             <div id="contracts-extend" className="space-y-3">
               <SubHeading id="contracts-extend">Implementing the contract in content types</SubHeading>
               <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
-                Each type spreads <Code>EDITORIAL_CONTENT_PROPERTIES</Code> at the top of
-                its <Code>properties</Code> block, then adds its own type-specific fields.
-                When <Code>contract()</Code> is available, replace the spread with{" "}
-                <Code>extends: EditorialContentContract</Code>.
+                Each type lists the contracts it implements in <Code>extends</Code>, then
+                adds its own type-specific fields in <Code>properties</Code>. A type can
+                extend a single contract or an array of them.
               </p>
               <CodeBlock code={CONTRACT_EXTEND_SNIPPET} label="optimizely.config.mjs" />
             </div>
 
             <div id="contracts-register" className="space-y-3">
-              <SubHeading id="contracts-register">Registration order</SubHeading>
+              <SubHeading id="contracts-register">Registration</SubHeading>
               <CodeBlock code={CONTRACT_REGISTER_SNIPPET} label="src/lib/optimizely/componentRegistry.ts" />
-              <Callout variant="warning" label="Order matters">
-                Contracts must appear in <Code>initContentTypeRegistry</Code>{" "}
-                <em>before</em> any content type that extends them. The registry processes
-                the array sequentially and will error if a referenced contract has not yet
-                been registered.
+              <Callout variant="note" label="No separate registration">
+                Only content types go in <Code>initContentTypeRegistry</Code>. Because{" "}
+                <Code>contentType()</Code> merges contract properties into the type object
+                when it is defined, the registry and the SDK&apos;s query builder already
+                see every inherited field - no ordering constraints, no contract entries.
               </Callout>
             </div>
 

@@ -376,27 +376,37 @@ These constraints trap block designs on both sides:
 
 So a block that must sit inside a grid column (anything used with `elementComponent()`) can never have a content area — use plain properties, or restructure so the container block is a section.
 
-### Contracts (shared property sets) — `contract()` is NOT exported by the SDK
-The SDK documentation describes a `contract()` helper for reusable property groups, but `@optimizely/cms-sdk` 2.0.0 does not export it — `import { contract }` fails at runtime. Use the property-spread pattern instead: define the shared properties as a plain object and spread it into each content type.
+### Contracts (shared property sets) — `contract()` requires SDK 2.1.0+
+`@optimizely/cms-sdk` 2.1.0 exports `contract()` for reusable property groups; content types implement a contract via `extends:` (single contract or array). On 2.0.0 the import fails at runtime — there, fall back to spreading a plain shared-properties object into each type.
 
 ```ts
-// Shared property group, defined once
-const EDITORIAL_CONTENT_PROPERTIES = {
-  title:   { type: "string", displayName: "Title",   indexingType: "searchable", isLocalized: true },
-  summary: { type: "string", displayName: "Summary", indexingType: "searchable", isLocalized: true },
-};
+import { contract, contentType } from "@optimizely/cms-sdk";
+
+export const EditorialContentContract = contract({
+  key: "EditorialContent",
+  displayName: "Editorial Content",
+  properties: {
+    title:   { type: "string", displayName: "Title",   indexingType: "searchable", isLocalized: true },
+    summary: { type: "string", displayName: "Summary", indexingType: "searchable", isLocalized: true },
+  },
+});
 
 export const ArticlePageType = contentType({
   key: "ArticlePage",
   baseType: "_page",
+  extends: [SEOContract, EditorialContentContract],   // contract fields inherited
   properties: {
-    ...EDITORIAL_CONTENT_PROPERTIES,   // contract fields
     body: { type: "richText", displayName: "Body", indexingType: "searchable", isLocalized: true },
   },
 });
 ```
 
-See `src/app/demo/contracts/page.tsx` for the full working pattern and the `contract()` syntax to switch to once the SDK exports it.
+Notes:
+- `contract()` accepts only `key`, `displayName`, and `properties` (no `description`).
+- Contracts are NOT registered in `initContentTypeRegistry` — `contentType()` merges contract properties into the type object at definition time, so the registry and generated Graph fragments already see the full property set.
+- Export contracts from `optimizely.config.mjs` so `opti:push` creates them in the CMS.
+
+See `optimizely.config.mjs` (SEOContract, EditorialContentContract) and `src/app/demo/contracts/page.tsx` for the full working pattern.
 
 ### `component` property type — inline embedded component
 ```ts

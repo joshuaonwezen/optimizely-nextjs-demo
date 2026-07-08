@@ -1,6 +1,6 @@
 import { getClient, type PreviewParams } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
-import { PreviewComponent } from "@optimizely/cms-sdk/react/client";
+import { NextPreviewComponent } from "@optimizely/cms-sdk/react/nextjs";
 import { redirect } from "next/navigation";
 import Script from "next/script";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
@@ -42,7 +42,7 @@ async function PreviewPage({ searchParams }: Props) {
         src={`${cmsUrl}/util/javascript/communicationinjector.js`}
         strategy="afterInteractive"
       />
-      <PreviewComponent />
+      <NextPreviewComponent />
       {content ? (
         <OptimizelyComponent content={content} />
       ) : (

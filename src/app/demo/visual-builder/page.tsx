@@ -193,7 +193,7 @@ export const dynamic = "force-dynamic";
 
 import { getClient, type PreviewParams } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
-import { PreviewComponent } from "@optimizely/cms-sdk/react/client";
+import { NextPreviewComponent } from "@optimizely/cms-sdk/react/nextjs";
 import Script from "next/script";
 
 async function PreviewPage({ searchParams }) {
@@ -208,8 +208,9 @@ async function PreviewPage({ searchParams }) {
     <>
       {/* Establishes the postMessage channel between the CMS iframe and this page. */}
       <Script src={\`\${process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL}/util/javascript/communicationinjector.js\`} />
-      {/* SDK client component that receives live content-change events from the CMS. */}
-      <PreviewComponent />
+      {/* SDK client component that receives live content-change events from the CMS
+          and soft-refreshes via the Next.js router (SDK 2.1.0+). */}
+      <NextPreviewComponent />
       {/* Same dispatch path as the published page - no separate preview renderer needed. */}
       <OptimizelyComponent content={content} />
     </>

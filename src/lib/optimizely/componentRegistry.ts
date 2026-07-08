@@ -7,6 +7,7 @@ import {
   BlankSectionContentType,
 } from "@optimizely/cms-sdk";
 import { initReactComponentRegistry } from "@optimizely/cms-sdk/react/server";
+import type { ComponentType } from "react";
 
 import HeroBlock, { HeroBlockType, HeroBlockDefaultTemplate } from "@/components/blocks/HeroBlock";
 import CallToActionBlock, { CallToActionType, CallToActionOutlineTemplate, CallToActionSurfaceTemplate, CallToActionGhostTemplate } from "@/components/blocks/CallToActionBlock";
@@ -224,8 +225,12 @@ export function initComponentRegistry() {
 
   // React components — display template variants use the tags pattern so the SDK
   // dispatches to the right component based on the editor-selected template.
-  initReactComponentRegistry({
-    resolver: {
+  // Registered via a resolver function (not a plain map): SDK 2.1.0's
+  // OptimizelyGridSection calls getComponent(undefined) for node types other
+  // than row/column, and the object-map path crashes on undefined
+  // (getEntryWithFallback calls contentType.endsWith). The function path
+  // lets us guard and restore 2.0.0's silent-fallback behavior.
+  const componentMap: Record<string, unknown> = {
       // Experience / page types
       DynamicExperience,
       BlankExperience,
@@ -330,6 +335,21 @@ export function initComponentRegistry() {
       SiteBanner: SiteBannerBlock,
       // Fallback: unknown types from the CMS (stale seeds, deleted types) — render nothing
       _Component: () => null,
+  };
+
+  initReactComponentRegistry({
+    resolver: (name, options) => {
+      if (!name) return undefined;
+      // Mirror the SDK's map semantics, including the "Property"-suffix fallback
+      const entry =
+        componentMap[name] ??
+        (name.endsWith("Property") ? componentMap[name.slice(0, -8)] : undefined);
+      if (!entry) return undefined;
+      if (typeof entry === "object" && entry !== null && "tags" in entry) {
+        const variants = entry as { default?: ComponentType; tags: Record<string, ComponentType> };
+        return (options?.tag ? variants.tags[options.tag] : undefined) ?? variants.default;
+      }
+      return entry as ComponentType;
     },
   });
 

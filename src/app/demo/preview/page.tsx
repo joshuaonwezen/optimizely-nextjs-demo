@@ -39,7 +39,7 @@ export const dynamic = "force-dynamic";  // never statically generate this page
 
 import { getClient, type PreviewParams } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
-import { PreviewComponent } from "@optimizely/cms-sdk/react/client";
+import { NextPreviewComponent } from "@optimizely/cms-sdk/react/nextjs";
 
 async function PreviewPage({ searchParams }) {
   const params = await searchParams;
@@ -54,7 +54,7 @@ async function PreviewPage({ searchParams }) {
   return (
     <>
       <Script src={\`\${CMS_URL}/util/javascript/communicationinjector.js\`} strategy="afterInteractive" />
-      <PreviewComponent />
+      <NextPreviewComponent />
       <OptimizelyComponent content={content} />
     </>
   );
@@ -69,9 +69,11 @@ const SHELL_SNIPPET = `// The preview shell injects two things:
 //    page. It listens for postMessage events from the parent iframe and
 //    dispatches them as DOM events.
 //
-// 2. <PreviewComponent /> (from @optimizely/cms-sdk/react/client) - a
-//    client component that sends real-time edit notifications back to the
-//    CMS so outline overlays update instantly as content is saved.
+// 2. <NextPreviewComponent /> (from @optimizely/cms-sdk/react/nextjs) - a
+//    client component that listens for content-saved events from the CMS
+//    and soft-refreshes via the Next.js router. (The framework-agnostic
+//    <PreviewComponent /> from react/client does the same with a full
+//    window.location navigation, or a custom onNavigate callback.)
 
 const shell = (children) => (
   <>
@@ -79,7 +81,7 @@ const shell = (children) => (
       src={\`\${CMS_URL}/util/javascript/communicationinjector.js\`}
       strategy="afterInteractive"
     />
-    <PreviewComponent />
+    <NextPreviewComponent />
     {children}
   </>
 );`;
@@ -126,7 +128,7 @@ return (
       src={\`\${process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL}/util/javascript/communicationinjector.js\`}
       strategy="afterInteractive"
     />
-    <PreviewComponent />
+    <NextPreviewComponent />
     <OptimizelyComponent content={content} />
   </>
 );`;
@@ -217,7 +219,7 @@ export default function PreviewDemoPage() {
                 ├─→ force-dynamic (never cached)
                 ├─→ client.getPreviewContent(params) → draft content via previewToken
                 ├─→ communicationinjector.js injected
-                ├─→ <PreviewComponent /> mounted
+                ├─→ <NextPreviewComponent /> mounted
                 └─→ Render with data-epi-block-id attributes
                         │
                         └─→ Editor clicks any block → CMS panel highlights that property`}</pre>
