@@ -72,6 +72,100 @@ export default function ArchitecturePage() {
 
       <div className="max-w-6xl mx-auto px-8 py-16 space-y-20">
 
+        <section id="what-is-headless">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            What is a headless CMS?{" "}
+            <a href="#what-is-headless" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            A CMS (Content Management System) is where editors write, organise, and publish content. "Headless" describes how it connects to your website.
+          </p>
+          <div className="grid md:grid-cols-2 gap-5 mb-5">
+            {[
+              {
+                title: "Traditional (coupled)",
+                steps: [
+                  { label: "Browser", sub: "GET /articles", amber: false },
+                  { label: "Coupled CMS server", sub: "e.g. CMS 12 - .NET controller looks up content", amber: false },
+                  { label: "Razor view (MVC)", sub: "renders the full HTML", amber: true },
+                  { label: "Browser", sub: "shows the HTML page", amber: false },
+                ],
+              },
+              {
+                title: "Headless (this demo)",
+                steps: [
+                  { label: "Browser", sub: "GET /articles", amber: false },
+                  { label: "Next.js app", sub: "owns the route - queries Optimizely Graph", amber: false },
+                  { label: "Optimizely Graph", sub: "returns content as JSON", amber: false },
+                  { label: "Next.js renders HTML", sub: "RSC, on ISR cache miss - then cached at the CDN", amber: true },
+                ],
+              },
+            ].map(({ title, steps }) => (
+              <div key={title} className="rounded-2xl border border-ghost-border bg-surface-lowest p-5">
+                <h3 className="font-display font-bold text-sm text-on-surface text-center mb-4">{title}</h3>
+                <div className="flex flex-col items-stretch">
+                  {steps.map(({ label, sub, amber }, i) => (
+                    <div key={i} className="flex flex-col items-stretch">
+                      {i > 0 && (
+                        <span aria-hidden="true" className="self-center text-on-surface-variant/40 text-xs leading-none py-1.5">▼</span>
+                      )}
+                      <div className={`rounded-xl border p-3 text-center ${amber ? "border-amber-300 bg-amber-50" : "border-ghost-border bg-surface-low"}`}>
+                        <p className={`text-sm font-semibold ${amber ? "text-amber-800" : "text-on-surface"}`}>{label}</p>
+                        <p className={`text-xs ${amber ? "text-amber-700" : "text-on-surface-variant"}`}>{sub}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mb-8 flex items-center gap-2 text-xs text-on-surface-variant">
+            <span aria-hidden="true" className="shrink-0 w-4 h-4 rounded border border-amber-300 bg-amber-50" />
+            <span>Where the HTML is rendered - in a coupled CMS the CMS renders the page; in a headless setup your frontend does.</span>
+          </div>
+          <div className="grid md:grid-cols-2 gap-5">
+            <div className="rounded-2xl border border-ghost-border bg-surface-lowest p-5">
+              <h3 className="font-display font-bold text-sm text-on-surface mb-1">Traditional ("coupled") CMS - e.g. CMS 12 / CMS 13</h3>
+              <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                One system handles both authoring and rendering. Optimizely CMS 12 and CMS 13 are examples of this model.
+              </p>
+              <ul className="space-y-1.5">
+                {[
+                  "Editors write content in the CMS admin.",
+                  "The CMS generates the HTML and sends it to visitors directly.",
+                  "Changing the look of the site means changing CMS themes or templates.",
+                  "Content is locked to one presentation - it can only appear on the site the CMS controls.",
+                ].map((p, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                    <span className="shrink-0 font-bold text-on-surface-variant">-</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-brand/20 bg-brand/5 p-5">
+              <h3 className="font-display font-bold text-sm text-brand mb-1">Headless CMS (this demo)</h3>
+              <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                The CMS stores and manages content. A separate frontend (this Next.js app) fetches that content via API and decides how to display it.
+              </p>
+              <ul className="space-y-1.5">
+                {[
+                  "Editors write content in Optimizely CMS.",
+                  "Content is delivered as structured data via Optimizely Graph (a GraphQL API) - not as HTML.",
+                  "This Next.js app fetches that data, renders it, and sends HTML to visitors.",
+                  "The same content can power a website, a mobile app, and an email newsletter - all from one source.",
+                  "Developers and editors work independently - no code deployment is needed when content changes.",
+                ].map((p, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                    <span className="shrink-0 font-bold text-brand">-</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
         <section id="building-blocks">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
             The building blocks of a headless site{" "}
@@ -130,57 +224,6 @@ export default function ArchitecturePage() {
                 </div>
               </div>
             ))}
-          </div>
-        </section>
-
-        <section id="what-is-headless">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            What is a headless CMS?{" "}
-            <a href="#what-is-headless" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            A CMS (Content Management System) is where editors write, organise, and publish content. "Headless" describes how it connects to your website.
-          </p>
-          <div className="grid md:grid-cols-2 gap-5">
-            <div className="rounded-2xl border border-ghost-border bg-surface-lowest p-5">
-              <h3 className="font-display font-bold text-sm text-on-surface mb-1">Traditional ("coupled") CMS - e.g. CMS 12 / CMS 13</h3>
-              <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
-                One system handles both authoring and rendering. Optimizely CMS 12 and CMS 13 are examples of this model.
-              </p>
-              <ul className="space-y-1.5">
-                {[
-                  "Editors write content in the CMS admin.",
-                  "The CMS generates the HTML and sends it to visitors directly.",
-                  "Changing the look of the site means changing CMS themes or templates.",
-                  "Content is locked to one presentation - it can only appear on the site the CMS controls.",
-                ].map((p, i) => (
-                  <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
-                    <span className="shrink-0 font-bold text-on-surface-variant">-</span>
-                    <span>{p}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-2xl border border-brand/20 bg-brand/5 p-5">
-              <h3 className="font-display font-bold text-sm text-brand mb-1">Headless CMS (this demo)</h3>
-              <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
-                The CMS stores and manages content. A separate frontend (this Next.js app) fetches that content via API and decides how to display it.
-              </p>
-              <ul className="space-y-1.5">
-                {[
-                  "Editors write content in Optimizely CMS.",
-                  "Content is delivered as structured data via Optimizely Graph (a GraphQL API) - not as HTML.",
-                  "This Next.js app fetches that data, renders it, and sends HTML to visitors.",
-                  "The same content can power a website, a mobile app, and an email newsletter - all from one source.",
-                  "Developers and editors work independently - no code deployment is needed when content changes.",
-                ].map((p, i) => (
-                  <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
-                    <span className="shrink-0 font-bold text-brand">-</span>
-                    <span>{p}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
           </div>
         </section>
 
@@ -326,6 +369,97 @@ export default function ArchitecturePage() {
           </div>
         </section>
 
+        {/* Component reference */}
+        <section id="components">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            System Components{" "}
+            <a href="#components" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            What each box in the diagram is responsible for.
+          </p>
+          <div className="grid md:grid-cols-2 gap-5">
+            {[
+              {
+                label: "Edge Middleware",
+                color: "border-indigo-300 bg-indigo-50",
+                hcolor: "text-indigo-700",
+                points: [
+                  "Runs at the CDN edge before the cache is checked - on Vercel this is the Edge Runtime (V8 isolate), on Cloudflare it would be a Worker, on Akamai an EdgeWorker.",
+                  "Fetches the Optimizely FX datafile (JSON) from cdn.optimizely.com. The fetch is edge-cached for 60s so each edge node only re-fetches the datafile once per minute.",
+                  "Creates a user context from cookies (optimizelyEndUserId, demo_persona, demo_bucketing_id) and runs decideAll() with DISABLE_DECISION_EVENT - flag decisions only, no impression tracking yet.",
+                  "Rewrites the URL with one path segment per active flag: /path/__v_flagKey--variationKey. Segments are sorted so the same set of active flags always maps to the same URL and the same CDN cache entry.",
+                ],
+              },
+              {
+                label: "Edge CDN / ISR Cache",
+                color: "border-purple-300 bg-purple-50",
+                hcolor: "text-purple-700",
+                points: [
+                  "Each __v_-rewritten URL is a separate CDN cache entry. Base users and each variation are cached independently at the same path hierarchy.",
+                  "TTL: 60 seconds (set by export const revalidate = 60 in the catch-all route). Any CDN that supports path-based caching can serve this - no custom cache configuration needed.",
+                  "Busted on publish: the Graph webhook calls revalidatePath(\"/\", \"layout\") + revalidateTag(\"page\") which marks all entries as stale.",
+                  "Warm cache hits are served in ~10-50ms from the edge - the Next.js server is not involved.",
+                ],
+              },
+              {
+                label: "Next.js Server",
+                color: "border-green-300 bg-green-50",
+                hcolor: "text-green-700",
+                points: [
+                  "Renders CMS pages with ISR. No cookies() or headers() calls anywhere in the server render tree - these would force cache-control: no-store globally.",
+                  "Extracts variation keys from the URL slug via extractVariations(slug) - reads __v_ segments, no SDK call needed.",
+                  "Queries Optimizely Graph with a variation filter to get the correct CMS content variation.",
+                  "FX-driven UI (banner, CTA button colour) is handled by client components that read cookies after hydration.",
+                ],
+              },
+              {
+                label: "Optimizely Graph",
+                color: "border-orange-300 bg-orange-50",
+                hcolor: "text-orange-700",
+                points: [
+                  "GraphQL delivery API at cg.optimizely.com. Serves CMS content, navigation, and banners.",
+                  "Accepts a variation filter so a single query can return either the base content or a specific named variation.",
+                  "Has its own CDN cache layer independent of Next.js. Bypass with ?cache=false for preview/seed scripts.",
+                  "Fires a webhook to /api/webhooks on every content change: bulk.completed, doc.updated, doc.expired.",
+                ],
+              },
+              {
+                label: "Optimizely CMS",
+                color: "border-red-300 bg-red-50",
+                hcolor: "text-red-700",
+                points: [
+                  "Authors create and manage pages, blocks, and navigation in Visual Builder.",
+                  "CMS Variation names must exactly match FX variation key strings (case-sensitive). A mismatch means the variation content is never served.",
+                  "On publish: content syncs to Optimizely Graph. Graph fires a webhook to trigger ISR invalidation.",
+                ],
+              },
+              {
+                label: "cdn.optimizely.com",
+                color: "border-teal-300 bg-teal-50",
+                hcolor: "text-teal-700",
+                points: [
+                  "Serves the FX SDK datafile (JSON) - fetched by Edge Middleware on every request that doesn't hit the 60s edge cache.",
+                  "Receives bucketing events from the browser SDK (FxBucketingEvent component). These events are what appear in Optimizely's Results tab.",
+                  "The split: middleware fetches the datafile and evaluates flags (no events), the browser fires the event for the specific flag that was active on the page.",
+                ],
+              },
+            ].map(({ label, color, hcolor, points }) => (
+              <div key={label} className={`rounded-2xl border p-5 ${color}`}>
+                <h3 className={`font-display font-bold text-sm mb-3 ${hcolor}`}>{label}</h3>
+                <ul className="space-y-1.5">
+                  {points.map((p, i) => (
+                    <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                      <span className={`shrink-0 font-bold ${hcolor}`}>-</span>
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Roles */}
         <section id="roles">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
@@ -376,6 +510,274 @@ export default function ArchitecturePage() {
                 ))}
               </ul>
             </div>
+          </div>
+        </section>
+
+        {/* Request flow */}
+        <section id="request-flow">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Request Flow{" "}
+            <a href="#request-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            What happens between a browser request and the page appearing, step by step.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
+          </p>
+          <div className="space-y-2">
+            {[
+              {
+                n: "1", color: "bg-blue-500",
+                label: "Browser sends HTTPS request",
+                detail: "e.g. GET /en/investments/stocks-isa - arrives at Vercel's edge network.",
+              },
+              {
+                n: "2", color: "bg-indigo-500",
+                label: "Edge Middleware evaluates FX flags",
+                detail: "Fetches the FX datafile from cdn.optimizely.com (edge-cached for 60s). Reads user context from cookies (optimizelyEndUserId, demo_persona, demo_bucketing_id). Calls decideAll([DISABLE_DECISION_EVENT]) - no bucketing events yet. Rewrites the URL with active variation segments sorted for a stable cache key, e.g. /en/investments/stocks-isa/__v_homepage--variation_1/__v_cta--on.",
+              },
+              {
+                n: "3", color: "bg-purple-600",
+                label: "Edge CDN checks the ISR cache",
+                detail: "The rewritten URL is looked up. Cache HIT: the ISR-cached page is returned to the browser in ~10-50ms. Cache MISS: the request is forwarded to the Next.js server.",
+              },
+              {
+                n: "4", color: "bg-green-700",
+                label: "Next.js renders the page (ISR miss only)",
+                detail: "The catch-all route extracts variation info from the URL slug - no cookies() or headers() calls. Queries Optimizely Graph with a variation filter to fetch the matching CMS content variation. Renders the page with export const revalidate = 60. The rendered output is stored in the CDN cache.",
+              },
+              {
+                n: "5", color: "bg-blue-500",
+                label: "HTML returned to browser",
+                detail: "The response is served - from CDN on a hit, from Next.js on a miss. The browser receives identical HTML either way.",
+              },
+              {
+                n: "6", color: "bg-teal-600",
+                label: "Browser fires FX bucketing event",
+                detail: "After hydration, the FxBucketingEvent component runs decide(flagKey, []) via the browser SDK. The empty options array means the bucketing event is NOT suppressed - it is recorded in Optimizely's results. This is the one event per flag per page load that attributes the impression.",
+              },
+            ].map(({ n, color, label, detail }) => (
+              <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
+                <div className={`shrink-0 w-7 h-7 rounded-full ${color} flex items-center justify-center`}>
+                  <span className="text-white text-xs font-bold">{n}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface mb-0.5">{label}</p>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Publish flow */}
+        <section id="publish-flow">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Publish Flow{" "}
+            <a href="#publish-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            What happens when an editor publishes content in the CMS. For webhook endpoint details
+            and ISR revalidation tag strategy, see the{" "}
+            <a href="/demo/caching#revalidate-flow" className="text-brand hover:underline">Caching demo</a>.
+          </p>
+          <div className="space-y-2">
+            {[
+              {
+                n: "1", color: "bg-red-600",
+                label: "Editor publishes in Optimizely CMS",
+                detail: "Content is saved. The CMS begins syncing the change to Optimizely Graph.",
+              },
+              {
+                n: "2", color: "bg-orange-500",
+                label: "Graph indexes the content",
+                detail: "Optimizely Graph processes the change and makes the new content queryable via its GraphQL API.",
+              },
+              {
+                n: "3", color: "bg-red-500",
+                label: "Graph fires a POST webhook to /api/webhooks",
+                detail: "A small JSON payload signals that content changed. The webhook handler calls revalidatePath(\"/\", \"layout\") and revalidateTag() for page, navigation, banner, and quotes. Nothing is re-rendered yet - entries are just marked stale.",
+              },
+              {
+                n: "4", color: "bg-purple-600",
+                label: "Next visitor gets the stale version instantly",
+                detail: "ISR always serves the existing cached page first. The visitor does not wait. In the background Next.js re-renders the page with fresh data from Graph.",
+              },
+              {
+                n: "5", color: "bg-green-700",
+                label: "All subsequent requests get the updated page",
+                detail: "The newly rendered output is stored in the CDN. No redeploy needed.",
+              },
+            ].map(({ n, color, label, detail }) => (
+              <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
+                <div className={`shrink-0 w-7 h-7 rounded-full ${color} flex items-center justify-center`}>
+                  <span className="text-white text-xs font-bold">{n}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface mb-0.5">{label}</p>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Cache layers */}
+        <section id="cache-layers">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            The Cache Layers{" "}
+            <a href="#cache-layers" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            A request can be answered at any of five layers between the visitor and the CMS. Each layer down adds latency, and each has its own invalidation story. This is the conceptual map - the{" "}
+            <a href="/demo/caching" className="text-brand hover:underline">ISR Caching demo</a>{" "}
+            covers the mechanics (tags, TTLs, and code).
+          </p>
+          <div className="space-y-2">
+            {[
+              {
+                n: "1",
+                label: "Browser HTTP cache",
+                sub: "~0ms - invalidated by hashed filenames",
+                detail: "Hashed static assets (JS, CSS) are cached immutably in the visitor's browser - a new deploy produces new filenames, so stale assets are never served. HTML documents are not long-cached by the browser; every navigation revalidates against the CDN.",
+              },
+              {
+                n: "2",
+                label: "CDN edge / ISR full-route cache",
+                sub: "~10-50ms - invalidated by the Graph webhook",
+                detail: "Stores the fully rendered HTML of every page, one entry per __v_ variation URL, with a 60 second TTL. A warm hit is served from the nearest edge node without touching the Next.js server. This is the layer that absorbs almost all visitor traffic.",
+              },
+              {
+                n: "3",
+                label: "Next.js Data Cache",
+                sub: "saves the Graph round-trip - invalidated by revalidateTag()",
+                detail: "A fetch-level cache inside the Next.js server, keyed per query with revalidate and tags (page 60s, navigation 300s). When a page re-renders, tagged data that is still fresh is reused instead of re-querying Graph. The webhook handler calls revalidateTag() to mark entries stale on publish.",
+              },
+              {
+                n: "4",
+                label: "Optimizely Graph CDN cache",
+                sub: "independent of this app - managed by Optimizely",
+                detail: "Graph runs its own CDN cache in front of its content index at cg.optimizely.com. Even when the Next.js Data Cache misses, a repeated query is often answered from Graph's cache rather than its index. Preview and seed scripts bypass it with ?cache=false.",
+              },
+              {
+                n: "5",
+                label: "Source of truth",
+                sub: "CMS content, synced into Graph's index on publish",
+                detail: "The bottom of the stack. Content lives in the CMS and is synced into Graph's index when an editor publishes. The CMS itself never serves visitor traffic. A full ISR-miss render (Next.js render plus Graph query) costs a few hundred milliseconds - and only happens on the first request for a URL or after invalidation.",
+              },
+            ].map(({ n, label, sub, detail }) => (
+              <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
+                <div className="shrink-0 w-7 h-7 rounded-full bg-brand flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">{n}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface">{label}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant/60 mb-0.5">{sub}</p>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 rounded-xl border border-ghost-border bg-surface-lowest p-5">
+            <h3 className="font-display font-semibold text-sm text-on-surface mb-2">One cache sits outside this stack</h3>
+            <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl">
+              The FX datafile edge cache. Edge Middleware fetches the flag configuration JSON from cdn.optimizely.com with a 60 second edge cache, so flag evaluation adds no measurable latency to the request path - it runs before the ISR cache lookup, not behind it.
+            </p>
+          </div>
+        </section>
+
+        {/* Failure modes */}
+        <section id="failure-modes">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            What Happens When Something Is Down{" "}
+            <a href="#failure-modes" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            Separated concerns mean partial failure instead of total failure. What each outage actually does to the site - for the code-level patterns (error boundaries, fallbacks, not-found), see the{" "}
+            <a href="/demo/error-handling" className="text-brand hover:underline">Error Handling demo</a>.
+          </p>
+          <div className="grid md:grid-cols-2 gap-5">
+            {[
+              {
+                label: "CMS down or in maintenance",
+                color: "border-red-300 bg-red-50",
+                hcolor: "text-red-700",
+                points: [
+                  "Graph keeps serving from its own index - it does not read from the CMS at request time.",
+                  "Visitors see no difference: ISR pages keep rendering with data from Graph.",
+                  "Editors are blocked from authoring until the CMS is back. Nothing published is lost.",
+                ],
+              },
+              {
+                label: "Optimizely Graph unreachable",
+                color: "border-orange-300 bg-orange-50",
+                hcolor: "text-orange-700",
+                points: [
+                  "Warm pages keep serving from the CDN ISR cache - a cache hit never queries Graph.",
+                  "When a render does happen, query modules catch the failure and return static fallback data instead of throwing: GetNavigation.ts returns DEMO_NAV_DATA with fromCms: false, so the site chrome never disappears.",
+                  "Page content queries without a fallback surface to Next.js error boundaries rather than crashing the whole site.",
+                ],
+              },
+              {
+                label: "Webhook missed or delayed",
+                color: "border-purple-300 bg-purple-50",
+                hcolor: "text-purple-700",
+                points: [
+                  "The revalidate TTL is the backstop: page caches expire after 60 seconds, navigation after 300.",
+                  "Worst case, visitors see content that is about a minute stale - then the next request triggers a background re-render with fresh Graph data.",
+                  "No manual intervention needed; the system self-heals on the next TTL expiry.",
+                ],
+              },
+              {
+                label: "FX datafile unreachable",
+                color: "border-teal-300 bg-teal-50",
+                hcolor: "text-teal-700",
+                points: [
+                  "Middleware fetches the datafile with a 3 second timeout and never fails the request - any FX error falls through to serving the page unmodified.",
+                  "No variation rewrite happens, so every visitor gets the original (base) content until the datafile is reachable again.",
+                  "Experiments pause gracefully: no impressions are recorded for the gap, but nothing breaks for visitors.",
+                ],
+              },
+            ].map(({ label, color, hcolor, points }) => (
+              <div key={label} className={`rounded-2xl border p-5 ${color}`}>
+                <h3 className={`font-display font-bold text-sm mb-3 ${hcolor}`}>{label}</h3>
+                <ul className="space-y-1.5">
+                  {points.map((p, i) => (
+                    <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                      <span className={`shrink-0 font-bold ${hcolor}`}>-</span>
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Media delivery */}
+        <section id="media-delivery">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Media Has Its Own Delivery Path{" "}
+            <a href="#media-delivery" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
+            Images and other assets do not flow through Graph or the ISR HTML cache - they are delivered on a separate path with an independent cache lifecycle. See the{" "}
+            <a href="/demo/media" className="text-brand hover:underline">Media & DAM demo</a>{" "}
+            for the asset workflow.
+          </p>
+          <div className="rounded-xl border border-ghost-border bg-surface-lowest p-5">
+            <ul className="space-y-1.5">
+              {[
+                "Graph returns only the image URL, never the bytes - the rendered HTML contains an image tag pointing at the asset host.",
+                "The browser fetches assets from the Optimizely asset hosts (*.cms.optimizely.com and *.cmp.optimizely.com - the allowed remotePatterns in next.config.ts).",
+                "next/image sits in front: it resizes, converts to modern formats, and caches the optimized result on the hosting CDN.",
+                "Consequence: publishing new content invalidates page HTML, but images keep serving from their own cache - media and pages age independently.",
+              ].map((p, i) => (
+                <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                  <span className="shrink-0 font-bold text-brand">-</span>
+                  <span>{p}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
@@ -496,114 +898,6 @@ export default function ArchitecturePage() {
           </div>
         </section>
 
-        {/* Request flow */}
-        <section id="request-flow">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Request Flow{" "}
-            <a href="#request-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            What happens between a browser request and the page appearing, step by step.{" "}
-            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
-          </p>
-          <div className="space-y-2">
-            {[
-              {
-                n: "1", color: "bg-blue-500",
-                label: "Browser sends HTTPS request",
-                detail: "e.g. GET /en/investments/stocks-isa - arrives at Vercel's edge network.",
-              },
-              {
-                n: "2", color: "bg-indigo-500",
-                label: "Edge Middleware evaluates FX flags",
-                detail: "Fetches the FX datafile from cdn.optimizely.com (edge-cached for 60s). Reads user context from cookies (optimizelyEndUserId, demo_persona, demo_bucketing_id). Calls decideAll([DISABLE_DECISION_EVENT]) - no bucketing events yet. Rewrites the URL with active variation segments sorted for a stable cache key, e.g. /en/investments/stocks-isa/__v_homepage--variation_1/__v_cta--on.",
-              },
-              {
-                n: "3", color: "bg-purple-600",
-                label: "Edge CDN checks the ISR cache",
-                detail: "The rewritten URL is looked up. Cache HIT: the ISR-cached page is returned to the browser in ~10-50ms. Cache MISS: the request is forwarded to the Next.js server.",
-              },
-              {
-                n: "4", color: "bg-green-700",
-                label: "Next.js renders the page (ISR miss only)",
-                detail: "The catch-all route extracts variation info from the URL slug - no cookies() or headers() calls. Queries Optimizely Graph with a variation filter to fetch the matching CMS content variation. Renders the page with export const revalidate = 60. The rendered output is stored in the CDN cache.",
-              },
-              {
-                n: "5", color: "bg-blue-500",
-                label: "HTML returned to browser",
-                detail: "The response is served - from CDN on a hit, from Next.js on a miss. The browser receives identical HTML either way.",
-              },
-              {
-                n: "6", color: "bg-teal-600",
-                label: "Browser fires FX bucketing event",
-                detail: "After hydration, the FxBucketingEvent component runs decide(flagKey, []) via the browser SDK. The empty options array means the bucketing event is NOT suppressed - it is recorded in Optimizely's results. This is the one event per flag per page load that attributes the impression.",
-              },
-            ].map(({ n, color, label, detail }) => (
-              <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
-                <div className={`shrink-0 w-7 h-7 rounded-full ${color} flex items-center justify-center`}>
-                  <span className="text-white text-xs font-bold">{n}</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-on-surface mb-0.5">{label}</p>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Publish flow */}
-        <section id="publish-flow">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Publish Flow{" "}
-            <a href="#publish-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            What happens when an editor publishes content in the CMS. For webhook endpoint details
-            and ISR revalidation tag strategy, see the{" "}
-            <a href="/demo/caching#revalidate-flow" className="text-brand hover:underline">Caching demo</a>.
-          </p>
-          <div className="space-y-2">
-            {[
-              {
-                n: "1", color: "bg-red-600",
-                label: "Editor publishes in Optimizely CMS",
-                detail: "Content is saved. The CMS begins syncing the change to Optimizely Graph.",
-              },
-              {
-                n: "2", color: "bg-orange-500",
-                label: "Graph indexes the content",
-                detail: "Optimizely Graph processes the change and makes the new content queryable via its GraphQL API.",
-              },
-              {
-                n: "3", color: "bg-red-500",
-                label: "Graph fires a POST webhook to /api/webhooks",
-                detail: "A small JSON payload signals that content changed. The webhook handler calls revalidatePath(\"/\", \"layout\") and revalidateTag() for page, navigation, banner, and quotes. Nothing is re-rendered yet - entries are just marked stale.",
-              },
-              {
-                n: "4", color: "bg-purple-600",
-                label: "Next visitor gets the stale version instantly",
-                detail: "ISR always serves the existing cached page first. The visitor does not wait. In the background Next.js re-renders the page with fresh data from Graph.",
-              },
-              {
-                n: "5", color: "bg-green-700",
-                label: "All subsequent requests get the updated page",
-                detail: "The newly rendered output is stored in the CDN. No redeploy needed.",
-              },
-            ].map(({ n, color, label, detail }) => (
-              <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
-                <div className={`shrink-0 w-7 h-7 rounded-full ${color} flex items-center justify-center`}>
-                  <span className="text-white text-xs font-bold">{n}</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-on-surface mb-0.5">{label}</p>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* Execution environments */}
         <section id="execution-environments">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
@@ -688,97 +982,6 @@ export default function ArchitecturePage() {
           </div>
         </section>
 
-        {/* Component reference */}
-        <section id="components">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            System Components{" "}
-            <a href="#components" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            What each box in the diagram is responsible for.
-          </p>
-          <div className="grid md:grid-cols-2 gap-5">
-            {[
-              {
-                label: "Edge Middleware",
-                color: "border-indigo-300 bg-indigo-50",
-                hcolor: "text-indigo-700",
-                points: [
-                  "Runs at the CDN edge before the cache is checked - on Vercel this is the Edge Runtime (V8 isolate), on Cloudflare it would be a Worker, on Akamai an EdgeWorker.",
-                  "Fetches the Optimizely FX datafile (JSON) from cdn.optimizely.com. The fetch is edge-cached for 60s so each edge node only re-fetches the datafile once per minute.",
-                  "Creates a user context from cookies (optimizelyEndUserId, demo_persona, demo_bucketing_id) and runs decideAll() with DISABLE_DECISION_EVENT - flag decisions only, no impression tracking yet.",
-                  "Rewrites the URL with one path segment per active flag: /path/__v_flagKey--variationKey. Segments are sorted so the same set of active flags always maps to the same URL and the same CDN cache entry.",
-                ],
-              },
-              {
-                label: "Edge CDN / ISR Cache",
-                color: "border-purple-300 bg-purple-50",
-                hcolor: "text-purple-700",
-                points: [
-                  "Each __v_-rewritten URL is a separate CDN cache entry. Base users and each variation are cached independently at the same path hierarchy.",
-                  "TTL: 60 seconds (set by export const revalidate = 60 in the catch-all route). Any CDN that supports path-based caching can serve this - no custom cache configuration needed.",
-                  "Busted on publish: the Graph webhook calls revalidatePath(\"/\", \"layout\") + revalidateTag(\"page\") which marks all entries as stale.",
-                  "Warm cache hits are served in ~10-50ms from the edge - the Next.js server is not involved.",
-                ],
-              },
-              {
-                label: "Next.js Server",
-                color: "border-green-300 bg-green-50",
-                hcolor: "text-green-700",
-                points: [
-                  "Renders CMS pages with ISR. No cookies() or headers() calls anywhere in the server render tree - these would force cache-control: no-store globally.",
-                  "Extracts variation keys from the URL slug via extractVariations(slug) - reads __v_ segments, no SDK call needed.",
-                  "Queries Optimizely Graph with a variation filter to get the correct CMS content variation.",
-                  "FX-driven UI (banner, CTA button colour) is handled by client components that read cookies after hydration.",
-                ],
-              },
-              {
-                label: "Optimizely Graph",
-                color: "border-orange-300 bg-orange-50",
-                hcolor: "text-orange-700",
-                points: [
-                  "GraphQL delivery API at cg.optimizely.com. Serves CMS content, navigation, and banners.",
-                  "Accepts a variation filter so a single query can return either the base content or a specific named variation.",
-                  "Has its own CDN cache layer independent of Next.js. Bypass with ?cache=false for preview/seed scripts.",
-                  "Fires a webhook to /api/webhooks on every content change: bulk.completed, doc.updated, doc.expired.",
-                ],
-              },
-              {
-                label: "Optimizely CMS",
-                color: "border-red-300 bg-red-50",
-                hcolor: "text-red-700",
-                points: [
-                  "Authors create and manage pages, blocks, and navigation in Visual Builder.",
-                  "CMS Variation names must exactly match FX variation key strings (case-sensitive). A mismatch means the variation content is never served.",
-                  "On publish: content syncs to Optimizely Graph. Graph fires a webhook to trigger ISR invalidation.",
-                ],
-              },
-              {
-                label: "cdn.optimizely.com",
-                color: "border-teal-300 bg-teal-50",
-                hcolor: "text-teal-700",
-                points: [
-                  "Serves the FX SDK datafile (JSON) - fetched by Edge Middleware on every request that doesn't hit the 60s edge cache.",
-                  "Receives bucketing events from the browser SDK (FxBucketingEvent component). These events are what appear in Optimizely's Results tab.",
-                  "The split: middleware fetches the datafile and evaluates flags (no events), the browser fires the event for the specific flag that was active on the page.",
-                ],
-              },
-            ].map(({ label, color, hcolor, points }) => (
-              <div key={label} className={`rounded-2xl border p-5 ${color}`}>
-                <h3 className={`font-display font-bold text-sm mb-3 ${hcolor}`}>{label}</h3>
-                <ul className="space-y-1.5">
-                  {points.map((p, i) => (
-                    <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
-                      <span className={`shrink-0 font-bold ${hcolor}`}>-</span>
-                      <span>{p}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </section>
-
         <section id="glossary">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
             Key Terms{" "}
@@ -855,6 +1058,8 @@ export default function ArchitecturePage() {
               { href: "/demo/caching",                label: "ISR Caching",                description: "Cache layers, revalidation tags, webhooks, and what kills ISR." },
               { href: "/demo/feature-experimentation", label: "Feature Experimentation",    description: "Middleware FX evaluation, URL rewriting, and client-side bucketing events." },
               { href: "/demo/personalization",         label: "Personalization",            description: "Audience targeting via CMS variation filter and the demo_persona cookie." },
+              { href: "/demo/error-handling",          label: "Error Handling",             description: "Graceful degradation: error boundaries, fallbacks, and not-found handling." },
+              { href: "/demo/media",                   label: "Media & DAM",                description: "Asset workflow, image delivery, and next/image optimization." },
             ].map(({ href, label, description }) => (
               <Link
                 key={href}
