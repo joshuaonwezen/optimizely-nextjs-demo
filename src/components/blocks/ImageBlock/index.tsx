@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { contentType, displayTemplate } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
 export const ImageBlockType = contentType({
@@ -44,12 +44,28 @@ export const ImageBlockRoundedTemplate = displayTemplate({
   },
 });
 
+interface DamRendition {
+  Name?: string | null;
+  Url?: string | null;
+  Width?: number | null;
+  Height?: number | null;
+}
+
 interface ImageBlockData {
   image?: {
-    _metadata?: { url?: { default?: string | null } | null } | null;
+    // DAM assets (cmp_PublicImageAsset) return their fields under `item` - this is
+    // where the real URL and renditions live for a DAM-stored image.
+    item?: {
+      Url?: string | null;
+      Width?: number | null;
+      Height?: number | null;
+      AltText?: string | null;
+      Renditions?: Array<DamRendition> | null;
+    } | null;
+    // CMS globalassets: URL comes back at the top level (page-query context) or
+    // nested under _metadata (composition context).
     url?: { default?: string | null } | null;
-    Url?: string | null;
-    Renditions?: Array<{ Name?: string | null; Url?: string | null; Width?: number | null; Height?: number | null }> | null;
+    _metadata?: { url?: { default?: string | null } | null } | null;
   } | null;
   rendition?: string | null;
   altText?: string | null;
@@ -73,15 +89,24 @@ export default function ImageBlock(props: ImageBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
-  const renditions = data.image?.Renditions ?? [];
+  const { getAlt, isDamImageAsset } = damAssets(data as any);
+
+  // DAM asset fields (Url, Renditions) live under image.item; CMS globalassets
+  // expose their URL at image.url.default / image._metadata.url.default.
+  const dam = data.image?.item ?? null;
+  const renditions = dam?.Renditions ?? [];
   const matched = renditions.find((r) => r.Name === data.rendition);
   const imageUrl =
     matched?.Url ??
-    data.image?.Url ??
-    data.image?._metadata?.url?.default ??
-    data.image?.url?.default;
+    dam?.Url ??
+    data.image?.url?.default ??
+    data.image?._metadata?.url?.default;
 
   if (!imageUrl) return null;
+
+  const altText = isDamImageAsset(data.image as any)
+    ? getAlt(data.image as any, data.altText ?? "")
+    : data.altText ?? "";
 
   const isRounded = props.displayTemplateKey === "ImageBlockRoundedTemplate";
   const aspectRatio = ASPECT_RATIOS[(ds?.aspectRatio as string) ?? "auto"];
@@ -94,10 +119,10 @@ export default function ImageBlock(props: ImageBlockProps) {
       >
         <Image
           src={imageUrl}
-          alt={data.altText ?? ""}
+          alt={altText}
           fill={!!aspectRatio}
-          width={aspectRatio ? undefined : (matched?.Width ?? 1200)}
-          height={aspectRatio ? undefined : (matched?.Height ?? 675)}
+          width={aspectRatio ? undefined : (matched?.Width ?? dam?.Width ?? 1200)}
+          height={aspectRatio ? undefined : (matched?.Height ?? dam?.Height ?? 675)}
           className={`${aspectRatio ? "object-cover" : "w-full h-auto"} ${isRounded ? "rounded-2xl" : ""}`}
         />
       </div>

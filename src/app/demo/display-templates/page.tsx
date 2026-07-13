@@ -412,10 +412,10 @@ export default function DisplayTemplatesDemoPage() {
         >
           <div className="grid lg:grid-cols-2 gap-6 items-start">
             <Variant label="No template (natural size)">
-              <ImageBlock image={{ Url: SAMPLE_IMAGE }} altText="Sample gradient" caption="Original aspect ratio" />
+              <ImageBlock image={{ url: { default: SAMPLE_IMAGE } }} altText="Sample gradient" caption="Original aspect ratio" />
             </Variant>
             <Variant label="Rounded corners, 1:1 Square">
-              <ImageBlock image={{ Url: SAMPLE_IMAGE }} altText="Sample gradient" caption="Cropped square with rounded corners" displayTemplateKey="ImageBlockRoundedTemplate" displaySettings={{ aspectRatio: "r1x1" }} />
+              <ImageBlock image={{ url: { default: SAMPLE_IMAGE } }} altText="Sample gradient" caption="Cropped square with rounded corners" displayTemplateKey="ImageBlockRoundedTemplate" displaySettings={{ aspectRatio: "r1x1" }} />
             </Variant>
           </div>
         </Section>
