@@ -15,7 +15,7 @@ jobs:
           node-version: 20
       - run: npm ci
       - name: Send a day of fake traffic to GA4
-        run: npm run ga4:seed -- --window=24 --users=200
+        run: npm run ga4:seed -- --window=24 --users=2026
         env:
           GA4_MEASUREMENT_ID: G-EKYQLXD2VB
           GA4_API_SECRET: ${{ secrets.GA4_API_SECRET }}
