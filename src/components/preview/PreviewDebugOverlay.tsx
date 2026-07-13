@@ -152,7 +152,7 @@ export default function PreviewDebugOverlay({
         onClick={() => setEnabled(true)}
         title="Show preview debug overlay"
         aria-label="Show preview debug overlay"
-        className="fixed bottom-3 right-3 z-[9999] flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-[11px] text-white/70 opacity-40 shadow hover:opacity-100"
+        className="fixed bottom-3 left-3 z-[2147483647] flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-[11px] text-white/70 opacity-40 shadow hover:opacity-100"
       >
         🐞
       </button>
@@ -163,7 +163,7 @@ export default function PreviewDebugOverlay({
     return (
       <div
         data-component="PreviewDebugOverlay"
-        className={`fixed bottom-3 right-3 z-[9999] flex items-center gap-2 rounded-full py-1.5 pl-3 pr-1.5 font-mono text-[11px] text-white shadow-lg backdrop-blur ${
+        className={`fixed bottom-3 left-3 z-[2147483647] flex items-center gap-2 rounded-full py-1.5 pl-3 pr-1.5 font-mono text-[11px] text-white shadow-lg backdrop-blur ${
           mismatch || fetchError ? "bg-red-600/90" : "bg-black/80"
         }`}
       >
@@ -191,7 +191,7 @@ export default function PreviewDebugOverlay({
   return (
     <div
       data-component="PreviewDebugOverlay"
-      className="fixed bottom-3 right-3 z-[9999] w-80 max-w-[calc(100vw-1.5rem)] rounded-xl bg-black/85 font-mono text-white shadow-2xl backdrop-blur"
+      className="fixed bottom-3 left-3 z-[2147483647] w-80 max-w-[calc(100vw-1.5rem)] rounded-xl bg-black/85 font-mono text-white shadow-2xl backdrop-blur"
     >
       <div className="flex items-center justify-between px-3 py-2">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
