@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
@@ -8,7 +7,9 @@ export const ImageBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    image: { type: "contentReference", displayName: "Image", allowedTypes: ["_image"], indexingType: "disabled" },
+    // No indexingType: the SDK omits indexingType:"disabled" reference fields from
+    // its generated fragment (createQuery), so the image would never be queried.
+    image: { type: "contentReference", displayName: "Image", allowedTypes: ["_image"] },
     rendition: {
       type: "string",
       displayName: "Image Rendition",
@@ -44,26 +45,11 @@ export const ImageBlockRoundedTemplate = displayTemplate({
   },
 });
 
-interface DamRendition {
-  Name?: string | null;
-  Url?: string | null;
-  Width?: number | null;
-  Height?: number | null;
-}
-
 interface ImageBlockData {
+  // DAM assets expose Url/Renditions under image.item; the SDK's src()/getSrcset
+  // read that. CMS globalassets expose their URL at image.url.default (page query)
+  // or image._metadata.url.default (composition), handled by the fallbacks below.
   image?: {
-    // DAM assets (cmp_PublicImageAsset) return their fields under `item` - this is
-    // where the real URL and renditions live for a DAM-stored image.
-    item?: {
-      Url?: string | null;
-      Width?: number | null;
-      Height?: number | null;
-      AltText?: string | null;
-      Renditions?: Array<DamRendition> | null;
-    } | null;
-    // CMS globalassets: URL comes back at the top level (page-query context) or
-    // nested under _metadata (composition context).
     url?: { default?: string | null } | null;
     _metadata?: { url?: { default?: string | null } | null } | null;
   } | null;
@@ -88,25 +74,20 @@ const ASPECT_RATIOS: Record<string, string> = {
 export default function ImageBlock(props: ImageBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
-  const { getAlt, isDamImageAsset } = damAssets(data as any);
+  const { pa, src } = getPreviewUtils(data as any);
+  const { getSrcset, getAlt } = damAssets(data as any);
 
-  // DAM asset fields (Url, Renditions) live under image.item; CMS globalassets
-  // expose their URL at image.url.default / image._metadata.url.default.
-  const dam = data.image?.item ?? null;
-  const renditions = dam?.Renditions ?? [];
-  const matched = renditions.find((r) => r.Name === data.rendition);
+  // src() resolves the DAM asset URL (image.item.Url) and appends the preview
+  // token in edit mode; the fallbacks cover CMS globalassets (no DAM item).
   const imageUrl =
-    matched?.Url ??
-    dam?.Url ??
+    src(data.image as any) ??
     data.image?.url?.default ??
     data.image?._metadata?.url?.default;
 
   if (!imageUrl) return null;
 
-  const altText = isDamImageAsset(data.image as any)
-    ? getAlt(data.image as any, data.altText ?? "")
-    : data.altText ?? "";
+  const srcSet = getSrcset(data.image as any);
+  const altText = getAlt(data.image as any, data.altText ?? "");
 
   const isRounded = props.displayTemplateKey === "ImageBlockRoundedTemplate";
   const aspectRatio = ASPECT_RATIOS[(ds?.aspectRatio as string) ?? "auto"];
@@ -117,13 +98,13 @@ export default function ImageBlock(props: ImageBlockProps) {
         className={`relative overflow-hidden ${isRounded ? "rounded-2xl" : ""}`}
         style={aspectRatio ? { aspectRatio } : undefined}
       >
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element -- DAM URLs carry a preview token; next/image would re-optimise and strip it */}
+        <img
           src={imageUrl}
+          srcSet={srcSet}
+          sizes="(max-width: 1280px) 100vw, 1280px"
           alt={altText}
-          fill={!!aspectRatio}
-          width={aspectRatio ? undefined : (matched?.Width ?? dam?.Width ?? 1200)}
-          height={aspectRatio ? undefined : (matched?.Height ?? dam?.Height ?? 675)}
-          className={`${aspectRatio ? "object-cover" : "w-full h-auto"} ${isRounded ? "rounded-2xl" : ""}`}
+          className={`${aspectRatio ? "absolute inset-0 h-full w-full object-cover" : "w-full h-auto"} ${isRounded ? "rounded-2xl" : ""}`}
         />
       </div>
       {data.caption && (

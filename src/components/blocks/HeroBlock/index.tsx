@@ -11,7 +11,9 @@ export const HeroBlockType = contentType({
   properties: {
     headline: { type: "string", displayName: "Headline", indexingType: "searchable", isLocalized: true },
     subheadline: { type: "string", displayName: "Subheadline", indexingType: "searchable", isLocalized: true },
-    backgroundImage: { type: "contentReference", displayName: "Background Image", allowedTypes: ["_image"], indexingType: "disabled" },
+    // No indexingType: indexingType:"disabled" makes the SDK omit the reference
+    // from its generated fragment, so the image is never queried. Omit it.
+    backgroundImage: { type: "contentReference", displayName: "Background Image", allowedTypes: ["_image"] },
     rendition: {
       type: "string",
       displayName: "Image Rendition",
@@ -68,11 +70,11 @@ interface HeroBlockData {
   subheadline?: string | null;
   heading?: string | null;
   summary?: string | null;
+  // DAM background lives under backgroundImage.item (read by src()); url/_metadata
+  // fallbacks cover CMS globalassets.
   backgroundImage?: {
-    _metadata?: { url?: { default?: string | null } | null } | null;
     url?: { default?: string | null } | null;
-    Url?: string | null;
-    Renditions?: Array<{ Name?: string | null; Url?: string | null; Width?: number | null; Height?: number | null }> | null;
+    _metadata?: { url?: { default?: string | null } | null } | null;
   } | null;
   rendition?: string | null;
   ctaText?: string | null;
@@ -89,16 +91,14 @@ type HeroBlockProps = HeroBlockData & {
 export default function HeroBlock(props: HeroBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa, src } = getPreviewUtils(data as any);
   const title = data.headline ?? data.heading;
   const subtitle = data.subheadline ?? data.summary;
-  const renditions = data.backgroundImage?.Renditions ?? [];
-  const matched = renditions.find((r) => r.Name === data.rendition);
+  // src() resolves the DAM asset URL + preview token; fallbacks cover globalassets.
   const bgUrl =
-    matched?.Url ??
-    data.backgroundImage?.Url ??
-    data.backgroundImage?._metadata?.url?.default ??
-    data.backgroundImage?.url?.default;
+    src(data.backgroundImage as any) ??
+    data.backgroundImage?.url?.default ??
+    data.backgroundImage?._metadata?.url?.default;
 
   const isCentered = ds?.alignment === "center";
   const isTall = ds?.height === "tall";

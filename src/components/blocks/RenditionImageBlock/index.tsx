@@ -1,4 +1,4 @@
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 
 export const RenditionImageBlockType = contentType({
@@ -7,11 +7,13 @@ export const RenditionImageBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
+    // No indexingType: indexingType:"disabled" makes the SDK drop the reference
+    // from its generated fragment, so the image (and its DAM renditions) is never
+    // queried. Omit it so the SDK includes the field + DAM item expansion.
     image: {
       type: "contentReference",
       displayName: "Image",
       allowedTypes: ["_image"],
-      indexingType: "disabled",
     },
     rendition: {
       type: "string",
@@ -25,33 +27,12 @@ export const RenditionImageBlockType = contentType({
   },
 });
 
-// Graph fragment required for renditions to be available in the component:
-//
-// fragment RenditionImageFields on RenditionImageBlock {
-//   image {
-//     ... on cmp_PublicImageAsset {
-//       Renditions { Name Url Width Height }
-//       Url
-//     }
-//   }
-//   rendition
-//   altText
-// }
-
 interface RenditionImageBlockData {
+  // DAM renditions live under image.item and are read by src()/getSrcset. The
+  // url/_metadata fallbacks cover CMS globalassets that have no DAM item.
   image?: {
-    // Composition context (Visual Builder / content area)
-    _metadata?: { url?: { default?: string | null } | null } | null;
-    // Direct page query context
     url?: { default?: string | null } | null;
-    // cmp_PublicImageAsset fields - present when queried via the fragment above
-    Url?: string | null;
-    Renditions?: Array<{
-      Name?: string | null;
-      Url?: string | null;
-      Width?: number | null;
-      Height?: number | null;
-    }> | null;
+    _metadata?: { url?: { default?: string | null } | null } | null;
   } | null;
   rendition?: string | null;
   altText?: string | null;
@@ -63,27 +44,26 @@ type RenditionImageBlockProps = RenditionImageBlockData & {
 
 export default function RenditionImageBlock(props: RenditionImageBlockProps) {
   const data = props.content ?? props;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa, src } = getPreviewUtils(data as any);
+  const { getSrcset, getAlt } = damAssets(data as any);
 
-  const renditions = data.image?.Renditions ?? [];
-  const matched = renditions.find((r) => r.Name === data.rendition);
-  const src =
-    matched?.Url ??
-    data.image?.Url ??
-    data.image?._metadata?.url?.default ??
-    data.image?.url?.default;
+  // src() resolves the DAM asset URL + preview token; fallbacks cover globalassets.
+  const imageUrl =
+    src(data.image as any) ??
+    data.image?.url?.default ??
+    data.image?._metadata?.url?.default;
 
-  if (!src) return null;
+  if (!imageUrl) return null;
 
   return (
     <figure data-component="RenditionImageBlock" className="max-w-7xl mx-auto px-8 py-8">
       <div {...pa("image")} className="overflow-hidden rounded-2xl">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- DAM URLs carry a preview token; next/image would re-optimise and strip it */}
         <img
-          src={src}
-          width={matched?.Width ?? undefined}
-          height={matched?.Height ?? undefined}
-          alt={data.altText ?? ""}
+          src={imageUrl}
+          srcSet={getSrcset(data.image as any)}
+          sizes="(max-width: 1280px) 100vw, 1280px"
+          alt={getAlt(data.image as any, data.altText ?? "")}
           className="w-full h-auto block"
         />
       </div>
