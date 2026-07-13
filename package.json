@@ -16,7 +16,8 @@
     "seed:all": "npx tsx scripts/seed-runner.ts",
     "seed:locations": "npx tsx scripts/seed-locations.ts",
     "cleanup:types": "npx tsx scripts/cleanup-types.ts",
-    "webhook:register": "node scripts/register-webhook.mjs"
+    "webhook:register": "node scripts/register-webhook.mjs",
+    "ga4:seed": "node scripts/send-ga4-events.mjs"
   },
   "dependencies": {
     "@optimizely/cms-sdk": "^2.1.0",
