@@ -472,13 +472,15 @@ Three values: `"searchable"` (full-text), `"queryable"` (filter/sort/aggregate),
 |---|---|---|
 | `"searchable"` | Prose text users search (`string`, `richText`) | `heading`, `body`, `bio`, `description` |
 | `"queryable"` | Filter/sort metadata (enum `string`, `dateTime`, `integer`) | `category`, `publishDate`, `navOrder` |
-| `"disabled"` | `contentReference`/`content` on `_component` types only | `backgroundImage` on HeroBlock |
+| _(omit)_ | `contentReference`/`content` image/asset fields | `image` on ImageBlock, `backgroundImage` on HeroBlock |
 
-**Critical: do NOT set `indexingType: "disabled"` on `contentReference` fields on `_page` types.**
+**Critical: do NOT set `indexingType: "disabled"` on any `contentReference`/`content` field whose target you need to render — on `_page` AND `_component` types. Omit `indexingType` entirely instead.**
 
-The SDK's `createQuery` skips any property with `indexingType === "disabled"` when building GraphQL fragments. On a `_component` type this is harmless because component properties are returned inline in composition data. On a `_page` type it means the field is never queried and `content.heroImage` is always `null`.
+The SDK's `createQuery` **removes** any property with `indexingType === "disabled"` before building its GraphQL fragment ([createQuery.js](node_modules/@optimizely/cms-sdk/dist/esm/graph/createQuery.js), the `props.filter(t.indexingType !== 'disabled')` line). This applies to page fragments **and** to the component fragments used inside composition/experience queries — so a disabled image reference on a `_component` is dropped from the query too and arrives `undefined` at render time. (This corrects an earlier claim that disabling was "harmless on components because properties are returned inline" — it is not; composition components are queried via these same filtered fragments.)
 
-For `contentReference` fields on `_page` types, **omit `indexingType` entirely** — the SDK will include the field in its generated fragment and Graph will return the image URL.
+When the field is included (indexingType omitted) and DAM is enabled, the SDK attaches `image { key url { ...ContentUrl } ...ContentReferenceItem }`, so `data.image` returns `{ key, url: { default }, item: { Url, Renditions, AltText, ... } }`. Render it with `getPreviewUtils().src(ref)` (adds the preview token in edit mode) + `damAssets().getSrcset/getAlt`, falling back to `url.default` for CMS globalassets. On a non-DAM instance the same field returns just `{ key, url: { default } }` (no `item`) and renders via the `url.default` fallback. See ImageBlock / RenditionImageBlock / HeroBlock and the `/demo/media` page.
+
+**Deploy ordering (learned the hard way):** removing `indexingType` from an existing reference is a **breaking change** that must be pushed with `opti:push --force` to **every CMS instance the code is deployed against** (personal, joshCMS, harryNewCMS, mostinNewCMS, …). A `disabled` field is absent from Graph's schema, so code that queries `image { … }` fails on any un-pushed instance with `Cannot query field "image" on type "ImageBlock"` — and because every page's query embeds all component fragments, that error takes down **every page**, not just image pages. Graph exposes the field only after a **~10 min schema-sync lag** following the push. So: push the schema to all instances and wait for the sync **before** deploying code that queries the newly-enabled field.
 
 ### `isLocalized: true` — per-language field values
 
