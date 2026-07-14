@@ -83,10 +83,7 @@ export const metadata: Metadata = {
 
 const IMAGE_PROPERTY_SNIPPET = `// Single image field on a content type.
 // type: "contentReference" with allowedTypes: ["_image"] restricts the picker
-// to image assets only. Do NOT set indexingType: "disabled" if you want to
-// render the image: the SDK's createQuery removes disabled properties from its
-// generated fragment, so the field is never queried (data.image is undefined)
-// and Graph doesn't even expose it in the schema. Omit indexingType.
+// to image assets only.
 
 export const ImageBlockType = contentType({
   key: "ImageBlock",
@@ -101,7 +98,6 @@ export const ImageBlockType = contentType({
 // Array of images (e.g. a logo grid):
 // Use type: "array" with items: { type: "content", allowedTypes: ["_image"] }
 // Graph inline-expands array items automatically - no extra fetch needed.
-// Omit indexingType here too so the array is queried.
 logos: {
   type: "array",
   items: { type: "content", allowedTypes: ["_image"] },
@@ -328,19 +324,14 @@ const src =
   className="w-full h-auto"
 />`;
 
-const INDEXING_SNIPPET = `// Do NOT set indexingType: "disabled" on image/asset reference fields you want
-// to render. The SDK's createQuery removes disabled properties before building
-// its fragment, and Graph drops them from the schema, so the reference is never
-// fetched (data.image is undefined). Omit indexingType on asset references.
+const INDEXING_SNIPPET = `// Asset reference fields for the different media types.
+// allowedTypes restricts the CMS picker to the matching asset kind.
 
-// ✓ Correct - queried and returned by Graph
+// Images - single reference or an array:
 avatar: { type: "contentReference", allowedTypes: ["_image"] }
 logos:  { type: "array", items: { type: "content", allowedTypes: ["_image"] } }
 
-// ✗ Wrong - "disabled" removes the field from the query and the Graph schema
-avatar: { type: "contentReference", allowedTypes: ["_image"], indexingType: "disabled" }
-
-// The same applies to video and file references you render:
+// Video and file references:
 document: { type: "contentReference", allowedTypes: ["_file"] }
 video:    { type: "contentReference", allowedTypes: ["_video"] }`;
 
@@ -362,15 +353,12 @@ export default function MediaDemoPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Image fields use <code className="bg-surface-low px-1 rounded font-mono text-xs">type: &quot;contentReference&quot;</code> with{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">allowedTypes: [&quot;_image&quot;]</code>.
-            This restricts the CMS picker to image assets only. Do NOT add{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">indexingType: &quot;disabled&quot;</code> - it
-            removes the field from the SDK&apos;s generated query and from the Graph schema, so the image
-            is never fetched. Omit indexingType on any asset reference you render. The same applies to video and file references.{" "}
+            This restricts the CMS picker to image assets only. The same pattern applies to video and file references.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <div className="grid md:grid-cols-2 gap-6">
             <CodeBlock code={IMAGE_PROPERTY_SNIPPET} label="Single image field + image array" />
-            <CodeBlock code={INDEXING_SNIPPET} label="Omit indexingType on asset reference fields" />
+            <CodeBlock code={INDEXING_SNIPPET} label="Asset reference fields for each media type" />
           </div>
         </section>
 
@@ -709,7 +697,6 @@ export default function MediaDemoPage() {
         </section>
 
         <KeyPoints points={[
-          <><strong className="text-on-surface">Do NOT set indexingType: &quot;disabled&quot; on image reference fields you render.</strong> The SDK removes disabled properties from its generated query and Graph drops them from the schema, so the image is never fetched (<code className="bg-surface-low px-1 rounded font-mono text-xs">data.image</code> is undefined). Omit indexingType. Removing it from an existing field is breaking - push with <code className="bg-surface-low px-1 rounded font-mono text-xs">--force</code> to every instance before deploying code that queries the field.</>,
           <><strong className="text-on-surface">Graph returns two different shapes for image references.</strong> Composition context gives <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata.url.default</code>; direct page queries give <code className="bg-surface-low px-1 rounded font-mono text-xs">url.default</code>. Write a defensive helper that checks both.</>,
           <><strong className="text-on-surface">Allowlist all three Optimizely domains in next.config before using &lt;Image&gt;.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">**.cms.optimizely.com</code> for CMS assets, <code className="bg-surface-low px-1 rounded font-mono text-xs">**.cmp.optimizely.com</code> for DAM assets from CMP, and <code className="bg-surface-low px-1 rounded font-mono text-xs">cg.optimizely.com</code> for Graph CDN. Missing any one causes a 400 at runtime - not caught at build time.</>,
           <><strong className="text-on-surface">Always provide a sizes prop when using fill.</strong> Without it Next.js defaults to 100vw, causing the browser to download a full-width image even on mobile devices.</>,
