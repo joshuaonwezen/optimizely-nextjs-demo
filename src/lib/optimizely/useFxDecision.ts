@@ -55,7 +55,23 @@ export function useFxDecision(flagKey: string): ClientFxDecision | null {
       });
       if (!ctx) return;
 
-      const d = ctx.decide(flagKey, [OptimizelyDecideOption.DISABLE_DECISION_EVENT]);
+      // Enable in the browser with: localStorage.setItem("fx_debug","1") — or ?fxdebug in the URL.
+      const debug =
+        typeof window !== "undefined" &&
+        (localStorage.getItem("fx_debug") === "1" || window.location.search.includes("fxdebug"));
+      const d = ctx.decide(
+        flagKey,
+        debug
+          ? [OptimizelyDecideOption.DISABLE_DECISION_EVENT, OptimizelyDecideOption.INCLUDE_REASONS]
+          : [OptimizelyDecideOption.DISABLE_DECISION_EVENT]
+      );
+      if (debug) {
+        console.warn(
+          `[fx] flag=${flagKey} hostname=${JSON.stringify(window.location.hostname)} ` +
+            `enabled=${d.enabled} variation=${d.variationKey}`,
+          { reasons: d.reasons }
+        );
+      }
       if (cancelled) return;
       setDecision({
         enabled: d.enabled,
