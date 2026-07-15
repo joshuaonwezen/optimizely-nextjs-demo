@@ -6,6 +6,7 @@ import {
   OptimizelyDecideOption,
 } from "@optimizely/optimizely-sdk/universal";
 import { fetchDatafile } from "@/lib/optimizely/datafile";
+import { appendVisitorCookie } from "@/lib/optimizely/visitorCookie";
 
 export const VARIATION_MARKER = "__v_";
 export const FLAG_VAR_SEP = "--";
@@ -22,14 +23,10 @@ export async function middleware(request: NextRequest) {
 
   const existingId = request.cookies.get("optimizelyEndUserId")?.value;
   const userId = existingId ?? crypto.randomUUID();
-  if (!existingId) {
-    response.cookies.set("optimizelyEndUserId", userId, {
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-      path: "/",
-      secure: false,  // must be readable over HTTP (localhost) and by browser JS
-    });
-  }
+  // Always (re)write the visitor id domain-wide and purge any legacy host-only
+  // duplicate, so it stays a single cookie shared with the Optimizely Web snippet and
+  // the client re-buckets correctly after a reset. See visitorCookie.ts.
+  appendVisitorCookie(response.headers, userId, request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "");
 
   // Skip API routes, preview, demo pages, variation-rewritten paths, and Next.js 16 .segments/ prefetch URLs (rewriting them produces a cached 404).
   if (request.nextUrl.pathname.startsWith("/api/")) return response;
