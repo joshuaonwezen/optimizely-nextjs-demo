@@ -46,6 +46,7 @@ export function ProductHeroCtaClient({ href, label, isEditMode, ctaUrlDisplay, p
       const bucketingId = getCookie("demo_bucketing_id");
       const ctx = client.createUserContext(userId, {
         device,
+        hostname: window.location.hostname,
         logged_in: !!bucketingId,
         ...(demoPersona ? { persona: demoPersona } : {}),
       });

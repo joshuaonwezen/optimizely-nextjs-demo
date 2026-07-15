@@ -8,7 +8,7 @@ export const fxDestination: TrackingDestination = {
     const client = await getOptimizelyBrowserClient();
     if (!client) return "skipped";
     await client.onReady();
-    const attributes: Record<string, string> = {};
+    const attributes: Record<string, string> = { hostname: window.location.hostname };
     const persona = readCookie("demo_persona");
     if (persona) attributes.persona = persona;
     const user = client.createUserContext(event.userId, attributes);

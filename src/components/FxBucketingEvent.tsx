@@ -18,6 +18,7 @@ export function FxBucketingEvent({ flagKey }: { flagKey: string }) {
       const demoPersona = getCookie("demo_persona");
       const ctx = client.createUserContext(userId, {
         device,
+        hostname: window.location.hostname,
         ...(demoPersona ? { persona: demoPersona } : {}),
       });
       ctx?.decide(flagKey, []); // fire bucketing event for this flag only

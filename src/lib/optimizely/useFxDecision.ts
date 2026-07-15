@@ -48,6 +48,7 @@ export function useFxDecision(flagKey: string): ClientFxDecision | null {
 
       const ctx = client.createUserContext(userId, {
         device,
+        hostname: window.location.hostname,
         logged_in: !!bucketingId,
         ...(demoPersona ? { persona: demoPersona } : {}),
         ...(demoPageViews !== undefined ? { page_views: Number(demoPageViews) } : {}),

@@ -44,6 +44,8 @@ export async function middleware(request: NextRequest) {
 
     const ua = request.headers.get("user-agent") ?? "";
     const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
+    // Strip any :port so this matches window.location.hostname on the client.
+    const hostname = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(":")[0];
     const demoPersona = request.cookies.get("demo_persona")?.value;
     const bucketingId = request.cookies.get("demo_bucketing_id")?.value;
 
@@ -54,6 +56,7 @@ export async function middleware(request: NextRequest) {
 
     const ctx = client.createUserContext(userId, {
       device,
+      hostname,
       logged_in: !!bucketingId,
       ...(demoPersona ? { persona: demoPersona } : {}),
     });
