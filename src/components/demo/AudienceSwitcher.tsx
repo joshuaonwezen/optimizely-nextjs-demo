@@ -99,11 +99,12 @@ export default function AudienceSwitcher() {
   async function resetVisitorId() {
     if (loading) return;
     setLoading(true);
-    const res = await fetch("/api/demo/reset-visitor-id", { method: "POST" });
-    const { userId: newId } = await res.json();
-    setUserId(newId);
-    setLoading(false);
-    router.refresh();
+    await fetch("/api/demo/reset-visitor-id", { method: "POST" });
+    // Full reload, not router.refresh(): client-side flag hooks (useFxDecision)
+    // read the visitor ID inside a [flagKey, pathname] effect that router.refresh()
+    // does not re-run, so they'd keep the old bucket. Reloading remounts them so
+    // they re-decide with the new ID and actually re-bucket.
+    window.location.reload();
   }
 
   return (
