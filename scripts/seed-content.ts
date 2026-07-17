@@ -32,12 +32,12 @@ import {
   rootComponent,
   type CompNode,
 } from "./_shared";
-import { FAQ_ITEMS } from "./faq-data";
+import { FAQ_ITEMS, INVESTMENT_FAQ_ITEMS, HELP_FAQ_ITEMS } from "./faq-data";
 
 config({ path: ".env.local" });
 
 let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
-// Global content root — where standalone/shared blocks live so they appear in
+// Global content root - where standalone/shared blocks live so they appear in
 // the CMS "Shared Blocks → For All Applications" picker. Set in main().
 let BLOCKS_CONTAINER = "";
 
@@ -49,6 +49,14 @@ const MANAGED_BLOCK_TYPES = new Set([
   "AuthorBlock", "OutcomeItemBlock", "TestimonialBlock",
   "TimelineMilestoneBlock", "TeamMemberBlock", "ContactFormBlock",
 ]);
+
+// Reusable shared blocks bound onto every converted TraditionalPage: a CalloutBlock
+// used as the featuredBlock highlight, and a CallToAction seeded as an example block
+// in the free content area (mainContent). Stable keys + non-managed types (CalloutBlock
+// and CallToAction are absent from MANAGED_BLOCK_TYPES) mean cleanSharedBlocks never
+// deletes them, so re-seeds simply 409-skip the re-create - no delete/recreate race.
+const SHARED_CALLOUT_KEY = "fbca0000000000000000000000000001";
+const SHARED_CTA_KEY = "fbca0000000000000000000000000002";
 
 // The Management API rate-limits bursts (429) - retry with backoff so a burst
 // of page creates doesn't abort the whole seed.
@@ -90,7 +98,7 @@ async function ensurePublished(key: string): Promise<void> {
     }
     await new Promise((r) => setTimeout(r, 1500));
   }
-  console.warn(`  [warn] Could not publish ${key} after retries — homepage FAQ reference may not resolve.`);
+  console.warn(`  [warn] Could not publish ${key} after retries - homepage FAQ reference may not resolve.`);
 }
 
 // Composition node builders (uid, noHyphens, sectionComponent, gridSection,
@@ -98,12 +106,394 @@ async function ensurePublished(key: string): Promise<void> {
 
 // Page compositions
 
-/** Minimal composition for a category landing page (personal, business, etc.) */
-function buildCategoryPage(heading: string, subheading: string): CompNode[] {
+/** A content-area reference to a shared block, as used in FaqContainerBlock.faqItems. */
+function faqRefs(items: Array<{ key: string }>): Array<{ reference: string }> {
+  return items.map((i) => ({ reference: `cms://content/${i.key}` }));
+}
+
+function buildPersonalPage(): CompNode[] {
   return [
-    sectionComponent("SectionHeadingBlock", `${heading} Heading`, {
-      heading,
-      subheading,
+    rootComponent("HeroBlock", "Personal Hero", {
+      headline: "Personal banking that fits your life",
+      subheadline:
+        "Fee-free current accounts, market-leading savings, and mortgages that move at your pace - all from one app.",
+      ctaText: "Open an account",
+      ctaLink: "/en/personal/current-account",
+    }),
+    sectionComponent("SectionHeadingBlock", "Personal Products Heading", {
+      heading: "Everyday banking, sorted",
+      subheading:
+        "Pick the account that suits you today and add more as your needs grow.",
+    }),
+    gridSection("Personal Product Cards", [
+      elementComponent("ProductCardBlock", "Current Account Card", {
+        icon: "account",
+        title: "Current Account",
+        description:
+          "A fee-free everyday account with instant notifications, budgeting tools, and no hidden charges.",
+        linkUrl: "/en/personal/current-account",
+        linkText: "Open an account →",
+      }),
+      elementComponent("ProductCardBlock", "Savings Card", {
+        icon: "savings",
+        title: "Savings",
+        description:
+          "Easy-access and fixed-rate accounts with rates up to 5.1% AER. FSCS protected up to £85,000.",
+        linkUrl: "/en/personal/savings",
+        linkText: "View savings rates →",
+      }),
+      elementComponent("ProductCardBlock", "Mortgage Card", {
+        icon: "mortgage",
+        title: "Mortgage",
+        description:
+          "A decision in principle in 10 minutes and a dedicated advisor from first click to key handover.",
+        linkUrl: "/en/mortgage",
+        linkText: "Get a mortgage →",
+      }),
+      elementComponent("ProductCardBlock", "Compare Accounts Card", {
+        icon: "account",
+        title: "Compare accounts",
+        description:
+          "Not sure which account is right for you? See every feature side by side and choose with confidence.",
+        linkUrl: "/en/personal/compare-accounts",
+        linkText: "Compare accounts →",
+      }),
+    ]),
+    gridSection("Personal Stats", [
+      elementComponent("StatsCounterBlock", "Personal Customers Stat", { value: "2", suffix: "M+", label: "Personal customers" }),
+      elementComponent("StatsCounterBlock", "Personal Rating Stat", { value: "4.8", suffix: "★", label: "App Store rating" }),
+      elementComponent("StatsCounterBlock", "Personal Switch Stat", { value: "7", suffix: " days", label: "To switch banks" }),
+      elementComponent("StatsCounterBlock", "Personal Branches Stat", { value: "140", suffix: "+", label: "UK branches" }),
+    ]),
+    sectionComponent("TestimonialBlock", "Personal Testimonial", {
+      quote:
+        "I moved everything to Mosey - current account, savings, and my mortgage. Having it all in one app that actually works has made managing money genuinely easy.",
+      authorName: "Ellie Robinson",
+      authorRole: "Personal customer, Manchester",
+    }),
+    sectionComponent("CallToAction", "Personal CTA", {
+      label: "Open a current account today",
+      link: "/en/personal/current-account",
+    }),
+  ];
+}
+
+function buildBusinessPage(): CompNode[] {
+  return [
+    rootComponent("HeroBlock", "Business Hero", {
+      headline: "Business banking built for how you work",
+      subheadline:
+        "Current accounts, lending, and payment tools for UK businesses of every size. Free for your first 12 months.",
+      ctaText: "Open a business account",
+      ctaLink: "/en/business/business-banking",
+    }),
+    sectionComponent("SectionHeadingBlock", "Business Products Heading", {
+      heading: "Everything your business needs",
+      subheading: "Modern, mobile-first banking that connects to the tools you already use.",
+    }),
+    gridSection("Business Product Cards", [
+      elementComponent("ProductCardBlock", "Business Banking Card", {
+        icon: "business",
+        title: "Business Banking",
+        description:
+          "Fee-free for 12 months, with accounting integrations, instant invoicing, and real-time notifications.",
+        linkUrl: "/en/business/business-banking",
+        linkText: "Explore business banking →",
+      }),
+      elementComponent("ProductCardBlock", "Business Lending Card", {
+        icon: "business",
+        title: "Business Lending",
+        description:
+          "Flexible loans from £10,000 to £500,000 and overdraft facilities. Decisions in 48 hours.",
+        linkUrl: "/en/business/business-banking/business-lending",
+        linkText: "See lending options →",
+      }),
+      elementComponent("ProductCardBlock", "Business Current Account Card", {
+        icon: "account",
+        title: "Business Current Account",
+        description:
+          "A full-featured account with multi-user access, audit trails, and one-click accounting sync.",
+        linkUrl: "/en/business/business-banking/business-current-account",
+        linkText: "Open an account →",
+      }),
+      elementComponent("ProductCardBlock", "Business Pricing Card", {
+        icon: "savings",
+        title: "Pricing",
+        description:
+          "Simple, transparent pricing with no surprises. See exactly what you pay as your business grows.",
+        linkUrl: "/en/business/pricing",
+        linkText: "View pricing →",
+      }),
+    ]),
+    gridSection("Business Stats", [
+      elementComponent("StatsCounterBlock", "Business Count Stat", { value: "180", suffix: "K+", label: "UK businesses" }),
+      elementComponent("StatsCounterBlock", "Business Onboarding Stat", { value: "15", suffix: " min", label: "To open an account" }),
+      elementComponent("StatsCounterBlock", "Business Decision Stat", { value: "48", suffix: " hrs", label: "Lending decisions" }),
+      elementComponent("StatsCounterBlock", "Business Free Stat", { value: "12", suffix: " mo", label: "Free banking" }),
+    ]),
+    sectionComponent("TestimonialBlock", "Business Landing Testimonial", {
+      quote:
+        "Opened a business account in under 15 minutes and connected it to Xero the same afternoon. Invoices now reconcile themselves - it saves me a full day a month.",
+      authorName: "Tom Hartley",
+      authorRole: "Director, Hartley & Co.",
+    }),
+    sectionComponent("CallToAction", "Business CTA", {
+      label: "Open a business account",
+      link: "/en/business/business-banking",
+    }),
+  ];
+}
+
+function buildInvestmentsPage(): CompNode[] {
+  return [
+    rootComponent("HeroBlock", "Investments Hero", {
+      headline: "Invest for the long term, the simple way",
+      subheadline:
+        "Stocks & Shares ISAs, pensions, and long-term savings products. Start investing from £25 a month.",
+      ctaText: "Start investing",
+      ctaLink: "/en/investments",
+    }),
+    sectionComponent("SectionHeadingBlock", "Investments Products Heading", {
+      heading: "Ways to invest",
+      subheading: "Tax-efficient accounts to help your money grow over time.",
+    }),
+    gridSection("Investment Product Cards", [
+      elementComponent("ProductCardBlock", "ISA Card", {
+        icon: "savings",
+        title: "Stocks & Shares ISA",
+        description:
+          "Invest up to £20,000 a year with all growth free of UK income and capital gains tax.",
+        linkUrl: "/en/investments",
+        linkText: "Open an ISA →",
+      }),
+      elementComponent("ProductCardBlock", "Pension Card", {
+        icon: "savings",
+        title: "Personal Pension",
+        description:
+          "Save for retirement with tax relief on your contributions and a choice of ready-made portfolios.",
+        linkUrl: "/en/investments",
+        linkText: "Plan your pension →",
+      }),
+      elementComponent("ProductCardBlock", "GIA Card", {
+        icon: "account",
+        title: "General Investment Account",
+        description:
+          "No annual limit. Ideal once you have used your ISA allowance and want to keep investing.",
+        linkUrl: "/en/investments",
+        linkText: "Learn more →",
+      }),
+      elementComponent("ProductCardBlock", "Junior ISA Card", {
+        icon: "savings",
+        title: "Junior ISA",
+        description:
+          "Give a child a head start. Invest up to £9,000 a year, tax-free, until they turn 18.",
+        linkUrl: "/en/investments",
+        linkText: "Open a Junior ISA →",
+      }),
+    ]),
+    sectionComponent("SectionHeadingBlock", "Investments Plans Heading", {
+      heading: "Choose your plan",
+      subheading: "Flat, transparent fees. No dealing charges, no exit fees.",
+    }),
+    gridSection("Investment Plans", [
+      elementComponent("PricingTierBlock", "Starter Plan", {
+        name: "Starter",
+        price: "£0",
+        period: "/month",
+        highlighted: false,
+        features: [
+          "Start from £25 a month",
+          "Ready-made portfolios",
+          "0.25% annual platform fee",
+          "In-app guidance",
+        ],
+        ctaText: "Get started",
+        ctaLink: "/en/investments",
+      }),
+      elementComponent("PricingTierBlock", "Standard Plan", {
+        name: "Standard",
+        price: "£4",
+        period: "/month",
+        highlighted: true,
+        features: [
+          "Everything in Starter",
+          "Full fund and share choice",
+          "Automatic tax-year reminders",
+          "Priority in-app support",
+        ],
+        ctaText: "Choose Standard",
+        ctaLink: "/en/investments",
+      }),
+      elementComponent("PricingTierBlock", "Premium Plan", {
+        name: "Premium",
+        price: "£10",
+        period: "/month",
+        highlighted: false,
+        features: [
+          "Everything in Standard",
+          "Dedicated investment coach",
+          "Retirement planning tools",
+          "Platform fee capped at £250/yr",
+        ],
+        ctaText: "Choose Premium",
+        ctaLink: "/en/investments",
+      }),
+    ]),
+    gridSection("Investment Stats", [
+      elementComponent("StatsCounterBlock", "Investors Stat", { value: "350", suffix: "K+", label: "Mosey investors" }),
+      elementComponent("StatsCounterBlock", "Min Invest Stat", { value: "25", suffix: "/mo", label: "Minimum to start" }),
+      elementComponent("StatsCounterBlock", "ISA Allowance Stat", { value: "20", suffix: "K", label: "Annual ISA allowance" }),
+      elementComponent("StatsCounterBlock", "Fee Cap Stat", { value: "0.25", suffix: "%", label: "Annual platform fee" }),
+    ]),
+    sectionComponent("CalloutBlock", "Investments Risk Warning", {
+      variant: "warning",
+      label: "Capital at risk",
+      body: {
+        html: "<p>The value of investments can go down as well as up and you may get back less than you invest. Tax treatment depends on your individual circumstances and may change in the future. Investing is intended for the long term.</p>",
+      },
+    }),
+    rootComponent("FaqContainerBlock", "Investments FAQs", {
+      heading: "Investing questions, answered",
+      subheading: "The things new investors ask us most.",
+      faqItems: faqRefs(INVESTMENT_FAQ_ITEMS),
+    }),
+    sectionComponent("CallToAction", "Investments CTA", {
+      label: "Start investing from £25 a month",
+      link: "/en/investments",
+    }),
+  ];
+}
+
+function buildHelpPage(): CompNode[] {
+  return [
+    rootComponent("HeroBlock", "Help Hero", {
+      headline: "Help and support, whenever you need it",
+      subheadline:
+        "Speak to a real person seven days a week via in-app chat or phone, or find answers in seconds below.",
+      ctaText: "Contact us",
+      ctaLink: "/en/help/contact",
+    }),
+    sectionComponent("SectionHeadingBlock", "Help Channels Heading", {
+      heading: "How can we help?",
+      subheading: "Choose the option that suits you.",
+    }),
+    gridSection("Help Channel Cards", [
+      elementComponent("ProductCardBlock", "Contact Card", {
+        icon: "account",
+        title: "Contact us",
+        description:
+          "Send us a message and we will get back to you within one business day, or start an in-app chat right now.",
+        linkUrl: "/en/help/contact",
+        linkText: "Get in touch →",
+      }),
+      elementComponent("ProductCardBlock", "Branch Finder Card", {
+        icon: "business",
+        title: "Branch finder",
+        description:
+          "Find your nearest branch, check opening hours, and book an appointment to speak to us in person.",
+        linkUrl: "/locations",
+        linkText: "Find a branch →",
+      }),
+      elementComponent("ProductCardBlock", "FAQs Card", {
+        icon: "savings",
+        title: "FAQs",
+        description:
+          "Browse answers to the questions we hear most about accounts, payments, security, and switching.",
+        linkUrl: "/en/help",
+        linkText: "Read FAQs →",
+      }),
+      elementComponent("ProductCardBlock", "App Support Card", {
+        icon: "mortgage",
+        title: "App support",
+        description:
+          "Trouble signing in or setting up your device? Step-by-step help to get the Mosey app working for you.",
+        linkUrl: "/en/personal/mobile-app",
+        linkText: "Get app help →",
+      }),
+    ]),
+    rootComponent("FaqContainerBlock", "Help FAQs", {
+      heading: "Frequently asked questions",
+      subheading: "Quick answers to the things we hear most.",
+      faqItems: faqRefs([...FAQ_ITEMS, ...HELP_FAQ_ITEMS]),
+    }),
+    sectionComponent("CallToAction", "Help CTA", {
+      label: "Still need help? Contact us",
+      link: "/en/help/contact",
+    }),
+  ];
+}
+
+function buildAboutPage(): CompNode[] {
+  return [
+    rootComponent("HeroBlock", "About Hero", {
+      headline: "Banking built around people, not branches",
+      subheadline:
+        "We started Mosey to make banking feel simple, fair, and genuinely helpful. Two million customers later, that mission has not changed.",
+      ctaText: "Read our story",
+      ctaLink: "/en/about/our-story",
+    }),
+    sectionComponent("SectionHeadingBlock", "About Intro Heading", {
+      heading: "Our story",
+      subheading: "From a single idea to a bank two million people trust.",
+    }),
+    sectionComponent("TextBlock", "About Intro Body", {
+      body: {
+        html: "<p>Mosey Bank was founded in 2015 by a small team who believed banking should work the way the rest of your life does - on your phone, on your schedule, and without the jargon. We built our own technology from the ground up so that opening an account, moving money, and getting help all take minutes, not days. Today we are a fully licensed UK bank serving personal and business customers across the country, and we are still guided by the same simple idea: banking should be built around you.</p>",
+      },
+    }),
+    gridSection("About Stats", [
+      elementComponent("StatsCounterBlock", "About Founded Stat", { value: "2015", suffix: "", label: "Year founded" }),
+      elementComponent("StatsCounterBlock", "About Customers Stat", { value: "2", suffix: "M+", label: "Customers" }),
+      elementComponent("StatsCounterBlock", "About Branches Stat", { value: "140", suffix: "+", label: "UK branches" }),
+      elementComponent("StatsCounterBlock", "About Employees Stat", { value: "1.8", suffix: "K", label: "Employees" }),
+    ]),
+    sectionComponent("SectionHeadingBlock", "About Explore Heading", {
+      heading: "Get to know us",
+      subheading: "Explore the people, values, and opportunities behind Mosey.",
+    }),
+    gridSection("About Explore Cards", [
+      elementComponent("ProductCardBlock", "Our Story Card", {
+        icon: "business",
+        title: "Our story",
+        description:
+          "The milestones that took us from a founding idea in 2015 to a bank trusted by millions.",
+        linkUrl: "/en/about/our-story",
+        linkText: "Read our story →",
+      }),
+      elementComponent("ProductCardBlock", "Our Team Card", {
+        icon: "account",
+        title: "Our team",
+        description:
+          "Meet the leadership team building a bank around the people it serves.",
+        linkUrl: "/en/about/team",
+        linkText: "Meet the team →",
+      }),
+      elementComponent("ProductCardBlock", "Careers Card", {
+        icon: "mortgage",
+        title: "Careers",
+        description:
+          "We are always looking for people who want to change banking for the better. See open roles.",
+        linkUrl: "/en/about",
+        linkText: "View careers →",
+      }),
+      elementComponent("ProductCardBlock", "Press Card", {
+        icon: "savings",
+        title: "Press",
+        description:
+          "News, announcements, and media resources from the Mosey Bank press office.",
+        linkUrl: "/en/about",
+        linkText: "Visit press room →",
+      }),
+    ]),
+    sectionComponent("TestimonialBlock", "About Testimonial", {
+      quote:
+        "Mosey is the first bank that has ever felt like it was actually on my side. Everything just works, and when I have needed help there has always been a real person there.",
+      authorName: "Priya Shah",
+      authorRole: "Customer since 2017",
+    }),
+    sectionComponent("CallToAction", "About CTA", {
+      label: "Join two million customers",
+      link: "/en/personal/current-account",
     }),
   ];
 }
@@ -163,7 +553,7 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
     rootComponent("LogoGridBlock", "Trusted By", {
       heading: "Trusted by 2 million customers across the UK",
       subheading:
-        "From first current accounts to business banking — Mosey customers bank with confidence.",
+        "From first current accounts to business banking - Mosey customers bank with confidence.",
       logos: [],
     }),
     gridSection("Bank Stats", [
@@ -203,47 +593,48 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
   ];
 }
 
-function buildProductPage(
-  badge: string,
+interface TraditionalContent {
+  heading: string;
+  subheading: string;
+  body: string; // rich HTML for the richText body property
+}
+
+/**
+ * Build the content for a deeper "product" page as a TraditionalPage (classic
+ * templated page) rather than a Visual Builder composition. The feature grid,
+ * body copy, and any extras are folded into a single structured richText body so
+ * no content is lost in the conversion from DynamicExperience. `extraHtml` carries
+ * page-specific extras (testimonials as blockquotes, stats as a list, risk callouts
+ * as a note) that some product pages had as composition blocks.
+ */
+function buildTraditionalProduct(
+  _badge: string,
   title: string,
   description: string,
-  ctaText: string,
-  ctaUrl: string,
+  _ctaText: string,
+  _ctaUrl: string,
   features: Array<{ title: string; description: string }>,
   bodyText: string,
-  ctaLabel: string,
-  extras: CompNode[] = []
-): CompNode[] {
-  return [
-    sectionComponent("ProductHeroBlock", `${title} Hero`, {
-      badge,
-      title,
-      description,
-      ctaText,
-      ctaUrl,
-    }),
-    sectionComponent("SectionHeadingBlock", "Features Heading", {
-      heading: "Key features",
-      subheading: `What makes ${title} work for you.`,
-    }),
-    gridSection(
-      "Features Grid",
-      features.map((f) =>
-        elementComponent("FeatureItemBlock", f.title, {
-          title: f.title,
-          description: f.description,
-        })
-      )
-    ),
-    sectionComponent("TextBlock", "Body Text", {
-      body: { html: `<p>${bodyText}</p>` },
-    }),
-    ...extras,
-    sectionComponent("CallToAction", "Page CTA", {
-      label: ctaLabel,
-      link: ctaUrl,
-    }),
-  ];
+  _ctaLabel: string,
+  extraHtml = ""
+): TraditionalContent {
+  // badge / ctaText / ctaUrl / ctaLabel are no longer rendered as blocks - every
+  // converted page gets the shared CallToAction in its content area instead - but
+  // they are kept in the signature so the existing per-page call sites need only be
+  // renamed, not rewritten.
+  //
+  // Structure the body as real prose (rendered with `prose` styling): a lead intro
+  // paragraph, then a "Key features" section where each feature is its own
+  // sub-heading + paragraph (not a single crammed line), then any page-specific
+  // extras (stats, testimonials, risk notes).
+  const featureSections = features
+    .map((f) => `<h3>${f.title}</h3>\n<p>${f.description}</p>`)
+    .join("\n");
+  const body =
+    `<p>${bodyText}</p>\n` +
+    `<h2>Key features</h2>\n${featureSections}\n` +
+    extraHtml;
+  return { heading: title, subheading: description, body };
 }
 
 // All pages
@@ -253,7 +644,11 @@ interface PageDef {
   displayName: string;
   routeSegment?: string;
   container?: string; // parent page key; defaults to root CONTAINER
-  nodes: CompNode[];
+  // A page is EITHER a DynamicExperience (composition `nodes`) OR a TraditionalPage
+  // (`traditional` content). Landing/overarching pages use nodes; deeper content
+  // pages use traditional.
+  nodes?: CompNode[];
+  traditional?: TraditionalContent;
   properties?: Record<string, unknown>; // page-level properties (e.g. SEO contract fields)
 }
 
@@ -268,7 +663,7 @@ const PAGE_KEYS = {
   help:                   noHyphens(),  // /en/help/
   about:                  noHyphens(),  // /en/about/
   // Level-1 product pages (DynamicExperience, direct children of CONTAINER)
-  mortgage:               noHyphens(),  // /en/mortgage/ — also URL prefix for mortgage sub-pages
+  mortgage:               noHyphens(),  // /en/mortgage/ - also URL prefix for mortgage sub-pages
   // Level-2 product pages (DynamicExperience, children of category pages)
   currentAccount:         noHyphens(),  // /en/personal/current-account/
   savings:                noHyphens(),  // /en/personal/savings/
@@ -300,10 +695,7 @@ const pages: PageDef[] = [
       metaTitle: "Personal Banking | Mosey Bank",
       metaDescription: "Current accounts, savings, and mortgages designed around your everyday needs. Open an account in minutes with Mosey Bank.",
     },
-    nodes: buildCategoryPage(
-      "Personal Banking",
-      "Current accounts, savings, and mortgages designed around your everyday needs."
-    ),
+    nodes: buildPersonalPage(),
   },
   {
     key: PAGE_KEYS.business,
@@ -313,10 +705,7 @@ const pages: PageDef[] = [
       metaTitle: "Business Banking | Mosey Bank",
       metaDescription: "Current accounts, lending, and payment solutions for UK businesses of every size. Free for your first 12 months.",
     },
-    nodes: buildCategoryPage(
-      "Business Banking",
-      "Current accounts, lending, and payment solutions for UK businesses of every size."
-    ),
+    nodes: buildBusinessPage(),
   },
   {
     key: PAGE_KEYS.investments,
@@ -326,10 +715,7 @@ const pages: PageDef[] = [
       metaTitle: "Investments & ISAs | Mosey Bank",
       metaDescription: "Stocks & Shares ISAs, pensions, and long-term savings products. Start investing from £25 a month.",
     },
-    nodes: buildCategoryPage(
-      "Investments",
-      "Stocks & Shares ISAs, pensions, and long-term savings products."
-    ),
+    nodes: buildInvestmentsPage(),
   },
   {
     key: PAGE_KEYS.help,
@@ -339,10 +725,7 @@ const pages: PageDef[] = [
       metaTitle: "Help & Support | Mosey Bank",
       metaDescription: "FAQs, contact options, and branch finder. Speak to a real person seven days a week via in-app chat or phone.",
     },
-    nodes: buildCategoryPage(
-      "Help & Support",
-      "FAQs, contact us, and branch finder — we're here when you need us."
-    ),
+    nodes: buildHelpPage(),
   },
   {
     key: PAGE_KEYS.about,
@@ -352,10 +735,7 @@ const pages: PageDef[] = [
       metaTitle: "About Us | Mosey Bank",
       metaDescription: "Our story, values, team, careers, and press. Mosey Bank is banking built around people, not branches.",
     },
-    nodes: buildCategoryPage(
-      "About Mosey Bank",
-      "Our story, values, team, careers, and press."
-    ),
+    nodes: buildAboutPage(),
   },
 
   // ── Level-1: Mortgage (product + URL prefix for its sub-pages) ────────────
@@ -368,7 +748,7 @@ const pages: PageDef[] = [
       metaTitle: "Mortgages | Mosey Bank",
       metaDescription: "Find your mortgage rate in minutes. Decision in principle online in 10 minutes without affecting your credit score.",
     },
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Home Buying",
       "Mortgage",
       "Find your mortgage rate in minutes. Our advisors guide you from first click to key handover.",
@@ -378,22 +758,12 @@ const pages: PageDef[] = [
         { title: "Decision in principle online", description: "Get a DIP in 10 minutes without affecting your credit score. Know your budget before you start house hunting." },
         { title: "Dedicated mortgage advisor", description: "A real person calls you after your DIP to talk through your options, answer questions, and guide you through the full application." },
         { title: "Fixed and tracker rates", description: "Choose the certainty of a 2 or 5 year fixed rate, or take advantage of falling rates with a tracker mortgage." },
-        { title: "No arrangement fee options", description: "Pick a mortgage with no upfront arrangement fee — ideal if you want to keep costs down when buying." },
+        { title: "No arrangement fee options", description: "Pick a mortgage with no upfront arrangement fee - ideal if you want to keep costs down when buying." },
       ],
-      "Buying a home is the biggest financial decision most people make. Mosey's mortgage team is here to make it as straightforward as possible — from the first online check to the day you get your keys.",
+      "Buying a home is the biggest financial decision most people make. Mosey's mortgage team is here to make it as straightforward as possible - from the first online check to the day you get your keys.",
       "Get Started",
-      [
-        sectionComponent("TestimonialBlock", "Mortgage Testimonial", {
-          quote: "Applied for a mortgage online on a Sunday. Had a decision in principle by Monday morning. The advisor called to walk me through the full offer — never felt rushed.",
-          authorName: "Marcus Webb",
-          authorRole: "First-time buyer, Bristol",
-        }),
-        sectionComponent("CalloutBlock", "Mortgage Risk Warning", {
-          variant: "warning",
-          label: "Important",
-          body: { html: "<p>Your home may be repossessed if you do not keep up repayments on your mortgage. Make sure you can afford the repayments before you apply.</p>" },
-        }),
-      ]
+      "<h2>What our customers say</h2><blockquote><p>Applied for a mortgage online on a Sunday. Had a decision in principle by Monday morning. The advisor called to walk me through the full offer - never felt rushed.</p></blockquote><p><strong>Marcus Webb</strong>, First-time buyer, Bristol</p>" +
+        "<h2>Important</h2><p>Your home may be repossessed if you do not keep up repayments on your mortgage. Make sure you can afford the repayments before you apply.</p>"
     ),
   },
 
@@ -408,7 +778,7 @@ const pages: PageDef[] = [
       metaTitle: "Fee-Free Current Account | Mosey Bank",
       metaDescription: "A fee-free everyday account with instant notifications, smart budgeting tools, and no hidden charges. Open in 10 minutes.",
     },
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Personal Banking",
       "Current Account",
       "A fee-free everyday account with instant notifications, smart budgeting tools, and no hidden charges.",
@@ -420,7 +790,7 @@ const pages: PageDef[] = [
         { title: "Contactless & Apple/Google Pay", description: "Pay with your card or phone anywhere in the world. Freeze and unfreeze your card instantly from the app if it goes missing." },
         { title: "Smart spending insights", description: "See exactly where your money goes each month, automatically categorised. Set spending limits and watch your savings grow." },
       ],
-      "The Mosey current account is designed for modern life. Open in 10 minutes with just your phone and a valid ID — no branch visit required. Manage everything from the app: move money, set up direct debits, pay bills, and speak to a real person via in-app chat seven days a week.",
+      "The Mosey current account is designed for modern life. Open in 10 minutes with just your phone and a valid ID - no branch visit required. Manage everything from the app: move money, set up direct debits, pay bills, and speak to a real person via in-app chat seven days a week.",
       "Open an Account"
     ),
   },
@@ -434,7 +804,7 @@ const pages: PageDef[] = [
       metaTitle: "Savings Accounts up to 5.1% AER | Mosey Bank",
       metaDescription: "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £85,000.",
     },
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Save Smarter",
       "Savings",
       "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £85,000.",
@@ -448,19 +818,8 @@ const pages: PageDef[] = [
       ],
       "Whether you're building an emergency fund, saving for a home, or making idle cash work harder, Mosey savings accounts give you competitive rates without the complexity.",
       "Open a Savings Account",
-      [
-        gridSection("Savings Stats", [
-          elementComponent("StatsCounterBlock", "AER Stat", { value: "5.1", suffix: "%", label: "AER fixed rate" }),
-          elementComponent("StatsCounterBlock", "AER Easy Stat", { value: "4.6", suffix: "%", label: "AER easy access" }),
-          elementComponent("StatsCounterBlock", "Protection Stat", { value: "85", suffix: "K", label: "FSCS protection per person" }),
-          elementComponent("StatsCounterBlock", "Open Stat", { value: "10", suffix: " min", label: "To open an account" }),
-        ]),
-        sectionComponent("TestimonialBlock", "Savings Testimonial", {
-          quote: "I moved my savings to Mosey after seeing the 5.1% fixed rate. The transfer took less than a day and the app makes it easy to watch my interest grow.",
-          authorName: "Sarah Chen",
-          authorRole: "Mosey customer",
-        }),
-      ]
+      "<h2>Savings at a glance</h2><ul><li><strong>5.1% AER</strong> fixed rate</li><li><strong>4.6% AER</strong> easy access</li><li><strong>£85,000</strong> FSCS protection per person</li><li><strong>10 minutes</strong> to open an account</li></ul>" +
+        "<h2>What our customers say</h2><blockquote><p>I moved my savings to Mosey after seeing the 5.1% fixed rate. The transfer took less than a day and the app makes it easy to watch my interest grow.</p></blockquote><p><strong>Sarah Chen</strong>, Mosey customer</p>"
     ),
   },
 
@@ -469,7 +828,7 @@ const pages: PageDef[] = [
     displayName: "Business Banking",
     routeSegment: "business-banking",
     container: PAGE_KEYS.business,
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Business",
       "Business Banking",
       "Current accounts, lending, and payment solutions built for UK businesses. Open in 15 minutes.",
@@ -481,15 +840,9 @@ const pages: PageDef[] = [
         { title: "Instant invoicing", description: "Create and send professional invoices from the app and get notified the moment they're paid." },
         { title: "Business lending", description: "Flexible loans from £10,000 to £500,000 and overdraft facilities to smooth out cash flow. Decisions in 48 hours." },
       ],
-      "Mosey Business Banking is designed for the way modern businesses actually work — online, mobile-first, and integrated with the tools you already use.",
+      "Mosey Business Banking is designed for the way modern businesses actually work - online, mobile-first, and integrated with the tools you already use.",
       "Open a Business Account",
-      [
-        sectionComponent("TestimonialBlock", "Business Testimonial", {
-          quote: "Opened a business current account in under 15 minutes. The integration with our accounting software was seamless — invoices reconcile automatically.",
-          authorName: "Tom Hartley",
-          authorRole: "Director, Hartley & Co.",
-        }),
-      ]
+      "<h2>What our customers say</h2><blockquote><p>Opened a business current account in under 15 minutes. The integration with our accounting software was seamless - invoices reconcile automatically.</p></blockquote><p><strong>Tom Hartley</strong>, Director, Hartley &amp; Co.</p>"
     ),
   },
 
@@ -498,17 +851,24 @@ const pages: PageDef[] = [
     displayName: "Contact Us",
     routeSegment: "contact",
     container: PAGE_KEYS.help,
-    // Native Optimizely forms (OptiFormsContainerData + element types) must be created
-    // and placed via Visual Builder — the Management API cannot create them.
-    // After seeding: go to Settings > Forms Settings > Activate, create a form in the
-    // CMS form builder (set Submit URL to /api/form-submit), then drag it onto this
-    // page in Visual Builder.
-    nodes: [
-      sectionComponent("SectionHeadingBlock", "Contact Heading", {
-        heading: "Get in touch",
-        subheading: "Have a question or need help with your account? Fill out the form and we'll get back to you within one business day.",
-      }),
-    ],
+    properties: {
+      metaTitle: "Contact Us | Mosey Bank",
+      metaDescription: "Get in touch with Mosey Bank via in-app chat, phone, or our online form. Real people, seven days a week.",
+    },
+    // A TraditionalPage. To add a NATIVE Optimizely form: go to Settings > Forms
+    // Settings > Activate, create a form in the CMS form builder (Submit URL
+    // /api/form-submit), then drop it into this page's Main Content area in the CMS -
+    // native forms cannot be created via the Management API.
+    traditional: {
+      heading: "Get in touch",
+      subheading: "Have a question or need help with your account? Here is how to reach a real person, fast.",
+      body:
+        "<h2>Ways to reach us</h2><ul>" +
+        "<li><strong>In-app chat</strong> - open the Mosey app and tap the chat icon to message a real person seven days a week, 7am to 11pm.</li>" +
+        "<li><strong>Call us</strong> - dial the number on the back of your card. Our UK team is here seven days a week.</li>" +
+        "<li><strong>Email</strong> - prefer to write? Use the form your advisor shares and we will reply to your registered email within one business day.</li>" +
+        "</ul><p>Whichever way you get in touch, you will always speak to a real Mosey person - no hold music, no call centres.</p>",
+    },
   },
 
   // ── Level-2: Mortgage sub-pages (children of mortgage) ───────────────────
@@ -518,7 +878,7 @@ const pages: PageDef[] = [
     displayName: "First-Time Buyers",
     routeSegment: "first-time-buyers",
     container: PAGE_KEYS.mortgage,
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "First Home",
       "First-Time Buyers",
       "Getting on the ladder is a big deal. We make the mortgage part as simple as possible.",
@@ -527,7 +887,7 @@ const pages: PageDef[] = [
       [
         { title: "5% deposit mortgages", description: "We offer mortgages with as little as a 5% deposit for first-time buyers purchasing their primary residence." },
         { title: "Government scheme support", description: "Our advisors are experts in Help to Buy, Shared Ownership, and the Lifetime ISA. We'll help you use every available scheme." },
-        { title: "No arrangement fee", description: "Choose a mortgage with no upfront arrangement fee — keeping your costs down when every pound counts." },
+        { title: "No arrangement fee", description: "Choose a mortgage with no upfront arrangement fee - keeping your costs down when every pound counts." },
         { title: "Step-by-step guidance", description: "From offer accepted to keys in hand, your dedicated advisor walks you through every stage of the process." },
       ],
       "Buying your first home is one of life's biggest milestones. Mosey's first-time buyer mortgages and specialist advisors are here to take the mystery out of the process.",
@@ -540,7 +900,7 @@ const pages: PageDef[] = [
     displayName: "Remortgaging",
     routeSegment: "remortgaging",
     container: PAGE_KEYS.mortgage,
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Better Rate",
       "Remortgaging",
       "Switch to a better deal when your fixed term ends. We do the heavy lifting so you don't have to.",
@@ -564,7 +924,7 @@ const pages: PageDef[] = [
     displayName: "Instant Payments",
     routeSegment: "instant-payments",
     container: PAGE_KEYS.currentAccount,
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Faster Payments",
       "Instant Payments",
       "Send and receive money in seconds, 24 hours a day, 365 days a year. No delays, no cut-off times.",
@@ -572,11 +932,11 @@ const pages: PageDef[] = [
       "/en/personal/current-account",
       [
         { title: "Faster Payments", description: "Send money to any UK bank account in seconds via the Faster Payments network. Available around the clock." },
-        { title: "Standing orders", description: "Set up regular payments on any schedule — weekly, monthly, or on a custom date — and manage them entirely in the app." },
+        { title: "Standing orders", description: "Set up regular payments on any schedule - weekly, monthly, or on a custom date - and manage them entirely in the app." },
         { title: "Direct debits", description: "Authorise and cancel direct debits in the app. See what's due before it leaves your account." },
         { title: "International transfers", description: "Send money abroad with real exchange rates and low fees. Track your transfer every step of the way." },
       ],
-      "Modern banking means money moves at your speed — not the bank's. Mosey uses the UK Faster Payments network so transfers reach their destination in seconds, not hours.",
+      "Modern banking means money moves at your speed - not the bank's. Mosey uses the UK Faster Payments network so transfers reach their destination in seconds, not hours.",
       "Open an Account"
     ),
   },
@@ -586,7 +946,7 @@ const pages: PageDef[] = [
     displayName: "Mobile App",
     routeSegment: "mobile-app",
     container: PAGE_KEYS.currentAccount,
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Banking on the Go",
       "Mobile App",
       "Everything your bank account can do, from your pocket. Rated 4.8 stars on the App Store.",
@@ -608,7 +968,7 @@ const pages: PageDef[] = [
     displayName: "Travel Money",
     routeSegment: "travel-money",
     container: PAGE_KEYS.currentAccount,
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Travel",
       "Travel Money",
       "Spend abroad with no foreign transaction fees and real exchange rates. Your card works in 200+ countries.",
@@ -616,11 +976,11 @@ const pages: PageDef[] = [
       "/en/personal/current-account",
       [
         { title: "No foreign transaction fees", description: "Use your Mosey card anywhere in the world and we'll never add a foreign transaction or currency conversion fee." },
-        { title: "Real exchange rates", description: "We use the mid-market exchange rate — the same one you see on Google. No hidden markup." },
-        { title: "Worldwide ATM withdrawals", description: "Withdraw up to £200 abroad per month for free. After that, a flat £1 fee per withdrawal — never a percentage." },
+        { title: "Real exchange rates", description: "We use the mid-market exchange rate - the same one you see on Google. No hidden markup." },
+        { title: "Worldwide ATM withdrawals", description: "Withdraw up to £200 abroad per month for free. After that, a flat £1 fee per withdrawal - never a percentage." },
         { title: "Instant notifications abroad", description: "Get notified the moment your card is used abroad. Spot unauthorised transactions immediately and freeze your card in one tap." },
       ],
-      "Mosey current account holders get excellent foreign exchange as standard — no add-on needed. Whether you're travelling for a weekend or living abroad, your card works the same way it does at home.",
+      "Mosey current account holders get excellent foreign exchange as standard - no add-on needed. Whether you're travelling for a weekend or living abroad, your card works the same way it does at home.",
       "Open an Account"
     ),
   },
@@ -632,7 +992,7 @@ const pages: PageDef[] = [
     displayName: "Easy Access Savings",
     routeSegment: "easy-access-savings",
     container: PAGE_KEYS.savings,
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Flexible Savings",
       "Easy Access Savings",
       "Earn 4.6% AER with no notice period and no limit on withdrawals. Your money is always within reach.",
@@ -654,7 +1014,7 @@ const pages: PageDef[] = [
     displayName: "Fixed Rate Savings",
     routeSegment: "fixed-rate-savings",
     container: PAGE_KEYS.savings,
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Fixed Rate",
       "Fixed Rate Savings",
       "Lock in 5.1% AER for 12 months and know exactly what you'll earn. Minimum deposit £500.",
@@ -678,7 +1038,7 @@ const pages: PageDef[] = [
     displayName: "Business Current Account",
     routeSegment: "business-current-account",
     container: PAGE_KEYS.businessBanking,
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Business Account",
       "Business Current Account",
       "A full-featured business current account with no monthly fee for your first year.",
@@ -700,7 +1060,7 @@ const pages: PageDef[] = [
     displayName: "Business Lending",
     routeSegment: "business-lending",
     container: PAGE_KEYS.businessBanking,
-    nodes: buildProductPage(
+    traditional: buildTraditionalProduct(
       "Business Finance",
       "Business Lending",
       "Flexible loans and overdrafts to help your business grow on your terms. Decisions in 48 hours.",
@@ -802,7 +1162,40 @@ async function updateStartPageComposition(
   return true;
 }
 
+/**
+ * Create a deeper content page as a TraditionalPage (classic templated page, no
+ * Visual Builder composition). Every converted page gets the shared CalloutBlock as
+ * its featuredBlock highlight and the shared CallToAction seeded into its free
+ * content area (mainContent) - editors can add or remove blocks there afterwards.
+ */
+async function createTraditionalPage(page: PageDef): Promise<void> {
+  const t = page.traditional!;
+  await createContent(
+    {
+      key: page.key,
+      contentType: "TraditionalPage",
+      container: page.container ?? CONTAINER,
+      locale: "en",
+      displayName: page.displayName,
+      ...(page.routeSegment ? { routeSegment: page.routeSegment } : {}),
+      properties: {
+        heading: t.heading,
+        subheading: t.subheading,
+        body: { html: t.body },
+        featuredBlock: { reference: `cms://content/${SHARED_CALLOUT_KEY}` },
+        mainContent: [{ reference: `cms://content/${SHARED_CTA_KEY}` }],
+        ...(page.properties ?? {}),
+      },
+    },
+    page.displayName,
+  );
+  console.log(`  [created] ${page.displayName} → key=${page.key} route=${page.routeSegment ?? "/"} (TraditionalPage)`);
+}
+
 async function createPage(page: PageDef): Promise<void> {
+  // Deeper content pages are TraditionalPages - a plain create, no composition.
+  if (page.traditional) return createTraditionalPage(page);
+
   const token = await getManagementToken();
 
   const composition = {
@@ -861,11 +1254,11 @@ async function createPage(page: PageDef): Promise<void> {
   const text = await res.text();
   if (!res.ok) {
     if (res.status === 409) {
-      console.log(`  [skipped] ${page.displayName} — key already exists (409)`);
+      console.log(`  [skipped] ${page.displayName} - key already exists (409)`);
       return;
     }
     if (res.status === 400 && text.includes("is already in use")) {
-      console.log(`  [skipped] ${page.displayName} — routeSegment already in use (existing start page)`);
+      console.log(`  [skipped] ${page.displayName} - routeSegment already in use (existing start page)`);
       return;
     }
     console.error(`  [ERROR] ${page.displayName}: ${res.status} ${text.slice(0, 400)}`);
@@ -876,7 +1269,7 @@ async function createPage(page: PageDef): Promise<void> {
   let versionId: string | undefined;
 
   if (!text.trim()) {
-    // v1 API returns 201 with no body for some content types — look up the version separately.
+    // v1 API returns 201 with no body for some content types - look up the version separately.
     const vRes = await fetchRetry(`${CONTENT_ENDPOINT}/${page.key}/versions?pageSize=1`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -959,7 +1352,9 @@ async function deleteExisting(): Promise<void> {
  *  avoid the same-key recreate race. */
 async function cleanSharedBlocks(globalRoot: string): Promise<void> {
   const token = await getManagementToken();
-  const preserve = new Set(FAQ_ITEMS.map((i) => i.key));
+  const preserve = new Set(
+    [...FAQ_ITEMS, ...INVESTMENT_FAQ_ITEMS, ...HELP_FAQ_ITEMS].map((i) => i.key)
+  );
 
   let items: Array<{ key: string; contentType?: string }> = [];
   for (let pageIndex = 0; ; pageIndex++) {
@@ -1012,7 +1407,7 @@ async function main() {
   await deleteExisting();
   // Sweep stale shared blocks at the top-level root, where earlier seed
   // versions created them as plain content items (invisible to the Shared
-  // Blocks tab). Type-based deletion is safe there — the UI never creates
+  // Blocks tab). Type-based deletion is safe there - the UI never creates
   // blocks at the root. Inside the shared-blocks folder each seed script
   // cleans its own types (seed-nav/seed-faqs by type, seed-modeling by
   // sentinel), so manually created blocks of managed types survive.
@@ -1021,6 +1416,62 @@ async function main() {
   // Wait for CMS to free up routeSegments from deleted pages before re-creating
   console.log("\n  Waiting 8s for routeSegments to be released...");
   await new Promise((r) => setTimeout(r, 8000));
+
+  // Create shared standalone FAQ items BEFORE the pages that reference them -
+  // the CMS validates composition references at creation time and 400s on an
+  // unresolved reference, so the Investments/Help pages (and the homepage) need
+  // their FaqItemBlocks to already exist and be published. seed-faqs.ts reuses
+  // the general FAQ_ITEMS (same stable keys) for the FAQs page - editing one
+  // updates both. INVESTMENT_FAQ_ITEMS and HELP_FAQ_ITEMS back the Investments
+  // and Help category landing pages' own FaqContainerBlocks.
+  const allFaqItems = [...FAQ_ITEMS, ...INVESTMENT_FAQ_ITEMS, ...HELP_FAQ_ITEMS];
+  console.log(`\n--- Creating ${allFaqItems.length} shared FAQ items ---`);
+  // Create as drafts (skipPublish), then publish in a second pass. Publishing a
+  // version immediately after creating it can 404 if the write hasn't committed
+  // yet; separating the passes lets each item settle before we publish it.
+  for (const item of allFaqItems) {
+    await createContent({
+      key: item.key,
+      contentType: "FaqItemBlock",
+      container: BLOCKS_CONTAINER,
+      locale: "en",
+      displayName: item.displayName,
+      properties: { question: item.question, answer: item.answer },
+    }, item.displayName, { skipPublish: true });
+  }
+  // Guarantee every item is published before any page references it - an
+  // unpublished item makes the referencing page's faqItems unresolvable.
+  for (const item of allFaqItems) await ensurePublished(item.key);
+
+  // Shared blocks bound onto every converted TraditionalPage: a CalloutBlock used as
+  // the featuredBlock and a CallToAction seeded into the free content area. Created
+  // (and published) before the pages so their references resolve at page-create time.
+  console.log(`\n--- Creating 2 shared TraditionalPage blocks ---`);
+  await createContent({
+    key: SHARED_CALLOUT_KEY,
+    contentType: "CalloutBlock",
+    container: BLOCKS_CONTAINER,
+    locale: "en",
+    displayName: "Shared - Not sure which is right",
+    properties: {
+      variant: "note",
+      label: "Not sure which option is right for you?",
+      body: { html: "<p>Compare your options or chat to a real Mosey person in the app seven days a week - we will help you choose with confidence.</p>" },
+    },
+  }, "Shared Callout", { skipPublish: true });
+  await createContent({
+    key: SHARED_CTA_KEY,
+    contentType: "CallToAction",
+    container: BLOCKS_CONTAINER,
+    locale: "en",
+    displayName: "Shared - Open an account CTA",
+    properties: {
+      label: "Open an account today",
+      link: "/en/personal/current-account",
+    },
+  }, "Shared CTA", { skipPublish: true });
+  await ensurePublished(SHARED_CALLOUT_KEY);
+  await ensurePublished(SHARED_CTA_KEY);
 
   // Creation order matters: parents before children.
   // Level-1 pages have no container (go under root CONTAINER).
@@ -1047,27 +1498,6 @@ async function main() {
 
   console.log(`\n--- Creating ${level3.length} level-3 pages ---`);
   for (const page of level3) await createPage(page);
-
-  // Create the shared standalone FAQ items before the homepage so its
-  // FaqContainerBlock node can reference them. seed-faqs.ts reuses the same
-  // items (same stable keys) for the FAQs page — editing one updates both.
-  console.log(`\n--- Creating ${FAQ_ITEMS.length} shared FAQ items ---`);
-  // Create as drafts (skipPublish), then publish in a second pass. Publishing a
-  // version immediately after creating it can 404 if the write hasn't committed
-  // yet; separating the passes lets each item settle before we publish it.
-  for (const item of FAQ_ITEMS) {
-    await createContent({
-      key: item.key,
-      contentType: "FaqItemBlock",
-      container: BLOCKS_CONTAINER,
-      locale: "en",
-      displayName: item.displayName,
-      properties: { question: item.question, answer: item.answer },
-    }, item.displayName, { skipPublish: true });
-  }
-  // Guarantee every item is published before the homepage references them —
-  // an unpublished item makes the homepage's faqItems reference unresolvable.
-  for (const item of FAQ_ITEMS) await ensurePublished(item.key);
 
   // Look up the actual savings key (might differ if savings was skipped)
   const savingsKey = await findSavingsKey() ?? PAGE_KEYS.savings;

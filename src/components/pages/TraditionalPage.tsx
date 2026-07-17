@@ -45,6 +45,10 @@ export default async function TraditionalPage({ content }: { content: any }) {
       : null;
   }
 
+  // Free content area: an array of type:"content" blocks, inline-expanded by Graph,
+  // so each item arrives fully typed and dispatches through OptimizelyComponent directly.
+  const mainContent: any[] = (content.mainContent ?? []).filter(Boolean);
+
   return (
     <div data-component="TraditionalPage" className="max-w-4xl mx-auto px-8 py-24">
       {heroUrl && (
@@ -79,17 +83,27 @@ export default async function TraditionalPage({ content }: { content: any }) {
 
       <div {...pa("body")}>
         {content.body?.json && (
-          <div className="prose text-on-surface-variant leading-relaxed">
+          <div className="richtext">
             <RichText content={content.body.json} />
           </div>
         )}
         {content.body?.html && !content.body?.json && (
           <div
-            className="text-on-surface-variant leading-relaxed"
+            className="richtext"
             dangerouslySetInnerHTML={{ __html: content.body.html }}
           />
         )}
       </div>
+
+      {mainContent.length > 0 && (
+        <div {...pa("mainContent")} className="mt-12 space-y-8">
+          {mainContent.map((item, i) => (
+            <BlockErrorBoundary key={i}>
+              <OptimizelyComponent content={item} />
+            </BlockErrorBoundary>
+          ))}
+        </div>
+      )}
 
       {featuredBlock && !isBaseMeta(featuredBlock) && (
         <div

@@ -54,6 +54,15 @@ export const LandingPageType = contentType({
     // The SDK auto-generates inline fragments for every registered component type,
     // so the full block data (all properties) is fetched and rendered directly.
     featuredBlock: { type: "content", displayName: "Featured Block", allowedTypes: ["_component"] },
+    // Free content area: an open list of blocks editors can drop anything into.
+    // items.type "content" (not "contentReference") makes Graph inline-expand each
+    // block, so TraditionalPage.tsx renders them directly with no secondary fetch.
+    // No indexingType on a content array — "disabled" would strip it from the fragment.
+    mainContent: {
+      type: "array",
+      displayName: "Main Content",
+      items: { type: "content", allowedTypes: ["_component"] },
+    },
     includeInNavigation: { type: "boolean", displayName: "Include in Navigation", indexingType: "queryable" },
     navLabel:            { type: "string",  displayName: "Navigation Label", indexingType: "queryable", isLocalized: true },
     navOrder:            { type: "integer", displayName: "Nav Order",         indexingType: "queryable" },
