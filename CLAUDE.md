@@ -124,6 +124,7 @@ Credentials for each instance live in `.env.local` with suffixes. The registry i
 | joshCMS (formerly "onboarding") | `_JOSHCMS` | `app-opononboard15smbt002.cms.optimizely.com` | — |
 | harryNewCMS | `_HARRYNEWCMS` | `app-opon10saas39t5rt001.cms.optimizely.com` | `harry-cms.vercel.app` |
 | mostinNewCMS | `_MOSTINNEWCMS` | `app-opon10saas39t5rt002.cms.optimizely.com` | `mostin-cms.vercel.app` |
+| kastleNewCMS | `_KASTLENEWCMS` | `app-opononboards2c23t002.cms.optimizely.com` | _(TBD)_ |
 
 Each instance needs its own `OPTIMIZELY_ROOT_CONTAINER_<SUFFIX>` — a UUID **without hyphens** pointing to the root container for that instance. It must exist before seeding. Two supported container setups:
 
