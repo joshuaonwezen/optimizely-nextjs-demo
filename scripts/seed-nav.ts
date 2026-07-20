@@ -105,7 +105,9 @@ const NAV_TREE: NavDef[] = [
           { key: noHyphens(), label: "Fixed Rate",  href: "/en/personal/savings/fixed-rate-savings",  existing: true, children: [] },
         ],
       },
-      { key: noHyphens(), label: "Personal Loans", href: "/en/personal/loans", routeSegment: "loans", children: [] },
+      { key: noHyphens(), label: "Personal Loans", href: "/en/personal/loans", existing: true, children: [] },
+      { key: noHyphens(), label: "Credit Cards",   href: "/en/personal/credit-cards", existing: true, children: [] },
+      { key: noHyphens(), label: "Overdrafts",     href: "/en/personal/overdrafts",   existing: true, children: [] },
     ],
   },
   {
@@ -120,49 +122,58 @@ const NAV_TREE: NavDef[] = [
           { key: noHyphens(), label: "Business Lending",         href: "/en/business/business-banking/business-lending",         existing: true, children: [] },
         ],
       },
-      { key: noHyphens(), label: "Merchant Services", href: "/en/business/merchant-services", routeSegment: "merchant-services", children: [] },
+      { key: noHyphens(), label: "Merchant Services",     href: "/en/business/merchant-services",      existing: true, children: [] },
+      { key: noHyphens(), label: "International Payments", href: "/en/business/international-payments", existing: true, children: [] },
+      { key: noHyphens(), label: "Business Credit Cards",  href: "/en/business/business-credit-cards", existing: true, children: [] },
     ],
   },
   {
     key: noHyphens(), label: "Mortgages", href: "/en/mortgage", description: "Find your mortgage",
     existing: true,
     children: [
-      { key: noHyphens(), label: "First-Time Buyers", href: "/en/mortgage/first-time-buyers", existing: true,              children: [] },
-      { key: noHyphens(), label: "Remortgaging",      href: "/en/mortgage/remortgaging",      existing: true,              children: [] },
-      { key: noHyphens(), label: "Buy-to-Let",        href: "/en/mortgage/buy-to-let",        routeSegment: "buy-to-let", children: [] },
+      { key: noHyphens(), label: "First-Time Buyers", href: "/en/mortgage/first-time-buyers", existing: true, children: [] },
+      { key: noHyphens(), label: "Remortgaging",      href: "/en/mortgage/remortgaging",      existing: true, children: [] },
+      { key: noHyphens(), label: "Buy-to-Let",        href: "/en/mortgage/buy-to-let",        existing: true, children: [] },
+      { key: noHyphens(), label: "Overpayments",      href: "/en/mortgage/overpayments",      existing: true, children: [] },
     ],
   },
   {
     key: noHyphens(), label: "Investments", href: "/en/investments",
     existing: true,
     children: [
-      { key: noHyphens(), label: "Stocks & Shares ISA", href: "/en/investments/stocks-isa", routeSegment: "stocks-isa", children: [] },
-      { key: noHyphens(), label: "Pensions",             href: "/en/investments/pensions",   routeSegment: "pensions",   children: [] },
+      { key: noHyphens(), label: "Stocks & Shares ISA",        href: "/en/investments/stocks-isa",         existing: true, children: [] },
+      { key: noHyphens(), label: "Pensions",                   href: "/en/investments/pensions",           existing: true, children: [] },
+      { key: noHyphens(), label: "Junior ISA",                 href: "/en/investments/junior-isa",         existing: true, children: [] },
+      { key: noHyphens(), label: "General Investment Account", href: "/en/investments/general-investment", existing: true, children: [] },
     ],
   },
   {
     key: noHyphens(), label: "Help", href: "/en/help",
     existing: true,
     children: [
-      { key: noHyphens(), label: "FAQs",          href: "/en/help/faqs",     routeSegment: "faqs",     children: [] },
-      { key: noHyphens(), label: "Contact Us",    href: "/en/help/contact",  existing: true,           children: [] },
-      { key: noHyphens(), label: "Find a Branch", href: "/en/help/branches", routeSegment: "branches", children: [] },
+      { key: noHyphens(), label: "FAQs",          href: "/en/help/faqs",          existing: true, children: [] },
+      { key: noHyphens(), label: "Contact Us",    href: "/en/help/contact",       existing: true, children: [] },
+      { key: noHyphens(), label: "Find a Branch", href: "/en/help/branches",      existing: true, children: [] },
+      { key: noHyphens(), label: "Security & Fraud", href: "/en/help/security",   existing: true, children: [] },
+      { key: noHyphens(), label: "Accessibility", href: "/en/help/accessibility", existing: true, children: [] },
     ],
   },
   {
     key: noHyphens(), label: "About", href: "/en/about",
     existing: true,
     children: [
-      { key: noHyphens(), label: "About Mosey", href: "/en/about/about-us", routeSegment: "about-us", children: [] },
-      { key: noHyphens(), label: "Careers",     href: "/en/about/careers",  routeSegment: "careers",  children: [] },
-      { key: noHyphens(), label: "Press",       href: "/en/about/press",    routeSegment: "press",    children: [] },
+      { key: noHyphens(), label: "About Mosey",    href: "/en/about/about-us",       existing: true, children: [] },
+      { key: noHyphens(), label: "Careers",        href: "/en/about/careers",        existing: true, children: [] },
+      { key: noHyphens(), label: "Press",          href: "/en/about/press",          existing: true, children: [] },
+      { key: noHyphens(), label: "Sustainability", href: "/en/about/sustainability", existing: true, children: [] },
     ],
   },
 ];
 
 // Graph query: build url → CMS key map for all pages/experiences
 
-async function buildPageKeyMap(): Promise<Map<string, string>> {
+/** One Graph read: url → CMS key map (with /en cross-prefix aliases). */
+async function fetchPageKeyMap(): Promise<Map<string, string>> {
   const query = `
     query GetAllPages {
       _Page(limit: 100) {
@@ -192,14 +203,45 @@ async function buildPageKeyMap(): Promise<Map<string, string>> {
       map.set("/en" + bare, key);                // /current-account → /en/current-account
     }
   }
-  console.log(`  [graph] Found ${map.size} page URL entries (incl. aliases) across all page types`);
-  if (map.size < 5) {
-    console.error(
-      `  [error] buildPageKeyMap returned only ${map.size} entries — Graph may not have indexed the pages yet.\n` +
-      `  Wait 30-60s after seed-content.ts completes, then re-run: npx tsx scripts/seed-nav.ts`
-    );
-    process.exit(1);
+  return map;
+}
+
+/** True if a nav target URL (e.g. "/en/personal/loans") resolves in the map,
+ *  accounting for the with/without /en aliases the map registers. */
+function urlResolves(map: Map<string, string>, url: string): boolean {
+  const bare = url.replace(/\/$/, "");
+  return map.has(bare) || map.has(bare.replace(/^\/en/, ""));
+}
+
+/**
+ * Build the url → CMS key map, polling Graph until it has indexed EVERY page the
+ * nav needs (`requiredUrls`), not just "enough" pages. This matters because the
+ * runner calls seed-nav immediately after seed-content with no wait, and Graph
+ * indexing lags ~30-60s and finishes different pages at different times - so a high
+ * total count does NOT mean a given nav target is indexed yet. Polling on the exact
+ * required set is what guarantees every nav link resolves. Never hard-exits: if some
+ * pages are still missing after the ceiling we warn and proceed (those few nav items
+ * are created without an href), so the runner completes as a whole - re-run
+ * seed-nav.ts to backfill.
+ */
+async function buildPageKeyMap(requiredUrls: string[] = []): Promise<Map<string, string>> {
+  const MAX_ATTEMPTS = 16;  // ~16 * 15s ≈ 4 min ceiling
+  let map = new Map<string, string>();
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    map = await fetchPageKeyMap();
+    const missing = requiredUrls.filter((u) => !urlResolves(map, u));
+    if (map.size > 0 && missing.length === 0) {
+      console.log(`  [graph] All ${requiredUrls.length} required nav page URLs indexed (${map.size} entries incl. aliases)`);
+      return map;
+    }
+    console.log(`  [graph] ${map.size} entries; ${missing.length}/${requiredUrls.length} required nav URLs not yet indexed (attempt ${attempt}/${MAX_ATTEMPTS}) - waiting...`);
+    if (attempt < MAX_ATTEMPTS) await new Promise((r) => setTimeout(r, 15000));
   }
+  const stillMissing = requiredUrls.filter((u) => !urlResolves(map, u));
+  console.warn(
+    `  [warn] ${stillMissing.length} nav page URL(s) still not indexed after ${MAX_ATTEMPTS} attempts - ` +
+    `those nav items will be created without an href. Re-run 'npx tsx scripts/seed-nav.ts' once Graph catches up.`
+  );
   return map;
 }
 
@@ -232,7 +274,12 @@ async function cleanupNavItems(): Promise<void> {
   const items = (body as { items?: Array<{ key: string; contentType?: string }> }).items ?? [];
   for (const item of items) {
     const ct = item.contentType ?? "";
-    if (ct === "NavigationItem" || ct === "Navigation" || ct === "LandingPage" || ct === "TraditionalPage") {
+    // Only clean up stray Navigation blocks stranded at the root - NEVER content
+    // pages. seed-nav no longer creates any pages (every nav node references a page
+    // seed-content owns), and content pages like the root-level /mortgage
+    // TraditionalPage live here legitimately; deleting them here removed the whole
+    // mortgage subtree (cascade) on every run.
+    if (ct === "NavigationItem" || ct === "Navigation") {
       const del = await apiFetch(`/${item.key}`, { method: "DELETE", headers: { "cms-permanent-delete": "true" } });
       console.log(`  [deleted] ${item.key} (${del.status})`);
     }
@@ -486,7 +533,9 @@ async function main() {
   }
 
   console.log("\n--- Fetching existing page keys from Graph ---");
-  const pageKeyMap = await buildPageKeyMap();
+  // Poll until every existing-page URL the nav references is indexed, so no nav
+  // link is left dangling when seed-nav runs right after seed-content in the runner.
+  const pageKeyMap = await buildPageKeyMap(collectExistingUrls(NAV_TREE));
 
   const unresolved = collectExistingUrls(NAV_TREE).filter(
     (url) => !pageKeyMap.has(url) && !pageKeyMap.has(url.replace("/en", ""))

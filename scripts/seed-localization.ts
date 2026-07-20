@@ -55,11 +55,19 @@ function translate(node: unknown): unknown {
       hitCount++;
       return direct;
     }
-    // Single-paragraph rich text ("<p>...</p>") - translate the inner text.
-    const m = node.match(/^<p>([\s\S]*)<\/p>$/);
-    if (m && NL[m[1]]) {
-      hitCount++;
-      return `<p>${NL[m[1]]}</p>`;
+    // Rich-text HTML (single or multi-tag): translate the inner text of each
+    // element via the dictionary, leaving tags and structure intact. This localizes
+    // TraditionalPage bodies (<p>/<h2>/<h3>/<ul>/<li>/<blockquote>) that are built
+    // from dictionary-covered pieces, without needing the whole HTML blob as a key.
+    if (node.startsWith("<") && node.includes(">")) {
+      return node.replace(/>([^<>]+)</g, (full, seg: string) => {
+        const lead = seg.match(/^\s*/)![0];
+        const tail = seg.match(/\s*$/)![0];
+        const core = seg.trim();
+        if (core && NL[core]) { hitCount++; return `>${lead}${NL[core]}${tail}<`; }
+        if (core && looksLikeProse(core)) misses.add(core);
+        return full;
+      });
     }
     if (looksLikeProse(node)) misses.add(node);
     return node;
@@ -264,9 +272,13 @@ async function localizeItem(item: DiscoveredItem): Promise<Result> {
   // Find the new version id (create may return an empty body) and publish it.
   let nlVersion: string | undefined;
   if (text.trim()) {
-    nlVersion = (JSON.parse(text) as { version?: string }).version;
+    try { nlVersion = (JSON.parse(text) as { version?: string }).version; } catch { /* empty / non-JSON body */ }
   }
-  if (!nlVersion) {
+  // The just-created draft can lag in the locale listing (empty POST body + index
+  // lag, worse under rate-limiting), so retry the lookup a few times before giving
+  // up - otherwise a valid nl version is created but never published.
+  for (let attempt = 0; !nlVersion && attempt < 6; attempt++) {
+    await sleep(700);
     const lookupRes = await api(`/${item.key}/locales/${TARGET_LOCALE}?pageSize=1`);
     if (lookupRes.ok) {
       const lookup = (await lookupRes.json()) as { items?: Array<{ version?: string }> };

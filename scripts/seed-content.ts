@@ -684,6 +684,302 @@ const PAGE_KEYS = {
   businessLending:        noHyphens(),  // /en/business/business-banking/business-lending/
 };
 
+// Additional nested TraditionalPages. These fill out the site (and give the nav in
+// seed-nav.ts real targets - the 10 nav-referenced pages plus extra depth). They are
+// created with random keys and cleaned by deleteExisting()'s cascade on re-seed;
+// seed-nav resolves them by URL, so no shared keys are needed. Each gets the same
+// rich structure as the converted product pages (rich body + shared featuredBlock +
+// shared CTA in the free content area) via buildTraditionalProduct/createTraditionalPage.
+interface ExtraPageDef {
+  displayName: string;
+  routeSegment: string;
+  container: string; // a PAGE_KEYS.* landing key
+  metaTitle: string;
+  metaDescription: string;
+  title: string;
+  description: string;
+  features: Array<{ title: string; description: string }>;
+  bodyText: string;
+}
+
+const EXTRA_TRADITIONAL_PAGES: ExtraPageDef[] = [
+  // ── Personal ────────────────────────────────────────────────────────────
+  {
+    displayName: "Personal Loans", routeSegment: "loans", container: PAGE_KEYS.personal,
+    metaTitle: "Personal Loans | Mosey Bank",
+    metaDescription: "Borrow from £1,000 to £25,000 with a fixed rate and no early repayment fees. Get a decision in minutes.",
+    title: "Personal Loans",
+    description: "Borrow from £1,000 to £25,000 with a fixed rate and no early repayment fees.",
+    features: [
+      { title: "Fixed monthly repayments", description: "Your rate and repayment are fixed for the life of the loan, so you always know exactly what you will pay." },
+      { title: "No early repayment fees", description: "Pay off your loan early whenever you like and we will never charge you a penalty for doing so." },
+      { title: "Decision in minutes", description: "Apply online in around five minutes and get an instant decision. Money can reach your account the same day." },
+    ],
+    bodyText: "Whether you are consolidating existing debt, spreading the cost of a big purchase, or covering an unexpected bill, a Mosey personal loan gives you a clear, fixed plan with no surprises.",
+  },
+  {
+    displayName: "Credit Cards", routeSegment: "credit-cards", container: PAGE_KEYS.personal,
+    metaTitle: "Credit Cards | Mosey Bank",
+    metaDescription: "A credit card that works for you - no annual fee, real-time notifications, and rewards on everyday spending.",
+    title: "Credit Cards",
+    description: "A credit card that works for you, with no annual fee and rewards on everyday spending.",
+    features: [
+      { title: "No annual fee", description: "Keep your card in your pocket for as long as you like without paying a penny in annual charges." },
+      { title: "Everyday rewards", description: "Earn cashback on your everyday spending and redeem it straight to your Mosey account." },
+      { title: "Full app control", description: "Freeze your card, check your balance, and see every transaction in real time from the Mosey app." },
+    ],
+    bodyText: "Representative example and rates are shown before you apply. Borrow responsibly - a credit card is best for spreading short-term costs, not long-term borrowing.",
+  },
+  {
+    displayName: "Arranged Overdrafts", routeSegment: "overdrafts", container: PAGE_KEYS.personal,
+    metaTitle: "Arranged Overdrafts | Mosey Bank",
+    metaDescription: "A flexible arranged overdraft for when you need a little extra. Only pay interest on what you use.",
+    title: "Arranged Overdrafts",
+    description: "A flexible safety net for when you need a little extra headroom in your account.",
+    features: [
+      { title: "Only pay for what you use", description: "Interest is charged only on the amount you are overdrawn, calculated daily and charged monthly." },
+      { title: "Set your own limit", description: "Apply for the arranged limit that suits you and adjust it in the app as your needs change." },
+      { title: "Fee-free buffer", description: "The first £50 of your arranged overdraft is interest-free, giving you a cushion for the odd tight month." },
+    ],
+    bodyText: "An arranged overdraft is there for short-term cash flow, not long-term borrowing. We will send you a notification before you dip into it so there are never any surprises.",
+  },
+  // ── Business ────────────────────────────────────────────────────────────
+  {
+    displayName: "Merchant Services", routeSegment: "merchant-services", container: PAGE_KEYS.business,
+    metaTitle: "Merchant Services | Mosey Bank",
+    metaDescription: "Accept card payments in-store and online. Competitive rates, next-day settlement, and 24/7 support.",
+    title: "Merchant Services",
+    description: "Accept card payments in-store and online with competitive rates and next-day settlement.",
+    features: [
+      { title: "In-store and online", description: "Take payments with a card reader, over the phone, or through your website with one integrated account." },
+      { title: "Next-day settlement", description: "Money from your sales lands in your Mosey business account the next working day, keeping cash flow healthy." },
+      { title: "24/7 support", description: "Our UK merchant team is on hand around the clock if a terminal goes down or a payment needs chasing." },
+    ],
+    bodyText: "From a market stall to a multi-site retailer, Mosey merchant services scale with your business, with clear pricing and no long tie-in contracts.",
+  },
+  {
+    displayName: "International Payments", routeSegment: "international-payments", container: PAGE_KEYS.business,
+    metaTitle: "International Payments | Mosey Bank",
+    metaDescription: "Send and receive money across borders with real exchange rates and low, transparent fees.",
+    title: "International Payments",
+    description: "Send and receive money across borders with real exchange rates and low, transparent fees.",
+    features: [
+      { title: "Real exchange rates", description: "We use the mid-market rate with a small, clearly shown fee - no hidden markup buried in the exchange rate." },
+      { title: "Payments to 120+ countries", description: "Pay suppliers and staff in over 120 countries and 40 currencies, all from your Mosey business account." },
+      { title: "Track every transfer", description: "See exactly where your money is and when it will arrive, with notifications at every step." },
+    ],
+    bodyText: "Whether you are paying an overseas supplier or invoicing an international client, Mosey makes cross-border payments as simple as a domestic transfer.",
+  },
+  {
+    displayName: "Business Credit Cards", routeSegment: "business-credit-cards", container: PAGE_KEYS.business,
+    metaTitle: "Business Credit Cards | Mosey Bank",
+    metaDescription: "Give your team spending power with individual cards, live controls, and automatic accounting sync.",
+    title: "Business Credit Cards",
+    description: "Give your team spending power with individual cards, live controls, and automatic accounting sync.",
+    features: [
+      { title: "Cards for your whole team", description: "Issue physical and virtual cards to staff in seconds and set individual spending limits for each one." },
+      { title: "Live spend controls", description: "Freeze a card, change a limit, or block a category instantly from the app - no calls to the bank." },
+      { title: "Automatic reconciliation", description: "Every transaction syncs to Xero, QuickBooks, or FreeAgent with receipts captured in the app." },
+    ],
+    bodyText: "Stay in control of company spending without slowing your team down. Set the rules once and let Mosey handle the admin.",
+  },
+  // ── Mortgage ────────────────────────────────────────────────────────────
+  {
+    displayName: "Buy-to-Let Mortgages", routeSegment: "buy-to-let", container: PAGE_KEYS.mortgage,
+    metaTitle: "Buy-to-Let Mortgages | Mosey Bank",
+    metaDescription: "Competitive buy-to-let rates for individual landlords and portfolio investors. Free valuation included.",
+    title: "Buy-to-Let Mortgages",
+    description: "Competitive buy-to-let rates for individual landlords and portfolio investors.",
+    features: [
+      { title: "For every kind of landlord", description: "From your first rental property to a portfolio of ten, we have buy-to-let products to suit your plans." },
+      { title: "Free valuation", description: "We cover the cost of the standard property valuation on every buy-to-let application." },
+      { title: "Interest-only options", description: "Choose interest-only or repayment, with 2 and 5 year fixed rates to suit your investment strategy." },
+    ],
+    bodyText: "Your property may be repossessed if you do not keep up repayments. Buy-to-let mortgages are assessed on expected rental income as well as your circumstances.",
+  },
+  {
+    displayName: "Overpayments & Flexibility", routeSegment: "overpayments", container: PAGE_KEYS.mortgage,
+    metaTitle: "Mortgage Overpayments | Mosey Bank",
+    metaDescription: "Overpay your Mosey mortgage by up to 10% a year with no penalty and cut years off your term.",
+    title: "Overpayments & Flexibility",
+    description: "Overpay by up to 10% a year with no penalty and cut years off your mortgage term.",
+    features: [
+      { title: "10% penalty-free each year", description: "Pay off up to 10% of your outstanding balance every year without any early repayment charge." },
+      { title: "One-off or regular", description: "Make a lump-sum overpayment or set up a small monthly boost - both reduce the interest you pay." },
+      { title: "See the impact instantly", description: "The app shows how each overpayment shortens your term and cuts your total interest before you confirm." },
+    ],
+    bodyText: "Overpaying even a little can save thousands over the life of your mortgage. Manage it all yourself in the Mosey app, whenever suits you.",
+  },
+  // ── Investments ─────────────────────────────────────────────────────────
+  {
+    displayName: "Stocks & Shares ISA", routeSegment: "stocks-isa", container: PAGE_KEYS.investments,
+    metaTitle: "Stocks & Shares ISA | Mosey Bank",
+    metaDescription: "Invest up to £20,000 tax-free each year. Choose from thousands of funds, shares, and ETFs.",
+    title: "Stocks & Shares ISA",
+    description: "Invest up to £20,000 tax-free each year in thousands of funds, shares, and ETFs.",
+    features: [
+      { title: "£20,000 tax-free allowance", description: "All growth and income inside your ISA is free of UK income tax and capital gains tax." },
+      { title: "Ready-made or build your own", description: "Pick a ready-made portfolio matched to your risk appetite, or choose your own funds and shares." },
+      { title: "Low, flat platform fee", description: "A single 0.25% annual platform fee, capped at £250 a year, with no dealing charges." },
+    ],
+    bodyText: "The value of investments can go down as well as up and you may get back less than you invest. A Stocks & Shares ISA is designed for the long term.",
+  },
+  {
+    displayName: "Pensions", routeSegment: "pensions", container: PAGE_KEYS.investments,
+    metaTitle: "Personal Pension (SIPP) | Mosey Bank",
+    metaDescription: "A self-invested personal pension that puts you in control. Start from as little as £50 a month.",
+    title: "Pensions",
+    description: "A self-invested personal pension (SIPP) that puts you in control, from £50 a month.",
+    features: [
+      { title: "Tax relief on contributions", description: "The government tops up your contributions with tax relief, giving your retirement savings an instant boost." },
+      { title: "Bring your pensions together", description: "Combine old workplace pensions into one Mosey SIPP so you can see and manage everything in one place." },
+      { title: "Invest your way", description: "Choose a ready-made retirement portfolio or pick your own funds, and adjust as your plans change." },
+    ],
+    bodyText: "A pension is a long-term investment. The value can go down as well as up, and you normally cannot access it until age 55 (57 from 2028). Tax treatment depends on your circumstances.",
+  },
+  {
+    displayName: "Junior ISA", routeSegment: "junior-isa", container: PAGE_KEYS.investments,
+    metaTitle: "Junior ISA | Mosey Bank",
+    metaDescription: "Give a child a head start with a tax-free Junior ISA. Invest up to £9,000 a year until they turn 18.",
+    title: "Junior ISA",
+    description: "Give a child a head start with a tax-free Junior ISA, up to £9,000 a year.",
+    features: [
+      { title: "£9,000 tax-free each year", description: "All growth is free of UK tax, and the whole pot belongs to the child when they turn 18." },
+      { title: "Anyone can contribute", description: "Parents, grandparents, and family friends can all pay in, up to the annual allowance." },
+      { title: "Ready-made portfolios", description: "Choose a long-term portfolio designed to grow over the years until the child reaches adulthood." },
+    ],
+    bodyText: "A Junior ISA is a long-term investment for a child's future. The value can go down as well as up. Money is locked away until the child turns 18.",
+  },
+  {
+    displayName: "General Investment Account", routeSegment: "general-investment", container: PAGE_KEYS.investments,
+    metaTitle: "General Investment Account | Mosey Bank",
+    metaDescription: "Keep investing once you have used your ISA allowance, with no limit on how much you can put in.",
+    title: "General Investment Account",
+    description: "Keep investing once you have used your ISA allowance, with no annual limit.",
+    features: [
+      { title: "No investment limit", description: "There is no cap on how much you can invest, making it ideal once your ISA allowance is used up." },
+      { title: "Same wide choice", description: "Access the same thousands of funds, shares, and ETFs available in your Mosey ISA." },
+      { title: "Move to your ISA each year", description: "Use our Bed and ISA tool to move investments into your ISA as new allowance becomes available." },
+    ],
+    bodyText: "A General Investment Account has no tax wrapper, so gains and income may be taxable. The value of investments can go down as well as up.",
+  },
+  // ── Help ────────────────────────────────────────────────────────────────
+  {
+    displayName: "FAQs", routeSegment: "faqs", container: PAGE_KEYS.help,
+    metaTitle: "Frequently Asked Questions | Mosey Bank",
+    metaDescription: "Quick answers to the questions we hear most - from opening an account to reporting a lost card.",
+    title: "Frequently Asked Questions",
+    description: "Quick answers to the questions we hear most, from opening an account to reporting a lost card.",
+    features: [
+      { title: "Accounts and switching", description: "How to open an account, switch to Mosey with the Current Account Switch Service, and manage joint accounts." },
+      { title: "Cards and payments", description: "Freezing a lost card, setting up Apple Pay and Google Pay, and sending money at home and abroad." },
+      { title: "Security and support", description: "How we protect your account, how to spot a scam, and the fastest ways to reach a real person." },
+    ],
+    bodyText: "Cannot find what you are looking for? Start an in-app chat seven days a week, or head to our contact page for every way to reach us.",
+  },
+  {
+    displayName: "Find a Branch", routeSegment: "branches", container: PAGE_KEYS.help,
+    metaTitle: "Find a Branch | Mosey Bank",
+    metaDescription: "With over 140 branches across the UK, expert advice is never far away. Find your nearest location.",
+    title: "Find a Branch",
+    description: "With over 140 branches across the UK, expert advice is never far away.",
+    features: [
+      { title: "140+ UK branches", description: "From city centres to market towns, there is a Mosey branch near you with real people ready to help." },
+      { title: "Book an appointment", description: "Reserve a slot with a mortgage or business specialist so you are seen at a time that suits you." },
+      { title: "Check opening hours", description: "See live opening hours, accessibility information, and available services for every branch before you visit." },
+    ],
+    bodyText: "Prefer to do everything from your phone? Almost every task can be completed in the Mosey app, but our branches are here whenever you want to talk face to face.",
+  },
+  {
+    displayName: "Security & Fraud", routeSegment: "security", container: PAGE_KEYS.help,
+    metaTitle: "Security & Fraud | Mosey Bank",
+    metaDescription: "How Mosey protects your money, how to spot a scam, and what to do if something looks wrong.",
+    title: "Security & Fraud",
+    description: "How we protect your money, how to spot a scam, and what to do if something looks wrong.",
+    features: [
+      { title: "Protected around the clock", description: "We monitor your account 24/7 for unusual activity and alert you the moment something looks off." },
+      { title: "Freeze your card instantly", description: "Lost your card or spotted a payment you do not recognise? Freeze it in one tap and unfreeze it just as fast." },
+      { title: "Spot and report scams", description: "Learn the warning signs of the most common scams and report anything suspicious straight from the app." },
+    ],
+    bodyText: "Mosey will never call, text, or email asking for your PIN, password, or one-time passcode. If in doubt, hang up and contact us using the number on the back of your card.",
+  },
+  {
+    displayName: "Accessibility", routeSegment: "accessibility", container: PAGE_KEYS.help,
+    metaTitle: "Accessibility | Mosey Bank",
+    metaDescription: "Banking that works for everyone, with support for screen readers, larger text, and accessible branches.",
+    title: "Accessibility",
+    description: "Banking that works for everyone, however you choose to bank with us.",
+    features: [
+      { title: "Built for assistive tech", description: "The Mosey app and website are designed to work with screen readers, larger text, and high-contrast modes." },
+      { title: "Support that suits you", description: "Communicate with us your way, including via in-app chat, phone, and the Relay UK service." },
+      { title: "Accessible branches", description: "Our branches offer step-free access, hearing loops, and staff trained to give the support you need." },
+    ],
+    bodyText: "We are always working to make banking easier for everyone. If there is something we could do better, tell us through the app or in any branch.",
+  },
+  // ── About ───────────────────────────────────────────────────────────────
+  {
+    displayName: "About Us", routeSegment: "about-us", container: PAGE_KEYS.about,
+    metaTitle: "About Us | Mosey Bank",
+    metaDescription: "From a single branch to a bank serving two million customers, built around people not branches.",
+    title: "About Us",
+    description: "From a single branch to a bank serving two million customers across the UK.",
+    features: [
+      { title: "Founded on a simple idea", description: "That banking should work the way the rest of your life does - on your phone, on your schedule, without the jargon." },
+      { title: "Two million customers", description: "Personal and business customers across the country trust Mosey with their everyday money and their big plans." },
+      { title: "Our own technology", description: "We built our banking platform from the ground up, so opening an account or getting help takes minutes, not days." },
+    ],
+    bodyText: "We are a fully licensed UK bank, authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority, and we are still guided by the same simple idea we started with.",
+  },
+  {
+    displayName: "Careers", routeSegment: "careers", container: PAGE_KEYS.about,
+    metaTitle: "Careers | Mosey Bank",
+    metaDescription: "Join a team that puts people first - customers and colleagues. See our open roles.",
+    title: "Careers",
+    description: "Join a team that puts people first, both customers and colleagues.",
+    features: [
+      { title: "Work that matters", description: "Help build a bank that genuinely makes people's financial lives simpler, fairer, and less stressful." },
+      { title: "Flexible by default", description: "We trust our people to do their best work wherever they are, with hybrid and remote roles across the business." },
+      { title: "Grow with us", description: "From engineering to customer support, we invest in learning and give people room to take on more." },
+    ],
+    bodyText: "We are always looking for exceptional, curious people. Explore our open roles and find where you could make a difference at Mosey.",
+  },
+  {
+    displayName: "Press & Media", routeSegment: "press", container: PAGE_KEYS.about,
+    metaTitle: "Press & Media | Mosey Bank",
+    metaDescription: "Latest news, press releases, and media resources from Mosey Bank.",
+    title: "Press & Media",
+    description: "Latest news, press releases, and media resources from Mosey Bank.",
+    features: [
+      { title: "Newsroom", description: "Read our latest announcements, product launches, and company milestones as they happen." },
+      { title: "Media resources", description: "Download logos, brand guidelines, and executive headshots for use in your coverage." },
+      { title: "Press contacts", description: "Reach the Mosey press office directly for interviews, comment, and background briefings." },
+    ],
+    bodyText: "For all media enquiries, contact the press office and we will get back to you quickly. We aim to respond to journalists on deadline the same day.",
+  },
+  {
+    displayName: "Sustainability", routeSegment: "sustainability", container: PAGE_KEYS.about,
+    metaTitle: "Sustainability | Mosey Bank",
+    metaDescription: "How Mosey is building a bank that is good for people and the planet, from net zero to responsible lending.",
+    title: "Sustainability",
+    description: "How we are building a bank that is good for people and the planet.",
+    features: [
+      { title: "On the path to net zero", description: "We are cutting our own emissions and helping customers understand and reduce the footprint of their spending." },
+      { title: "Responsible lending", description: "We lend in a way that supports long-term financial health, not short-term profit at our customers' expense." },
+      { title: "Giving back", description: "Colleagues get paid time off to volunteer, and we support community projects in the places we operate." },
+    ],
+    bodyText: "We publish our progress openly every year. There is a lot still to do, and we would rather be honest about the journey than overstate where we are.",
+  },
+];
+
+const extraPages: PageDef[] = EXTRA_TRADITIONAL_PAGES.map((p) => ({
+  key: noHyphens(),
+  displayName: p.displayName,
+  routeSegment: p.routeSegment,
+  container: p.container,
+  properties: { metaTitle: p.metaTitle, metaDescription: p.metaDescription },
+  traditional: buildTraditionalProduct("", p.title, p.description, "", "", p.features, p.bodyText, ""),
+}));
+
 const pages: PageDef[] = [
   // ── Level-1: Category pages ───────────────────────────────────────────────
 
@@ -1076,6 +1372,9 @@ const pages: PageDef[] = [
       "Apply for Finance"
     ),
   },
+
+  // Additional nested TraditionalPages (nav targets + extra depth).
+  ...extraPages,
 ];
 
 /** Keys of items that could not be deleted (e.g. homepage / start page). */

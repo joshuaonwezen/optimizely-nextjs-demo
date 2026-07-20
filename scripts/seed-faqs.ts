@@ -168,10 +168,13 @@ async function main() {
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}\n`);
 
   // Relocate FAQ blocks stranded at the top-level root by earlier seed versions.
-  // The items use stable keys (createContent 409-skips existing ones), so without
-  // this sweep a misplaced item would never move into the shared-blocks folder.
-  console.log("--- Sweeping misplaced/stale FAQ shared blocks ---");
-  await sweepMisplacedSharedBlocks(["FaqItemBlock", "FaqContainerBlock"]);
+  // Only sweep the TOP-LEVEL root (includeBlocksFolder: false) - seed-content owns
+  // the FAQ items and places them correctly in the shared-blocks folder, so sweeping
+  // that folder here would delete live items and race their re-create (a publish 404),
+  // and would orphan the investment/help FAQ items seed-content also created there.
+  // createContent below 409-skips the already-present items, so nothing is lost.
+  console.log("--- Sweeping misplaced FAQ shared blocks (top-level root only) ---");
+  await sweepMisplacedSharedBlocks(["FaqItemBlock", "FaqContainerBlock"], { includeBlocksFolder: false });
   await new Promise((r) => setTimeout(r, 3000));
 
   await createFaqItems();
