@@ -18,19 +18,20 @@ export async function GET(request: NextRequest) {
   const q      = searchParams.get("q")?.trim() ?? "";
   const mode   = searchParams.get("mode") === "semantic" ? "semantic" : "relevance";
   const weight = Math.min(1, Math.max(0, parseFloat(searchParams.get("weight") ?? "0.5")));
+  const locale = [searchParams.get("locale") ?? "en"];
 
   if (!q || q.length < 2) {
     return NextResponse.json({ total: 0, items: [] });
   }
 
   if (searchParams.get("facets") === "1") {
-    return facetedSearch(q, listParam(searchParams.get("category")), listParam(searchParams.get("tags")));
+    return facetedSearch(q, listParam(searchParams.get("category")), listParam(searchParams.get("tags")), locale);
   }
 
   try {
     const result = await graphqlFetch<any>(
       mode === "semantic" ? SEARCH_SEMANTIC_QUERY : SEARCH_RELEVANCE_QUERY,
-      mode === "semantic" ? { query: q, weight } : { query: q },
+      mode === "semantic" ? { query: q, weight, locale } : { query: q, locale },
       { cache: "no-store" }
     );
 
@@ -55,11 +56,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function facetedSearch(q: string, categories: string[] | null, tags: string[] | null) {
+async function facetedSearch(q: string, categories: string[] | null, tags: string[] | null, locale: string[] = ["en"]) {
   try {
     const result = await graphqlFetch<any>(
       SEARCH_FACETED_QUERY,
-      { query: q, categories, tags },
+      { query: q, categories, tags, locale },
       { cache: "no-store" }
     );
 

@@ -5,6 +5,7 @@ import SourcePanel from "@/components/demo/SourcePanel";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "ISR Caching & Webhooks Demo" };
 
@@ -130,28 +131,28 @@ graphqlFetch(QUERY, vars, { next: { revalidate: 300, tags: ["navigation"] } });
 
 const SDK_METHOD_COMPARISON = [
   {
-    method: "getClient().getContent({ key })",
-    when: "Resolve a content reference by CMS key - the most common self-fetch pattern",
-    hasIsr: true,
-    isrNote: "Pass { next: { revalidate, tags } } as any in the options arg",
-  },
-  {
     method: "getClient().getContentByPath(url)",
-    when: "Fetch the current published page by URL - used in the catch-all page route",
-    hasIsr: true,
-    isrNote: "Cast options to any - same as getContent()",
+    when: "Default for fetching a CMS page by URL - used in the catch-all page route",
+    isrLevel: "page" as const,
+    isrNote: "Page-output ISR via export const revalidate  -  sufficient for most pages; no per-fetch tagging needed",
   },
   {
-    method: "getClient().request(query)",
-    when: "Custom GraphQL query where ISR tags are not needed (preview, no-store context)",
-    hasIsr: false,
-    isrNote: "cache param appends ?cache=true/false to the Graph URL - Next.js fetch cache never sees it",
+    method: "getClient().getContent({ key })",
+    when: "Resolve a content reference by CMS key inside a component",
+    isrLevel: "page" as const,
+    isrNote: "Same as getContentByPath()  -  benefits from the page's revalidate window; next/tags options are silently discarded by the SDK",
   },
   {
     method: "graphqlFetch(query)",
-    when: "Custom GraphQL query that must participate in Next.js ISR (nav, banner, etc.)",
-    hasIsr: true,
-    isrNote: "Full next: { revalidate, tags } support - wraps fetch() directly",
+    when: "Only when you need per-fetch tags or a different TTL to data sources with a different update cadence (nav, banner, external data)",
+    isrLevel: "fetch" as const,
+    isrNote: "Full next: { revalidate, tags } support - wraps fetch() directly so Next.js registers each call in its data cache",
+  },
+  {
+    method: "getClient().request(query)",
+    when: "Escape hatch for queries where ISR is not needed - preview fetches, server actions, one-off no-store calls",
+    isrLevel: "none" as const,
+    isrNote: "cache param appends ?cache=true/false to the Graph URL - Next.js fetch cache never sees it",
   },
 ];
 
@@ -249,7 +250,7 @@ const PREFETCH_SNIPPET = `// Next.js <Link> prefetch behaviour in App Router (pr
 )}`;
 
 const CACHE_TABLE = [
-  { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "60s",        tag: "page",         revalidatedBy: "revalidateTag('page') in /api/webhooks" },
+  { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "60s",        tag: "-",            revalidatedBy: "revalidatePath('/', 'layout') in /api/webhooks (page-output ISR only)" },
   { data: "Navigation tree",   location: "getNavigation()",                ttl: "300s (5 min)", tag: "navigation",  revalidatedBy: "revalidateTag('navigation') in /api/webhooks" },
   { data: "Site banner",       location: "getSiteBanner()",                ttl: "60s",          tag: "banner",      revalidatedBy: "revalidateTag('banner') in /api/webhooks" },
   { data: "External quotes",   location: "getQuotes()",                    ttl: "60s",          tag: "quotes",      revalidatedBy: "revalidateTag('quotes') in /api/webhooks" },
@@ -320,7 +321,7 @@ export default function CachingDemoPage() {
             When an editor publishes, the ISR cache is invalidated automatically - no redeploy, no manual flush.
             Here&apos;s what actually happens, step by step.{" "}
             For a full system view including the edge middleware and Graph layers, see the{" "}
-            <a href="/demo/architecture#publish-flow" className="text-brand hover:underline">Architecture - Publish Flow</a>.
+            <Link href="/demo/architecture#publish-flow" className="text-brand hover:underline">Architecture - Publish Flow</Link>.
           </p>
 
           <div className="space-y-2 mb-8">
@@ -389,13 +390,17 @@ export default function CachingDemoPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             Every data source in the project has an explicit caching policy.
             TTL (Time To Live) is how long a cached version is kept before Next.js considers
-            it stale and eligible for a background refresh. Cache tags are labels attached to
-            a fetch so that a single{" "}
+            it stale and eligible for a background refresh. Not all sources use the same
+            invalidation mechanism: CMS page content fetched via{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">getContentByPath()</code>{" "}
+            relies on page-output ISR and{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">revalidatePath(&apos;/&apos;, &apos;layout&apos;)</code>{" "}
+            in the webhook  -  the whole page re-renders on the next request. Shared data sources
+            with different update cadences (navigation, banner, external quotes) use per-fetch cache
+            tags so a single{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">revalidateTag(&apos;navigation&apos;)</code>{" "}
-            call can instantly mark all fetches with that label as stale - without waiting for
-            the TTL to expire. Navigation changes rarely so it caches for 5 minutes; banners
-            and content change more often so they cache for 60 seconds. Search is always fresh
-            because user-typed queries must never be stale.
+            call busts only that data across all pages without re-rendering anything else.
+            Search is always fresh because user-typed queries must never be stale.
           </p>
           <div className="overflow-x-auto rounded-2xl border border-ghost-border">
             <table className="w-full text-sm">
@@ -431,71 +436,28 @@ export default function CachingDemoPage() {
           </div>
         </section>
 
-        {/* graphqlFetch pattern */}
-        <section id="graphql-fetch" className="space-y-8">
+        {/* Choosing the right method */}
+        <section id="choosing-method" className="space-y-8">
           <div>
             <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              The graphqlFetch Pattern <a href="#graphql-fetch" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-            </h2>
-            <p className="text-sm text-on-surface-variant max-w-3xl">
-              All GraphQL requests go through a single{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">graphqlFetch()</code> helper
-              in <code className="bg-surface-low px-1 rounded text-xs font-mono">src/lib/optimizely/client.ts</code>.
-              It applies caching automatically based on context - published ISR by default,
-              no-store for draft/preview, and caller-overridable for fine-grained control.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Core helper (caching logic)</p>
-              <CodeBlock code={GRAPHQL_FETCH_SNIPPET} className="h-full" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Callers override per data type</p>
-              <CodeBlock code={CALLER_SNIPPET} className="h-full" />
-            </div>
-          </div>
-        </section>
-
-        {/* graphqlFetch vs getClient().request() */}
-        <section id="sdk-vs-graphqlfetch" className="space-y-8">
-          <div>
-            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              graphqlFetch vs getClient().request(){" "}
-              <a href="#sdk-vs-graphqlfetch" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+              Choosing the Right Method{" "}
+              <a href="#choosing-method" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
             </h2>
             <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
-              The SDK exposes a{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">getClient().request()</code>{" "}
-              method for running arbitrary GraphQL queries. It looks like an alternative to{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">graphqlFetch()</code>,
-              but there is a critical difference: its{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">cache</code> parameter
-              controls <em>Graph&apos;s</em> CDN cache (by appending{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">?cache=false</code> to
-              the endpoint URL), not the Next.js fetch cache. The underlying{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">fetch()</code> call
-              inside <code className="bg-surface-low px-1 rounded text-xs font-mono">request()</code>{" "}
-              has no <code className="bg-surface-low px-1 rounded text-xs font-mono">next</code>{" "}
-              property at all - Next.js cannot register it for ISR revalidation.
+              The SDK provides{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">getContentByPath()</code>,{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">getContent()</code>, and{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">request()</code> for querying
+              Optimizely Graph. These cover most cases. This project also includes a thin custom{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">graphqlFetch()</code> wrapper
+              in <code className="bg-surface-low px-1 rounded text-xs font-mono">src/lib/optimizely/client.ts</code>{" "}
+              that wraps the native{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">fetch()</code> directly  -  the
+              only way in Next.js to attach{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">next: {"{ revalidate, tags }"}</code>{" "}
+              options for per-fetch ISR tagging. Use it only when data sources have different update cadences
+              and you want to bust them independently.
             </p>
-          </div>
-
-          <Callout label="Short version">
-            Use{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch()</code>{" "}
-            whenever you want Next.js to manage the cache lifetime. It is what all the query
-            helpers in this project use.{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">getClient().request()</code>{" "}
-            is for one-off queries where you don&apos;t need ISR - for example, a no-store
-            server action or a preview fetch that must always be fresh.
-          </Callout>
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
-              Why request() cannot participate in Next.js ISR
-            </p>
-            <CodeBlock code={SDK_REQUEST_SNIPPET} />
           </div>
 
           <div>
@@ -508,7 +470,7 @@ export default function CachingDemoPage() {
                   <tr className="bg-surface-low border-b border-ghost-border">
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Method</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">When to use</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">ISR / revalidate tags?</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">ISR support</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ghost-border">
@@ -518,11 +480,13 @@ export default function CachingDemoPage() {
                       <td className="px-4 py-3 text-xs text-on-surface-variant">{row.when}</td>
                       <td className="px-4 py-3 text-xs">
                         <span className={`inline-block px-2 py-0.5 rounded-full font-mono font-medium ${
-                          row.hasIsr
+                          row.isrLevel === "fetch"
                             ? "bg-green-100 text-green-800"
+                            : row.isrLevel === "page"
+                            ? "bg-blue-100 text-blue-800"
                             : "bg-amber-100 text-amber-800"
                         }`}>
-                          {row.hasIsr ? "Yes" : "No"}
+                          {row.isrLevel === "fetch" ? "Fetch-level" : row.isrLevel === "page" ? "Page-level" : "No"}
                         </span>
                         <span className="block mt-1 text-on-surface-variant">{row.isrNote}</span>
                       </td>
@@ -533,22 +497,50 @@ export default function CachingDemoPage() {
             </div>
           </div>
 
-          <Callout label="SDK methods can still do ISR - with a cast">
+          <Callout label="SDK methods and the as any cast  -  it does not work">
             <code className="bg-surface-low px-1 rounded font-mono text-xs">getClient().getContent()</code>{" "}
             and{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">getContentByPath()</code>{" "}
-            accept a second options argument. The SDK types it narrowly, but Next.js
-            fetch options (
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">next: {"{ revalidate, tags }"}</code>
-            ) pass through when cast:{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">
-              {"getClient().getContent({ key }, { next: { revalidate: 300 } } as any)"}
-            </code>
-            . Use this for content reference lookups in self-fetching blocks.{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">request()</code>{" "}
-            does not have this option - it bypasses Next.js&apos;s fetch layer entirely.{" "}
+            only read <code className="bg-surface-low px-1 rounded font-mono text-xs">options.cache</code> (a boolean
+            controlling the Graph CDN URL parameter). Any{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">next</code> property you pass  -  even
+            cast as <code className="bg-surface-low px-1 rounded font-mono text-xs">any</code>  -  is silently discarded
+            before reaching the underlying{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">fetch()</code> call,
+            because both methods route through{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">this.request()</code> which does not
+            forward Next.js fetch options. They participate in page-output ISR only  -  not fetch-level tag revalidation.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </Callout>
+
+          <Callout label="When does the custom wrapper add value?">
+            Only when you need <strong>per-fetch cache tags</strong> with different TTLs per data source  -  for example,
+            navigation at 5 minutes and banners at 60 seconds, each bust-able independently via{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">revalidateTag()</code> without
+            re-rendering every page. For CMS page content fetched via{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">getContentByPath()</code>,
+            page-output ISR combined with{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">revalidatePath(&apos;/&apos;, &apos;layout&apos;)</code>{" "}
+            in the webhook is sufficient and simpler. The custom wrapper exists for the cases where you
+            want surgical invalidation by data source rather than a full-site re-render on every publish.
+          </Callout>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+              The custom graphqlFetch wrapper (caching logic)
+            </p>
+            <div className="grid md:grid-cols-2 gap-6">
+              <CodeBlock code={GRAPHQL_FETCH_SNIPPET} className="h-full" />
+              <CodeBlock code={CALLER_SNIPPET} className="h-full" />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+              Why getClient().request() cannot participate in Next.js ISR
+            </p>
+            <CodeBlock code={SDK_REQUEST_SNIPPET} />
+          </div>
         </section>
 
         {/* Graph CDN cache */}
@@ -576,9 +568,12 @@ export default function CachingDemoPage() {
                 <h3 className="font-display font-semibold text-on-surface">Next.js Fetch Cache</h3>
               </div>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
-                Lives in the Node.js / Vercel infrastructure layer. Controlled entirely by the fetch
-                options you pass in{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch()</code>.
+                Lives in the Node.js / Vercel infrastructure layer. Controlled by the{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">next</code> options passed
+                to the underlying{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">fetch()</code> call  -  either
+                directly or via the custom{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch()</code> wrapper.
               </p>
               <div className="space-y-1.5 text-xs">
                 {[
@@ -872,7 +867,7 @@ export default function CachingDemoPage() {
             <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
               A simpler variant of <code className="bg-surface-low px-1 rounded text-xs font-mono">/api/revalidate</code> that
               always busts the entire layout cache. Use this when you want a single
-              "fire and forget" publish hook with no payload parsing. Register in{" "}
+              &ldquo;fire and forget&rdquo; publish hook with no payload parsing. Register in{" "}
               <strong>CMS Settings → Events</strong> alongside <code className="bg-surface-low px-1 rounded text-xs font-mono">/api/revalidate</code>.
             </p>
             <CodeBlock code={PUBLISH_SNIPPET} />

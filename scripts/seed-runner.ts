@@ -28,6 +28,8 @@ async function main() {
     "OPTIMIZELY_GRAPH_SINGLE_KEY",
     "OPTIMIZELY_GRAPH_GATEWAY",
     "OPTIMIZELY_CMS_URL",
+    "OPTIMIZELY_APP_KEY",
+    "OPTIMIZELY_APP_SECRET",
   ];
   const missingVars = REQUIRED_VARS.filter((v) => !env[v]);
   if (missingVars.length > 0) {
@@ -47,6 +49,8 @@ async function main() {
     ["npx", ["tsx", "scripts/seed-nav.ts"]],
     ["npx", ["tsx", "scripts/seed-modeling.ts"]],
     ["npx", ["tsx", "scripts/seed-faqs.ts"]],
+    ["npx", ["tsx", "scripts/seed-quotes.ts"]],
+    ["npx", ["tsx", "scripts/seed-locations.ts"]],
   ];
 
   // Optional steps - failures print a warning and the run continues.
@@ -54,8 +58,6 @@ async function main() {
   const optional: [string, string[]][] = [
     ["npx", ["tsx", "scripts/seed-homepage-variations.ts"]],
     ["npx", ["tsx", "scripts/seed-nav-strategy-demo.ts"]],
-    ["npx", ["tsx", "scripts/seed-quotes.ts"]],
-    ["npx", ["tsx", "scripts/seed-locations.ts"]],
     ["npx", ["tsx", "scripts/seed-contact-pages.ts"]],
     // Requires a published "Form Container" shared block authored in the CMS UI
     // (native forms cannot be created via the API). Warns and skips if none exists.

@@ -1,6 +1,7 @@
 export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
-  query SearchRelevance($query: String!) {
+  query SearchRelevance($query: String!, $locale: [Locales]) {
     _Content(
+      locale: $locale
       where: { _fulltext: { match: $query } }
       orderBy: { _ranking: RELEVANCE }
       limit: 10
@@ -20,8 +21,9 @@ export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
 `;
 
 export const SEARCH_FACETED_QUERY = /* GraphQL */ `
-  query SearchFaceted($query: String!, $categories: [String!], $tags: [String!]) {
+  query SearchFaceted($query: String!, $categories: [String!], $tags: [String!], $locale: [Locales]) {
     ArticlePage(
+      locale: $locale
       where: {
         _fulltext: { match: $query }
         category: { in: $categories }
@@ -67,8 +69,9 @@ export const AUTOCOMPLETE_QUERY = /* GraphQL */ `
 `;
 
 export const SEARCH_SEMANTIC_QUERY = /* GraphQL */ `
-  query SearchSemantic($query: String!, $weight: Float!) {
+  query SearchSemantic($query: String!, $weight: Float!, $locale: [Locales]) {
     _Content(
+      locale: $locale
       where: { _fulltext: { match: $query } }
       orderBy: { _ranking: SEMANTIC, _semanticWeight: $weight }
       limit: 10
