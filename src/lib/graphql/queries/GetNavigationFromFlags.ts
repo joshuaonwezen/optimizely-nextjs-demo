@@ -1,5 +1,5 @@
 // Demo reference implementation for /demo/navigation - production nav uses GetNavigation.ts
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 import type { NavNode } from "./GetNavigation";
 
 export interface FlagNavResult {
@@ -101,7 +101,7 @@ export async function getNavigationFromFlags(): Promise<FlagNavResult> {
   try {
     const result = await graphqlFetch<{
       TraditionalPage?: { items?: RawFlagItem[] };
-    }>(GET_NAVIGATION_FROM_FLAGS_QUERY, {}, { next: { revalidate: 300, tags: ["navigation"] } });
+    }>(GET_NAVIGATION_FROM_FLAGS_QUERY, {}, { next: { revalidate: CACHE_TTL, tags: ["navigation"] } });
 
     const raw = result.data?.TraditionalPage?.items ?? [];
     const tree = buildTree(raw);

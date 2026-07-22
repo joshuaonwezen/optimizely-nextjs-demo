@@ -2,6 +2,7 @@ import { contentType, getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
+import { CACHE_TTL } from "@/lib/optimizely/client";
 
 export const TimelineBlockType = contentType({
   key: "TimelineBlock",
@@ -62,7 +63,7 @@ async function loadMilestones(keys: string[]): Promise<MilestoneData[]> {
   if (keys.length === 0) return [];
   const results = await Promise.all(
     keys.map((key) =>
-      getClient().getContent({ key }, { next: { revalidate: 300 } } as any).catch(() => null)
+      getClient().getContent({ key }, { next: { revalidate: CACHE_TTL } } as any).catch(() => null)
     )
   );
   return results.filter((item): item is MilestoneData => Boolean(item));

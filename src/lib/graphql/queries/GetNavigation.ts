@@ -1,4 +1,4 @@
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 
 // Public tree type — used by NestedNavMenu and the demo page
 
@@ -154,7 +154,7 @@ export async function getNavigation(options: {
       key ? { key, locale: [locale] } : { locale: [locale] },
       previewToken
         ? { previewToken, cache: "no-store" }
-        : { next: { revalidate: 300, tags: ["navigation"] } }
+        : { next: { revalidate: CACHE_TTL, tags: ["navigation"] } }
     );
 
     const root = result.data?.Navigation?.items?.[0];

@@ -3,7 +3,7 @@ import { getClient } from "@optimizely/cms-sdk";
 import { RichText } from "@optimizely/cms-sdk/react/richText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 
 const FEATURED_BLOCK_KEY_QUERY = /* GraphQL */ `
   query FeaturedBlockKey($key: String!) {
@@ -34,13 +34,13 @@ export default async function TraditionalPage({ content }: { content: any }) {
       }>(
         FEATURED_BLOCK_KEY_QUERY,
         { key: content._metadata.key },
-        { next: { revalidate: 60, tags: ["page"] } }
+        { next: { revalidate: CACHE_TTL, tags: ["page"] } }
       );
       blockKey = data?.TraditionalPage?.items?.[0]?.featuredBlock?._metadata?.key;
     }
     featuredBlock = blockKey
       ? await getClient()
-          .getContent({ key: blockKey }, { next: { revalidate: 60 } } as any)
+          .getContent({ key: blockKey }, { next: { revalidate: CACHE_TTL } } as any)
           .catch(() => null)
       : null;
   }

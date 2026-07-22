@@ -139,8 +139,8 @@ export default function RootLayout({ children }) {
   return (
     <html>
       <body>
-        <GlobalBanner />      {/* graphqlFetch, revalidate: 60  → cached */}
-        <NavigationHeader />  {/* graphqlFetch, revalidate: 300 → cached */}
+        <GlobalBanner />      {/* graphqlFetch, revalidate: 3600 → cached */}
+        <NavigationHeader />  {/* graphqlFetch, revalidate: 3600 → cached */}
         <main>{children}</main>
         <Footer />            {/* static - no fetch */}
       </body>
@@ -391,8 +391,8 @@ export default function GraphQueriesDemoPage() {
 
           <div className="grid md:grid-cols-3 gap-4 mt-6">
             {[
-              { label: "GlobalBanner", cache: "revalidate: 60", tag: "banner", note: "Same query for all visitors" },
-              { label: "NavigationHeader", cache: "revalidate: 300", tag: "navigation", note: "Same query for all visitors" },
+              { label: "GlobalBanner", cache: "revalidate: 3600", tag: "banner", note: "Same query for all visitors" },
+              { label: "NavigationHeader", cache: "revalidate: 3600", tag: "navigation", note: "Same query for all visitors" },
               { label: "CMS page route", cache: "force-dynamic + cache: false", tag: "-", note: "Per-visitor, always fresh" },
             ].map(({ label, cache, tag, note }) => (
               <div key={label} className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">

@@ -1,4 +1,4 @@
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 
 export interface SiteBannerItem {
   message?: string | null;
@@ -37,7 +37,7 @@ export async function getSiteBanner(options: { locale?: string } = {}): Promise<
     const result = await graphqlFetch<GetSiteBannerResult>(
       GET_SITE_BANNER_QUERY,
       { locale: [locale] },
-      { next: { revalidate: 60, tags: ["banner"] } }
+      { next: { revalidate: CACHE_TTL, tags: ["banner"] } }
     );
     return result.data?.SiteBanner?.items?.find((item) => item?.enabled) ?? null;
   } catch {

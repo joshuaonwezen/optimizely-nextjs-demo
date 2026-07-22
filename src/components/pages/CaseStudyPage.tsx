@@ -3,6 +3,7 @@ import Link from "next/link";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getClient } from "@optimizely/cms-sdk";
+import { CACHE_TTL } from "@/lib/optimizely/client";
 
 interface ImageRef {
   url?: { default?: string | null } | null;
@@ -71,7 +72,7 @@ async function loadOutcomes(keys: string[]): Promise<OutcomeData[]> {
   if (keys.length === 0) return [];
   const results = await Promise.all(
     keys.map((key) =>
-      getClient().getContent({ key }, { next: { revalidate: 300 } } as any).catch(() => null)
+      getClient().getContent({ key }, { next: { revalidate: CACHE_TTL } } as any).catch(() => null)
     )
   );
   return results.filter((item): item is OutcomeData => Boolean(item));
@@ -79,7 +80,7 @@ async function loadOutcomes(keys: string[]): Promise<OutcomeData[]> {
 
 async function loadTestimonial(key: string | null | undefined): Promise<TestimonialData | null> {
   if (!key) return null;
-  return getClient().getContent({ key }, { next: { revalidate: 300 } } as any).catch(() => null);
+  return getClient().getContent({ key }, { next: { revalidate: CACHE_TTL } } as any).catch(() => null);
 }
 
 export default async function CaseStudyPage({ content }: { content: CaseStudyContent }) {

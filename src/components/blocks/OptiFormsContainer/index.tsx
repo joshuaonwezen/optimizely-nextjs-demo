@@ -3,7 +3,7 @@ import {
   getPreviewUtils,
   type StructureContainerProps,
 } from "@optimizely/cms-sdk/react/server";
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 
 interface OptiFormsContainerData {
   key?: string | null;
@@ -53,7 +53,7 @@ export default async function OptiFormsContainer(props: OptiFormsContainerProps)
   if (node.displayName && node.SubmitUrl === undefined && node.Title === undefined) {
     const res = await graphqlFetch<{
       OptiFormsContainerData?: { items?: OptiFormsContainerData[] };
-    }>(FORM_PROPS_QUERY, { name: node.displayName }, { next: { revalidate: 60, tags: ["page"] } }).catch(
+    }>(FORM_PROPS_QUERY, { name: node.displayName }, { next: { revalidate: CACHE_TTL, tags: ["page"] } }).catch(
       () => null
     );
     const item = res?.data?.OptiFormsContainerData?.items?.[0];

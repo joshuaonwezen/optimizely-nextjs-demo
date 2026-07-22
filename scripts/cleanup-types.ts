@@ -51,6 +51,7 @@ const KEEP = new Set([
   "ComparisonTableBlock",
   "CalloutBlock",
   "ContactFormBlock",
+  "BranchFinderBlock",
   // Optimizely Forms native types (activated via CMS Settings → Forms)
   "OptiFormsContainerData",
   "OptiFormsTextboxElement",
@@ -106,6 +107,7 @@ const KEEP_TEMPLATES = new Set([
   "CallToActionOutlineTemplate",
   "CallToActionSurfaceTemplate",
   "CallToActionGhostTemplate",
+  "BranchFinderBlockDefaultTemplate",
   "ProductCardDefaultTemplate",
   "ProductCardFeaturedTemplate",
   "FeatureItemOutlinedTemplate",

@@ -1,4 +1,4 @@
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 import { toNavNode, type NavNode, type RawNavItem } from "@/lib/graphql/queries/GetNavigation";
 
 export interface FooterData {
@@ -64,7 +64,7 @@ export async function getFooter(options: { locale?: string } = {}): Promise<Foot
     const result = await graphqlFetch<GetFooterResult>(
       GET_FOOTER_QUERY,
       { locale: [locale] },
-      { next: { revalidate: 300, tags: ["footer"] } }
+      { next: { revalidate: CACHE_TTL, tags: ["footer"] } }
     );
     const root = result.data?.Footer?.items?.[0];
     if (!root) return null;

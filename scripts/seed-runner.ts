@@ -53,11 +53,23 @@ async function main() {
     ["npx", ["tsx", "scripts/seed-locations.ts"]],
   ];
 
+  // Localization is opt-in: only runs with --localize or SEED_LOCALIZE truthy
+  // (the /demo/management-api seed tool sets SEED_LOCALIZE via its checkbox).
+  const localize =
+    process.argv.includes("--localize") || /^(1|true|yes)$/i.test(env.SEED_LOCALIZE ?? "");
+  // Normalize into env so the spawned seed-localization child sees it (the child's
+  // own guard checks SEED_LOCALIZE / its argv, and it won't inherit the runner's --localize arg).
+  if (localize) env.SEED_LOCALIZE = "1";
+
   // Optional steps - failures print a warning and the run continues.
   // These may depend on Graph indexing the content from required steps (~60s lag).
   const optional: [string, string[]][] = [
     ["npx", ["tsx", "scripts/seed-homepage-variations.ts"]],
     ["npx", ["tsx", "scripts/seed-nav-strategy-demo.ts"]],
+    // Geo branch-finder shared block on /en/help/branches. seed-locations (now a
+    // required step) has already run, so BankLocation data exists; needs the
+    // branches page in Graph.
+    ["npx", ["tsx", "scripts/seed-branch-finder.ts"]],
     ["npx", ["tsx", "scripts/seed-contact-pages.ts"]],
     // Requires a published "Form Container" shared block authored in the CMS UI
     // (native forms cannot be created via the API). Warns and skips if none exists.
@@ -71,7 +83,8 @@ async function main() {
     ["npx", ["tsx", "scripts/seed-settings.ts"]],
     // Last: needs every page above to be in Graph already (~60s indexing lag on
     // a fresh seed - re-run individually if many items are skipped/failed).
-    ["npx", ["tsx", "scripts/seed-localization.ts"]],
+    // Opt-in only (see `localize` above); the child inherits SEED_LOCALIZE via env.
+    ...(localize ? [["npx", ["tsx", "scripts/seed-localization.ts"]]] as [string, string[]][] : []),
     // Excluded:
     // register-webhook.mjs - interactive prompt for public URL
     // FX flags/experiments are managed via the Optimizely Experimentation MCP server.

@@ -1,4 +1,4 @@
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 
 export interface BankLocation {
   branchName: string;
@@ -78,7 +78,7 @@ export async function getLocations(): Promise<{ items: BankLocation[]; fromGraph
     const result = await graphqlFetch<GetLocationsResult>(
       GET_LOCATIONS_QUERY,
       {},
-      { next: { revalidate: 60, tags: ["locations"] } }
+      { next: { revalidate: CACHE_TTL, tags: ["locations"] } }
     );
 
     const raw   = result.data?.BankLocation?.items ?? [];
@@ -103,7 +103,7 @@ export async function getNearbyLocations(
     const result = await graphqlFetch<GetLocationsResult>(
       GET_NEARBY_LOCATIONS_QUERY,
       { lat, lon, radius: Math.round(radiusKm) },
-      { next: { revalidate: 60, tags: ["locations"] } }
+      { next: { revalidate: CACHE_TTL, tags: ["locations"] } }
     );
 
     const raw   = result.data?.BankLocation?.items ?? [];

@@ -640,6 +640,73 @@ export async function deleteContentByKey(key: string): Promise<void> {
 }
 
 /**
+ * Merge new properties onto an already-PUBLISHED page and publish the result.
+ *
+ * A published version cannot be patched directly (the API 400s with "Only
+ * versions in status 'draft' can be patched"). So we create a fresh draft
+ * (POST /versions copies the current published content), merge-patch the given
+ * properties onto it, and publish. displayName + routeSegment are carried over
+ * on the POST so the CMS does not re-derive the route segment from the name
+ * (which would silently change the page URL).
+ *
+ * Use this instead of patchContentProperties when the target may be published
+ * (e.g. wiring a shared block onto a page created by seed-content).
+ */
+export async function patchPublishedPageProperties(
+  key: string,
+  properties: Record<string, unknown>,
+  locale = "en"
+): Promise<void> {
+  const token = await getManagementToken();
+
+  // Read the current version's displayName + routeSegment so the new draft keeps them.
+  const curRes = await fetch(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=1`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!curRes.ok) throw new Error(`GET locales/${locale} for ${key}: ${curRes.status}`);
+  const curData = (await curRes.json()) as {
+    items?: Array<{ displayName?: string; routeSegment?: string }>;
+  };
+  const cur = curData.items?.[0];
+
+  // Create a fresh draft (copies the published content).
+  const draftBody: Record<string, unknown> = { locale };
+  if (cur?.displayName !== undefined) draftBody.displayName = cur.displayName;
+  if (cur?.routeSegment !== undefined) draftBody.routeSegment = cur.routeSegment;
+  await fetch(`${CONTENT_ENDPOINT}/${key}/versions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(draftBody),
+  }).then((r) => r.text());
+
+  // Find the newest draft version FOR THIS LOCALE. Must scope by locale — the
+  // global /versions list mixes locales, so picking the highest-numbered draft
+  // there can grab a different language's version and patch the wrong content.
+  const vd = (await (
+    await fetch(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=30`, { headers: { Authorization: `Bearer ${token}` } })
+  ).json()) as { items?: Array<{ version?: string; status?: string }> };
+  const version = (vd.items ?? [])
+    .filter((i) => i.status === "draft" && i.version)
+    .sort((a, b) => Number(b.version) - Number(a.version))[0]?.version;
+  if (!version) throw new Error(`Could not find a draft version for ${key}/${locale}`);
+
+  const patchRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/merge-patch+json" },
+    body: JSON.stringify({ properties: wrapProps(properties) }),
+  });
+  if (!patchRes.ok) {
+    throw new Error(`PATCH ${key}/versions/${version}: ${patchRes.status} ${(await patchRes.text()).slice(0, 200)}`);
+  }
+
+  const pubRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}:publish`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!pubRes.ok) console.warn(`  [warn] republish ${key} after property patch: ${pubRes.status}`);
+}
+
+/**
  * PATCH an existing content item's properties. Uses merge-patch+json so only
  * the provided fields are touched.
  *

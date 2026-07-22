@@ -1,5 +1,5 @@
 // Demo reference implementation for /demo/navigation - production nav uses GetNavigation.ts
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 
 export interface HierarchyNavItem {
   label: string;
@@ -54,7 +54,7 @@ export async function getNavigationFromHierarchy(): Promise<HierarchyNavResult> 
   try {
     const parentResult = await graphqlFetch<{
       _Page?: { items?: Array<{ _metadata?: { key?: string; displayName?: string } }> };
-    }>(GET_PARENT_KEY_QUERY, {}, { next: { revalidate: 300, tags: ["navigation"] } });
+    }>(GET_PARENT_KEY_QUERY, {}, { next: { revalidate: CACHE_TTL, tags: ["navigation"] } });
 
     const parent = parentResult.data?._Page?.items?.[0];
     const parentKey = parent?._metadata?.key;
@@ -67,7 +67,7 @@ export async function getNavigationFromHierarchy(): Promise<HierarchyNavResult> 
     }>(
       GET_CHILDREN_BY_ANCESTOR_QUERY,
       { parentKey },
-      { next: { revalidate: 300, tags: ["navigation"] } }
+      { next: { revalidate: CACHE_TTL, tags: ["navigation"] } }
     );
 
     const raw = childResult.data?._Page?.items ?? [];

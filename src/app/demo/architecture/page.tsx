@@ -319,7 +319,7 @@ export default function ArchitecturePage() {
                 title="Edge CDN" sub={["ISR cache", "per-variation entry"]} />
 
               <Box x={550} y={185} w={152} hc="#15803d" bc="#f0fdf4" stroke="#bbf7d0"
-                title="Next.js Server" sub={["App Router · RSC", "ISR · revalidate: 60"]} />
+                title="Next.js Server" sub={["App Router · RSC", "ISR · revalidate: 3600"]} />
 
               <Box x={740} y={92}  w={158} hc="#ea580c" bc="#fff7ed" stroke="#fed7aa"
                 title="Optimizely Graph" sub={["cg.optimizely.com", "GraphQL delivery API"]} />

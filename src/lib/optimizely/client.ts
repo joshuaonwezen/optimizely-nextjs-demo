@@ -3,6 +3,12 @@ const GRAPH_ENDPOINT =
 
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 
+// Default time-based ISR window (seconds) for published content. Freshness is
+// driven by the publish webhook (revalidatePath/revalidateTag); this 1-hour TTL
+// is the fallback ceiling. Keep the `export const revalidate` in the catch-all
+// page route in sync with this value.
+export const CACHE_TTL = 3600;
+
 export interface GraphQLRequestOptions {
   /** Bearer token from CMS iframe for draft/preview content */
   previewToken?: string;
@@ -45,7 +51,7 @@ export async function graphqlFetch<T = unknown>(
   } else if (next) {
     fetchOptions.next = next;
   } else if (!previewToken) {
-    fetchOptions.next = { revalidate: 60 };
+    fetchOptions.next = { revalidate: CACHE_TTL };
   } else {
     fetchOptions.cache = "no-store";
   }

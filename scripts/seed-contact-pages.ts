@@ -18,14 +18,61 @@ import {
   discoverGlobalRoot,
   discoverRootContainer,
   findPageKeyByUrl,
-  patchContentProperties,
+  patchPublishedPageProperties,
   sweepMisplacedSharedBlocks,
+  GRAPH_ENDPOINT,
+  SINGLE_KEY,
 } from "./_shared";
 
 config({ path: ".env.local" });
 
 function noHyphens(): string {
   return randomUUID().replace(/-/g, "");
+}
+
+/**
+ * Fetch the current mainContent references of a TraditionalPage, excluding any
+ * ContactFormBlock (a prior run's form — it was just swept, so re-adding it would
+ * leave a dangling reference).
+ */
+async function getMainContentKeys(pageKey: string): Promise<string[]> {
+  const query = `query MainContent($key: String!) {
+    TraditionalPage(where: { _metadata: { key: { eq: $key } } }, limit: 1) {
+      items { mainContent { __typename _metadata { key } } }
+    }
+  }`;
+  const res = await fetch(GRAPH_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
+    body: JSON.stringify({ query, variables: { key: pageKey } }),
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as {
+    data?: {
+      TraditionalPage?: { items?: Array<{ mainContent?: Array<{ __typename?: string; _metadata?: { key?: string } }> }> };
+    };
+  };
+  const items = data.data?.TraditionalPage?.items?.[0]?.mainContent ?? [];
+  return items
+    .filter((i) => i.__typename !== "ContactFormBlock")
+    .map((i) => i._metadata?.key)
+    .filter((k): k is string => Boolean(k));
+}
+
+/** Prepend the ContactFormBlock into the main Contact page's mainContent area. */
+async function wireContactPage(blockKey: string): Promise<void> {
+  const contactKey = await findPageKeyByUrl(["/en/help/contact", "/en/help/contact/"]);
+  if (!contactKey) {
+    console.warn("  [warn] Contact page (/en/help/contact) not found in Graph — re-run after seed-content indexes");
+    return;
+  }
+  const existing = (await getMainContentKeys(contactKey)).filter((k) => k !== blockKey);
+  const mainContent = [
+    { reference: `cms://content/${blockKey}` },
+    ...existing.map((k) => ({ reference: `cms://content/${k}` })),
+  ];
+  await patchPublishedPageProperties(contactKey, { mainContent });
+  console.log(`  [patched] Contact page mainContent → ContactFormBlock + ${existing.length} existing block(s)`);
 }
 
 async function main() {
@@ -61,12 +108,17 @@ async function main() {
     "ContactFormBlock"
   );
 
-  // Step 2: create the TraditionalPage under /help, referencing the block via featuredBlock.
+  // Step 2: place the custom form on the MAIN Contact page (/en/help/contact) via
+  // its mainContent area. This is the traditional contact page the user actually
+  // reaches; the native-forms variant lives on a separate DynamicExperience page.
+  await wireContactPage(blockKey);
+
+  // Step 3: create the TraditionalPage under /help, referencing the block via featuredBlock.
   // On re-runs the page already exists (routeSegment in use → create skips), but its
   // old block was just swept — re-point featuredBlock at the fresh block instead.
   const existingPageKey = await findPageKeyByUrl(["/en/help/contact-classic", "/en/help/contact-classic/"]);
   if (existingPageKey) {
-    await patchContentProperties(existingPageKey, {
+    await patchPublishedPageProperties(existingPageKey, {
       featuredBlock: { reference: `cms://content/${blockKey}` },
     });
     console.log("  [patched] existing Contact (Classic) page → new ContactFormBlock");

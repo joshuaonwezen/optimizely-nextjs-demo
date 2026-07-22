@@ -178,6 +178,19 @@ export const NL: Record<string, string> = {
   "Have a question or need help with your account? Fill out the form and we'll get back to you within one business day.":
     "Heb je een vraag of hulp nodig met je rekening? Vul het formulier in en we reageren binnen één werkdag.",
 
+  // ContactFormBlock (seed-contact-pages.ts)
+  "Send us a message": "Stuur ons een bericht",
+  "Send message": "Bericht versturen",
+  "Thank you! We'll be in touch within one business day.":
+    "Bedankt! We nemen binnen één werkdag contact met je op.",
+
+  // BranchFinderBlock (seed-branch-finder.ts)
+  "Find your nearest branch": "Vind je dichtstbijzijnde kantoor",
+  "Enter a city or address to see the closest Mosey branches, their opening services, and how far away they are.":
+    "Voer een stad of adres in om de dichtstbijzijnde Mosey-kantoren te zien, welke diensten ze bieden en hoe ver ze bij je vandaan zijn.",
+  "City or address, e.g. Berlin": "Stad of adres, bijv. Amsterdam",
+  "Search": "Zoeken",
+
   // First-Time Buyers page
   "First Home": "Eerste woning",
   "First-Time Buyers": "Starters",

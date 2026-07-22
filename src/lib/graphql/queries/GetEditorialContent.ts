@@ -1,4 +1,4 @@
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 
 export interface EditorialItem {
   title?: string | null;
@@ -57,7 +57,7 @@ export async function getEditorialContent(limit = 6): Promise<{
     const res = await graphqlFetch<GraphResponse>(
       GET_EDITORIAL_CONTENT_QUERY,
       { limit },
-      { next: { revalidate: 60, tags: ["page"] } }
+      { next: { revalidate: CACHE_TTL, tags: ["page"] } }
     );
 
     const articles = (res.data?.ArticlePage?.items ?? []).filter(Boolean) as EditorialItem[];

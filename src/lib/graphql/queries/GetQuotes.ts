@@ -1,4 +1,4 @@
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 
 export interface Quote {
   author: string;
@@ -39,7 +39,7 @@ export async function getQuotes(): Promise<{ items: Quote[]; fromGraph: boolean 
     const result = await graphqlFetch<GetQuotesResult>(
       GET_QUOTES_QUERY,
       {},
-      { next: { revalidate: 60, tags: ["quotes"] } }
+      { next: { revalidate: CACHE_TTL, tags: ["quotes"] } }
     );
 
     const raw = result.data?.Quote?.items ?? [];

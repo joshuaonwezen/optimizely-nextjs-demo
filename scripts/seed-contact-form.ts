@@ -1,7 +1,12 @@
 /**
- * Places a native Optimizely Forms form onto the DynamicExperience contact page
- * (/en/help/contact) by referencing a pre-built shared Form Container block in the
- * page composition.
+ * Creates a dedicated DynamicExperience contact page ("Contact (Form)" at
+ * /en/help/contact-form) and places a native Optimizely Forms form on it by
+ * referencing a pre-built shared Form Container block in the page composition.
+ *
+ * This is the native-forms counterpart to the main /en/help/contact TraditionalPage
+ * (which carries the custom ContactFormBlock, seeded by seed-contact-pages.ts).
+ * Native OptiForms can only render inside a DynamicExperience composition, never on
+ * a TraditionalPage — hence a separate experience page here.
  *
  * Native forms must be authored in the CMS UI as a shared block (Visual Builder:
  * new shared block > Form Container) — they cannot be created or embedded inline
@@ -17,9 +22,12 @@
  */
 
 import { config } from "dotenv";
-import { uid, sectionComponent, findPageKeyByUrl, getManagementToken, CONTENT_ENDPOINT, GRAPH_ENDPOINT, SINGLE_KEY, type CompNode } from "./_shared";
+import { uid, noHyphens, createContent, sectionComponent, findPageKeyByUrl, discoverRootContainer, getManagementToken, CONTENT_ENDPOINT, GRAPH_ENDPOINT, SINGLE_KEY, type CompNode } from "./_shared";
 
 config({ path: ".env.local" });
+
+const PAGE_DISPLAY_NAME = "Contact (Form)";
+const PAGE_ROUTE = "contact-form";
 
 /** Find the published shared Form Container block via Graph. */
 async function discoverFormKey(): Promise<string | null> {
@@ -55,13 +63,54 @@ function buildNodes(formKey: string): CompNode[] {
       displayName: "Contact Form",
       nodeType: "section",
       layoutType: "form",
-      component: { reference: `cms://content/${formKey}` } as any,
+      component: { reference: `cms://content/${formKey}` } as unknown as CompNode["component"],
     },
   ];
 }
 
+/**
+ * Resolve the Contact (Form) DynamicExperience page, creating it under /en/help
+ * if it does not exist yet. Falls back to the root container if /en/help isn't
+ * indexed or rejects a DynamicExperience child.
+ */
+async function ensureContactFormPage(): Promise<string> {
+  const existing = await findPageKeyByUrl([`/en/help/${PAGE_ROUTE}`, `/en/help/${PAGE_ROUTE}/`, `/en/${PAGE_ROUTE}`, `/en/${PAGE_ROUTE}/`]);
+  if (existing) {
+    console.log(`  Contact (Form) page exists: ${existing}`);
+    return existing;
+  }
+
+  const helpKey = await findPageKeyByUrl(["/en/help", "/en/help/"]);
+  const container = helpKey ?? (await discoverRootContainer());
+  if (!helpKey) {
+    console.warn("  [warn] /en/help not found in Graph — creating Contact (Form) under the root container instead");
+  }
+
+  const key = noHyphens();
+  // Composition is dropped on POST for DynamicExperience (patched below); create
+  // the page published with an empty experience, then a fresh draft carries the form.
+  const created = await createContent(
+    {
+      key,
+      contentType: "DynamicExperience",
+      container,
+      locale: "en",
+      displayName: PAGE_DISPLAY_NAME,
+      routeSegment: PAGE_ROUTE,
+    },
+    "Contact (Form) page"
+  );
+  if (created === null) {
+    // 409 / route-in-use: it already exists — re-resolve.
+    const again = await findPageKeyByUrl([`/en/help/${PAGE_ROUTE}`, `/en/help/${PAGE_ROUTE}/`, `/en/${PAGE_ROUTE}`, `/en/${PAGE_ROUTE}/`]);
+    if (again) return again;
+  }
+  console.log(`  created Contact (Form) page: ${key}`);
+  return key;
+}
+
 async function main() {
-  console.log("=== Placing native form onto /en/help/contact ===\n");
+  console.log("=== Creating DynamicExperience Contact (Form) page with native OptiForms ===\n");
 
   const formKey = await discoverFormKey();
   if (!formKey) {
@@ -72,29 +121,17 @@ async function main() {
   }
   console.log(`  form block key: ${formKey}`);
 
-  const pageKey = await findPageKeyByUrl([
-    "/en/help/contact",
-    "/en/help/contact/",
-    // Tolerate a regressed route segment (a draft created without routeSegment
-    // re-derives "contact-us" from the display name); this run restores it.
-    "/en/help/contact-us",
-    "/en/help/contact-us/",
-  ]);
-  if (!pageKey) {
-    console.error("  [error] contact page not found in Graph. Run seed-content first.");
-    process.exit(1);
-  }
-  console.log(`  contact page key: ${pageKey}`);
+  const pageKey = await ensureContactFormPage();
 
   const token = await getManagementToken();
 
   // The published version can't be patched — create a fresh draft, patch it, publish.
   // routeSegment MUST be included: POST /versions without it makes the CMS re-derive
-  // the segment from displayName ("Contact Us" -> "contact-us"), silently breaking the URL.
+  // the segment from displayName, silently breaking the URL.
   await fetch(`${CONTENT_ENDPOINT}/${pageKey}/versions`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ locale: "en", displayName: "Contact Us", routeSegment: "contact" }),
+    body: JSON.stringify({ locale: "en", displayName: PAGE_DISPLAY_NAME, routeSegment: PAGE_ROUTE }),
   }).then((r) => r.text());
 
   const vd = (await (
@@ -108,7 +145,7 @@ async function main() {
 
   const composition = {
     id: uid(),
-    displayName: "Contact Us",
+    displayName: PAGE_DISPLAY_NAME,
     nodeType: "experience",
     layoutType: "outline",
     nodes: buildNodes(formKey),
@@ -131,7 +168,7 @@ async function main() {
   if (!pubRes.ok) throw new Error(`Publish: ${pubRes.status} ${(await pubRes.text()).slice(0, 300)}`);
   console.log(`  published version ${version}`);
 
-  console.log("\nDone — form referenced on /en/help/contact. Allow ~30-60s for Graph reindex, then reload.");
+  console.log(`\nDone — native form referenced on /en/help/${PAGE_ROUTE}. Allow ~30-60s for Graph reindex, then reload.`);
 }
 
 main().catch((err) => {

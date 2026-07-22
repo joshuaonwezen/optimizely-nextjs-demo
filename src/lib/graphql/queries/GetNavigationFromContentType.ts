@@ -1,5 +1,5 @@
 // Demo reference implementation for /demo/navigation - production nav uses GetNavigation.ts
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 
 export interface ContentTypeNavItem {
   label: string;
@@ -50,7 +50,7 @@ export async function getNavigationFromContentType(): Promise<ContentTypeNavResu
           category?: string;
         }>;
       };
-    }>(GET_NAVIGATION_FROM_CONTENT_TYPE_QUERY, {}, { next: { revalidate: 60, tags: ["page"] } });
+    }>(GET_NAVIGATION_FROM_CONTENT_TYPE_QUERY, {}, { next: { revalidate: CACHE_TTL, tags: ["page"] } });
 
     const raw = result.data?.ArticlePage?.items ?? [];
     const items: ContentTypeNavItem[] = raw

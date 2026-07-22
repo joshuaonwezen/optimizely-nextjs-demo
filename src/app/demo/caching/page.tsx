@@ -15,7 +15,8 @@ const clientTs = fs.readFileSync(
 );
 
 // This page regenerates every 30s so the "last rendered" timestamp visibly
-// updates - proof that ISR is working without a full redeploy.
+// updates - proof that ISR is working without a full redeploy. Intentionally
+// shorter than the 1-hour (3600s) window the rest of the site uses.
 export const revalidate = 30;
 
 
@@ -35,7 +36,7 @@ export async function graphqlFetch<T>(
   } else if (next) {
     fetchOptions.next = next;                 // caller-specified TTL + tags
   } else if (!previewToken) {
-    fetchOptions.next = { revalidate: 60 };   // published default: 60s ISR
+    fetchOptions.next = { revalidate: 3600 }; // published default: 1-hour ISR
   } else {
     fetchOptions.cache = "no-store";          // draft/preview: always fresh
   }
@@ -44,11 +45,11 @@ export async function graphqlFetch<T>(
 
 const CALLER_SNIPPET = `// Callers override the default per their staleness tolerance:
 
-// Navigation - 5 min TTL + "navigation" tag so webhooks can bust it instantly
-graphqlFetch(GET_NAV_QUERY, {}, { next: { revalidate: 300, tags: ["navigation"] } });
+// Navigation - 1-hour TTL + "navigation" tag so webhooks can bust it instantly
+graphqlFetch(GET_NAV_QUERY, {}, { next: { revalidate: 3600, tags: ["navigation"] } });
 
-// Banner - 60s TTL + "banner" tag
-graphqlFetch(GET_BANNER_QUERY, {}, { next: { revalidate: 60, tags: ["banner"] } });
+// Banner - 1-hour TTL + "banner" tag
+graphqlFetch(GET_BANNER_QUERY, {}, { next: { revalidate: 3600, tags: ["banner"] } });
 
 // Search - always fresh (user-typed queries must never be stale)
 graphqlFetch(SEARCH_QUERY, { query: q }, { cache: "no-store" });
@@ -91,9 +92,9 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   revalidatePath("/", "layout"); // bust ISR page output cache
   revalidateTag("page");         // bust Graph fetch cache for CMS pages
-  revalidateTag("navigation");   // navigation tree (5 min TTL)
-  revalidateTag("banner");       // site banner (60s TTL)
-  revalidateTag("quotes");       // external quotes (60s TTL)
+  revalidateTag("navigation");   // navigation tree (1-hour TTL)
+  revalidateTag("banner");       // site banner (1-hour TTL)
+  revalidateTag("quotes");       // external quotes (1-hour TTL)
   return NextResponse.json({ received: true, timestamp: Date.now() });
 }`;
 
@@ -126,7 +127,7 @@ async request(query, variables, previewToken, cache = true, slot) {
 // revalidateTag("navigation") has no effect on a fetch made via request().
 
 // Use graphqlFetch instead when you need ISR:
-graphqlFetch(QUERY, vars, { next: { revalidate: 300, tags: ["navigation"] } });
+graphqlFetch(QUERY, vars, { next: { revalidate: 3600, tags: ["navigation"] } });
 // ↑ Next.js registers this fetch in its data cache and respects the tags.`;
 
 const SDK_METHOD_COMPARISON = [
@@ -177,14 +178,14 @@ await client.getContentByPath(url, { cache: false });
 await client.getContent({ key, version }, { cache: false });
 
 // The catch-all CMS page route (src/app/[[...slug]]/page.tsx) uses ISR:
-export const revalidate = 60;  // Layer 1: ISR - cache page output for 60s
+export const revalidate = 3600;  // Layer 1: ISR - cache page output for 1 hour
 // Middleware rewrites each visitor's URL with active FX variation segments:
 //   /savings                                   → base users (no active variation)
 //   /savings/__v_homepage--variation_1         → one active flag
 //   /savings/__v_homepage--var1/__v_cta--on    → two active flags
 // Format: __v_{flagKey}--{variationKey} per segment, sorted for a stable cache key.
 // Each rewritten URL is a separate ISR cache entry at the CDN.
-// Graph data fetches use next: { revalidate: 60, tags: ["page"] }.`;
+// Graph data fetches use next: { revalidate: 3600, tags: ["page"] }.`;
 
 
 const NO_STORE_PATTERN = `// Pattern 1 - cookies() or headers() anywhere in the server render tree
@@ -207,7 +208,7 @@ export default async function Page({ searchParams }) {
 // Fix: server component fetches only static data; client component reads cookies
 // Server - no cookies(), no headers(), fully cacheable
 export default async function Banner() {
-  const data = await fetchStaticData(); // e.g. a CMS query with next: { revalidate: 60 }
+  const data = await fetchStaticData(); // e.g. a CMS query with next: { revalidate: 3600 }
   return <BannerClient initialData={data} />;
 }
 
@@ -250,11 +251,11 @@ const PREFETCH_SNIPPET = `// Next.js <Link> prefetch behaviour in App Router (pr
 )}`;
 
 const CACHE_TABLE = [
-  { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "60s",        tag: "-",            revalidatedBy: "revalidatePath('/', 'layout') in /api/webhooks (page-output ISR only)" },
-  { data: "Navigation tree",   location: "getNavigation()",                ttl: "300s (5 min)", tag: "navigation",  revalidatedBy: "revalidateTag('navigation') in /api/webhooks" },
-  { data: "Site banner",       location: "getSiteBanner()",                ttl: "60s",          tag: "banner",      revalidatedBy: "revalidateTag('banner') in /api/webhooks" },
-  { data: "External quotes",   location: "getQuotes()",                    ttl: "60s",          tag: "quotes",      revalidatedBy: "revalidateTag('quotes') in /api/webhooks" },
-  { data: "Page metadata",     location: "generateMetadata()",             ttl: "300s (5 min)", tag: "-",           revalidatedBy: "All three webhooks via revalidatePath('/', 'layout')" },
+  { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "3600s (1 hr)", tag: "-",            revalidatedBy: "revalidatePath('/', 'layout') in /api/webhooks (page-output ISR only)" },
+  { data: "Navigation tree",   location: "getNavigation()",                ttl: "3600s (1 hr)", tag: "navigation",  revalidatedBy: "revalidateTag('navigation') in /api/webhooks" },
+  { data: "Site banner",       location: "getSiteBanner()",                ttl: "3600s (1 hr)", tag: "banner",      revalidatedBy: "revalidateTag('banner') in /api/webhooks" },
+  { data: "External quotes",   location: "getQuotes()",                    ttl: "3600s (1 hr)", tag: "quotes",      revalidatedBy: "revalidateTag('quotes') in /api/webhooks" },
+  { data: "Page metadata",     location: "generateMetadata()",             ttl: "3600s (1 hr)", tag: "-",           revalidatedBy: "All three webhooks via revalidatePath('/', 'layout')" },
   { data: "Static page paths", location: "generateStaticParams()",         ttl: "3600s (1 hr)", tag: "-",           revalidatedBy: "Next.js build / deploy" },
   { data: "FX datafile",       location: "middleware.ts + experimentation.ts", ttl: "60s",    tag: "-",            revalidatedBy: "Automatic (fetch cache, next: { revalidate: 60 })" },
   { data: "Search results",    location: "GET /api/search",                ttl: "no-store",     tag: "-",           revalidatedBy: "Always fresh - bypasses ISR" },
@@ -371,7 +372,7 @@ export default function CachingDemoPage() {
             <Callout label="CMS page content is ISR-cached per variation">
               Edge middleware rewrites each visitor&apos;s URL with their active FX variation key
               (e.g. <code className="bg-surface-low px-1 rounded font-mono text-xs">/savings/__v_homepage--variation_1</code>, one segment per active flag in the format <code className="bg-surface-low px-1 rounded font-mono text-xs">__v_flagKey--variationKey</code>).
-              Each rewritten URL is its own 60-second ISR cache entry - base users and every variation
+              Each rewritten URL is its own 1-hour ISR cache entry - base users and every variation
               are cached independently. The publish webhook marks all of them stale at once.
             </Callout>
             <Callout label="Stale-while-revalidate in plain English">
@@ -577,7 +578,7 @@ export default function CachingDemoPage() {
               </p>
               <div className="space-y-1.5 text-xs">
                 {[
-                  ["Cache with TTL", "next: { revalidate: 60 }"],
+                  ["Cache with TTL", "next: { revalidate: 3600 }"],
                   ["Cache with tag", "next: { tags: ['navigation'] }"],
                   ["Bypass", "cache: \"no-store\""],
                 ].map(([label, value]) => (
@@ -668,7 +669,7 @@ export default function CachingDemoPage() {
                   <span className="text-brand shrink-0">→</span>
                   <span>
                     <strong className="text-on-surface">ISR pages with a revalidation window</strong> - if
-                    a page revalidates every 60s, Next.js ISR is already the controlling cache.
+                    a page revalidates every hour, Next.js ISR is already the controlling cache.
                     Graph&apos;s short-lived CDN cache on top doesn&apos;t add meaningful staleness
                     beyond what ISR already accepts.
                   </span>
@@ -677,7 +678,7 @@ export default function CachingDemoPage() {
                   <span className="text-brand shrink-0">→</span>
                   <span>
                     <strong className="text-on-surface">Navigation, banners, and other tagged caches</strong> - these
-                    use 60–300s TTLs in Next.js ISR. Graph&apos;s cache sits inside that window and
+                    use a 1-hour TTL in Next.js ISR. Graph&apos;s cache sits inside that window and
                     is evicted when the tag is revalidated.
                   </span>
                 </li>

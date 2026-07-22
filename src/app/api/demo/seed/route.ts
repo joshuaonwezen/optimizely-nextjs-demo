@@ -36,9 +36,12 @@ export async function POST(request: NextRequest) {
     return new Response("A seed run is already in progress.", { status: 409 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as Record<string, string>;
+  const body = (await request.json().catch(() => ({}))) as Record<string, string> & { localize?: boolean };
 
   const env: NodeJS.ProcessEnv = { ...process.env };
+  // Opt-in localization: the seed tool's checkbox sends `localize`; the runner
+  // reads SEED_LOCALIZE and gates the seed-localization step on it.
+  if (body.localize) env.SEED_LOCALIZE = "1";
   let missing: string[] = [];
 
   if (body.instance) {

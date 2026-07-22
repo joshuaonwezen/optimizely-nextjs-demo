@@ -123,6 +123,12 @@ const DISCOVERY_QUERY = /* GraphQL */ `
     FaqContainerBlock(limit: 10) {
       items { _metadata { key displayName variation } }
     }
+    BranchFinderBlock(limit: 10) {
+      items { _metadata { key displayName variation } }
+    }
+    ContactFormBlock(limit: 10) {
+      items { _metadata { key displayName variation } }
+    }
     Footer(limit: 10) {
       items { _metadata { key displayName variation } }
     }
@@ -300,7 +306,21 @@ async function localizeItem(item: DiscoveredItem): Promise<Result> {
   return "created";
 }
 
+/** Localization is opt-in: only runs with --localize (or SEED_LOCALIZE truthy). */
+function localizationEnabled(): boolean {
+  return process.argv.includes("--localize") || /^(1|true|yes)$/i.test(process.env.SEED_LOCALIZE ?? "");
+}
+
 async function main() {
+  if (!localizationEnabled()) {
+    console.log(
+      "seed-localization skipped — localization is opt-in.\n" +
+      "  Enable it with:  SEED_LOCALIZE=1 npx tsx scripts/seed-localization.ts\n" +
+      "  or pass --localize, or tick 'Localize content' in the /demo/management-api seed tool."
+    );
+    return;
+  }
+
   console.log("=== Dutch (nl) Localization Seeding ===\n");
   console.log("--- Discovering EN content via Graph ---");
   const items = await discover();

@@ -43,6 +43,7 @@ import TeamGridBlock, { TeamGridBlockType } from "@/components/blocks/TeamGridBl
 import ComparisonTableBlock, { ComparisonTableBlockType } from "@/components/blocks/ComparisonTableBlock";
 import CalloutBlock, { CalloutBlockType } from "@/components/blocks/CalloutBlock";
 import ContactFormBlock, { ContactFormBlockType } from "@/components/blocks/ContactFormBlock";
+import BranchFinderBlock, { BranchFinderBlockType, BranchFinderBlockDefaultTemplate } from "@/components/blocks/BranchFinderBlock";
 
 import DynamicExperience from "@/components/experience/DynamicExperience";
 import BlankExperience from "@/components/experience/BlankExperience";
@@ -185,6 +186,7 @@ export function initComponentRegistry() {
     ComparisonTableBlockType,
     CalloutBlockType,
     ContactFormBlockType,
+    BranchFinderBlockType,
     ArticlePageType,
     CaseStudyPageType,
   ]);
@@ -199,6 +201,7 @@ export function initComponentRegistry() {
     CallToActionOutlineTemplate,
     CallToActionSurfaceTemplate,
     CallToActionGhostTemplate,
+    BranchFinderBlockDefaultTemplate,
     ProductCardDefaultTemplate,
     ProductCardFeaturedTemplate,
     FeatureItemOutlinedTemplate,
@@ -328,6 +331,7 @@ export function initComponentRegistry() {
       ComparisonTableBlock,
       CalloutBlock,
       ContactFormBlock,
+      BranchFinderBlock,
       Navigation: NavigationBlock,
       NavigationItem: NavigationItemPreview,
       Footer: FooterPreview,

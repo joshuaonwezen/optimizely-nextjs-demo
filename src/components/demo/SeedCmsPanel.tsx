@@ -64,6 +64,7 @@ const FIELDS: FieldDef[] = [
 export default function SeedCmsPanel() {
   const [instance, setInstance] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
+  const [localize, setLocalize] = useState(false);
   const [log, setLog] = useState("");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<"success" | "failure" | null>(null);
@@ -85,7 +86,7 @@ export default function SeedCmsPanel() {
       const res = await fetch("/api/demo/seed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(instance ? { instance } : values),
+        body: JSON.stringify({ ...(instance ? { instance } : values), localize }),
       });
       if (!res.ok || !res.body) {
         setLog(await res.text());
@@ -129,6 +130,22 @@ export default function SeedCmsPanel() {
           {instance
             ? "Credentials are resolved from .env.local on the server"
             : "Pick a stored instance, or fill in the fields below"}
+        </span>
+      </label>
+
+      <label className="flex items-start gap-2 max-w-sm">
+        <input
+          type="checkbox"
+          checked={localize}
+          onChange={(e) => setLocalize(e.target.checked)}
+          disabled={running}
+          className="mt-0.5 accent-brand"
+        />
+        <span className="flex flex-col gap-0.5">
+          <span className="text-xs font-semibold text-on-surface">Localize content (create Dutch / nl versions)</span>
+          <span className="text-xs text-on-surface-variant">
+            Runs the localization step after seeding. Off by default - leave unchecked to seed English only.
+          </span>
         </span>
       </label>
 

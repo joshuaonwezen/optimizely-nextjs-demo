@@ -1,4 +1,4 @@
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 
 export interface ArticleListItem {
   title?: string | null;
@@ -118,14 +118,14 @@ export async function getArticles(options?: {
       const res = await graphqlFetch<GraphResponse>(
         GET_ARTICLES_FILTERED_QUERY,
         { limit, cursor: cursor ?? undefined, category },
-        { next: { revalidate: 60, tags: ["page"] } }
+        { next: { revalidate: CACHE_TTL, tags: ["page"] } }
       );
       return mapResponse(res.data);
     }
     const res = await graphqlFetch<GraphResponse>(
       GET_ARTICLES_QUERY,
       { limit, cursor: cursor ?? undefined },
-      { next: { revalidate: 60, tags: ["page"] } }
+      { next: { revalidate: CACHE_TTL, tags: ["page"] } }
     );
     return mapResponse(res.data);
   } catch {

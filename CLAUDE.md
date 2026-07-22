@@ -548,12 +548,14 @@ Add a similar early-return whenever a new non-CMS route is introduced (landing p
 
 | Content | TTL | Tag | Revalidation |
 |---------|-----|-----|-------------|
-| Published pages | `revalidate: 60` | `"page"` | Publish webhook |
-| Navigation | `revalidate: 300` | `"navigation"` | Publish webhook |
-| External content | `revalidate: 60` | source-specific | Re-sync script |
+| Published pages | `revalidate: 3600` | `"page"` | Publish webhook |
+| Navigation | `revalidate: 3600` | `"navigation"` | Publish webhook |
+| External content | `revalidate: 3600` | source-specific | Re-sync script |
 | Draft/preview | `no-store` | — | Never cached |
 
-Use `graphqlFetch` from `src/lib/optimizely/client.ts` for all manual queries — it handles auth mode (published vs draft) automatically.
+Time-based TTL is 1 hour (`CACHE_TTL = 3600` in `src/lib/optimizely/client.ts`) across page output, site chrome, and content data. Freshness is driven by the publish webhook (`revalidatePath`/`revalidateTag`); the 1-hour window is only the fallback ceiling. The FX datafile stays at 60s (see below) and search/preview stay `no-store` — those are deliberately excluded from the 1-hour policy.
+
+Use `graphqlFetch` from `src/lib/optimizely/client.ts` for all manual queries — it handles auth mode (published vs draft) automatically. New cacheable published-content fetches should pass `next: { revalidate: CACHE_TTL, tags: [...] }` rather than a hardcoded number.
 
 ### `_metadata.url.graph` — graph:// reference string
 Every content item's `_metadata.url` now includes a `graph` field (e.g. `graph://cms/Page/abc123?loc=en`). Pass it directly to `getClient().getContent(graphRef)` to fetch that item without constructing a `GraphReference` object manually.

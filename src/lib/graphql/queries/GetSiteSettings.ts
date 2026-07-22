@@ -1,4 +1,4 @@
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 import { DEFAULT_SITE_SETTINGS, type SiteSettingsStrings } from "@/lib/siteSettings";
 
 interface SiteSettingsItem {
@@ -49,7 +49,7 @@ export async function getSiteSettings(options: { locale?: string } = {}): Promis
     const result = await graphqlFetch<GetSiteSettingsResult>(
       GET_SITE_SETTINGS_QUERY,
       { locale: [locale] },
-      { next: { revalidate: 300, tags: ["settings"] } }
+      { next: { revalidate: CACHE_TTL, tags: ["settings"] } }
     );
     const item = result.data?.SiteSettings?.items?.[0];
     if (!item) return { settings: DEFAULT_SITE_SETTINGS, fromCms: false };

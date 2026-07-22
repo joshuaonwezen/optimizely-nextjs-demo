@@ -4,7 +4,7 @@ import { getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 import { VARIATION_MARKER, FLAG_VAR_SEP } from "@/middleware";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 
@@ -12,7 +12,9 @@ import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 // Also calls config() so getClient() works throughout the app.
 initComponentRegistry();
 
-export const revalidate = 60;
+// 1-hour ISR window. Must stay in sync with CACHE_TTL in lib/optimizely/client.ts.
+// Next.js statically analyzes this export, so it must be a literal, not the import.
+export const revalidate = 3600;
 
 interface PageParams {
   slug?: string[];
@@ -111,7 +113,7 @@ async function CmsPage({
     try {
       const items = await client.getContentByPath(url, {
         ...variationFilter,
-        next: { revalidate: 60, tags: ["page"] },
+        next: { revalidate: CACHE_TTL, tags: ["page"] },
       } as any);
       if (items.length > 0) {
         const variationMatch = variationFilter
@@ -133,7 +135,7 @@ async function CmsPage({
     type KeyResult = { _Page: { items: Array<{ _metadata: { key: string; version: string | number; variation: string | null } }> } };
     let keyItems: KeyResult["_Page"]["items"] = [];
     try {
-      const keyResult = await graphqlFetch<KeyResult>(KEY_QUERY, { urls }, { next: { revalidate: 60, tags: ["page"] } });
+      const keyResult = await graphqlFetch<KeyResult>(KEY_QUERY, { urls }, { next: { revalidate: CACHE_TTL, tags: ["page"] } });
       keyItems = keyResult.data?._Page?.items ?? [];
     } catch {
       // Graph unavailable — fall through to notFound()
@@ -157,7 +159,7 @@ async function CmsPage({
       try {
         page = await client.getContent(
           { key: meta.key, version: String(meta.version) },
-          { next: { revalidate: 60, tags: ["page"] } } as any
+          { next: { revalidate: CACHE_TTL, tags: ["page"] } } as any
         );
       } catch {
         // Graph unavailable — fall through to notFound()
@@ -288,11 +290,11 @@ export async function generateMetadata({
 
   let item: PageMetaItem | null = null;
   try {
-    const result = await graphqlFetch<PageMetaResult>(GET_PAGE_META_QUERY, { urls }, { next: { revalidate: 300 } });
+    const result = await graphqlFetch<PageMetaResult>(GET_PAGE_META_QUERY, { urls }, { next: { revalidate: CACHE_TTL } });
     item = result.data?._Page?.items?.[0] ?? null;
   } catch {
     try {
-      const result = await graphqlFetch<PageMetaResult>(GET_PAGE_META_FALLBACK_QUERY, { urls }, { next: { revalidate: 300 } });
+      const result = await graphqlFetch<PageMetaResult>(GET_PAGE_META_FALLBACK_QUERY, { urls }, { next: { revalidate: CACHE_TTL } });
       item = result.data?._Page?.items?.[0] ?? null;
     } catch {
       // Graph unavailable — return fallback title

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getClient } from "@optimizely/cms-sdk";
+import { CACHE_TTL } from "@/lib/optimizely/client";
 
 interface ImageRef {
   url?: { default?: string | null } | null;
@@ -57,7 +58,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 async function loadAuthor(key: string | null | undefined): Promise<AuthorData | null> {
   if (!key) return null;
-  return getClient().getContent({ key }, { next: { revalidate: 300 } } as any).catch(() => null);
+  return getClient().getContent({ key }, { next: { revalidate: CACHE_TTL } } as any).catch(() => null);
 }
 
 function formatDate(input: string | null | undefined): string | null {

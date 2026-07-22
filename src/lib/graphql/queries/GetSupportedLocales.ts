@@ -1,4 +1,4 @@
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 
 const GET_SUPPORTED_LOCALES_QUERY = /* GraphQL */ `
   query GetSupportedLocales {
@@ -30,7 +30,7 @@ export async function getSupportedLocales(): Promise<SupportedLocale[]> {
         items: [{ Languages: { DisplayName: string; Name: string }[] }];
       };
     }>(GET_SUPPORTED_LOCALES_QUERY, undefined, {
-      next: { revalidate: 300, tags: ["navigation"] },
+      next: { revalidate: CACHE_TTL, tags: ["navigation"] },
     });
     const langs = result.data?._SiteDefinition?.items?.[0]?.Languages ?? [];
     if (langs.length > 0) {
