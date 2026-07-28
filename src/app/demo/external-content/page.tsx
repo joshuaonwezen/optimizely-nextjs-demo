@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getQuotes, GET_QUOTES_QUERY } from "@/lib/graphql/queries/GetQuotes";
+import { getQuoteBlocks, GET_QUOTE_BLOCKS_QUERY } from "@/lib/graphql/queries/GetQuoteBlocks";
 import { GET_LOCATIONS_QUERY } from "@/lib/graphql/queries/GetLocations";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
@@ -158,6 +159,7 @@ Authorization: Basic <base64(APP_KEY:APP_SECRET)>
 
 export default async function ExternalContentPage() {
   const { items, fromGraph } = await getQuotes();
+  const { items: cmsQuotes, fromGraph: cmsFromGraph } = await getQuoteBlocks();
 
   return (
     <>
@@ -574,6 +576,140 @@ export default async function ExternalContentPage() {
                 <CodeBlock code={IMAGE_DATA_SNIPPET} />
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* CMS-native vs External comparison */}
+        <section id="cms-native-vs-external" className="space-y-10">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+              CMS-native vs External Content{" "}
+              <a href="#cms-native-vs-external" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            </h2>
+            <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
+              Data pushed via the Content Source API lands in Graph as <strong className="text-on-surface">read-only external content</strong>.
+              Editors can browse and reference it in the CMS via{" "}
+              <strong className="text-on-surface">Admin - Content Types - Connect from Graph</strong>,
+              but they cannot edit the fields - the source system owns the data.
+              CMS-native content (created via the Management API or Visual Builder) lives entirely
+              inside the CMS: editors author it, it has a draft/publish lifecycle, preview mode works,
+              and it can be targeted by FX experiments.
+            </p>
+          </div>
+
+          {/* Comparison table */}
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-ghost-border">
+              <h3 className="font-display font-semibold text-on-surface">Capability comparison</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-ghost-border">
+                    <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-on-surface-variant w-1/3">Capability</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">External (Content Source API)</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">CMS-native (Management API)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-ghost-border">
+                  {([
+                    ["Edit fields in CMS",           "No - read-only connected type",        "Yes - full Visual Builder editing"],
+                    ["Draft / publish lifecycle",     "No - status set at sync time",         "Yes - draft, review, publish"],
+                    ["Preview mode",                  "No",                                   "Yes - CMS inline edit + preview"],
+                    ["FX experiment targeting",       "No",                                   "Yes - CMS Variations per flag key"],
+                    ["Localization",                  "Per-locale sync records",              "Yes - isLocalized fields per locale"],
+                    ["Webhook revalidation",          "Manual revalidate tag call",            "Yes - publish webhook fires automatically"],
+                    ["Queryable in Graph",            "Yes - same GraphQL endpoint",          "Yes - same GraphQL endpoint"],
+                    ["Source of truth",               "External system (CRM, PIM, etc.)",     "Optimizely CMS"],
+                  ] as [string, string, string][]).map(([cap, ext, cms]) => (
+                    <tr key={cap}>
+                      <td className="px-6 py-3 font-medium text-on-surface">{cap}</td>
+                      <td className="px-6 py-3 text-on-surface-variant">{ext}</td>
+                      <td className="px-6 py-3 text-on-surface-variant">{cms}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Side-by-side live data grids */}
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* External quotes */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="font-display font-semibold text-on-surface">External quotes</h3>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-low text-on-surface-variant text-xs font-mono">
+                  {fromGraph ? "live from Graph" : "demo data"}
+                </span>
+              </div>
+              <p className="text-xs text-on-surface-variant mb-4">
+                Pushed via <code className="bg-surface-low px-1 rounded">POST /api/content/v2/data</code>.
+                Not editable in the CMS - the seed script owns every field.
+              </p>
+              <div className="space-y-3">
+                {items.slice(0, 3).map((q) => (
+                  <div
+                    key={q.author}
+                    className="bg-surface-lowest border border-ghost-border rounded-2xl p-4 flex flex-col gap-2"
+                  >
+                    <p className="text-xs text-on-surface-variant leading-relaxed">
+                      &ldquo;{q.text}&rdquo;
+                    </p>
+                    <p className="text-xs font-semibold text-on-surface">{q.author}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* CMS-native QuoteBlock items */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="font-display font-semibold text-on-surface">CMS-native quotes</h3>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-brand/10 text-brand text-xs font-mono">
+                  {cmsFromGraph ? "live from Graph" : "run seed-quote-blocks.ts"}
+                </span>
+              </div>
+              <p className="text-xs text-on-surface-variant mb-4">
+                Created as <code className="bg-surface-low px-1 rounded">QuoteBlock</code> shared
+                blocks via the Management API. Open any in the CMS to edit author, role, and quote text.
+              </p>
+              {cmsFromGraph ? (
+                <div className="space-y-3">
+                  {cmsQuotes.slice(0, 3).map((q) => (
+                    <div
+                      key={q.author}
+                      className="bg-surface-lowest border border-ghost-border rounded-2xl p-4 flex flex-col gap-2"
+                    >
+                      <p className="text-xs text-on-surface-variant leading-relaxed">
+                        &ldquo;{q.text}&rdquo;
+                      </p>
+                      <div>
+                        <p className="text-xs font-semibold text-on-surface">{q.author}</p>
+                        {q.role && <p className="text-xs text-on-surface-variant">{q.role}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 text-center">
+                  <p className="text-sm text-on-surface-variant mb-3">No CMS-native quotes found in Graph yet.</p>
+                  <ol className="text-xs text-on-surface-variant text-left space-y-1 max-w-xs mx-auto">
+                    <li>1. Run <code className="bg-surface-low px-1 rounded">npm run opti:push</code> to register <code className="bg-surface-low px-1 rounded">QuoteBlock</code></li>
+                    <li>2. Run <code className="bg-surface-low px-1 rounded">npx tsx scripts/seed-quote-blocks.ts</code></li>
+                    <li>3. Wait ~60s for Graph to index, then reload</li>
+                  </ol>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Graph query for CMS-native blocks */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+              Graph query - CMS-native QuoteBlock
+            </p>
+            <CodeBlock code={GET_QUOTE_BLOCKS_QUERY.trim()} />
           </div>
         </section>
 

@@ -25,7 +25,7 @@ export const DynamicExperienceType = contentType({
   baseType: "_experience",
   mayContainTypes: [
     "_self",
-    "TraditionalPage", "ArticlePage", "CaseStudyPage",
+    "TraditionalPage", "ArticlePage", "CaseStudyPage", "ConsultantPage",
     "AuthorBlock", "OutcomeItemBlock", "TestimonialBlock",
     "FaqItemBlock", "FaqContainerBlock",
     "TimelineMilestoneBlock", "TeamMemberBlock",
@@ -43,7 +43,7 @@ export const LandingPageType = contentType({
   key: "TraditionalPage",
   displayName: "Traditional Page",
   baseType: "_page",
-  mayContainTypes: ["_self"],
+  mayContainTypes: ["_self", "ConsultantPage"],
   extends: SEOContract,
   properties: {
     heading:    { type: "string",   displayName: "Heading",    indexingType: "searchable", isLocalized: true },
@@ -129,6 +129,22 @@ export const CaseStudyPageType = contentType({
       displayName: "Related Case Studies",
       items: { type: "contentReference", allowedTypes: ["CaseStudyPage"] },
     },
+  },
+});
+
+export const ConsultantPageType = contentType({
+  key: "ConsultantPage",
+  displayName: "Consultant",
+  baseType: "_page",
+  extends: SEOContract,
+  properties: {
+    name:      { type: "string",           displayName: "Full Name",     indexingType: "searchable", isLocalized: true },
+    jobTitle:  { type: "string",           displayName: "Job Title",     indexingType: "searchable", isLocalized: true },
+    summary:   { type: "string",           displayName: "Summary",       indexingType: "searchable", isLocalized: true },
+    bio:       { type: "richText",         displayName: "Bio",           indexingType: "searchable", isLocalized: true },
+    photo:     { type: "contentReference", displayName: "Photo",         allowedTypes: ["_image"] },
+    expertise: { type: "array",            displayName: "Expertise",     indexingType: "queryable",  items: { type: "string" } },
+    email:     { type: "string",           displayName: "Contact Email" },
   },
 });
 

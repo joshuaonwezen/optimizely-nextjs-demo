@@ -44,6 +44,7 @@ import ComparisonTableBlock, { ComparisonTableBlockType } from "@/components/blo
 import CalloutBlock, { CalloutBlockType } from "@/components/blocks/CalloutBlock";
 import ContactFormBlock, { ContactFormBlockType } from "@/components/blocks/ContactFormBlock";
 import BranchFinderBlock, { BranchFinderBlockType, BranchFinderBlockDefaultTemplate } from "@/components/blocks/BranchFinderBlock";
+import QuoteBlock, { QuoteBlockType, QuoteBlockDefaultTemplate } from "@/components/blocks/QuoteBlock";
 
 import DynamicExperience from "@/components/experience/DynamicExperience";
 import BlankExperience from "@/components/experience/BlankExperience";
@@ -51,6 +52,7 @@ import BlankSection from "@/components/experience/BlankSection";
 import TraditionalPage from "@/components/pages/TraditionalPage";
 import ArticlePage from "@/components/pages/ArticlePage";
 import CaseStudyPage from "@/components/pages/CaseStudyPage";
+import ConsultantPage from "@/components/pages/ConsultantPage";
 
 // Experience/page types and structural templates stay in optimizely.config.mjs
 import {
@@ -58,6 +60,7 @@ import {
   LandingPageType,
   ArticlePageType,
   CaseStudyPageType,
+  ConsultantPageType,
   DefaultRowTemplate,
   DefaultColumnTemplate,
   DefaultSectionTemplate,
@@ -187,8 +190,10 @@ export function initComponentRegistry() {
     CalloutBlockType,
     ContactFormBlockType,
     BranchFinderBlockType,
+    QuoteBlockType,
     ArticlePageType,
     CaseStudyPageType,
+    ConsultantPageType,
   ]);
 
   // Display templates
@@ -202,6 +207,7 @@ export function initComponentRegistry() {
     CallToActionSurfaceTemplate,
     CallToActionGhostTemplate,
     BranchFinderBlockDefaultTemplate,
+    QuoteBlockDefaultTemplate,
     ProductCardDefaultTemplate,
     ProductCardFeaturedTemplate,
     FeatureItemOutlinedTemplate,
@@ -242,6 +248,7 @@ export function initComponentRegistry() {
       LandingPage: TraditionalPage,
       ArticlePage,
       CaseStudyPage,
+      ConsultantPage,
 
       // Blocks — variants registered via tags so the SDK routes by displayTemplateKey
       HeroBlock,
@@ -332,6 +339,7 @@ export function initComponentRegistry() {
       CalloutBlock,
       ContactFormBlock,
       BranchFinderBlock,
+      QuoteBlock,
       Navigation: NavigationBlock,
       NavigationItem: NavigationItemPreview,
       Footer: FooterPreview,

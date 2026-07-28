@@ -24,6 +24,7 @@ const KEEP = new Set([
   "TraditionalPage",   // LandingPageType.key in optimizely.config.mjs
   "ArticlePage",
   "CaseStudyPage",
+  "ConsultantPage",
   // Block types (src/components/blocks/) — all registered in componentRegistry.ts
   "HeroBlock",
   "Hero",              // legacy key still referenced by some CMS entries
@@ -52,6 +53,7 @@ const KEEP = new Set([
   "CalloutBlock",
   "ContactFormBlock",
   "BranchFinderBlock",
+  "QuoteBlock",
   // Optimizely Forms native types (activated via CMS Settings → Forms)
   "OptiFormsContainerData",
   "OptiFormsTextboxElement",
@@ -108,6 +110,7 @@ const KEEP_TEMPLATES = new Set([
   "CallToActionSurfaceTemplate",
   "CallToActionGhostTemplate",
   "BranchFinderBlockDefaultTemplate",
+  "QuoteBlockDefaultTemplate",
   "ProductCardDefaultTemplate",
   "ProductCardFeaturedTemplate",
   "FeatureItemOutlinedTemplate",

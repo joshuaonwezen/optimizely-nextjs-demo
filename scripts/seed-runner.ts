@@ -64,6 +64,8 @@ async function main() {
   // Optional steps - failures print a warning and the run continues.
   // These may depend on Graph indexing the content from required steps (~60s lag).
   const optional: [string, string[]][] = [
+    ["npx", ["tsx", "scripts/seed-quote-blocks.ts"]],
+    ["npx", ["tsx", "scripts/seed-consultants.ts"]],
     ["npx", ["tsx", "scripts/seed-homepage-variations.ts"]],
     ["npx", ["tsx", "scripts/seed-nav-strategy-demo.ts"]],
     // Geo branch-finder shared block on /en/help/branches. seed-locations (now a
