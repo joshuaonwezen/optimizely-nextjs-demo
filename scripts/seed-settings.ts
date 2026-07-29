@@ -19,7 +19,7 @@ import {
   createContent,
   discoverGlobalRoot,
   noHyphens,
-  sweepMisplacedSharedBlocks,
+  sweepSeededBlocks,
 } from "./_shared";
 
 config({ path: ".env.local" });
@@ -53,8 +53,9 @@ async function main() {
   BLOCKS_CONTAINER = await discoverGlobalRoot();
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}`);
 
-  console.log("--- Cleaning up existing SiteSettings / SiteBanner items ---");
-  await sweepMisplacedSharedBlocks(["SiteSettings", "SiteBanner"]);
+  console.log("--- Cleaning up our SiteSettings / SiteBanner blocks ---");
+  // Scoped by our display names so custom editor-created blocks are preserved.
+  await sweepSeededBlocks(["SiteSettings", "SiteBanner"], ["Site Settings", "Site Banner"]);
   await new Promise((r) => setTimeout(r, 3000));
 
   console.log("--- Creating SiteSettings block ---");

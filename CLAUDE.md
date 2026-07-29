@@ -456,6 +456,19 @@ Apply `pa("body")` to the wrapper `<div>`, NOT to the `<RichText>` component its
 OPTIMIZELY_CMS_CLIENT_ID=xxx OPTIMIZELY_CMS_CLIENT_SECRET=yyy npm run opti:push
 ```
 
+### Push content types to every instance — validate on `personal` first
+Any `opti:push` of content-type definitions must land on **every** CMS instance, not just personal. The workflow:
+
+1. **Validate on `personal`** — push with the base `.env.local` vars and confirm the types apply cleanly (and, for breaking changes, that `--force` was accepted). Verify the affected pages/queries still work.
+2. **Push to all other instances** — re-run `opti:push` for each remaining instance (joshCMS, harryNewCMS, mostinNewCMS, …), injecting that instance's suffixed credentials as base names:
+   ```bash
+   OPTIMIZELY_CMS_CLIENT_ID=$OPTIMIZELY_CMS_CLIENT_ID_JOSHCMS \
+   OPTIMIZELY_CMS_CLIENT_SECRET=$OPTIMIZELY_CMS_CLIENT_SECRET_JOSHCMS \
+     npm run opti:push        # add `-- --force` for breaking changes
+   ```
+
+The canonical instance list lives in `src/lib/optimizely/seedInstances.ts`. A schema that exists on some instances but not others breaks Graph queries on the un-pushed ones (see the `indexingType` deploy-ordering note below) — allow for the ~10 min Graph schema-sync lag before deploying code that relies on the new schema.
+
 ### New blocks are auto-discovered
 `optimizely.config.mjs` globs `./src/components/**/*.tsx` — no manual config edit needed when adding a new block.
 

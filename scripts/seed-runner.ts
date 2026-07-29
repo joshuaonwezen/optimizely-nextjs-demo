@@ -46,11 +46,15 @@ async function main() {
   // content only. The external Content Source API steps (seed-quotes,
   // seed-locations) are intentionally NOT here: they depend on the external
   // sources pipeline being activated for the account and would otherwise abort
-  // the run before the optional CMS-content steps (seed-quote-blocks,
-  // seed-consultants) ever run. They live in optional[] below.
+  // the run before the optional CMS-content steps (seed-consultants) ever run.
+  // They live in optional[] below.
   const required: [string, string[]][] = [
     ["npx", ["@optimizely/cms-cli@latest", "config", "push", "optimizely.config.mjs", "--force"]],
     ["npx", ["tsx", "scripts/seed-content.ts"]],
+    // QuoteBlock shared blocks that back the homepage CustomerVoicesBlock content
+    // areas. Pure Management API (no Graph dependency), so it's required, not
+    // optional - the homepage quote/spotlight sections are empty without it.
+    ["npx", ["tsx", "scripts/seed-quote-blocks.ts"]],
     ["npx", ["tsx", "scripts/seed-nav.ts"]],
     ["npx", ["tsx", "scripts/seed-modeling.ts"]],
     ["npx", ["tsx", "scripts/seed-faqs.ts"]],
@@ -67,12 +71,13 @@ async function main() {
   // Optional steps - failures print a warning and the run continues.
   // These may depend on Graph indexing the content from required steps (~60s lag).
   const optional: [string, string[]][] = [
-    // External Content Source API data (activation-dependent). Kept before the
-    // CMS-content steps so BankLocation exists for seed-branch-finder, but as
-    // optional so a Content Source failure never blocks the steps below.
+    // External Content Source API data (Quote / Spotlight / BankLocation). Kept
+    // before the CMS-content steps so BankLocation exists for seed-branch-finder,
+    // but optional so a Content Source failure never blocks the steps below. Each
+    // self-heals a corrupted source mapping (see scripts/_contentSource.ts).
     ["npx", ["tsx", "scripts/seed-quotes.ts"]],
+    ["npx", ["tsx", "scripts/seed-spotlights.ts"]],
     ["npx", ["tsx", "scripts/seed-locations.ts"]],
-    ["npx", ["tsx", "scripts/seed-quote-blocks.ts"]],
     ["npx", ["tsx", "scripts/seed-consultants.ts"]],
     ["npx", ["tsx", "scripts/seed-homepage-variations.ts"]],
     ["npx", ["tsx", "scripts/seed-nav-strategy-demo.ts"]],

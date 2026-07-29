@@ -16,6 +16,7 @@ import {
   discoverGlobalRoot,
   discoverRootContainer,
   sweepMisplacedSharedBlocks,
+  sweepSeededBlocks,
   wrapProps,
   noHyphens,
 } from "./_shared";
@@ -173,8 +174,13 @@ async function main() {
   // that folder here would delete live items and race their re-create (a publish 404),
   // and would orphan the investment/help FAQ items seed-content also created there.
   // createContent below 409-skips the already-present items, so nothing is lost.
-  console.log("--- Sweeping misplaced FAQ shared blocks (top-level root only) ---");
-  await sweepMisplacedSharedBlocks(["FaqItemBlock", "FaqContainerBlock"], { includeBlocksFolder: false });
+  console.log("--- Sweeping misplaced FAQ items (top-level root only) ---");
+  await sweepMisplacedSharedBlocks(["FaqItemBlock"], { includeBlocksFolder: false });
+  // Remove our OWN prior "FAQs Container" from the blocks folder - it uses a fresh
+  // key each run so it would otherwise accumulate. Scoped by name so a custom
+  // FaqContainerBlock (any other name) is preserved, and FAQ items are untouched.
+  console.log("--- Removing our previous FAQs Container from the blocks folder ---");
+  await sweepSeededBlocks(["FaqContainerBlock"], ["FAQs Container"], { includeBlocksFolder: true });
   await new Promise((r) => setTimeout(r, 3000));
 
   await createFaqItems();

@@ -455,17 +455,23 @@ async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
     targetKey = NAV_BLOCK_KEY;
     await new Promise((r) => setTimeout(r, 3000));
   } else {
-    // Auto-discover: look for an existing Navigation block in the blocks container.
+    // Auto-discover OUR Navigation block by name so a custom editor-created
+    // Navigation block (any other displayName) is never deleted.
     const { ok, body: listBody } = await apiFetch(`/${BLOCKS_CONTAINER}/items?contentTypes=Navigation`);
     if (ok) {
       const navItems = (listBody as { items?: Array<{ key: string; container?: string }> }).items ?? [];
-      if (navItems.length > 0) {
-        const found = navItems[0];
-        targetKey = found.key;
-        if (found.container) targetContainer = found.container;
-        await apiFetch(`/${found.key}`, { method: "DELETE", headers: { "cms-permanent-delete": "true" } });
-        console.log(`  [deleted] existing nav block ${found.key} (auto-discovered)`);
+      for (const item of navItems) {
+        const { ok: vOk, body: vBody } = await apiFetch(`/${item.key}/versions?pageSize=1`);
+        const name = vOk
+          ? ((vBody as { items?: Array<{ displayName?: string }> }).items?.[0]?.displayName ?? "")
+          : "";
+        if (name !== NAV_BLOCK_NAME) continue; // preserve custom Navigation blocks
+        targetKey = item.key;
+        if (item.container) targetContainer = item.container;
+        await apiFetch(`/${item.key}`, { method: "DELETE", headers: { "cms-permanent-delete": "true" } });
+        console.log(`  [deleted] existing nav block ${item.key} ("${name}")`);
         await new Promise((r) => setTimeout(r, 3000));
+        break;
       }
     }
   }

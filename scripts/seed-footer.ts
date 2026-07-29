@@ -21,7 +21,7 @@ import {
   discoverGlobalRoot,
   findItemsInContainerByName,
   noHyphens,
-  sweepMisplacedSharedBlocks,
+  sweepSeededBlocks,
 } from "./_shared";
 
 config({ path: ".env.local" });
@@ -38,8 +38,9 @@ const ITEM_PREFIX = "Footer - ";
 const TAGLINE = "Banking built around you · Mosey Bank";
 
 async function cleanupFooterItems(): Promise<void> {
-  console.log("--- Cleaning up existing Footer blocks and legacy footer NavigationItems ---");
-  await sweepMisplacedSharedBlocks(["Footer"]);
+  console.log("--- Cleaning up our Footer block and legacy footer NavigationItems ---");
+  // Scoped by our display name so a custom editor-created Footer is preserved.
+  await sweepSeededBlocks(["Footer"], [FOOTER_BLOCK_NAME]);
   const stale = await findItemsInContainerByName(
     (name) => name.startsWith(ITEM_PREFIX),
     BLOCKS_CONTAINER

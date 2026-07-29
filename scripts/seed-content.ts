@@ -34,6 +34,7 @@ import {
   type CompNode,
 } from "./_shared";
 import { FAQ_ITEMS, INVESTMENT_FAQ_ITEMS, HELP_FAQ_ITEMS } from "./faq-data";
+import { QUOTE_CARDS, SPOTLIGHT_CARDS } from "./quote-card-data";
 
 config({ path: ".env.local" });
 
@@ -107,8 +108,8 @@ async function ensurePublished(key: string): Promise<void> {
 
 // Page compositions
 
-/** A content-area reference to a shared block, as used in FaqContainerBlock.faqItems. */
-function faqRefs(items: Array<{ key: string }>): Array<{ reference: string }> {
+/** Content-area references to shared blocks (FaqContainerBlock.faqItems, CustomerVoicesBlock.cards). */
+function contentRefs(items: Array<{ key: string }>): Array<{ reference: string }> {
   return items.map((i) => ({ reference: `cms://content/${i.key}` }));
 }
 
@@ -356,7 +357,7 @@ function buildInvestmentsPage(): CompNode[] {
     rootComponent("FaqContainerBlock", "Investments FAQs", {
       heading: "Investing questions, answered",
       subheading: "The things new investors ask us most.",
-      faqItems: faqRefs(INVESTMENT_FAQ_ITEMS),
+      faqItems: contentRefs(INVESTMENT_FAQ_ITEMS),
     }),
     sectionComponent("CallToAction", "Investments CTA", {
       label: "Start investing from £25 a month",
@@ -415,7 +416,7 @@ function buildHelpPage(): CompNode[] {
     rootComponent("FaqContainerBlock", "Help FAQs", {
       heading: "Frequently asked questions",
       subheading: "Quick answers to the things we hear most.",
-      faqItems: faqRefs([...FAQ_ITEMS, ...HELP_FAQ_ITEMS]),
+      faqItems: contentRefs([...FAQ_ITEMS, ...HELP_FAQ_ITEMS]),
     }),
     sectionComponent("CallToAction", "Help CTA", {
       label: "Still need help? Contact us",
@@ -555,6 +556,20 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
         "Mosey made getting my mortgage so simple. The whole process was online and I had an offer within 48 hours. I couldn't believe how painless it was.",
       authorName: "James Hartley",
       authorRole: "Homeowner, Leeds",
+    }),
+    // Cards are bound via the block's `cards` content area to QuoteBlock shared
+    // blocks (seed-quote-blocks.ts). Editors can add/remove/reorder them in the
+    // CMS. Referencing the stable keys before seed-quote-blocks runs is fine -
+    // the content-area expansion resolves once both exist and Graph indexes.
+    rootComponent("CustomerVoicesBlock", "Homepage Customer Quotes", {
+      heading: "What our customers say",
+      subheading: "Real feedback from people who bank with Mosey.",
+      cards: contentRefs(QUOTE_CARDS),
+    }),
+    rootComponent("CustomerVoicesBlock", "Homepage Customer Spotlights", {
+      heading: "Customer spotlights",
+      subheading: "Stories from across the Mosey community.",
+      cards: contentRefs(SPOTLIGHT_CARDS),
     }),
     rootComponent("LogoGridBlock", "Trusted By", {
       heading: "Trusted by 2 million customers across the UK",

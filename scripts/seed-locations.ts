@@ -1,11 +1,8 @@
-import { config } from "dotenv";
+import { seedExternalSource, type ExternalRecord } from "./_contentSource";
 
-config({ path: ".env.local" });
-
-const GRAPH_BASE    = "https://cg.optimizely.com";
-const GRAPH_GATEWAY = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
-const SOURCE_ID     = "locs";
-
+// External "BankLocation" content source (id `locs`) with a GeoPoint `location`
+// field for geo search. Seeded via the Content Source API using the shared
+// helper (self-heals a corrupted `locs` mapping via delete + re-register).
 interface Location {
   id: number;
   branchName: string;
@@ -30,135 +27,40 @@ const LOCATIONS: Location[] = [
   { id: 10, branchName: "Mosey Bank Gothenburg Port",    address: "Ostra Hamngatan 22",     city: "Gothenburg", country: "Sweden",         phone: "+46 31 555 1000",   services: "Corporate banking, trade finance",            coordinates: { lat: 57.7089, lon: 11.9746 } },
 ];
 
-async function registerContentType(auth: string): Promise<void> {
-  console.log("  Part 1: Registering BankLocation content type (GeoPoint location field)");
-
-  const body = {
-    label: "Bank Locations",
-    languages: ["en"],
-    contentTypes: {
-      BankLocation: {
-        contentType: ["_Item"],
-        properties: {
-          branchName: { type: "String" },
-          address:    { type: "String" },
-          city:       { type: "String" },
-          country:    { type: "String" },
-          phone:      { type: "String" },
-          services:   { type: "String" },
-          location:   { type: "GeoPoint" },
-        },
-      },
-    },
-    preset: "next",
-    useTypedFieldNames: true,
-  };
-
-  const res  = await fetch(`${GRAPH_BASE}/api/content/v3/types?id=${SOURCE_ID}`, {
-    method:  "PUT",
-    headers: { "Content-Type": "application/json", Authorization: auth },
-    body:    JSON.stringify(body),
-  });
-
-  const text = await res.text();
-  if (!res.ok) throw new Error(`Schema registration failed: ${res.status} ${text.slice(0, 300)}`);
-  console.log(`  [ok] BankLocation type registered (${res.status})`);
-}
-
-async function seedLocations(auth: string): Promise<void> {
-  console.log(`  Part 2: Seeding ${LOCATIONS.length} bank locations`);
-
-  const lines: string[] = [];
-  for (const loc of LOCATIONS) {
-    lines.push(JSON.stringify({ index: { _id: loc.id, language_routing: "en" } }));
-
-    const props: Record<string, unknown> = {
-      _rbac: "r:Everyone:Read",
-      _itemMetadata: {
-        key:                      `loc-${loc.id}`,
-        displayName___searchable: `${loc.branchName} - ${loc.city}`,
-        lastModified:             new Date().toISOString(),
-        type:                     "BankLocation",
-      },
-      _metadata: {
-        types:  ["BankLocation", "_Item"],
-        locale: "en",
-        key:    `loc-${loc.id}`,
-        status: "Published",
-      },
+async function main() {
+  console.log("=== Location Seed Script ===\n");
+  const records: ExternalRecord[] = LOCATIONS.map((loc) => ({
+    id: loc.id,
+    key: `loc-${loc.id}`,
+    displayName: `${loc.branchName} - ${loc.city}`,
+    fields: {
       "branchName$$String": loc.branchName,
       "address$$String":    loc.address,
       "city$$String":       loc.city,
       "country$$String":    loc.country,
       "phone$$String":      loc.phone,
       "services$$String":   loc.services,
-      "location$$GeoPoint":  { lat: loc.coordinates.lat, lon: loc.coordinates.lon },
-      ContentType: ["BankLocation"],
-      Status:      "Published",
-      Language:    { DisplayName: "English", Name: "en" },
-    };
-
-    lines.push(JSON.stringify(props));
-  }
-
-  const res = await fetch(`${GRAPH_BASE}/api/content/v2/data?id=${SOURCE_ID}`, {
-    method:  "POST",
-    headers: {
-      "Content-Type": "text/plain",
-      "og-job-id":    `seed-locations-${Date.now()}`,
-      Authorization:  auth,
+      "location$$GeoPoint": { lat: loc.coordinates.lat, lon: loc.coordinates.lon },
     },
-    body: lines.join("\n"),
+  }));
+
+  const { indexed } = await seedExternalSource({
+    sourceId: "locs",
+    label: "Bank Locations",
+    typeName: "BankLocation",
+    properties: {
+      branchName: { type: "String" },
+      address:    { type: "String" },
+      city:       { type: "String" },
+      country:    { type: "String" },
+      phone:      { type: "String" },
+      services:   { type: "String" },
+      location:   { type: "GeoPoint" },
+    },
+    records,
   });
 
-  const text = await res.text();
-  if (!res.ok) throw new Error(`Data sync failed: ${res.status} ${text.slice(0, 300)}`);
-  console.log(`  [ok] ${LOCATIONS.length} locations synced (${res.status})`);
-}
-
-async function verifyIndexed(singleKey: string): Promise<void> {
-  console.log("  Part 3: Verifying indexed data (waiting 10s for Graph)");
-  await new Promise((r) => setTimeout(r, 10000));
-
-  // Geo search sample: branches within 500km of Amsterdam, ranked nearest-first.
-  const query = /* GraphQL */`
-    query {
-      BankLocation(
-        where: { location: { distance: { origin: { lat: 52.3676, lon: 4.9041 }, radius: 500, unit: KM } } }
-        orderBy: { location: { origin: { lat: 52.3676, lon: 4.9041 } } }
-      ) {
-        total
-        items { branchName city country location { lat lon } }
-      }
-    }
-  `;
-
-  const res  = await fetch(GRAPH_GATEWAY, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json", Authorization: `epi-single ${singleKey}` },
-    body:    JSON.stringify({ query }),
-  });
-  const json = await res.json() as { data?: unknown; errors?: unknown };
-  if (json.errors) console.warn("  [GraphQL errors]", JSON.stringify(json.errors, null, 2));
-  console.log("  [geo search sample: within 500km of Amsterdam, nearest first]");
-  console.log("  " + JSON.stringify(json.data, null, 2));
-}
-
-async function main() {
-  const appKey    = process.env.OPTIMIZELY_APP_KEY;
-  const appSecret = process.env.OPTIMIZELY_APP_SECRET;
-  const singleKey = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
-  if (!appKey || !appSecret) {
-    console.error("Missing OPTIMIZELY_APP_KEY / OPTIMIZELY_APP_SECRET");
-    process.exit(1);
-  }
-  const auth = `Basic ${Buffer.from(`${appKey}:${appSecret}`).toString("base64")}`;
-
-  console.log("=== Location Seed Script ===\n");
-  await registerContentType(auth);
-  await seedLocations(auth);
-  await verifyIndexed(singleKey);
-  console.log("\n=== Done ===");
+  console.log(`\n=== Done (indexed ${indexed}) ===`);
 }
 
 main().catch((err) => {

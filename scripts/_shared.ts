@@ -294,6 +294,60 @@ export async function sweepMisplacedSharedBlocks(
   }
 }
 
+/**
+ * Like sweepMisplacedSharedBlocks, but scoped by displayName: deletes only items
+ * whose contentType is in `contentTypes` AND whose displayName is in `ownedNames`.
+ * This lets a seed remove ITS OWN prior copies of a shared block on re-run without
+ * touching a custom block of the same type an editor created (different name).
+ * The container listing omits displayName in v1, so each candidate's latest
+ * version is fetched to resolve it before deciding whether to delete.
+ */
+export async function sweepSeededBlocks(
+  contentTypes: string[],
+  ownedNames: string[],
+  options: { includeBlocksFolder?: boolean } = {}
+): Promise<void> {
+  const token = await getManagementToken();
+  const topRoot = await discoverTopLevelRoot();
+  const blocksFolder = await discoverGlobalRoot();
+  const wantedTypes = new Set(contentTypes);
+  const wantedNames = new Set(ownedNames);
+  const containers = options.includeBlocksFolder === false ? [topRoot] : [topRoot, blocksFolder];
+
+  for (const container of containers) {
+    // The blocks folder can hold >100 items, so page through the full listing -
+    // a single pageSize=100 fetch would miss our block if it sorts past page 1.
+    const items: Array<{ key: string; contentType?: string }> = [];
+    for (let pageIndex = 0; ; pageIndex++) {
+      const res = await fetch(`${CONTENT_ENDPOINT}/${container}/items?pageSize=100&pageIndex=${pageIndex}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) break;
+      const batch = ((await res.json()) as { items?: Array<{ key: string; contentType?: string }> }).items ?? [];
+      items.push(...batch);
+      if (batch.length < 100) break;
+    }
+
+    for (const item of items) {
+      if (!wantedTypes.has(item.contentType ?? "")) continue;
+      const vRes = await fetch(`${CONTENT_ENDPOINT}/${item.key}/versions?pageSize=1`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      let displayName = "";
+      if (vRes.ok) {
+        const vData = (await vRes.json()) as { items?: Array<{ displayName?: string }> };
+        displayName = vData.items?.[0]?.displayName ?? "";
+      }
+      if (!wantedNames.has(displayName)) continue; // custom block (other name) - preserve
+      const del = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
+      });
+      console.log(`  [sweep-seeded] deleted ${item.contentType} "${displayName}" ${item.key} (${del.status})`);
+    }
+  }
+}
+
 // Stable content keys that survive re-seeds (the shared FAQ items, preserved by
 // cleanSharedBlocks). Used to recover the global root by walking up their container
 // chain when the app entry point is missing or points at deleted content.

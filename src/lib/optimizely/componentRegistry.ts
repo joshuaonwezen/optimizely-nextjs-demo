@@ -42,9 +42,11 @@ import TeamMemberBlock, { TeamMemberBlockType, TeamMemberHorizontalTemplate } fr
 import TeamGridBlock, { TeamGridBlockType } from "@/components/blocks/TeamGridBlock";
 import ComparisonTableBlock, { ComparisonTableBlockType } from "@/components/blocks/ComparisonTableBlock";
 import CalloutBlock, { CalloutBlockType } from "@/components/blocks/CalloutBlock";
+import RawHtmlBlock, { RawHtmlBlockType, RawHtmlBlockDefaultTemplate } from "@/components/blocks/RawHtmlBlock";
 import ContactFormBlock, { ContactFormBlockType } from "@/components/blocks/ContactFormBlock";
 import BranchFinderBlock, { BranchFinderBlockType, BranchFinderBlockDefaultTemplate } from "@/components/blocks/BranchFinderBlock";
 import QuoteBlock, { QuoteBlockType, QuoteBlockDefaultTemplate } from "@/components/blocks/QuoteBlock";
+import CustomerVoicesBlock, { CustomerVoicesBlockType, CustomerVoicesBlockDefaultTemplate } from "@/components/blocks/CustomerVoicesBlock";
 
 import DynamicExperience from "@/components/experience/DynamicExperience";
 import BlankExperience from "@/components/experience/BlankExperience";
@@ -188,9 +190,11 @@ export function initComponentRegistry() {
     TeamGridBlockType,
     ComparisonTableBlockType,
     CalloutBlockType,
+    RawHtmlBlockType,
     ContactFormBlockType,
     BranchFinderBlockType,
     QuoteBlockType,
+    CustomerVoicesBlockType,
     ArticlePageType,
     CaseStudyPageType,
     ConsultantPageType,
@@ -208,6 +212,7 @@ export function initComponentRegistry() {
     CallToActionGhostTemplate,
     BranchFinderBlockDefaultTemplate,
     QuoteBlockDefaultTemplate,
+    CustomerVoicesBlockDefaultTemplate,
     ProductCardDefaultTemplate,
     ProductCardFeaturedTemplate,
     FeatureItemOutlinedTemplate,
@@ -227,6 +232,7 @@ export function initComponentRegistry() {
     PricingTierCompactTemplate,
     TeamMemberHorizontalTemplate,
     FeaturedContentCardTemplate,
+    RawHtmlBlockDefaultTemplate,
     DefaultRowTemplate,
     DefaultColumnTemplate,
     DefaultSectionTemplate,
@@ -337,9 +343,11 @@ export function initComponentRegistry() {
       TeamGridBlock,
       ComparisonTableBlock,
       CalloutBlock,
+      RawHtmlBlock,
       ContactFormBlock,
       BranchFinderBlock,
       QuoteBlock,
+      CustomerVoicesBlock,
       Navigation: NavigationBlock,
       NavigationItem: NavigationItemPreview,
       Footer: FooterPreview,
