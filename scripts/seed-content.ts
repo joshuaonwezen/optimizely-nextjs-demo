@@ -20,6 +20,7 @@ import { getManagementToken } from "../src/lib/optimizely/auth";
 import {
   CONTENT_ENDPOINT,
   createContent,
+  isApprovalRequired,
   discoverGlobalRoot,
   discoverTopLevelRoot,
   ensureExperienceStartPage,
@@ -1590,7 +1591,13 @@ async function createPage(page: PageDef): Promise<void> {
     });
     if (!pubRes.ok) {
       const pubText = await pubRes.text();
-      throw new Error(`Publish "${page.displayName}" failed: ${pubRes.status} ${pubText.slice(0, 300)}`);
+      // Approval-gated instance: leave the draft for a reviewer and keep seeding the
+      // remaining pages, rather than aborting the whole run on this one page.
+      if (isApprovalRequired(pubRes.status, pubText)) {
+        console.warn(`  [skipped-publish] "${page.displayName}" - approval workflow requires review; left as draft`);
+      } else {
+        throw new Error(`Publish "${page.displayName}" failed: ${pubRes.status} ${pubText.slice(0, 300)}`);
+      }
     }
   }
 

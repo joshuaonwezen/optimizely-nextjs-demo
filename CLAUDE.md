@@ -96,6 +96,7 @@ These are normal — they are not failures:
 | `[warn] FAQs page not found in Graph — run seed:nav first, then re-run this script` | seed-faqs ran before Graph indexed the FAQs page created by seed-nav. | Re-run `npx tsx scripts/seed-faqs.ts` after the full seed completes. |
 | `[indexed sample] { "Quote": { "items": [] } }` | Graph hasn't indexed the quotes yet (10s polling started immediately after sync). | Wait 30-60s, then visit `/demo/content-source` to verify. |
 | `[attempt 1 failed] POST with variation field: 400 Variations can only be created from existing versions` | CMS variations can't be created via the API. | Create them manually in Visual Builder — seed-homepage-variations.ts prints exact instructions. |
+| `[skipped-publish] "<name>" - approval workflow requires review; left as draft` | The instance (e.g. joshCMS) has a content-approval workflow, so the Management API can't publish directly (`400 ... requires approval`). | Expected on approval-gated instances. The item is created as a **draft** and seeding continues (`isApprovalRequired()` in `_shared.ts` gates this skip). Approve the drafts in the CMS to make them live, or disable the approval workflow for the seed API key and re-seed to publish directly. |
 
 ### Scripts excluded from the runner
 

@@ -484,6 +484,17 @@ export async function ensureExperienceStartPage(): Promise<string> {
 // Generic Management API helpers
 
 /**
+ * True when a publish was rejected ONLY because the instance has a content-approval
+ * workflow that requires review before content can go live (400 "requires approval").
+ * Callers treat this as a soft skip - the draft is created and left for a reviewer to
+ * approve - instead of failing the whole seed run. Instances without an approval
+ * workflow never hit this path, so it is safe as default behavior.
+ */
+export function isApprovalRequired(status: number, body: string): boolean {
+  return status === 400 && /requires approval/i.test(body);
+}
+
+/**
  * POST a new content item using the v1 API.
  *
  * The payload uses the same field names as before (locale, displayName,
@@ -592,6 +603,12 @@ export async function createContent(
     );
     if (!pubRes.ok) {
       const pubText = await pubRes.text();
+      // Approval-gated instance: leave the draft for a reviewer and continue seeding
+      // the rest, rather than aborting the whole run on the first un-publishable item.
+      if (isApprovalRequired(pubRes.status, pubText)) {
+        console.warn(`  [skipped-publish] ${context} - approval workflow requires review; left as draft`);
+        return result;
+      }
       throw new Error(`Publish ${context}: ${pubRes.status} ${pubText.slice(0, 300)}`);
     }
   }

@@ -59,9 +59,24 @@ async function main() {
   const localize =
     process.argv.includes("--localize") || /^(1|true|yes)$/i.test(process.env.SEED_LOCALIZE ?? "");
 
+  // --only=id[,id] restricts the run to a subset (e.g. reseed one instance).
+  const onlyArg = process.argv.find((a) => a.startsWith("--only="));
+  const only = onlyArg
+    ? new Set(onlyArg.slice("--only=".length).split(",").map((s) => s.trim()).filter(Boolean))
+    : null;
+  if (only) {
+    const unknown = [...only].filter((id) => !SEED_INSTANCES.some((i) => i.id === id));
+    if (unknown.length > 0) {
+      console.error(`Unknown instance id(s): ${unknown.join(", ")}`);
+      console.error(`Known ids: ${SEED_INSTANCES.map((i) => i.id).join(", ")}`);
+      process.exit(1);
+    }
+  }
+  const instances = only ? SEED_INSTANCES.filter((i) => only.has(i.id)) : SEED_INSTANCES;
+
   const results: { id: string; outcome: Outcome; detail: string }[] = [];
 
-  for (const instance of SEED_INSTANCES) {
+  for (const instance of instances) {
     console.log(`\n${"=".repeat(70)}\n${instance.label} (${instance.id})\n${"=".repeat(70)}`);
 
     const env = resolveEnv(instance.suffix);
