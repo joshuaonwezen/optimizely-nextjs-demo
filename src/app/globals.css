@@ -2,6 +2,11 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* Safe-area bottom padding for fixed bottom chrome (e.g. mobile tab bar) */
+@utility safe-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* ── Design Tokens: The Precision Architect ────────────────────────── */
 :root {
   /* Surface hierarchy */

@@ -1,4 +1,4 @@
-import { contentType, displayTemplate } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate, getClient } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import type { ReactNode } from "react";
 import {
@@ -84,7 +84,7 @@ interface ProductCardData {
   icon?: string | null;
   title?: string | null;
   description?: string | null;
-  linkUrl?: { default?: string | null } | null;
+  linkUrl?: { default?: string | null; hierarchical?: string | null } | null;
   linkText?: string | null;
   __context?: any;
 }
@@ -95,11 +95,27 @@ type ProductCardBlockProps = ProductCardData & {
   displayTemplateKey?: string;
 };
 
-export default function ProductCardBlock(props: ProductCardBlockProps) {
+/** A `type: "url"` field pointing at internal content resolves to a
+ *  `cms://content/{key}` reference, not a navigable path. Turn it into the target
+ *  page's real URL; external URLs and already-resolved paths pass through. */
+async function resolveLinkHref(
+  linkUrl?: { default?: string | null; hierarchical?: string | null } | null,
+): Promise<string> {
+  const raw = linkUrl?.hierarchical ?? linkUrl?.default ?? null;
+  if (!raw) return "#";
+  if (!raw.startsWith("cms://content/")) return raw;
+  const key = raw.slice("cms://content/".length).split(/[?#]/)[0];
+  const target = await getClient()
+    .getContent({ key }, { next: { revalidate: 3600, tags: ["page"] } } as any)
+    .catch(() => null);
+  return (target as any)?._metadata?.url?.default ?? "#";
+}
+
+export default async function ProductCardBlock(props: ProductCardBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
-  const href = data.__context?.edit ? undefined : (data.linkUrl?.default ?? "#");
+  const href = data.__context?.edit ? undefined : await resolveLinkHref(data.linkUrl);
   const icon = data.icon ? (ICON_MAP[data.icon] ?? ICON_MAP.account) : ICON_MAP.account;
 
   const isFeatured = props.displayTemplateKey === "ProductCardFeaturedTemplate";

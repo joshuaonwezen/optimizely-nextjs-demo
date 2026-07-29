@@ -42,15 +42,18 @@ async function main() {
     process.exit(1);
   }
 
-  // Required steps - any failure aborts the run.
+  // Required steps - any failure aborts the run. Keep this list to core CMS
+  // content only. The external Content Source API steps (seed-quotes,
+  // seed-locations) are intentionally NOT here: they depend on the external
+  // sources pipeline being activated for the account and would otherwise abort
+  // the run before the optional CMS-content steps (seed-quote-blocks,
+  // seed-consultants) ever run. They live in optional[] below.
   const required: [string, string[]][] = [
     ["npx", ["@optimizely/cms-cli@latest", "config", "push", "optimizely.config.mjs", "--force"]],
     ["npx", ["tsx", "scripts/seed-content.ts"]],
     ["npx", ["tsx", "scripts/seed-nav.ts"]],
     ["npx", ["tsx", "scripts/seed-modeling.ts"]],
     ["npx", ["tsx", "scripts/seed-faqs.ts"]],
-    ["npx", ["tsx", "scripts/seed-quotes.ts"]],
-    ["npx", ["tsx", "scripts/seed-locations.ts"]],
   ];
 
   // Localization is opt-in: only runs with --localize or SEED_LOCALIZE truthy
@@ -64,13 +67,17 @@ async function main() {
   // Optional steps - failures print a warning and the run continues.
   // These may depend on Graph indexing the content from required steps (~60s lag).
   const optional: [string, string[]][] = [
+    // External Content Source API data (activation-dependent). Kept before the
+    // CMS-content steps so BankLocation exists for seed-branch-finder, but as
+    // optional so a Content Source failure never blocks the steps below.
+    ["npx", ["tsx", "scripts/seed-quotes.ts"]],
+    ["npx", ["tsx", "scripts/seed-locations.ts"]],
     ["npx", ["tsx", "scripts/seed-quote-blocks.ts"]],
     ["npx", ["tsx", "scripts/seed-consultants.ts"]],
     ["npx", ["tsx", "scripts/seed-homepage-variations.ts"]],
     ["npx", ["tsx", "scripts/seed-nav-strategy-demo.ts"]],
-    // Geo branch-finder shared block on /en/help/branches. seed-locations (now a
-    // required step) has already run, so BankLocation data exists; needs the
-    // branches page in Graph.
+    // Geo branch-finder shared block on /en/help/branches. seed-locations (above)
+    // has already run, so BankLocation data exists; needs the branches page in Graph.
     ["npx", ["tsx", "scripts/seed-branch-finder.ts"]],
     ["npx", ["tsx", "scripts/seed-contact-pages.ts"]],
     // Requires a published "Form Container" shared block authored in the CMS UI
@@ -97,13 +104,29 @@ async function main() {
     await run(cmd, args, env);
   }
 
+  const optionalFailures: string[] = [];
   for (const [cmd, args] of optional) {
+    const label = [cmd, ...args].join(" ").replace("npx tsx scripts/", "").replace(".ts", "");
     console.log(`\n-> ${[cmd, ...args].join(" ")}`);
     try {
       await run(cmd, args, env);
     } catch (err) {
       console.warn(`  [warn] ${(err as Error).message} - continuing`);
+      optionalFailures.push(label);
     }
+  }
+
+  // Surface optional steps that did NOT complete - otherwise a single [warn] can
+  // scroll past unnoticed (this is how QuoteBlock/ConsultantPage were silently
+  // skipped on instances where their type wasn't registered yet).
+  if (optionalFailures.length > 0) {
+    console.warn(
+      `\n[optional summary] ${optionalFailures.length} optional step(s) did NOT complete on ${env.OPTIMIZELY_CMS_URL ?? ""}:`
+    );
+    for (const step of optionalFailures) console.warn(`  - ${step}`);
+    console.warn(`  Re-run any of the above individually once its prerequisites are met.`);
+  } else {
+    console.log(`\n[optional summary] all optional steps completed.`);
   }
 
   console.log(`\nDone. Seeded ${env.OPTIMIZELY_CMS_URL ?? ""}.`);

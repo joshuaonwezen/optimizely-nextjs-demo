@@ -408,7 +408,7 @@ function buildHelpPage(): CompNode[] {
         title: "App support",
         description:
           "Trouble signing in or setting up your device? Step-by-step help to get the Mosey app working for you.",
-        linkUrl: "/en/personal/mobile-app",
+        linkUrl: "/en/personal/current-account/mobile-app",
         linkText: "Get app help →",
       }),
     ]),
@@ -517,7 +517,12 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
         title: "Current Account",
         description:
           "A fee-free everyday account with instant payment notifications and no hidden charges.",
-        linkUrl: "/en/personal/current-account",
+        // Internal links on this `type: "url"` field are stored as a stable
+        // cms://content/{key} reference to the current page key (not a path string,
+        // which the CMS mangles into a stale internal ref that breaks every reseed).
+        // The homepage is created after every page below, so these refs resolve at
+        // create time; ProductCardBlock resolves them to a real URL at render time.
+        linkUrl: `cms://content/${PAGE_KEYS.currentAccount}`,
         linkText: "Open an account →",
       }),
       elementComponent("ProductCardBlock", "Savings Card", {
@@ -525,7 +530,7 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
         title: "Savings",
         description:
           "Easy-access and fixed-rate savings accounts with rates up to 5.1% AER. Your money working harder.",
-        linkUrl: "/en/personal/savings",
+        linkUrl: `cms://content/${PAGE_KEYS.savings}`,
         linkText: "View savings rates →",
       }),
       elementComponent("ProductCardBlock", "Mortgage Card", {
@@ -533,7 +538,7 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
         title: "Mortgage",
         description:
           "Find your rate in minutes. Our advisors guide you from application to completion.",
-        linkUrl: "/en/mortgage",
+        linkUrl: `cms://content/${PAGE_KEYS.mortgage}`,
         linkText: "Get a mortgage →",
       }),
       elementComponent("ProductCardBlock", "Business Banking Card", {
@@ -541,7 +546,7 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
         title: "Business Banking",
         description:
           "Current accounts, lending, and card payment solutions for UK businesses of every size.",
-        linkUrl: "/en/business/business-banking",
+        linkUrl: `cms://content/${PAGE_KEYS.businessBanking}`,
         linkText: "Open a business account →",
       }),
     ]),

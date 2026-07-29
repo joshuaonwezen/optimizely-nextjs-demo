@@ -99,6 +99,13 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
     return () => { document.body.style.overflowY = ""; };
   }, [mobileOpen]);
 
+  // Reserve space for the fixed bottom tab bar so it doesn't overlay the footer
+  useEffect(() => {
+    if (!showBottomTabs) return;
+    document.body.style.paddingBottom = "calc(4rem + env(safe-area-inset-bottom))";
+    return () => { document.body.style.paddingBottom = ""; };
+  }, [showBottomTabs]);
+
   if (tree.length === 0) return null;
 
   function toggleMobile(key: string) {

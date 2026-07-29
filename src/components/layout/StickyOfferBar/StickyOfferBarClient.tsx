@@ -12,6 +12,11 @@ export function StickyOfferBarClient() {
   const linkUrl = (decision?.variables.linkUrl as string) || null;
   const expiryLabel = (decision?.variables.expiryLabel as string) || null;
 
+  // Lift above the mobile bottom-tab bar when that experiment is active, so the
+  // two fixed bottom-0 bars don't overlap (desktop hides the tab bar, so bottom-0).
+  const mobileNav = useFxDecision("mobile_nav");
+  const tabsActive = mobileNav?.enabled && mobileNav.variationKey === "bottom_tabs";
+
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
@@ -33,7 +38,7 @@ export function StickyOfferBarClient() {
     <>
     <div
       data-component="StickyOfferBar"
-      className="fixed bottom-0 inset-x-0 z-40 bg-gradient-brand text-on-brand shadow-xl border-t border-white/10"
+      className={`fixed inset-x-0 z-40 bg-gradient-brand text-on-brand shadow-xl border-t border-white/10 ${tabsActive ? "bottom-16 md:bottom-0" : "bottom-0"}`}
     >
       <div className="max-w-7xl mx-auto px-4 md:px-8 h-14 flex items-center gap-3">
         {expiryLabel && (
