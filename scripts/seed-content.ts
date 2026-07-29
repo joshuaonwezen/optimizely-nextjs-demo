@@ -1774,6 +1774,28 @@ async function main() {
   // unpublished item makes the referencing page's faqItems unresolvable.
   for (const item of allFaqItems) await ensurePublished(item.key);
 
+  // Shared QuoteBlock cards bound onto the homepage CustomerVoicesBlock content
+  // areas (quotes + spotlights). Same reason as the FAQ items above: the
+  // homepage composition references these by key, so they must exist and be
+  // published first. seed-quote-blocks.ts reuses the same stable keys for the
+  // /demo/external-content page - whichever runs second 409-skips.
+  const allCards = [
+    ...QUOTE_CARDS.map((c) => ({ card: c, label: "Quote" })),
+    ...SPOTLIGHT_CARDS.map((c) => ({ card: c, label: "Spotlight" })),
+  ];
+  console.log(`\n--- Creating ${allCards.length} shared Quote/Spotlight cards ---`);
+  for (const { card, label } of allCards) {
+    await createContent({
+      key: card.key,
+      contentType: "QuoteBlock",
+      container: BLOCKS_CONTAINER,
+      locale: "en",
+      displayName: `${label} - ${card.author}`,
+      properties: { author: card.author, role: card.role ?? "", text: card.text },
+    }, `${label} - ${card.author}`, { skipPublish: true });
+  }
+  for (const { card } of allCards) await ensurePublished(card.key);
+
   // Shared blocks bound onto every converted TraditionalPage: a CalloutBlock used as
   // the featuredBlock and a CallToAction seeded into the free content area. Created
   // (and published) before the pages so their references resolve at page-create time.

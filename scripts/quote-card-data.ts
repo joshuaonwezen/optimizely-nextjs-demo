@@ -23,11 +23,13 @@ export const QUOTE_CARDS: QuoteCard[] = [
   { key: "cb000000000000000000000000000006", author: "Daniel Reeves", role: "Current Account Customer",  text: "Switched from my old bank after 12 years. Mosey's CASS switch took 7 working days and every direct debit moved without any issues whatsoever." },
 ];
 
+// Keys use a 5b… prefix (valid hex - the CMS requires GUID-format keys, so a
+// mnemonic "sb" prefix is rejected). Distinct from the cb… quote-card keys.
 export const SPOTLIGHT_CARDS: QuoteCard[] = [
-  { key: "sb000000000000000000000000000001", author: "Elena Ruiz",     text: "Mosey helped me buy my first flat at 26. The adviser broke every step down so I actually understood my mortgage - not just signed it." },
-  { key: "sb000000000000000000000000000002", author: "Jamal Osei",     text: "I run a small design studio. Mosey's business account and instant invoicing mean I finally spend evenings designing instead of doing admin." },
-  { key: "sb000000000000000000000000000003", author: "Fen Li",         text: "After moving countries twice, Mosey was the first bank that made cross-border transfers feel simple and transparent." },
-  { key: "sb000000000000000000000000000004", author: "Grace Adeyemi",  text: "The savings goals feature nudged me into an emergency fund without thinking about it. I hit six months of expenses this year." },
-  { key: "sb000000000000000000000000000005", author: "Noah Bergström",  text: "When my card was cloned abroad, the fraud team called me before I even noticed. New card waiting at my hotel the next morning." },
-  { key: "sb000000000000000000000000000006", author: "Priya Nair",     text: "As a freelancer my income is lumpy. Mosey's spending insights smooth it out so I always know what's safe to spend." },
+  { key: "5b000000000000000000000000000001", author: "Elena Ruiz",     text: "Mosey helped me buy my first flat at 26. The adviser broke every step down so I actually understood my mortgage - not just signed it." },
+  { key: "5b000000000000000000000000000002", author: "Jamal Osei",     text: "I run a small design studio. Mosey's business account and instant invoicing mean I finally spend evenings designing instead of doing admin." },
+  { key: "5b000000000000000000000000000003", author: "Fen Li",         text: "After moving countries twice, Mosey was the first bank that made cross-border transfers feel simple and transparent." },
+  { key: "5b000000000000000000000000000004", author: "Grace Adeyemi",  text: "The savings goals feature nudged me into an emergency fund without thinking about it. I hit six months of expenses this year." },
+  { key: "5b000000000000000000000000000005", author: "Noah Bergström",  text: "When my card was cloned abroad, the fraud team called me before I even noticed. New card waiting at my hotel the next morning." },
+  { key: "5b000000000000000000000000000006", author: "Priya Nair",     text: "As a freelancer my income is lumpy. Mosey's spending insights smooth it out so I always know what's safe to spend." },
 ];
