@@ -10,7 +10,7 @@ export const PREVIEW_DIAGNOSTIC_QUERY = /* GraphQL */ `
           key
           version
           status
-          locale { name }
+          locale
           variation
           displayName
         }

@@ -1,9 +1,10 @@
-import { getClient, type PreviewParams } from "@optimizely/cms-sdk";
+import { type PreviewParams } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
 import { NextPreviewComponent } from "@optimizely/cms-sdk/react/nextjs";
 import { redirect } from "next/navigation";
 import Script from "next/script";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
+import { getPreviewClient } from "@/lib/optimizely/previewClient";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import { PREVIEW_DIAGNOSTIC_QUERY } from "@/lib/graphql/queries/PreviewDiagnostic";
 import PreviewDebugOverlay, {
@@ -38,7 +39,7 @@ async function PreviewPage({ searchParams }: Props) {
   const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
   const serverRenderedAt = new Date().toISOString();
 
-  const client = getClient();
+  const client = getPreviewClient();
   let content = null;
   let fetchError: string | undefined;
   try {
@@ -52,6 +53,12 @@ async function PreviewPage({ searchParams }: Props) {
     // Deleted or unpublished content - fall through to empty state below
     console.error("[Preview] Content not found:", error);
     fetchError = error instanceof Error ? error.message : String(error);
+    // SDK collapses GraphQL errors to "N errors ... Check 'errors' object" - surface
+    // the individual messages so the overlay shows the real cause (e.g. Unknown type).
+    const graphErrors = (error as { errors?: Array<{ message?: string }> })?.errors;
+    if (Array.isArray(graphErrors) && graphErrors.length) {
+      fetchError += ` — ${graphErrors.map((e) => e.message).join("; ")}`;
+    }
   }
 
   // Debug overlay data (preview-only). Never let diagnostics break the preview.
