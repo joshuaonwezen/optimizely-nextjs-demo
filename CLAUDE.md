@@ -65,6 +65,7 @@ Always use the seed runner — never call individual seed scripts directly. The 
 
 1. **Seed tool (preferred):** `/demo/management-api` → "Reseed this CMS instance" → pick the instance from the dropdown. The API route resolves the suffixed `.env.local` vars server-side and injects them as base names before spawning the runner.
 2. **CLI:** `npm run seed:all` seeds whatever the base vars in `.env.local` point to (the personal instance). For another instance, override the base vars on the command line with that instance's suffixed values.
+3. **All instances (CLI):** `npm run seed:instances` seeds every instance in `src/lib/optimizely/seedInstances.ts` in sequence. It resolves each instance's suffixed vars the same way the seed route does, skips any instance whose required vars are absent (warning, not fatal), continues past a failed instance, and prints a per-instance summary at the end. Add `--dry-run` to only report which instances would seed, or `--localize` to include the Dutch localization step.
 
 ### What the runner does (in order)
 
