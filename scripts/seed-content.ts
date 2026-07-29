@@ -1392,12 +1392,15 @@ const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 /**
  * Push a composition onto an existing start-page DynamicExperience.
  *
- * The start page is usually already published, and POSTing a composition inline
- * to /versions is rejected (400) on a published experience. So we create a fresh
- * draft version WITHOUT a composition, merge-PATCH the composition onto that draft
- * (the shape the CMS accepts for compositions - same as the variation workflow),
- * then publish. Returns true on success; false lets the caller fall back to a
- * sibling homepage. Any failed step logs the full response body.
+ * POST /versions with the NEW composition in the body: the CMS uses that composition
+ * for the draft. This is deliberate - creating a draft WITHOUT a composition makes the
+ * CMS copy the start page's CURRENT composition, and if that one references content
+ * that has since been deleted (e.g. a prior seed's product-card link targets), version
+ * creation fails with 400 "unresolved reference" and the whole start-page update is
+ * blocked. Supplying the fresh (valid) composition replaces the stale one and sidesteps
+ * that validation. We then merge-PATCH the same composition onto the draft (idempotent
+ * safety net for any instance that drops it on POST) and publish. Returns true on
+ * success; false lets the caller fall back to a sibling homepage.
  */
 async function updateStartPageComposition(
   key: string,
@@ -1405,12 +1408,14 @@ async function updateStartPageComposition(
   composition: Record<string, unknown>,
   token: string,
 ): Promise<boolean | "not-an-experience"> {
-  // 1. Create a new draft version (no composition - inline composition 400s here).
+  // 1. Create a new draft version WITH the composition, so the CMS does not copy the
+  //    start page's current (possibly broken) composition and 400 on its stale refs.
   const createRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions?locale=en`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({
       displayName: page.displayName,
+      composition,
       ...(page.properties ? { properties: wrapProps(page.properties) } : {}),
     }),
   });
