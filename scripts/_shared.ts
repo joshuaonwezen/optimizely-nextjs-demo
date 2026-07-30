@@ -278,12 +278,18 @@ export async function sweepMisplacedSharedBlocks(
   const containers = options.includeBlocksFolder === false ? [topRoot] : [topRoot, blocksFolder];
 
   for (const container of containers) {
-    const res = await fetch(`${CONTENT_ENDPOINT}/${container}/items?pageSize=100`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) continue;
-    const data = (await res.json()) as { items?: Array<{ key: string; contentType?: string }> };
-    for (const item of data.items ?? []) {
+    // Page through the full listing so items past the first page aren't missed.
+    const items: Array<{ key: string; contentType?: string }> = [];
+    for (let pageIndex = 0; ; pageIndex++) {
+      const res = await fetch(`${CONTENT_ENDPOINT}/${container}/items?pageSize=100&pageIndex=${pageIndex}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) break;
+      const batch = ((await res.json()) as { items?: Array<{ key: string; contentType?: string }> }).items ?? [];
+      items.push(...batch);
+      if (batch.length < 100) break;
+    }
+    for (const item of items) {
       if (!wanted.has(item.contentType ?? "")) continue;
       const del = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
         method: "DELETE",
@@ -900,15 +906,24 @@ export async function findItemsInContainerByName(
   container: string = CONTAINER
 ): Promise<Array<{ key: string; displayName: string }>> {
   const token = await getManagementToken();
-  const res = await fetch(`${CONTENT_ENDPOINT}/${container}/items`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) return [];
 
-  const data = (await res.json()) as { items?: Array<{ key: string }> };
+  // Page through the full listing - the shared-blocks folder holds >100 items,
+  // and a single un-paginated fetch would miss seeded blocks that sort past the
+  // first page (they'd never be cleaned up and would duplicate on every re-seed).
+  const items: Array<{ key: string }> = [];
+  for (let pageIndex = 0; ; pageIndex++) {
+    const res = await fetch(`${CONTENT_ENDPOINT}/${container}/items?pageSize=100&pageIndex=${pageIndex}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) break;
+    const batch = ((await res.json()) as { items?: Array<{ key: string }> }).items ?? [];
+    items.push(...batch);
+    if (batch.length < 100) break;
+  }
+
   const result: Array<{ key: string; displayName: string }> = [];
 
-  for (const item of data.items ?? []) {
+  for (const item of items) {
     const vRes = await fetch(
       `${CONTENT_ENDPOINT}/${item.key}/versions?pageSize=1`,
       { headers: { Authorization: `Bearer ${token}` } }

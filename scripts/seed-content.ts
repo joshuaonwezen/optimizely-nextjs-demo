@@ -34,7 +34,7 @@ import {
   type CompNode,
 } from "./_shared";
 import { FAQ_ITEMS, INVESTMENT_FAQ_ITEMS, HELP_FAQ_ITEMS } from "./faq-data";
-import { QUOTE_CARDS, SPOTLIGHT_CARDS } from "./quote-card-data";
+import { QUOTE_CARDS } from "./quote-card-data";
 
 config({ path: ".env.local" });
 
@@ -565,11 +565,6 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
       heading: "What our customers say",
       subheading: "Real feedback from people who bank with Mosey.",
       cards: contentRefs(QUOTE_CARDS),
-    }),
-    rootComponent("CustomerVoicesBlock", "Homepage Customer Spotlights", {
-      heading: "Customer spotlights",
-      subheading: "Stories from across the Mosey community.",
-      cards: contentRefs(SPOTLIGHT_CARDS),
     }),
     rootComponent("LogoGridBlock", "Trusted By", {
       heading: "Trusted by 2 million customers across the UK",
@@ -1775,26 +1770,22 @@ async function main() {
   for (const item of allFaqItems) await ensurePublished(item.key);
 
   // Shared QuoteBlock cards bound onto the homepage CustomerVoicesBlock content
-  // areas (quotes + spotlights). Same reason as the FAQ items above: the
-  // homepage composition references these by key, so they must exist and be
-  // published first. seed-quote-blocks.ts reuses the same stable keys for the
+  // area. Same reason as the FAQ items above: the homepage composition
+  // references these by key, so they must exist and be published first.
+  // seed-quote-blocks.ts reuses the same stable keys for the
   // /demo/external-content page - whichever runs second 409-skips.
-  const allCards = [
-    ...QUOTE_CARDS.map((c) => ({ card: c, label: "Quote" })),
-    ...SPOTLIGHT_CARDS.map((c) => ({ card: c, label: "Spotlight" })),
-  ];
-  console.log(`\n--- Creating ${allCards.length} shared Quote/Spotlight cards ---`);
-  for (const { card, label } of allCards) {
+  console.log(`\n--- Creating ${QUOTE_CARDS.length} shared Quote cards ---`);
+  for (const card of QUOTE_CARDS) {
     await createContent({
       key: card.key,
       contentType: "QuoteBlock",
       container: BLOCKS_CONTAINER,
       locale: "en",
-      displayName: `${label} - ${card.author}`,
+      displayName: `Quote - ${card.author}`,
       properties: { author: card.author, role: card.role ?? "", text: card.text },
-    }, `${label} - ${card.author}`, { skipPublish: true });
+    }, `Quote - ${card.author}`, { skipPublish: true });
   }
-  for (const { card } of allCards) await ensurePublished(card.key);
+  for (const card of QUOTE_CARDS) await ensurePublished(card.key);
 
   // Shared blocks bound onto every converted TraditionalPage: a CalloutBlock used as
   // the featuredBlock and a CallToAction seeded into the free content area. Created

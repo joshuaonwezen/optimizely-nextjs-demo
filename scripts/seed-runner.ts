@@ -53,7 +53,7 @@ async function main() {
     ["npx", ["tsx", "scripts/seed-content.ts"]],
     // QuoteBlock shared blocks that back the homepage CustomerVoicesBlock content
     // areas. Pure Management API (no Graph dependency), so it's required, not
-    // optional - the homepage quote/spotlight sections are empty without it.
+    // optional - the homepage Customer Voices section is empty without it.
     ["npx", ["tsx", "scripts/seed-quote-blocks.ts"]],
     ["npx", ["tsx", "scripts/seed-nav.ts"]],
     ["npx", ["tsx", "scripts/seed-modeling.ts"]],
@@ -71,12 +71,11 @@ async function main() {
   // Optional steps - failures print a warning and the run continues.
   // These may depend on Graph indexing the content from required steps (~60s lag).
   const optional: [string, string[]][] = [
-    // External Content Source API data (Quote / Spotlight / BankLocation). Kept
-    // before the CMS-content steps so BankLocation exists for seed-branch-finder,
-    // but optional so a Content Source failure never blocks the steps below. Each
+    // External Content Source API data (Quote / BankLocation). Kept before the
+    // CMS-content steps so BankLocation exists for seed-branch-finder, but
+    // optional so a Content Source failure never blocks the steps below. Each
     // self-heals a corrupted source mapping (see scripts/_contentSource.ts).
     ["npx", ["tsx", "scripts/seed-quotes.ts"]],
-    ["npx", ["tsx", "scripts/seed-spotlights.ts"]],
     ["npx", ["tsx", "scripts/seed-locations.ts"]],
     ["npx", ["tsx", "scripts/seed-consultants.ts"]],
     ["npx", ["tsx", "scripts/seed-homepage-variations.ts"]],
