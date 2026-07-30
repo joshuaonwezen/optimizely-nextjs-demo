@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "@/lib/tracking";
+import { identifyCustomer } from "@/lib/tracking/customer";
 
 interface OptiFormsSubmitData {
   Label?: string | null;
@@ -26,6 +27,38 @@ export default function OptiFormsSubmit(props: OptiFormsSubmitProps) {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [successMessage, setSuccessMessage] = useState("Thank you! We'll be in touch soon.");
   const [debug, setDebug] = useState<DebugResult | null>(null);
+
+  const formStarted = useRef(false);
+  const formSubmitted = useRef(false);
+
+  // Fire mb_form_start on first field interaction within the form scope.
+  useEffect(() => {
+    const scope = ref.current?.closest("main") ?? document.body;
+    function onFocusIn() {
+      if (formStarted.current) return;
+      formStarted.current = true;
+      trackEvent("mb_form_start", { form: "opti_form" });
+    }
+    scope.addEventListener("focusin", onFocusIn);
+    return () => scope.removeEventListener("focusin", onFocusIn);
+  }, []);
+
+  // Fire mb_form_abandon when the visitor leaves without submitting.
+  useEffect(() => {
+    function onAbandon() {
+      if (!formStarted.current || formSubmitted.current) return;
+      trackEvent("mb_form_abandon", { form: "opti_form" });
+    }
+    function onVisibility() {
+      if (document.visibilityState === "hidden") onAbandon();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("beforeunload", onAbandon);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("beforeunload", onAbandon);
+    };
+  }, []);
 
   async function handleClick() {
     if (status === "submitting") return;
@@ -65,15 +98,19 @@ export default function OptiFormsSubmit(props: OptiFormsSubmitProps) {
         const responseData = await res.json().catch(() => ({}));
         if (showDebug) setDebug({ payload, response: responseData, httpStatus: res.status });
         setStatus("success");
-        trackEvent("mb_form_submit", { fields: Object.keys(payload).join(","), status: "success" });
+        formSubmitted.current = true;
+        trackEvent("mb_form_submit", { form: "opti_form", fields: Object.keys(payload).join(","), status: "success" });
+        if (payload.email) {
+          identifyCustomer({ email: payload.email });
+        }
         inputs.forEach((el) => { el.value = ""; });
       } else {
         setStatus("error");
-        trackEvent("mb_form_submit", { fields: Object.keys(payload).join(","), status: "error", httpStatus: res.status });
+        trackEvent("mb_form_submit", { form: "opti_form", fields: Object.keys(payload).join(","), status: "error", httpStatus: res.status });
       }
     } catch {
       setStatus("error");
-      trackEvent("mb_form_submit", { fields: Object.keys(payload).join(","), status: "error" });
+      trackEvent("mb_form_submit", { form: "opti_form", fields: Object.keys(payload).join(","), status: "error" });
     }
   }
 

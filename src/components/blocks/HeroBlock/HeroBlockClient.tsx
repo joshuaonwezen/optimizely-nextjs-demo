@@ -69,6 +69,7 @@ export function HeroBlockClient({
   return (
     <section
       data-component="HeroBlock"
+      data-track-view="HeroBlock"
       className={`w-screen ml-[calc(50%-50vw)] bg-gradient-brand relative flex items-center overflow-hidden ${isTall ? "min-h-screen" : "min-h-[640px]"}`}
     >
       {bgUrl && (

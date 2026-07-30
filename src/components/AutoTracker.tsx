@@ -29,6 +29,8 @@ export default function AutoTracker() {
   const timeMarks = useRef(new Set<number>());
   const pageStart = useRef(Date.now());
   const lastPath = useRef<string | null>(null);
+  // Tracks "elementKey:depthPct" pairs already fired to prevent repeat events.
+  const viewedMarks = useRef(new Set<string>());
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -48,6 +50,16 @@ export default function AutoTracker() {
         const href = anchor.getAttribute("href") ?? "";
         if (isOutbound(href)) {
           trackEvent("mb_outbound_click", { href, label: anchor.textContent?.trim().slice(0, 120) ?? "" });
+        }
+
+        // Nav click tracking: delegate from NavItems wrapper without modifying
+        // individual link elements in NavigationHeader.
+        const navWrapper = anchor.closest("[data-component='NavItems']");
+        if (navWrapper && !trackEl) {
+          const label = anchor.textContent?.trim().slice(0, 100) ?? "";
+          if (label && href && !href.startsWith("#")) {
+            trackEvent("mb_navigation_click", { nav_item: label, href });
+          }
         }
       }
     }
@@ -101,11 +113,48 @@ export default function AutoTracker() {
     };
   }, []);
 
+  // Component view tracking via IntersectionObserver on [data-track-view].
+  // Fires mb_feature_viewed at 50% and 100% visibility, at most once per
+  // threshold per element per page load. Uses a single observer with two
+  // thresholds — the browser batches these natively with no scroll overhead.
+  useEffect(() => {
+    const marks = viewedMarks.current;
+    const elements = document.querySelectorAll<HTMLElement>("[data-track-view]");
+    if (!elements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const el = entry.target as HTMLElement;
+          const component = el.getAttribute("data-track-view") ?? "unknown";
+          const label = el.getAttribute("data-track-label") ?? component;
+          // Use a stable key: component name + position in document.
+          const idx = Array.from(elements).indexOf(el);
+          const base = `${component}:${idx}`;
+
+          if (entry.intersectionRatio >= 0.5 && !marks.has(`${base}:50`)) {
+            marks.add(`${base}:50`);
+            trackEvent("mb_feature_viewed", { component, label, depth: 50 });
+          }
+          if (entry.intersectionRatio >= 1.0 && !marks.has(`${base}:100`)) {
+            marks.add(`${base}:100`);
+            trackEvent("mb_feature_viewed", { component, label, depth: 100 });
+          }
+        }
+      },
+      { threshold: [0.5, 1.0] }
+    );
+
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [pathname]);
+
   useEffect(() => {
     if (lastPath.current === pathname) return;
     lastPath.current = pathname;
     scrollMarks.current = new Set();
     timeMarks.current = new Set();
+    viewedMarks.current = new Set();
     pageStart.current = Date.now();
 
     if (pathname?.startsWith("/demo")) {

@@ -97,7 +97,7 @@ export default function CallToActionBlock(props: CallToActionProps) {
 
   if (isGhost) {
     return (
-      <div data-component="CallToActionBlock" className="py-12 text-center">
+      <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className="py-12 text-center">
         {(data.link || data.__context?.edit) && (
           <a
             href={data.__context?.edit ? undefined : (data.link ?? undefined)}
@@ -124,7 +124,7 @@ export default function CallToActionBlock(props: CallToActionProps) {
   const vs = VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.brand;
 
   return (
-    <div data-component="CallToActionBlock" className="py-12 text-center">
+    <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className="py-12 text-center">
       {(data.link || data.__context?.edit) && (
         <a
           href={data.__context?.edit ? undefined : (data.link ?? undefined)}

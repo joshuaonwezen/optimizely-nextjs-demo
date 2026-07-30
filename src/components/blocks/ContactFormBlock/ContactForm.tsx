@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { trackEvent } from "@/lib/tracking";
+import { useFormTracking } from "@/lib/tracking/useFormTracking";
+import { identifyCustomer } from "@/lib/tracking/customer";
 
 interface ContactFormBlockData {
   heading?: string | null;
@@ -22,6 +23,7 @@ export default function ContactForm(props: ContactFormProps) {
 
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [values, setValues] = useState({ full_name: "", email: "", message: "" });
+  const { formRef, trackSubmit } = useFormTracking("contact_form");
 
   function update(field: keyof typeof values) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -42,15 +44,21 @@ export default function ContactForm(props: ContactFormProps) {
       });
       if (res.ok) {
         setStatus("success");
-        trackEvent("mb_form_submit", { fields, status: "success" });
+        trackSubmit(fields, "success");
+        const nameParts = values.full_name.trim().split(/\s+/);
+        identifyCustomer({
+          email: values.email,
+          first_name: nameParts[0] ?? "",
+          last_name: nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined,
+        });
         setValues({ full_name: "", email: "", message: "" });
       } else {
         setStatus("error");
-        trackEvent("mb_form_submit", { fields, status: "error", httpStatus: res.status });
+        trackSubmit(fields, "error", { httpStatus: res.status });
       }
     } catch {
       setStatus("error");
-      trackEvent("mb_form_submit", { fields, status: "error" });
+      trackSubmit(fields, "error");
     }
   }
 
@@ -76,7 +84,7 @@ export default function ContactForm(props: ContactFormProps) {
           <p className="text-base mb-8 text-on-surface-variant">{data.intro}</p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="cf-full-name" className="block text-sm font-medium text-on-surface mb-2">
               Full name

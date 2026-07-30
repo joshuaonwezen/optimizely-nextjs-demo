@@ -727,6 +727,20 @@ All query strings and constant data belong at module level so the file is scanna
 
 Every component's outermost rendered element must have `data-component="ComponentName"` as its first attribute. This enables client-side scripts to target components reliably without coupling to class names (e.g. `document.querySelector('[data-component="HeroBlock"]')`). Apply it to all components in `src/components/` — blocks, layout, demo, pages, and experience. Skip components that render `null` or are effect-only.
 
+### `data-track-view` — component visibility tracking
+
+Add `data-track-view="ComponentName"` to the outermost rendered element of any block that is a significant content section (hero, CTA, product feature, pricing, etc.). `AutoTracker` observes all elements with this attribute via `IntersectionObserver` and fires `mb_feature_viewed` with `{ component, depth: 50 | 100 }` at 50% and 100% visibility thresholds. Each fires at most once per element per page load — no spam, no scroll listener overhead.
+
+```tsx
+<section
+  data-component="MyBlock"
+  data-track-view="MyBlock"
+  className="..."
+>
+```
+
+Place it on the same element as `data-component`. Skip it on utility/layout components (navigation, footer, wrappers) and on components that render `null` or are effect-only.
+
 ### Em dashes in prose and code comments
 Do not use em dashes (`—`) anywhere in the demo pages: prose, JSX text, code snippet strings, or code comments. Use a regular hyphen with spaces (` - `) instead. Em dashes read as an AI-generation artifact.
 
