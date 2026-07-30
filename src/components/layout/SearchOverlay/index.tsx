@@ -8,6 +8,7 @@ interface SearchResult {
   title:    string;
   url:      string;
   score:    number;
+  pinned:   boolean;
   trackUrl: string | null;
 }
 
@@ -164,22 +165,35 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
                       onClose();
                       if (r.trackUrl) fetch(r.trackUrl, { method: "GET", mode: "no-cors", keepalive: true }).catch(() => {});
                     }}
-                    className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-surface-low transition-colors group"
+                    className={`flex items-center justify-between gap-4 px-5 py-3 transition-colors group ${
+                      r.pinned
+                        ? "bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20"
+                        : "hover:bg-surface-low"
+                    }`}
                   >
-                    <div>
-                      <div className="text-sm font-medium text-on-surface group-hover:text-brand transition-colors">
-                        {r.title}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-on-surface group-hover:text-brand transition-colors truncate">
+                          {r.title}
+                        </span>
+                        {r.pinned && (
+                          <span className="shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-medium uppercase tracking-wide px-2 py-0.5">
+                            Pinned
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-on-surface-variant mt-0.5 truncate max-w-md">
                         {r.url}
                       </div>
                     </div>
-                    <span className="shrink-0 text-xs tabular-nums text-on-surface-variant opacity-60 text-right">
-                      <span className="block">{r.score.toFixed(2)}</span>
-                      <span className="block text-[10px] uppercase tracking-wide">
-                        {mode === "semantic" ? "similarity" : "BM25"}
+                    {!r.pinned && (
+                      <span className="shrink-0 text-xs tabular-nums text-on-surface-variant opacity-60 text-right">
+                        <span className="block">{r.score.toFixed(2)}</span>
+                        <span className="block text-[10px] uppercase tracking-wide">
+                          {mode === "semantic" ? "similarity" : "BM25"}
+                        </span>
                       </span>
-                    </span>
+                    )}
                   </Link>
                 </li>
               ))}

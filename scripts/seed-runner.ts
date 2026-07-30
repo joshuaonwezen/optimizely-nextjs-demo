@@ -94,6 +94,10 @@ async function main() {
     // are missing). Must run before seed-localization so nl versions cover it.
     ["npx", ["tsx", "scripts/seed-footer.ts"]],
     ["npx", ["tsx", "scripts/seed-settings.ts"]],
+    // Search relevance (pinned results + synonyms). Resolves pin targets by URL
+    // from Graph, so it needs the pages above indexed (~60s lag on a fresh seed;
+    // re-run individually if pins are skipped). Cleans up old config each run.
+    ["npx", ["tsx", "scripts/seed-search-config.ts"]],
     // Last: needs every page above to be in Graph already (~60s indexing lag on
     // a fresh seed - re-run individually if many items are skipped/failed).
     // Opt-in only (see `localize` above); the child inherits SEED_LOCALIZE via env.
