@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback, useRef } from "react";
 
-type SearchResult = { title: string; url: string; score: number; trackUrl: string | null };
+type SearchResult = { title: string; url: string; score: number; pinned: boolean; trackUrl: string | null };
 
 export default function SearchDemo() {
   const [query, setQuery] = useState("");
@@ -76,19 +76,35 @@ export default function SearchDemo() {
       {results.length > 0 && (
         <ul className="space-y-2 divide-y divide-ghost-border">
           {results.map((r) => (
-            <li key={r.url} className="flex items-center justify-between gap-4 pt-2 first:pt-0 text-sm">
-              <a
-                href={r.url}
-                className="text-brand hover:underline truncate"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (r.trackUrl) fetch(r.trackUrl, { method: "GET", mode: "no-cors", keepalive: true }).catch(() => {});
-                  window.location.href = r.url;
-                }}
-              >{r.title}</a>
-              <span className="text-xs font-mono text-on-surface-variant shrink-0">
-                {r.score.toFixed(3)}
-              </span>
+            <li
+              key={r.url}
+              className={`flex items-center justify-between gap-4 pt-2 first:pt-0 text-sm${
+                r.pinned
+                  ? " -mx-3 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 ring-1 ring-amber-300/40"
+                  : ""
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <a
+                  href={r.url}
+                  className="text-brand hover:underline truncate"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (r.trackUrl) fetch(r.trackUrl, { method: "GET", mode: "no-cors", keepalive: true }).catch(() => {});
+                    window.location.href = r.url;
+                  }}
+                >{r.title}</a>
+                {r.pinned && (
+                  <span className="shrink-0 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-medium uppercase tracking-wide px-2 py-0.5">
+                    Pinned
+                  </span>
+                )}
+              </div>
+              {!r.pinned && (
+                <span className="text-xs font-mono text-on-surface-variant shrink-0">
+                  {r.score.toFixed(3)}
+                </span>
+              )}
             </li>
           ))}
         </ul>

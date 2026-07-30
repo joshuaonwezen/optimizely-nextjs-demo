@@ -2,9 +2,10 @@ export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
   query SearchRelevance($query: String!, $locale: [Locales]) {
     _Content(
       locale: $locale
-      where: { _fulltext: { match: $query } }
+      where: { _fulltext: { match: $query, synonyms: [ONE] } }
       orderBy: { _ranking: RELEVANCE }
       limit: 10
+      pinned: { phrase: $query }
       tracking: { phrase: $query, source: "/search" }
     ) {
       total
@@ -72,9 +73,10 @@ export const SEARCH_SEMANTIC_QUERY = /* GraphQL */ `
   query SearchSemantic($query: String!, $weight: Float!, $locale: [Locales]) {
     _Content(
       locale: $locale
-      where: { _fulltext: { match: $query } }
+      where: { _fulltext: { match: $query, synonyms: [ONE] } }
       orderBy: { _ranking: SEMANTIC, _semanticWeight: $weight }
       limit: 10
+      pinned: { phrase: $query }
       tracking: { phrase: $query, source: "/search" }
     ) {
       total

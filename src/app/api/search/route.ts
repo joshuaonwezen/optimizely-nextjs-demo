@@ -8,6 +8,10 @@ import {
 
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 
+// Pinned results carry a _score boosted by 2^32-1 (~4.29e9); organic scores stay
+// in the hundreds/thousands. 1e9 is an unambiguous cutoff for flagging a pinned hit.
+const PINNED_SCORE_THRESHOLD = 1_000_000_000;
+
 function listParam(value: string | null): string[] | null {
   const parsed = value?.split(",").map((v) => v.trim()).filter(Boolean) ?? [];
   return parsed.length > 0 ? parsed : null; // null = Graph ignores the filter
@@ -39,15 +43,19 @@ export async function GET(request: NextRequest) {
 
     const items = (raw.items ?? [])
       .filter((item: any) => item?._metadata?.displayName && item?._metadata?.url?.default)
-      .map((item: any) => ({
-        title:    item._metadata.displayName as string,
-        url:      item._metadata.url.default as string,
-        score:    (item._score as number | null | undefined) ?? 0,
-        trackUrl: (() => {
-          const t = item._track as string | null | undefined;
-          return t && SINGLE_KEY ? `${t}&auth=${SINGLE_KEY}` : (t ?? null);
-        })(),
-      }));
+      .map((item: any) => {
+        const score = (item._score as number | null | undefined) ?? 0;
+        return {
+          title:    item._metadata.displayName as string,
+          url:      item._metadata.url.default as string,
+          score,
+          pinned:   score >= PINNED_SCORE_THRESHOLD,
+          trackUrl: (() => {
+            const t = item._track as string | null | undefined;
+            return t && SINGLE_KEY ? `${t}&auth=${SINGLE_KEY}` : (t ?? null);
+          })(),
+        };
+      });
 
     return NextResponse.json({ total: raw.total ?? items.length, items });
   } catch (error) {
