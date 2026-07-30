@@ -27,22 +27,23 @@ const PIN_COLLECTION = { title: "Search Demo Pins", key: "search-demo", isActive
 // matches. Targets are resolved to the current content key by URL, so these
 // survive a reseed.
 //
-// A collection holds at most 20 pinned items (Graph caps it; a 21st silently
-// evicts the oldest), so keep the total phrase count <= 20.
+// Curated around INTENT: a pin only earns its slot when the target is reachable
+// in the fulltext results but does NOT already rank #1 (pinning a term that
+// already returns its same-named page is pointless). Half are intent queries
+// that don't name the page (fees->Pricing, borrow->Loans, lost card->Security);
+// half are product hubs that rank poorly organically (demo pages/articles
+// outrank them). A collection caps at 20 items, so stay well under.
 const PIN_RULES: Array<{ phrases: string[]; url: string }> = [
-  { phrases: ["pricing"], url: "/business/pricing/" },
-  { phrases: ["mortgage", "mortgages"], url: "/mortgage/" },
+  { phrases: ["fees"], url: "/business/pricing/" },
+  { phrases: ["borrow"], url: "/personal/loans/" },
+  { phrases: ["first home"], url: "/mortgage/" },
+  { phrases: ["invest"], url: "/investments/stocks-isa/" },
+  { phrases: ["lost card"], url: "/help/security/" },
   { phrases: ["savings"], url: "/personal/savings/" },
-  { phrases: ["credit card", "credit cards"], url: "/personal/credit-cards/" },
-  { phrases: ["pension", "pensions"], url: "/investments/pensions/" },
-  { phrases: ["support", "help"], url: "/help/" },
-  { phrases: ["contact"], url: "/help/contact/" },
-  { phrases: ["security", "fraud"], url: "/help/security/" },
-  { phrases: ["mobile app", "app"], url: "/personal/current-account/mobile-app/" },
-  { phrases: ["overdraft"], url: "/personal/overdrafts/" },
-  { phrases: ["loan", "loans"], url: "/personal/loans/" },
-  { phrases: ["isa"], url: "/investments/stocks-isa/" },
   { phrases: ["current account"], url: "/personal/current-account/" },
+  { phrases: ["credit card"], url: "/personal/credit-cards/" },
+  { phrases: ["contact"], url: "/help/contact/" },
+  { phrases: ["branches"], url: "/help/branches/" },
 ];
 
 // Bidirectional synonym groups, slot one (one rule per line). PUT replaces the
@@ -149,13 +150,20 @@ async function addPin(auth: string, collectionId: string, phrases: string, targe
 }
 
 async function setSynonyms(auth: string): Promise<void> {
-  const res = await fetch(`${GRAPH_BASE}/resources/synonyms`, {
-    method: "PUT",
-    headers: { "Content-Type": "text/plain", Authorization: auth },
-    body: SYNONYMS.join("\n"),
-  });
-  if (!res.ok) throw new Error(`Set synonyms failed: ${res.status} ${await res.text()}`);
-  console.log(`  set ${SYNONYMS.length} synonym rule(s)`);
+  // Synonyms are stored per language_routing. Content here is locale `en`, so
+  // synonyms MUST be written under `language_routing=en` to apply to `en`
+  // queries - the default `standard` routing means "no locale" and is a no-op
+  // for localized content. Write both so non-locale queries also benefit.
+  const body = SYNONYMS.join("\n");
+  for (const routing of ["en", "standard"]) {
+    const res = await fetch(`${GRAPH_BASE}/resources/synonyms?language_routing=${routing}`, {
+      method: "PUT",
+      headers: { "Content-Type": "text/plain", Authorization: auth },
+      body,
+    });
+    if (!res.ok) throw new Error(`Set synonyms (${routing}) failed: ${res.status} ${await res.text()}`);
+  }
+  console.log(`  set ${SYNONYMS.length} synonym rule(s) (routing: en + standard)`);
 }
 
 async function main(): Promise<void> {

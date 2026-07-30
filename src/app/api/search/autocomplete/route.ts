@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       tags:  result.data?.ArticlePage?.autocomplete?.tags ?? [],
-      paths: result.data?._Content?.autocomplete?._metadata?.url?.default ?? [],
+      paths: result.data?.SEO?.autocomplete?._metadata?.url?.default ?? [],
     });
   } catch (error) {
     console.error("[Autocomplete] Query failed:", error);

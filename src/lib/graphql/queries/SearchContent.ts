@@ -1,6 +1,6 @@
 export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
   query SearchRelevance($query: String!, $locale: [Locales]) {
-    _Content(
+    SEO(
       locale: $locale
       where: { _fulltext: { match: $query, synonyms: [ONE] } }
       orderBy: { _ranking: RELEVANCE }
@@ -59,7 +59,7 @@ export const AUTOCOMPLETE_QUERY = /* GraphQL */ `
         tags(limit: 5, value: $value)
       }
     }
-    _Content {
+    SEO {
       autocomplete {
         _metadata {
           url { default(limit: 6, value: $value) }
@@ -71,7 +71,7 @@ export const AUTOCOMPLETE_QUERY = /* GraphQL */ `
 
 export const SEARCH_SEMANTIC_QUERY = /* GraphQL */ `
   query SearchSemantic($query: String!, $weight: Float!, $locale: [Locales]) {
-    _Content(
+    SEO(
       locale: $locale
       where: { _fulltext: { match: $query, synonyms: [ONE] } }
       orderBy: { _ranking: SEMANTIC, _semanticWeight: $weight }
