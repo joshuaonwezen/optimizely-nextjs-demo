@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getQuotes, GET_QUOTES_QUERY } from "@/lib/graphql/queries/GetQuotes";
 import { getQuoteBlocks, GET_QUOTE_BLOCKS_QUERY } from "@/lib/graphql/queries/GetQuoteBlocks";
 import { GET_LOCATIONS_QUERY } from "@/lib/graphql/queries/GetLocations";
@@ -165,7 +166,16 @@ export default async function ExternalContentPage() {
     <>
       <DemoHero
         title="External Content Sync"
-        description="Push any external data source directly into Optimizely Graph without touching the CMS. Define a schema once via the Content Source sync API, send NdJSON over HTTP, and your data is instantly queryable alongside CMS-managed content - same GraphQL endpoint, same ISR caching."
+        description={
+          <>
+            Push any external data source directly into Optimizely Graph without touching the CMS.
+            Define a schema once via the Content Source sync API, send NdJSON over HTTP, and your
+            data is instantly queryable alongside CMS-managed content - same GraphQL endpoint, same
+            ISR caching. When the CMS itself is the source of truth, push into the CMS instead so
+            editors can edit it - see{" "}
+            <Link href="/demo/management-api" className="underline hover:no-underline">Management API</Link>.
+          </>
+        }
       >
         <div className="flex flex-wrap gap-3 mt-8">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
@@ -184,6 +194,120 @@ export default async function ExternalContentPage() {
       </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
+
+        {/* Two ingestion paths - orientation */}
+        <section id="two-paths">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Two Ways In - CMS-native vs External <a href="#two-paths" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
+            There are two ways to make data queryable in Optimizely Graph, and they are not
+            interchangeable. Both end up on the same GraphQL endpoint, but they differ in{" "}
+            <strong className="text-on-surface">who owns the data and whether editors can edit it</strong>.
+            Choose based on where the source of truth lives - not on which API is easier to call.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+
+            {/* Push into the CMS - editable */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden flex flex-col">
+              <div className="px-6 py-4 border-b border-ghost-border flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-display font-semibold text-on-surface">Push into the CMS</h3>
+                  <p className="text-xs text-on-surface-variant">Management API / Visual Builder</p>
+                </div>
+                <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-md bg-brand/10 text-brand text-xs font-medium whitespace-nowrap">
+                  Editable · CMS-native
+                </span>
+              </div>
+              <div className="p-6 flex flex-col gap-4 flex-1">
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  The content is authored via the Management API (<code className="bg-surface-low px-1 rounded font-mono text-xs">v1/content</code>)
+                  or directly in Visual Builder, and lives entirely inside the CMS. Editors own it
+                  and can change any field.
+                </p>
+                <ul className="space-y-1.5 text-sm text-on-surface-variant">
+                  {[
+                    "Editors author and edit every field",
+                    "Draft / review / publish lifecycle",
+                    "Preview mode - CMS inline edit + preview",
+                    "FX experiment targeting via CMS Variations",
+                    "Per-locale values on isLocalized fields",
+                  ].map((point) => (
+                    <li key={point} className="flex items-start gap-2">
+                      <span className="text-brand shrink-0">→</span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="bg-surface-low rounded-xl p-3 text-xs text-on-surface-variant mt-auto">
+                  <strong className="text-on-surface">Use when the CMS is the source of truth.</strong>{" "}
+                  See <Link href="/demo/management-api" className="text-brand hover:underline">Management API ↗</Link>{" "}
+                  for the seeding and authoring workflow.
+                </div>
+              </div>
+            </div>
+
+            {/* Push into Graph - read-only */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden flex flex-col">
+              <div className="px-6 py-4 border-b border-ghost-border flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-display font-semibold text-on-surface">Push into Graph</h3>
+                  <p className="text-xs text-on-surface-variant">Content Source API - this page</p>
+                </div>
+                <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-md bg-surface-low text-on-surface-variant text-xs font-medium whitespace-nowrap">
+                  Read-only · External
+                </span>
+              </div>
+              <div className="p-6 flex flex-col gap-4 flex-1">
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  Data is pushed straight into Graph via the Content Source API. The external system
+                  owns every field; the CMS surfaces it as a read-only connected type that editors
+                  can browse and reference but cannot edit.
+                </p>
+                <ul className="space-y-1.5 text-sm text-on-surface-variant">
+                  {[
+                    "Source system owns every field",
+                    "Not editable in the CMS",
+                    "Browse and reference via Connect from Graph",
+                    "No draft/publish, preview, or FX targeting",
+                    "Re-sync from the source to update",
+                  ].map((point) => (
+                    <li key={point} className="flex items-start gap-2">
+                      <span className="text-brand shrink-0">→</span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="bg-surface-low rounded-xl p-3 text-xs text-on-surface-variant mt-auto">
+                  <strong className="text-on-surface">Use only when the source of truth is another
+                  system</strong> - CRM, PIM, commerce, or DAM. This is the path the rest of this
+                  page documents.
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Decision rule */}
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex items-start gap-4">
+            <div className="shrink-0 w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+              <span className="text-brand font-bold text-sm">?</span>
+            </div>
+            <div>
+              <p className="font-display font-semibold text-on-surface text-sm mb-1">
+                Rule of thumb - pick by where the source of truth lives
+              </p>
+              <p className="text-sm text-on-surface-variant leading-relaxed">
+                If editors need to create or change the content, or it has no home outside
+                Optimizely, push it into the CMS. Reach for the Content Source API only when a
+                separate system already owns the data and the CMS just needs to reference it.
+                For the full capability breakdown, see{" "}
+                <a href="#cms-native-vs-external" className="text-brand hover:underline">CMS-native vs External Content ↓</a>.
+              </p>
+            </div>
+          </div>
+        </section>
 
         {/* Live quote cards */}
         <section id="live-example">
@@ -245,10 +369,12 @@ export default async function ExternalContentPage() {
             <a href="#sync-paths" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            Three paths exist for pushing external data into Optimizely Graph. All three end up in
+            Three paths push external data straight into Optimizely Graph. All three end up in
             the same place - data queryable via GraphQL alongside CMS content - but differ in
             who owns the pipeline, whether scheduling is managed, and what third-party tooling
-            is involved.
+            is involved. When the content is something the CMS itself should own, use the fourth
+            method - Direct to CMS - instead: you author it in the CMS and it is published to Graph
+            for you, fully editable.
           </p>
 
           {/* CMS connection note */}
@@ -258,7 +384,7 @@ export default async function ExternalContentPage() {
             </div>
             <div>
               <p className="font-display font-semibold text-on-surface text-sm mb-1">
-                Connecting to CMS - same step for every path
+                Connecting to CMS - same step for every external path
               </p>
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 Once data is in Graph, wire it to CMS via{" "}
@@ -267,7 +393,8 @@ export default async function ExternalContentPage() {
                 and the fields to use as the content ID and display name. CMS creates a read-only
                 connected content type editors can reference and browse in the Content Manager.
                 Note: the label is <em>Connect from Graph</em>, not "Import from Graph" - a common
-                source of confusion in the UI.
+                source of confusion in the UI. The Direct to CMS method below skips this entirely -
+                that content is already native CMS content.
               </p>
             </div>
           </div>
@@ -426,6 +553,54 @@ export default async function ExternalContentPage() {
               </div>
             </div>
 
+            {/* Direct to CMS - editable, not a Graph-ingestion path */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden flex flex-col">
+              <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-brand/10 flex items-center justify-center text-brand text-sm font-bold shrink-0">✎</span>
+                <div>
+                  <h3 className="font-display font-semibold text-on-surface">Direct to CMS</h3>
+                  <p className="text-xs text-on-surface-variant">Management API - editable CMS-native content</p>
+                </div>
+              </div>
+              <div className="p-6 flex flex-col gap-4 flex-1">
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  Skip Graph and push into the CMS itself. Create the item with{" "}
+                  <code className="bg-surface-low px-1 rounded font-mono text-xs">POST /v1/content</code>{" "}
+                  on the Management API (field values wrapped as{" "}
+                  <code className="bg-surface-low px-1 rounded font-mono text-xs">PropertyData</code>), then
+                  publish it via the versions publish endpoint - or author it directly in Visual Builder.
+                  The CMS owns the item and publishes it into Graph for you, so it lands on the same
+                  GraphQL endpoint as everything else.
+                </p>
+                <div className="space-y-1.5 text-xs">
+                  {[
+                    ["Schema", "CMS content types"],
+                    ["Data", "Authored in the CMS"],
+                    ["Sync", "CMS publishes to Graph"],
+                    ["Infra you own", "None - CMS-managed"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-center gap-2">
+                      <span className="text-on-surface-variant w-20 shrink-0">{label}</span>
+                      <span className="bg-surface-low rounded px-2 py-0.5 font-mono text-on-surface">{value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-surface-low rounded-xl p-3 text-xs text-on-surface-variant">
+                  <strong className="text-on-surface">Best for:</strong> Content the CMS should own -
+                  editors create and edit it, and it needs a draft/publish lifecycle, preview, or FX
+                  targeting. Unlike the paths above, this content is fully editable and never goes
+                  through Connect from Graph.
+                </div>
+                <div className="text-xs text-on-surface-variant mt-auto">
+                  <p>
+                    See{" "}
+                    <Link href="/demo/management-api" className="text-brand hover:underline">Management API ↗</Link>{" "}
+                    for the full content-creation workflow - endpoints, payload shape, and publishing.
+                  </p>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* Recommendation matrix */}
@@ -439,6 +614,7 @@ export default async function ExternalContentPage() {
                 ["Using Bynder, Brandfolder, Commercetools, Shopify, or WordPress", "Path 2", "Public app handles auth, schema, and field mapping"],
 ["Want managed scheduling + staging layer, paid tier acceptable", "Path 3", "Confirm pricing with CSM before scoping"],
                 ["Free OCP tier + scheduled (not real-time) syncs from source", "Path 1 or 3", "Free tier only supports real-time push - scheduled source syncs are paid-only"],
+                ["Content the CMS should own and editors need to edit", "Direct to CMS", "Authored via the Management API or Visual Builder - editable, not read-only"],
               ] as [string, string, string][]).map(([situation, path, note]) => (
                 <div key={situation} className="px-6 py-4 flex items-start justify-between gap-6">
                   <div className="flex-1">
@@ -590,10 +766,23 @@ export default async function ExternalContentPage() {
               Data pushed via the Content Source API lands in Graph as <strong className="text-on-surface">read-only external content</strong>.
               Editors can browse and reference it in the CMS via{" "}
               <strong className="text-on-surface">Admin - Content Types - Connect from Graph</strong>,
-              but they cannot edit the fields - the source system owns the data.
-              CMS-native content (created via the Management API or Visual Builder) lives entirely
-              inside the CMS: editors author it, it has a draft/publish lifecycle, preview mode works,
-              and it can be targeted by FX experiments.
+              but they cannot edit the fields - the source system owns the data, and the only way to
+              change it is to re-sync from that system.
+            </p>
+            <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed mt-3">
+              <strong className="text-on-surface">CMS-native content is the editable alternative.</strong>{" "}
+              Instead of pushing into Graph, you push directly into the CMS - either through the
+              Management API (<code className="bg-surface-low px-1 rounded text-xs font-mono">POST /v1/content</code>,
+              as the seed scripts do) or by authoring in Visual Builder. The result is a real CMS
+              content item, not a connected external type: it carries a{" "}
+              <strong className="text-on-surface">draft - review - publish lifecycle</strong>, is
+              editable field-by-field in the Content Manager, works in preview mode, can be targeted
+              by FX experiments through CMS Variations, and holds per-locale values on{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">isLocalized</code> fields.
+              It is still queryable through the same Graph endpoint - the CMS publishes it into Graph
+              for you. The live grids below contrast both: external quotes pushed via the Content
+              Source API against CMS-native <code className="bg-surface-low px-1 rounded text-xs font-mono">QuoteBlock</code>{" "}
+              items you can open and edit in the CMS.
             </p>
           </div>
 

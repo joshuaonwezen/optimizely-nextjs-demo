@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
+import Link from "next/link";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import SectionAnchor from "@/components/demo/SectionAnchor";
@@ -19,29 +20,6 @@ const authTs = fs.readFileSync(
 export const metadata: Metadata = {
   title: "Management API & Content Seeding",
 };
-
-const TWO_PLANES_SNIPPET = `# The two API surfaces in Optimizely SaaS CMS
-#
-# ┌─────────────────────────────────────────────────────────┐
-# │  Optimizely Graph (GraphQL read API)                    │
-# │  Endpoint: https://cg.optimizely.com/content/v2        │
-# │  Auth:     epi-single <GRAPH_SINGLE_KEY>               │
-# │  Caching:  CDN-cached, ISR-friendly                    │
-# │  Purpose:  Content delivery - what your visitors see   │
-# └─────────────────────────────────────────────────────────┘
-#
-# ┌─────────────────────────────────────────────────────────┐
-# │  Management API (REST write API)                        │
-# │  Endpoint: https://<your-cms>.cms.optimizely.com       │
-# │            /preview3/experimental/content              │
-# │  Auth:     OAuth2 Bearer token (client_credentials)   │
-# │  Caching:  None - always authoritative                 │
-# │  Purpose:  Content creation, update, publish, delete   │
-# └─────────────────────────────────────────────────────────┘
-#
-# Graph = read. Management API = write.
-# They talk to the same CMS data - Graph reflects what the Management API creates.
-# After writing via the Management API, wait for Graph to sync (usually <10s).`;
 
 const TOKEN_SNIPPET = `// src/lib/optimizely/auth.ts
 //
@@ -64,9 +42,8 @@ const res = await fetch(\`\${CONTENT_ENDPOINT}/my-key\`, {
   cache: "no-store",
 });
 
-// CONTENT_ENDPOINT:
-const CONTENT_ENDPOINT =
-  \`\${process.env.OPTIMIZELY_CMS_URL}/preview3/experimental/content\`;`;
+// CONTENT_ENDPOINT (fixed host - same base as the OAuth token endpoint):
+const CONTENT_ENDPOINT = "https://api.cms.optimizely.com/v1/content";`;
 
 const CREATE_TYPE_SNIPPET = `// Create or update a content type via the Management API.
 // PUT is idempotent - safe to re-run in CI/CD pipelines.
@@ -97,13 +74,13 @@ await fetch(\`\${CMS_URL}/api/content/v3/types\`, {
 // useful when types are generated dynamically from an external schema.`;
 
 const CREATE_CONTENT_SNIPPET = `// Create a content item via the Management API.
-// POST to /preview3/experimental/content
+// POST to https://api.cms.optimizely.com/v1/content
 //
 // The body is a plain JSON object with a "locale" key and the content properties.
 // Use the { reference: "cms://content/<key>" } format for content area items.
 
 const token    = await getManagementToken();
-const ENDPOINT = \`\${process.env.OPTIMIZELY_CMS_URL}/preview3/experimental/content\`;
+const ENDPOINT = "https://api.cms.optimizely.com/v1/content";
 
 const res = await fetch(ENDPOINT, {
   method: "POST",
@@ -132,34 +109,7 @@ const res = await fetch(ENDPOINT, {
 
 const { key } = await res.json();  // key = "abc123" - the new item's CMS key`;
 
-const NDJSON_SNIPPET = `// Bulk import via NdJSON - POST /api/content/v2/data
-// Each line is one JSON object. No trailing commas, no arrays, no pretty-printing.
-//
-// This is the Content Source API format - used for external data (quotes, products, etc.)
-// NOT the Management API for CMS pages. Two different endpoints.
-
-// Build the NdJSON payload:
-const items = [
-  { locale: "en", key: "quote-1", properties: { quote: "Great rates.", authorName: "Alice" } },
-  { locale: "en", key: "quote-2", properties: { quote: "Easy setup.",  authorName: "Bob"   } },
-];
-
-const ndjson = items.map((i) => JSON.stringify(i)).join("\\n");  // ← never pretty-print
-
-await fetch(\`https://cg.optimizely.com/api/content/v2/data\`, {
-  method: "POST",
-  headers: {
-    Authorization:  \`Basic \${btoa(\`\${GRAPH_APP_KEY}:\`)}\`,   // note trailing colon
-    "Content-Type": "application/x-ndjson",
-  },
-  body: ndjson,
-  cache: "no-store",
-});
-
-// ✓ After sync (~5s), items appear in Graph:
-// { QuoteBlock { items { quote authorName } } }`;
-
-const UPDATE_PUBLISH_SNIPPET = `// Updating and publishing an existing content item.
+const UPDATE_PUBLISH_SNIPPET =`// Updating and publishing an existing content item.
 // PATCH the item by key - only send the fields you want to change.
 
 const token = await getManagementToken();
@@ -205,42 +155,66 @@ export default function ManagementApiDemoPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Optimizely SaaS CMS exposes two distinct API surfaces. <strong>Optimizely Graph</strong> is
             the GraphQL read API used by the Next.js app to deliver content to visitors - CDN-cached,
-            efficient, and read-only. The <strong>Management API</strong> is the REST write API used
-            by developers and scripts to create, update, and publish content - never cached, always
-            authoritative. They talk to the same underlying data store.
+            efficient, and read-only for CMS content. The <strong>Management API</strong> is the REST
+            write API used by developers and scripts to create, update, and publish content - never
+            cached, always authoritative. They talk to the same underlying data store.
           </p>
 
-          <CodeBlock code={TWO_PLANES_SNIPPET} label="Graph (read) vs. Management API (write)" />
-
-          <div className="grid md:grid-cols-2 gap-4 mt-6">
+          <div className="grid md:grid-cols-2 gap-4">
             {[
               {
                 label: "Optimizely Graph",
+                pill: "READ",
+                pillClass: "bg-surface-low text-on-surface-variant",
                 auth: "epi-single <GRAPH_SINGLE_KEY>",
                 format: "GraphQL",
                 caching: "CDN-cached, ISR-friendly",
                 use: "Content delivery - page rendering, search, navigation",
-                color: "border-green-200",
               },
               {
                 label: "Management API",
+                pill: "WRITE",
+                pillClass: "bg-brand/10 text-brand",
                 auth: "Bearer <OAuth2 token>",
                 format: "REST JSON / NdJSON",
                 caching: "No caching - always fresh",
                 use: "Content creation, update, publish, delete, type registration",
-                color: "border-blue-200",
               },
-            ].map(({ label, auth, format, caching, use, color }) => (
-              <div key={label} className={`bg-surface-lowest border rounded-2xl p-5 ${color}`}>
-                <p className="text-sm font-semibold text-on-surface mb-3">{label}</p>
+            ].map(({ label, pill, pillClass, auth, format, caching, use }) => (
+              <div key={label} className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <p className="text-sm font-semibold text-on-surface">{label}</p>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono font-semibold ${pillClass}`}>
+                    {pill}
+                  </span>
+                </div>
                 <div className="space-y-2 text-xs text-on-surface-variant">
-                  <p><span className="font-medium">Auth: </span><code className="bg-surface px-1 rounded font-mono">{auth}</code></p>
+                  <p><span className="font-medium">Auth: </span><code className="bg-surface-low px-1 rounded font-mono">{auth}</code></p>
                   <p><span className="font-medium">Format: </span>{format}</p>
                   <p><span className="font-medium">Caching: </span>{caching}</p>
                   <p><span className="font-medium">Use for: </span>{use}</p>
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 mt-4 flex items-start gap-4">
+            <div className="shrink-0 w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+              <span className="text-brand font-bold text-sm">!</span>
+            </div>
+            <div>
+              <p className="font-display font-semibold text-on-surface text-sm mb-1">
+                One exception - you can write to Graph, but only for external sources
+              </p>
+              <p className="text-sm text-on-surface-variant leading-relaxed">
+                Graph is read-only for content the CMS owns, but external-source data (product
+                reviews, quotes, third-party feeds) can be written <em>directly</em> into Graph via
+                the <strong>Content Source API</strong> - it never touches the CMS. See the{" "}
+                <a href="#ndjson" className="text-brand hover:underline">bulk import section below ↓</a>{" "}
+                and the{" "}
+                <Link href="/demo/external-content" className="text-brand hover:underline">External Content demo →</Link>.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -285,7 +259,7 @@ export default function ManagementApiDemoPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             POST a JSON body to{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">/preview3/experimental/content</code>{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">/v1/content</code>{" "}
             to create a new content item. Include{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">status: &quot;published&quot;</code> to
             publish immediately, or omit it to create a draft. Content area items <strong>must</strong> use
@@ -297,7 +271,7 @@ export default function ManagementApiDemoPage() {
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
-            <CodeBlock code={CREATE_CONTENT_SNIPPET} label="POST /preview3/experimental/content - create a page" />
+            <CodeBlock code={CREATE_CONTENT_SNIPPET} label="POST /v1/content - create a page" />
             <CodeBlock code={UPDATE_PUBLISH_SNIPPET} label="PATCH - update fields and publish" />
           </div>
         </section>
@@ -311,14 +285,15 @@ export default function ManagementApiDemoPage() {
             The <strong>Content Source API</strong> is a different endpoint from the Management API -
             it accepts NdJSON (newline-delimited JSON) for bulk syncing external data directly into
             Graph. Use it for data that originates outside the CMS (product reviews, quotes,
-            third-party articles). Each line must be a valid JSON object - no trailing commas, no
-            arrays, never pretty-printed.
+            third-party articles). The{" "}
+            <Link href="/demo/external-content" className="text-brand hover:underline">External Content demo →</Link>{" "}
+            covers the NdJSON format, base-type contracts, and sync paths in full; the table below
+            shows how it sits next to the Management API and the CLI.
           </p>
-          <CodeBlock code={NDJSON_SNIPPET} label="NdJSON bulk sync to Graph via Content Source API" />
 
-          <div className="grid md:grid-cols-3 gap-4 mt-6">
+          <div className="grid md:grid-cols-3 gap-4">
             {[
-              { label: "Management API", endpoint: "/preview3/experimental/content", use: "CMS-managed pages, blocks, experiences. Full editorial lifecycle.", auth: "OAuth2 Bearer" },
+              { label: "Management API", endpoint: "/v1/content", use: "CMS-managed pages, blocks, experiences. Full editorial lifecycle.", auth: "OAuth2 Bearer" },
               { label: "Content Source API", endpoint: "/api/content/v2/data", use: "External data synced into Graph. Queryable alongside CMS content.", auth: "Basic (GRAPH_APP_KEY:)" },
               { label: "opti:push (CLI)", endpoint: "npm run opti:push", use: "Content type registration from TypeScript definitions. Run in CI.", auth: "CLIENT_ID + CLIENT_SECRET env vars" },
             ].map(({ label, endpoint, use, auth }) => (
@@ -378,17 +353,24 @@ export default function ManagementApiDemoPage() {
             Reseed this CMS instance
             <SectionAnchor id="seed-cms" label="#" />
           </h2>
-          <p className="text-sm text-on-surface-variant leading-relaxed max-w-3xl">
-            Use this to seed a fresh CMS instance or reseed an existing one without leaving the
-            browser. It runs the full seed orchestration (npx tsx scripts/seed-runner.ts) on the
-            server and streams its output live. Pick a stored instance from the dropdown to have
-            its credentials resolved server-side from .env.local, or choose no instance to enter
-            values manually - manual fields left blank fall back to the values in
-            .env.local. The client ID and secret must be a content API
-            key with write access (Settings → API Keys) - CLI-only credentials fail at the config
-            push and content creation steps. Available in local development only; the API route
-            returns 403 in production builds.
+          <p className="text-sm text-on-surface-variant leading-relaxed max-w-3xl mb-4">
+            Seed a fresh CMS instance or reseed an existing one without leaving the browser. It runs
+            the full seed orchestration (<code className="bg-surface-low px-1 rounded font-mono text-xs">npx tsx scripts/seed-runner.ts</code>)
+            on the server and streams its output live.
           </p>
+          <ul className="text-sm text-on-surface-variant leading-relaxed max-w-3xl space-y-1.5 mb-2">
+            {[
+              <>Pick a stored instance from the dropdown to have its credentials resolved server-side from <code className="bg-surface-low px-1 rounded font-mono text-xs">.env.local</code>, or choose no instance to enter values manually.</>,
+              <>Manual fields left blank fall back to the values in <code className="bg-surface-low px-1 rounded font-mono text-xs">.env.local</code>.</>,
+              <>The client ID and secret must be a content API key with write access (Settings → API Keys) - CLI-only credentials fail at the config-push and content-creation steps.</>,
+              <>Available in local development only; the API route returns 403 in production builds.</>,
+            ].map((point, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="text-brand shrink-0">→</span>
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
 
           <LiveDemoShell
             badge="Internal Tool"
