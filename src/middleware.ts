@@ -11,6 +11,36 @@ import { appendVisitorCookie } from "@/lib/optimizely/visitorCookie";
 export const VARIATION_MARKER = "__v_";
 export const FLAG_VAR_SEP = "--";
 
+// Safety backstop against a pathological config that scopes many CMS experiments
+// to the same route. Route-scoping (cms_route) is the primary control; this only
+// caps the worst case so a single path can never fragment into unbounded cache
+// entries.
+const MAX_CMS_VARIATIONS = 3;
+
+// A CMS experiment declares which route(s) its variation targets via the
+// `cms_route` variation variable in FX. `pathname` here is the clean request path
+// (the middleware runs before any __v_ rewrite). Matching rules per comma-entry:
+//   - "/*"            → matches every route
+//   - "/products/*"   → prefix match (also matches "/products" exactly)
+//   - "/product-x"    → exact match
+//   - "/"             → root only
+// An absent/empty cms_route matches all routes (backward-compatible: flags that
+// predate cms_route keep working until the variable is added).
+export function routeMatches(pathname: string, cmsRoute?: string): boolean {
+  if (!cmsRoute || !cmsRoute.trim()) return true;
+  const path = pathname.replace(/\/$/, "") || "/";
+  return cmsRoute.split(",").some((raw) => {
+    const entry = raw.trim();
+    if (!entry) return false;
+    if (entry === "/*") return true;
+    if (entry.endsWith("/*")) {
+      const prefix = entry.slice(0, -2).replace(/\/$/, "") || "/";
+      return path === prefix || path.startsWith(prefix + "/");
+    }
+    return path === (entry.replace(/\/$/, "") || "/");
+  });
+}
+
 const noOpRequestHandler = {
   makeRequest: () => ({
     abort: () => {},
@@ -62,12 +92,16 @@ export async function middleware(request: NextRequest) {
     const decisions = ctx.decideAll([OptimizelyDecideOption.DISABLE_DECISION_EVENT]);
     // Only flags that drive CMS content (variation variable cms_flag === true) create
     // cache routes. Component-level experiments resolve client-side and are excluded
-    // here so they don't fragment the ISR cache key. Sorted by variationKey for a
-    // stable cache key.
+    // here so they don't fragment the ISR cache key. Then keep only experiments whose
+    // cms_route targets THIS path - a visitor may match many CMS experiments across the
+    // site, but only the one authored on the current page should be applied here.
+    // Sorted by variationKey for a stable cache key, then capped as a safety backstop.
     const activeDecisions = Object.values(decisions)
       .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
       .filter((d) => d.variables?.cms_flag === true)
-      .sort((a, b) => (a.variationKey as string).localeCompare(b.variationKey as string));
+      .filter((d) => routeMatches(request.nextUrl.pathname, d.variables?.cms_route as string | undefined))
+      .sort((a, b) => (a.variationKey as string).localeCompare(b.variationKey as string))
+      .slice(0, MAX_CMS_VARIATIONS);
 
     if (activeDecisions.length === 0) return response;
 
