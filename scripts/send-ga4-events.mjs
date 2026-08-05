@@ -8,16 +8,25 @@
  *   npm run ga4:seed -- --users=100  override the number of synthetic users
  *   npm run ga4:seed -- --window=24  spread events over the last N hours
  *
- * Credentials are read from .env.local:
- *   GA4_MEASUREMENT_ID   defaults to G-2MTP98PSWL if unset
+ * Credentials are read from .env.local (or GitHub Actions secrets in CI):
+ *   GA4_MEASUREMENT_ID   defaults to G-EKYQLXD2VB (the fake-data property) if unset
  *   GA4_API_SECRET       create in GA4 Admin -> Data Streams -> Measurement
  *                        Protocol API secrets, then paste the value here
+ *
+ * Ingestion health check (optional but recommended). The live endpoint returns
+ * 204 even for a dead or mismatched secret, so a green run does NOT prove data
+ * landed - that is how this silently broke for a month. Set both of these and
+ * the run reads the events back and FAILS when nothing ingests:
+ *   GA4_PROPERTY_ID      numeric GA4 property id (Admin -> Property Settings)
+ *   GA4_SA_KEY           JSON key for a service account with Viewer on the
+ *                        property (used to read back the realtime event count)
  *
  * Note: GA4 drops any event older than ~72 hours, so WINDOW_HOURS must stay
  * under that. To build up months of history, run this on a daily schedule.
  */
 
 import { config } from "dotenv";
+import { createSign } from "node:crypto";
 
 config({ path: ".env.local" });
 
@@ -230,11 +239,150 @@ async function send(payload) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Preflight: validate one representative payload against the debug endpoint
+// before sending for real, and fail on schema errors (e.g. a reserved event
+// name slipping in). This does NOT validate credentials - GA4 can't; see
+// verifyIngestion() for that.
+async function preflight() {
+  const sample = buildSession({ clientId: "0.0", locale: "en" });
+  const res = await fetch(
+    `https://www.google-analytics.com/debug/mp/collect?measurement_id=${MEASUREMENT_ID}&api_secret=${API_SECRET}`,
+    { method: "POST", body: JSON.stringify({ ...sample, timestamp_micros: String(now * 1000) }) }
+  );
+  if (!res.ok) {
+    console.error(`Preflight failed: debug endpoint returned HTTP ${res.status}. Failing the run.`);
+    process.exit(1);
+  }
+  const body = await res.json().catch(() => ({}));
+  const messages = body.validationMessages || [];
+  if (messages.length > 0) {
+    console.error("Preflight failed - GA4 rejected the payload:", JSON.stringify(messages, null, 2));
+    process.exit(1);
+  }
+}
+
+const b64url = (buf) =>
+  Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+// Mint a short-lived Data API access token by signing a JWT with the service
+// account key (no extra dependency - Node's crypto does RS256).
+async function getDataApiToken(saKeyJson) {
+  let jwt;
+  try {
+    const key = JSON.parse(saKeyJson);
+    const iat = Math.floor(Date.now() / 1000);
+    const header = b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+    const claim = b64url(
+      JSON.stringify({
+        iss: key.client_email,
+        scope: "https://www.googleapis.com/auth/analytics.readonly",
+        aud: "https://oauth2.googleapis.com/token",
+        iat,
+        exp: iat + 3600,
+      })
+    );
+    const signer = createSign("RSA-SHA256");
+    signer.update(`${header}.${claim}`);
+    jwt = `${header}.${claim}.${b64url(signer.sign(key.private_key))}`;
+  } catch (err) {
+    console.error(`Could not build the Data API token from GA4_SA_KEY (expected the service-account JSON): ${err.message}`);
+    process.exit(1);
+  }
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+  if (!res.ok) {
+    console.error(`Data API auth failed (check GA4_SA_KEY): HTTP ${res.status} ${await res.text()}`);
+    process.exit(1);
+  }
+  return (await res.json()).access_token;
+}
+
+async function realtimeEventCount(propertyId, token) {
+  const res = await fetch(
+    `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runRealtimeReport`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ metrics: [{ name: "eventCount" }] }),
+    }
+  );
+  if (!res.ok) {
+    console.error(
+      `Data API query failed (check GA4_PROPERTY_ID + service-account access): HTTP ${res.status} ${await res.text()}`
+    );
+    process.exit(1);
+  }
+  const data = await res.json();
+  return Number(data?.rows?.[0]?.metricValues?.[0]?.value ?? 0);
+}
+
+// The only reliable proof of ingestion: send a current-time canary, then read
+// it back via the Data API realtime report. A dead secret returns 204 on send
+// but the canary never appears, so the count stays 0 and we fail the run.
+// Skipped (with a loud warning) when Data API creds are absent.
+async function verifyIngestion() {
+  const PROPERTY_ID = process.env.GA4_PROPERTY_ID;
+  const SA_KEY = process.env.GA4_SA_KEY;
+  if (!PROPERTY_ID || !SA_KEY) {
+    console.warn(
+      "\n⚠ INGESTION NOT VERIFIED. The live endpoint returns 204 even for a dead\n" +
+        "  secret, so this green run does NOT prove data landed. Set GA4_PROPERTY_ID\n" +
+        "  and GA4_SA_KEY (service account with Viewer on the property) to make the\n" +
+        "  run fail when nothing ingests."
+    );
+    return;
+  }
+
+  // Send a small current-time canary tagged debug_mode so it shows in realtime.
+  const nowSec = Math.floor(Date.now() / 1000);
+  await send({
+    client_id: `healthcheck.${nowSec}`,
+    timestamp_micros: String(Date.now() * 1000),
+    events: [
+      {
+        name: "page_view",
+        params: {
+          page_location: `${ORIGIN}/en`,
+          page_title: "Healthcheck",
+          session_id: String(nowSec),
+          engagement_time_msec: 1000,
+          debug_mode: true,
+        },
+      },
+    ],
+  });
+
+  const token = await getDataApiToken(SA_KEY);
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    await sleep(10000);
+    const count = await realtimeEventCount(PROPERTY_ID, token);
+    if (count > 0) {
+      console.log(`✓ Ingestion verified: ${count} event(s) visible in the realtime report.`);
+      return;
+    }
+  }
+  console.error(
+    "✗ Ingestion check FAILED: 0 events in the realtime report after a canary send.\n" +
+      "  The measurement_id / api_secret pair is not ingesting (revoked secret or\n" +
+      "  wrong stream). Regenerate the MP API secret under the correct stream and\n" +
+      "  update GA4_API_SECRET."
+  );
+  process.exit(1);
+}
+
 const mode = DEBUG ? "[debug] validating" : VERIFY ? "[verify] sending live" : "Sending";
 console.log(
   `${mode} fake GA4 traffic to ${MEASUREMENT_ID} ` +
     (VERIFY ? `(${NUM_USERS} users, at current time, debug_mode on)...` : `(${NUM_USERS} users, last ${WINDOW_HOURS}h)...`)
 );
+
+if (!DEBUG) await preflight();
 
 let sessions = 0;
 let nlSessions = 0;
@@ -263,18 +411,34 @@ for (let u = 0; u < NUM_USERS; u++) {
   }
 }
 
+const attempts = sessions + failures;
 const nlPct = sessions ? Math.round((nlSessions / sessions) * 100) : 0;
 console.log(
   `Done. ${sessions} sessions (${nlPct}% nl), ${events} events${failures ? `, ${failures} failed` : ""}.`
 );
+
 if (DEBUG) {
+  if (failures > 0) {
+    console.error(`Validation failed on ${failures} payload(s). Failing the run.`);
+    process.exit(1);
+  }
   console.log("Debug mode: nothing was ingested. Re-run without --debug to send.");
-} else if (VERIFY) {
-  console.log(
-    "Now open GA4 Admin -> DebugView (top-left device should be 'Node.js' or unnamed).\n" +
-      "If these events appear within ~30s, the credentials work. If nothing shows,\n" +
-      "the measurement_id / api_secret pair is wrong or belongs to another stream."
-  );
 } else {
-  console.log("Check GA4 -> Reports -> Realtime to see near-now events within seconds.");
+  // A green run used to mean nothing (204 on every send). Fail loudly if a
+  // meaningful share of sends errored, then prove ingestion via the Data API.
+  if (failures > Math.max(3, Math.ceil(attempts * 0.05))) {
+    console.error(`Too many send failures (${failures}/${attempts}). Failing the run.`);
+    process.exit(1);
+  }
+  await verifyIngestion();
+  if (VERIFY) {
+    console.log(
+      "Now open GA4 Admin -> DebugView (top-left Debug Device dropdown - server\n" +
+        "events land under an unnamed/'web' device, so cycle through all of them).\n" +
+        "If these events appear within ~30s, the credentials work. If nothing shows,\n" +
+        "the measurement_id / api_secret pair is wrong or belongs to another stream."
+    );
+  } else {
+    console.log("Check GA4 -> Reports -> Realtime to see near-now events within seconds.");
+  }
 }

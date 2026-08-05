@@ -19,3 +19,9 @@ jobs:
         env:
           GA4_MEASUREMENT_ID: G-EKYQLXD2VB
           GA4_API_SECRET: ${{ secrets.GA4_API_SECRET }}
+          # Ingestion health check - when both are set the job reads the events
+          # back via the Data API and fails on 0 ingestion (a dead secret still
+          # returns 204, so without this a broken run stays green). Add these two
+          # repo secrets to activate; harmless (warns and skips) until then.
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          GA4_SA_KEY: ${{ secrets.GA4_SA_KEY }}

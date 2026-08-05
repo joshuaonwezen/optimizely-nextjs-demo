@@ -672,9 +672,13 @@ export default function ContentModellingPage() {
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
-          <p className="text-xs font-mono text-on-surface-variant mb-3">
-            Editor flexibility ←--------------------→ Developer control
-          </p>
+          <div className="mb-6">
+            <div className="flex items-center justify-between text-xs font-semibold mb-2">
+              <span className="text-brand">← Editor flexibility</span>
+              <span className="text-tertiary">Developer control →</span>
+            </div>
+            <div className="h-2.5 w-full rounded-full bg-gradient-to-r from-brand via-on-surface-variant/25 to-tertiary" />
+          </div>
           <div className="grid md:grid-cols-3 gap-4 mb-8">
             <div className="rounded-2xl border border-brand/20 bg-brand/5 p-5">
               <p className="text-xs font-semibold text-on-surface mb-2">Most editor freedom</p>
