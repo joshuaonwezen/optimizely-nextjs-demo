@@ -103,16 +103,34 @@ export async function middleware(request: NextRequest) {
       .sort((a, b) => (a.variationKey as string).localeCompare(b.variationKey as string))
       .slice(0, MAX_CMS_VARIATIONS);
 
-    if (activeDecisions.length === 0) return response;
-
+    // Build variation segments from FX decisions.
     // Append one __v_ segment per active decision encoding flagKey--variationKey.
     // e.g. /savings → /savings/__v_homepage--business
     // The page reads flagKey from the segment — no extra SDK call needed client-side.
+    const cmsVariationSegments = activeDecisions.map(
+      (d) => `${VARIATION_MARKER}${d.flagKey}${FLAG_VAR_SEP}${d.variationKey}`
+    );
+
+    // Web Experimentation cookie-bridge: if a WX custom JS action wrote
+    // opti_wx_variation=<flagKey>--<variationKey>, inject it as a __v_ segment on the
+    // next request (the cookie is written client-side so the first page load always
+    // serves base content). FX takes precedence — WX only applies when FX has no
+    // active decision for the same flagKey.
+    const wxVariation = request.cookies.get("opti_wx_variation")?.value;
+    if (wxVariation && wxVariation.includes(FLAG_VAR_SEP)) {
+      const [wxFlagKey] = wxVariation.split(FLAG_VAR_SEP);
+      const covered = cmsVariationSegments.some(
+        (s) => s.startsWith(`${VARIATION_MARKER}${wxFlagKey}${FLAG_VAR_SEP}`)
+      );
+      if (!covered) {
+        cmsVariationSegments.push(`${VARIATION_MARKER}${wxVariation}`);
+      }
+    }
+
+    if (cmsVariationSegments.length === 0) return response;
+
     const url = request.nextUrl.clone();
-    const variationSuffix = activeDecisions
-      .map((d) => `${VARIATION_MARKER}${d.flagKey}${FLAG_VAR_SEP}${d.variationKey}`)
-      .join("/");
-    url.pathname = url.pathname.replace(/\/$/, "") + `/${variationSuffix}`;
+    url.pathname = url.pathname.replace(/\/$/, "") + `/${cmsVariationSegments.join("/")}`;
     return NextResponse.rewrite(url, { headers: response.headers });
   } catch {
     // Never fail a request due to FX errors.

@@ -133,7 +133,7 @@ export default async function PersonalizationDemoPage() {
             <li><strong className="text-on-surface">Feature Experimentation (FX)</strong> - delivery engine: configures audiences, buckets traffic, runs A/B experiments, and produces statistical results.</li>
             <li><strong className="text-on-surface">ODP (Optimizely Data Platform)</strong> - audience layer only: builds behavioral profiles from cross-session events. No delivery role - plugs into FX as an audience source, or drives Graph directly.</li>
             <li><strong className="text-on-surface">Optimizely Graph</strong> - content delivery API: always the final step, regardless of which path resolves the variation key. Serves the right CMS variant based on the key it receives.</li>
-            <li><strong className="text-on-surface">Web Experimentation / Personalization (standalone)</strong> - client-side only: own visual editor and audience system, no server or CMS integration.</li>
+            <li><strong className="text-on-surface">Web Experimentation / Personalization</strong> - buckets visitors client-side via a JavaScript snippet. A cookie bridge connects WX bucket assignments to the same CMS variation pipeline used by Paths 1-3, with a one-request lag.</li>
             <li className="text-on-surface-variant/70">FX and ODP can be combined - ODP segments used as FX audience conditions. Path 3 is the escape hatch for bringing your own audience logic entirely.</li>
           </ul>
 
@@ -227,29 +227,51 @@ export default async function PersonalizationDemoPage() {
             </div>
 
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
-              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">Path 4 - Web Experimentation / Personalization (client-side, no CMS integration)</p>
-              <div className="flex flex-wrap items-center gap-3 mb-3">
-                {[
-                  { label: "Page loads", sub: "base CMS content served" },
-                  { label: "Client script", sub: "own audience rules evaluated" },
-                  { label: "DOM updated", sub: "visual editor variations" },
-                  { label: "Results", sub: "own stats + reports", highlight: true },
-                ].map((step, i, arr) => (
-                  <div key={step.label} className="flex items-center gap-3">
-                    <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
-                      <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
-                      <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">Path 4 - Web Experimentation cookie bridge (CMS-integrated)</p>
+              <div className="space-y-2 mb-3">
+                <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mb-1">Request 1</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  {[
+                    { label: "WX snippet fires", sub: "in-browser, after HTML served" },
+                    { label: "Audience matched", sub: "WX evaluates its own rules" },
+                    { label: "Cookie written", sub: "opti_wx_variation=flag--key" },
+                  ].map((step, i, arr) => (
+                    <div key={step.label} className="flex items-center gap-3">
+                      <div className="text-center rounded-xl px-4 py-3 min-w-[130px] bg-surface-low">
+                        <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                        <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                      </div>
+                      {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
                     </div>
-                    {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mt-3 mb-1">Request 2+</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  {[
+                    { label: "Cookie in request", sub: "middleware reads it" },
+                    { label: "__v_ segment injected", sub: "URL rewritten internally" },
+                    { label: "Graph filter", sub: "getContentByPath()" },
+                    { label: "CMS variant", sub: "or original fallback", highlight: true },
+                  ].map((step, i, arr) => (
+                    <div key={step.label} className="flex items-center gap-3">
+                      <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
+                        <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                        <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                      </div>
+                      {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
+                    </div>
+                  ))}
+                </div>
               </div>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                Optimizely Web Experimentation / Personalization (standalone) is delivered via a{" "}
-                <strong className="text-on-surface">JavaScript snippet</strong> with its own visual editor,
-                audience system, and statistical results - all evaluated in the browser, not on the server.
-                The base CMS content renders first and the variation is applied client-side, so there
-                is no CMS integration.
+                Web Experimentation buckets visitors client-side via its JavaScript snippet. A{" "}
+                <strong className="text-on-surface">custom JS action</strong> writes an{" "}
+                <code className="bg-surface-low px-1 rounded font-mono">opti_wx_variation</code>{" "}
+                cookie encoding the variation key. On the next request, middleware reads the cookie and
+                injects a <code className="bg-surface-low px-1 rounded font-mono">__v_</code>{" "}
+                URL segment - routing Graph to serve the matching CMS variation. The first page load
+                always shows base content; the CMS variant appears from the second request onwards.{" "}
+                <a href="#web-experimentation-bridge" className="text-brand hover:underline">Full setup guide below.</a>
               </p>
             </div>
           </div>
@@ -782,6 +804,187 @@ ${mappingEntries.length > 0
             experiment: split traffic, measure lift, and declare a winner with confidence. Both paths
             feed the same Graph variation filter - only the decision layer differs.
           </Callout>
+        </section>
+
+        {/* Web Experimentation bridge */}
+        <section id="web-experimentation-bridge">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Web Experimentation: CMS Variation Bridge{" "}
+            <a href="#web-experimentation-bridge" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            Optimizely Web Experimentation buckets visitors entirely in the browser - its snippet
+            evaluates audience rules after the HTML has already been sent. This makes it impossible
+            to serve a CMS variation on the same request. The bridge works around this with a
+            persistent cookie: Web Experimentation writes the bucket decision client-side, and the
+            middleware reads it on the next request to route Graph to the correct CMS variation.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            Identity is already shared:{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code>{" "}
+            is written domain-wide by middleware and is the same cookie the Web snippet uses for visitor
+            identity. Both products see the same visitor with no extra coordination needed.
+          </p>
+
+          {/* Two-request architecture diagram */}
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 mb-8">
+            <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-4">How the two-request bridge works</p>
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mb-2">Request 1 - base content + WX fires</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  {[
+                    { label: "Server responds", sub: "base CMS content in HTML" },
+                    { label: "WX snippet runs", sub: "evaluates experiment rules" },
+                    { label: "Cookie written", sub: "opti_wx_variation=flag--key" },
+                  ].map((step, i, arr) => (
+                    <div key={step.label} className="flex items-center gap-3">
+                      <div className="text-center rounded-xl px-4 py-3 min-w-[130px] bg-surface-low">
+                        <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                        <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                      </div>
+                      {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="border-t border-ghost-border" />
+              <div>
+                <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mb-2">Request 2+ - CMS variation served</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  {[
+                    { label: "Cookie sent", sub: "opti_wx_variation in headers" },
+                    { label: "Middleware reads", sub: "injects __v_ URL segment" },
+                    { label: "Graph filter", sub: "variation: { include: SOME }" },
+                    { label: "CMS variant", sub: "or original fallback", highlight: true },
+                  ].map((step, i, arr) => (
+                    <div key={step.label} className="flex items-center gap-3">
+                      <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
+                        <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                        <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                      </div>
+                      {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 1 + 2 */}
+          <div className="space-y-6 max-w-2xl mb-6">
+            <Step number={1} title="Create the CMS variation in Visual Builder">
+              In the CMS, open the page you want to experiment on and click{" "}
+              <strong>Add variation</strong>. Name the variation to exactly match the variation key
+              string you will write from Web Experimentation - for example{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">treatment</code>.
+              The name is case-sensitive and must be an exact string match. Edit the variation&apos;s
+              composition and publish it.
+            </Step>
+
+            <Step number={2} title="Configure the WX custom JS action">
+              In the Web Experimentation UI, add a{" "}
+              <strong>Custom JS action</strong> to your experiment - one per variation bucket. The
+              action fires when WX assigns a visitor to that bucket. Write the cookie{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">opti_wx_variation</code>{" "}
+              with the value <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey--variationKey</code>,
+              where <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey</code>{" "}
+              is a stable namespace you choose and{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">variationKey</code>{" "}
+              is the CMS variation name from step 1. For the control/original bucket, omit the cookie
+              write entirely - Graph&apos;s{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">includeOriginal: true</code>{" "}
+              always falls back to base content when no matching variation is found.
+            </Step>
+          </div>
+
+          {/* Code blocks - WX action + middleware */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-ghost-border bg-surface-low">
+                <span className="text-xs font-mono text-on-surface-variant">WX custom JS action (variation bucket)</span>
+              </div>
+              <CodeBlock code={`// Paste into the Custom JS action in Web Experimentation.
+// Create one action per variation bucket.
+// Fires when WX assigns a visitor to this variation.
+
+var flagKey = "homepage";      // stable namespace - any string
+var variationKey = "treatment"; // must exactly match CMS variation name
+
+document.cookie =
+  "opti_wx_variation=" + flagKey + "--" + variationKey +
+  "; path=/; max-age=86400; SameSite=Lax";
+
+// For the control/original bucket: omit this cookie write.
+// includeOriginal: true in Graph returns base content as fallback.`} />
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-ghost-border bg-surface-low">
+                <span className="text-xs font-mono text-on-surface-variant">src/middleware.ts (bridge - already live)</span>
+              </div>
+              <CodeBlock code={`// After FX decisions are collected, middleware also reads the
+// WX cookie and injects a __v_ segment for it.
+// FX takes precedence: WX only applies when FX has no active
+// decision for the same flagKey.
+
+const wxVariation = request.cookies.get("opti_wx_variation")?.value;
+// e.g. "homepage--treatment"
+
+if (wxVariation && wxVariation.includes("--")) {
+  const [wxFlagKey] = wxVariation.split("--");
+  const covered = cmsVariationSegments.some(
+    (s) => s.startsWith("__v_" + wxFlagKey + "--")
+  );
+  if (!covered) {
+    cmsVariationSegments.push("__v_" + wxVariation);
+    // /savings → /savings/__v_homepage--treatment
+    // page.tsx extracts "treatment" → Graph serves the CMS variant
+  }
+}`} />
+            </div>
+          </div>
+
+          {/* Step 3 + 4 */}
+          <div className="space-y-6 max-w-2xl mb-8">
+            <Step number={3} title="Verify the integration in DevTools">
+              Test without a live WX experiment by setting the cookie manually in the browser
+              console:{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">
+                document.cookie = &quot;opti_wx_variation=homepage--treatment; path=/&quot;
+              </code>. Navigate to the experiment page. In DevTools Network, find the HTML request
+              - the{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">X-Middleware-Rewrite</code>{" "}
+              response header should show the internal rewritten URL including{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">__v_homepage--treatment</code>.
+              Clear the cookie and reload to confirm base content returns.
+            </Step>
+
+            <Step number={4} title="FX and Web Experimentation can coexist">
+              FX and WX can run simultaneously on the same page. If an FX flag is active for the
+              same <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey</code>,
+              the FX decision wins and the WX cookie is ignored for that key. WX tracks its own
+              impressions and conversions client-side via the snippet - no server-side impression
+              tracking is needed for WX experiments.
+            </Step>
+          </div>
+
+          <div className="space-y-3">
+            <Callout variant="note">
+              <strong>The one-request lag is inherent to all client-side experiment tools.</strong>{" "}
+              For multi-page journeys - visitors arriving from search, ads, or a landing page before
+              reaching the experiment page - this is invisible in practice. For experiments where the
+              very first page view must show a variation, use FX instead: it evaluates server-side
+              before the HTML is sent, with no lag.
+            </Callout>
+
+            <Callout variant="note">
+              <strong>Web Experimentation statistics are unaffected by the bridge.</strong>{" "}
+              WX tracks its own impressions and conversions via the snippet - the server-side
+              cookie bridge does not interfere with WX reporting. The bridge only changes which
+              CMS content variant is served; all statistical analysis stays in the WX dashboard.
+            </Callout>
+          </div>
         </section>
 
         {/* Audience Switcher */}
