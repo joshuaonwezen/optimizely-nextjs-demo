@@ -41,6 +41,18 @@ const ICON_ACTIVITY = (
   </svg>
 );
 
+const CONNECTION_GRAPH_SNIPPET = `# The variation key becomes a Graph filter. For a visitor bucketed into "business":
+query {
+  _Content(
+    where: { _metadata: { url: { default: { eq: "/en/" } } } }
+    variation: { include: SOME, value: ["business"], includeOriginal: true }
+  ) {
+    items {
+      _metadata { variation }   # "business", or null for the base page
+    }
+  }
+}`;
+
 
 const BUCKETING_SNIPPET = `// src/components/FxBucketingEvent.tsx
 // flagKey is passed in from the page - it was encoded in the URL by middleware:
@@ -530,9 +542,9 @@ export default async function FeatureFlagsDemoPage() {
           <PhaseHeader label="Serve" caption="automatic on every request" />
           <div className="flex flex-col lg:flex-row lg:items-stretch gap-2">
             {[
-              { n: 5, env: "Edge", icon: ICON_ZAP, accent: "bg-brand/10 text-brand", file: "src/middleware.ts", essence: "Pick the variation, put it in the URL", explain: "FX chooses which variation this visitor should see (that choice is the “decision”), and the middleware writes it into the request path so the page can be cached per variation.", href: "#code-middleware" },
-              { n: 6, env: "Server · Graph (cached)", icon: ICON_DATABASE, accent: "bg-blue-100 text-blue-800", file: "src/app/[[...slug]]/page.tsx", essence: "Fetch the matching content from Graph", explain: "The page asks Optimizely Graph for the content variant whose name matches the chosen variation. The response is cached, so repeat visits stay fast.", href: "#code-page-route" },
-              { n: 7, env: "Client", icon: ICON_ACTIVITY, accent: "bg-emerald-100 text-emerald-800", file: "src/components/FxBucketingEvent.tsx", essence: "Record that the visitor saw it", explain: "In the browser, FX logs an “impression” - the event that tells the experiment this visitor was shown this variation, so results can be measured.", href: "#code-bucketing-event" },
+              { n: 5, env: "Edge", icon: ICON_ZAP, accent: "bg-brand/10 text-brand", file: "src/middleware.ts", essence: "Pick the variation, put it in the URL", explain: "FX chooses which variation this visitor should see (that choice is the “decision”), and the middleware writes it into the request path so the page can be cached per variation.", code: "decideAll([DISABLE_DECISION_EVENT])", href: "#code-middleware" },
+              { n: 6, env: "Server · Graph (cached)", icon: ICON_DATABASE, accent: "bg-blue-100 text-blue-800", file: "src/app/[[...slug]]/page.tsx", essence: "Fetch the matching content from Graph", explain: "The page asks Optimizely Graph for the content variant whose name matches the chosen variation. The response is cached, so repeat visits stay fast.", code: "variation: {\n  include: 'SOME',\n  value: ['business'],\n  includeOriginal: true,\n}", href: "#code-page-route" },
+              { n: 7, env: "Client", icon: ICON_ACTIVITY, accent: "bg-emerald-100 text-emerald-800", file: "src/components/FxBucketingEvent.tsx", essence: "Record that the visitor saw it", explain: "In the browser, FX logs an “impression” - the event that tells the experiment this visitor was shown this variation, so results can be measured.", code: "decide('homepage', []) // [] fires it", href: "#code-bucketing-event" },
             ].flatMap((s, i, arr) => [
               <div key={s.n} className="flex-1 min-w-0 bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-2">
@@ -543,6 +555,7 @@ export default async function FeatureFlagsDemoPage() {
                 </div>
                 <p className="text-sm font-semibold text-on-surface leading-snug">{s.essence}</p>
                 <p className="text-xs text-on-surface-variant leading-relaxed">{s.explain}</p>
+                <pre className="text-[11px] font-mono bg-surface-low text-on-surface rounded-md px-2.5 py-2 overflow-x-auto"><code>{s.code}</code></pre>
                 <code className="text-[11px] font-mono text-on-surface-variant break-all">{s.file}</code>
                 <a href={s.href} className="mt-auto pt-1 text-xs text-brand hover:underline font-mono">→ code</a>
               </div>,
@@ -608,11 +621,35 @@ export default async function FeatureFlagsDemoPage() {
             </p>
           </div>
 
-          {/* Your live session - the tiles that feed the filter below */}
+          {/* Concrete Graph query the variation key produces */}
+          <CodeBlock code={CONNECTION_GRAPH_SNIPPET} label="Graph query (business variation active)" />
+
+          {/* Current session's variation keys → Graph */}
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mt-6 mb-6">
+            <h3 className="font-display font-semibold text-on-surface mb-1">
+              Your Variation Keys → Graph Filter
+            </h3>
+            <p className="text-xs text-on-surface-variant mb-4">
+              This is what the live page route is passing to{" "}
+              <code className="bg-surface-low px-1 rounded font-mono">getContentByPath</code> for your session right now.
+            </p>
+            <CodeBlock
+              code={activeVariations.length === 0
+                ? `// No active variation keys - flags disabled, or user not bucketed into\n// any active variation. The "off" delivery rule is excluded: it returns\n// variationKey: "off" but no CMS variation named "off" exists.\nvariationOption = undefined`
+                : `variationOption = {\n  variation: {\n    include: "SOME",\n    value: ${JSON.stringify(activeVariations)},\n    includeOriginal: true,\n  },\n}`}
+            />
+            {activeVariations.length === 0 && (
+              <p className="text-xs text-on-surface-variant mt-3">
+                Enable a flag and run an experiment in the FX dashboard, then reload - your variation key will appear above and start influencing CMS content delivery.
+              </p>
+            )}
+          </div>
+
+          {/* Your live session - the tiles behind the filter above */}
           <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
             Your live session right now
           </p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-surface-lowest border border-ghost-border rounded-xl px-5 py-4 flex flex-col gap-1">
               <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider">User ID</span>
               <span className="text-sm font-mono text-on-surface">{userId.slice(0, 8)}…{userId.slice(-4)}</span>
@@ -637,29 +674,8 @@ export default async function FeatureFlagsDemoPage() {
               <span className="text-sm font-mono text-on-surface">
                 {activeVariations.length === 0 ? "none" : activeVariations.join(", ")}
               </span>
-              <span className="text-xs text-on-surface-variant">keys passed to Graph ↓</span>
+              <span className="text-xs text-on-surface-variant">keys passed to Graph (the filter above)</span>
             </div>
-          </div>
-
-          {/* Current session's variation keys → Graph */}
-          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-6">
-            <h3 className="font-display font-semibold text-on-surface mb-1">
-              Your Variation Keys → Graph Filter
-            </h3>
-            <p className="text-xs text-on-surface-variant mb-4">
-              This is what the live page route is passing to{" "}
-              <code className="bg-surface-low px-1 rounded font-mono">getContentByPath</code> for your session right now.
-            </p>
-            <CodeBlock
-              code={activeVariations.length === 0
-                ? `// No active variation keys - flags disabled, or user not bucketed into\n// any active variation. The "off" delivery rule is excluded: it returns\n// variationKey: "off" but no CMS variation named "off" exists.\nvariationOption = undefined`
-                : `variationOption = {\n  variation: {\n    include: "SOME",\n    value: ${JSON.stringify(activeVariations)},\n    includeOriginal: true,\n  },\n}`}
-            />
-            {activeVariations.length === 0 && (
-              <p className="text-xs text-on-surface-variant mt-3">
-                Enable a flag and run an experiment in the FX dashboard, then reload - your variation key will appear above and start influencing CMS content delivery.
-              </p>
-            )}
           </div>
         </section>
 
