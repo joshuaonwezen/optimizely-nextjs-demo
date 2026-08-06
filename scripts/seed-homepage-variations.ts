@@ -118,20 +118,20 @@ function buildPersonalVariation(): CompNode[] {
     rootComponent("Hero", "Personal Hero", {
       heading: "Banking built around you",
       summary:
-        "A fee-free current account, savings rates up to 5.1% AER, and mortgages that move at your pace — all in one app.",
+        "Your salary, your savings goals, your mortgage — all in one app, with the rates and tools to make each one work harder for you.",
       theme: "dark",
     }),
     sectionComponent("SectionHeadingBlock", "Products Heading", {
-      heading: "Your personal banking",
+      heading: "Your money, your milestones",
       subheading:
-        "Everything you need to manage your money, save for the future, and plan the moments that matter.",
+        "Whether you're saving for a house deposit, paying off your mortgage early, or building a nest egg — Mosey keeps up with you.",
     }),
     gridSection("Personal Product Cards", [
       elementComponent("ProductCardBlock", "Current Account Card", {
         icon: "account",
         title: "Current Account",
         description:
-          "Fee-free everyday banking with instant notifications, smart spending insights, and no hidden charges.",
+          "Fee-free with instant spending notifications, smart round-ups into savings, and no surprise charges — ever.",
         linkUrl: "/en/current-account",
         linkText: "Open an account →",
       }),
@@ -139,7 +139,7 @@ function buildPersonalVariation(): CompNode[] {
         icon: "savings",
         title: "Savings",
         description:
-          "Easy-access at 4.6% AER or fix for 12 months at 5.1% AER. FSCS protected. Open in minutes.",
+          "Easy-access at 4.6% AER or a 12-month fix at 5.1% AER. FSCS protected. Set a goal and track it in the app.",
         linkUrl: "/en/savings",
         linkText: "View savings rates →",
       }),
@@ -147,17 +147,17 @@ function buildPersonalVariation(): CompNode[] {
         icon: "mortgage",
         title: "Mortgage",
         description:
-          "Get a decision in principle in 10 minutes. Our advisors guide you from application to key handover.",
+          "Decision in principle in 10 minutes. One advisor from application to key handover — no being passed around.",
         linkUrl: "/en/mortgage",
-        linkText: "Get a mortgage →",
+        linkText: "Check your rate →",
       }),
-      elementComponent("ProductCardBlock", "Mobile App Card", {
-        icon: "business",
-        title: "Mobile App",
+      elementComponent("ProductCardBlock", "Investments Card", {
+        icon: "savings",
+        title: "Stocks & Shares ISA",
         description:
-          "Rated 4.8 stars. Control your cards, track spending, move money, and chat with support — all from your phone.",
-        linkUrl: "/en/mobile-app",
-        linkText: "Download the app →",
+          "Put up to £20,000 a year to work tax-free. Ready-made portfolios or self-select — start from £25 a month.",
+        linkUrl: "/en/investments",
+        linkText: "Start investing →",
       }),
     ]),
     gridSection("Personal Stats", [
@@ -171,27 +171,27 @@ function buildPersonalVariation(): CompNode[] {
         suffix: "%",
         label: "AER fixed savings rate",
       }),
+      elementComponent("StatsCounterBlock", "Mortgage Stat", {
+        value: "10",
+        suffix: " min",
+        label: "Mortgage decision in principle",
+      }),
       elementComponent("StatsCounterBlock", "App Stat", {
         value: "4.8",
         suffix: "★",
         label: "App Store rating",
       }),
-      elementComponent("StatsCounterBlock", "Uptime Stat", {
-        value: "99.9",
-        suffix: "%",
-        label: "App uptime",
-      }),
     ]),
     sectionComponent("TestimonialBlock", "Personal Testimonial", {
       quote:
-        "I moved my savings to Mosey after seeing the 5.1% fixed rate. The transfer took less than a day and the app makes it easy to watch my interest grow.",
+        "I got my mortgage decision in principle on a Saturday morning, then opened a fixed savings account the same afternoon. Both through the same app, no branch visits, no phone queues.",
       authorName: "Sarah Chen",
-      authorRole: "Mosey customer",
+      authorRole: "Mosey personal customer",
     }),
     rootComponent("LogoGridBlock", "Trusted By", {
-      heading: "Trusted by 2 million personal banking customers",
+      heading: "2 million people manage their whole financial life with Mosey",
       subheading:
-        "From first current accounts to savings milestones — Mosey customers bank with confidence.",
+        "Current accounts, savings, mortgages, and investments — one app, one login, one place to see it all.",
       logos: [],
     }),
     sectionComponent("CallToAction", "Personal CTA", {
@@ -206,20 +206,20 @@ function buildBusinessVariation(): CompNode[] {
     rootComponent("Hero", "Business Hero", {
       heading: "Banking built for business",
       summary:
-        "Fee-free business current accounts, competitive lending rates, and payment solutions that scale with you.",
+        "Multi-user access, instant reconciliation with Xero and QuickBooks, and lending decisions in 48 hours — built for businesses that can't afford friction.",
       theme: "dark",
     }),
     sectionComponent("SectionHeadingBlock", "Products Heading", {
-      heading: "Business banking products",
+      heading: "Every financial tool your business needs",
       subheading:
-        "Everything your business needs to manage cash flow, accept payments, and grow with confidence.",
+        "From day-one fee-free banking to £500K lending — Mosey Business scales with you without adding complexity.",
     }),
     gridSection("Business Product Cards", [
       elementComponent("ProductCardBlock", "Business Account Card", {
         icon: "business",
-        title: "Business Account",
+        title: "Business Current Account",
         description:
-          "Fee-free for 12 months. Unlimited UK transactions, multi-user access, and accounting integrations built in.",
+          "Fee-free for 12 months. Unlimited UK transactions, multi-user access with role permissions, and Xero/QuickBooks sync built in.",
         linkUrl: "/en/business-banking",
         linkText: "Open a business account →",
       }),
@@ -227,7 +227,7 @@ function buildBusinessVariation(): CompNode[] {
         icon: "savings",
         title: "Business Lending",
         description:
-          "Flexible loans from £10,000 to £500,000 and overdraft facilities to smooth out cash flow. Decisions in 48 hours.",
+          "Loans from £10,000 to £500,000 and flexible overdrafts to smooth out cash flow. Credit decisions in 48 hours, not 48 days.",
         linkUrl: "/en/business-lending",
         linkText: "Apply for finance →",
       }),
@@ -235,7 +235,7 @@ function buildBusinessVariation(): CompNode[] {
         icon: "account",
         title: "Merchant Services",
         description:
-          "Accept card payments in-store or online. Competitive rates, next-day settlement, and full reporting in the app.",
+          "Accept card payments in-store or online at 0.35% per transaction. Next-day settlement with full reporting in the dashboard.",
         linkUrl: "/en/business-banking",
         linkText: "Start accepting payments →",
       }),
@@ -243,7 +243,7 @@ function buildBusinessVariation(): CompNode[] {
         icon: "mortgage",
         title: "Business Payroll",
         description:
-          "Run payroll directly from your business account. Automated PAYE, instant transfers, and full HMRC compliance.",
+          "Run payroll from your business account. Automated PAYE calculations, instant employee transfers, and HMRC submissions handled for you.",
         linkUrl: "/en/business-banking",
         linkText: "Set up payroll →",
       }),
@@ -255,31 +255,31 @@ function buildBusinessVariation(): CompNode[] {
         label: "Businesses banking with us",
       }),
       elementComponent("StatsCounterBlock", "Lending Stat", {
-        value: "8",
+        value: "£8",
         suffix: "B+",
         label: "Business lending approved",
       }),
-      elementComponent("StatsCounterBlock", "Uptime Stat", {
-        value: "99.9",
+      elementComponent("StatsCounterBlock", "FX Stat", {
+        value: "0.35",
         suffix: "%",
-        label: "Platform uptime",
+        label: "FX transaction fee",
       }),
       elementComponent("StatsCounterBlock", "Support Stat", {
         value: "24",
         suffix: "/7",
-        label: "Business support",
+        label: "Dedicated business support",
       }),
     ]),
     sectionComponent("TestimonialBlock", "Business Testimonial", {
       quote:
-        "Opened a business current account in under 15 minutes. The integration with our accounting software was seamless — invoices reconcile automatically.",
+        "Switching took 20 minutes. Our invoices now reconcile automatically with Xero and our accountant stopped chasing us for bank statements — that alone saved us hours a month.",
       authorName: "Tom Hartley",
       authorRole: "Director, Hartley & Co.",
     }),
     rootComponent("LogoGridBlock", "Trusted By", {
-      heading: "Trusted by 120,000 UK businesses",
+      heading: "120,000 UK businesses run their finances through Mosey",
       subheading:
-        "From sole traders to growing SMEs — Mosey Business Banking is built around the way modern businesses work.",
+        "Sole traders, growing SMEs, and multi-location operations — Mosey Business adapts to how you work, not the other way around.",
       logos: [],
     }),
     sectionComponent("CallToAction", "Business CTA", {
@@ -634,20 +634,30 @@ async function createVariation(
   const err1 = await res1.text();
   console.warn(`  [attempt 1 failed] POST with variation field: ${res1.status} ${err1.slice(0, 150)}`);
 
-  // Attempt 2: Find the latest version for the homepage and PATCH with the variation composition.
-  // This only works if the variation version already exists (created in Visual Builder) — use
-  // GET /locales/en to find it, then PATCH the version and republish.
-  const vRes = await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/locales/en?pageSize=1`, {
+  // Attempt 2: List all versions and find the one whose variation name matches.
+  // This works when the variation was created in Visual Builder (each named variation
+  // creates its own version). List up to 50 versions and match by the variation field.
+  const vRes = await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/locales/en?pageSize=50`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  const versionId = vRes.ok
-    ? ((await vRes.json() as { items?: Array<{ version?: string }> }).items?.[0]?.version)
-    : undefined;
+  type VersionItem = { version?: string; variation?: string; status?: string };
+  const versions: VersionItem[] = vRes.ok
+    ? ((await vRes.json() as { items?: VersionItem[] }).items ?? [])
+    : [];
+
+  // Find a draft version whose variation field matches the target key.
+  const matched = versions.find((v) => v.variation === variation.variationKey && v.status !== "published")
+    ?? versions.find((v) => v.variation === variation.variationKey);
+
+  const versionId = matched?.version;
 
   if (!versionId) {
-    console.warn(`  [attempt 2 skipped] could not find a version for homepage key=${homepageKey}`);
+    console.warn(`  [attempt 2 skipped] no version found with variation="${variation.variationKey}" for key=${homepageKey}`);
+    console.warn(`  [hint] Create the variation in Visual Builder first, then re-run this script.`);
     return false;
   }
+  console.log(`  [found] version ${versionId} (variation="${variation.variationKey}", status=${matched?.status})`);
+
 
   const res2 = await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/versions/${versionId}`, {
     method: "PATCH",
@@ -656,14 +666,21 @@ async function createVariation(
   });
 
   if (res2.ok) {
-    const patched = await res2.json() as { version?: string; status?: string };
-    if (patched.status && patched.status !== "published") {
-      await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/versions/${patched.version ?? versionId}:publish`, {
+    const patchText = await res2.text();
+    const patched = patchText.trim() ? JSON.parse(patchText) as { version?: string; status?: string } : {};
+    const publishVersion = (patched.version as string | undefined) ?? versionId;
+    const patchedStatus = patched.status as string | undefined;
+    if (!patchedStatus || patchedStatus !== "published") {
+      const pubRes = await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/versions/${publishVersion}:publish`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!pubRes.ok) {
+        const pubErr = await pubRes.text();
+        console.warn(`  [warn] publish returned ${pubRes.status}: ${pubErr.slice(0, 150)}`);
+      }
     }
-    console.log(`  [patched] ${variation.displayName} → applied composition to key=${homepageKey}`);
+    console.log(`  [patched] ${variation.displayName} → applied composition to key=${homepageKey}, version=${publishVersion}`);
     return true;
   }
 
@@ -701,11 +718,6 @@ async function main() {
       variationKey: "business",
       displayName: "Homepage – Business",
       nodes: buildBusinessVariation(),
-    },
-    {
-      variationKey: "new_visitor",
-      displayName: "Homepage – New Visitor",
-      nodes: buildNewVisitorVariation(),
     },
     {
       variationKey: "mortgages",

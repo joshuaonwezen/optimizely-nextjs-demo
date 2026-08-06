@@ -11,12 +11,12 @@ import CodeBlock from "@/components/demo/CodeBlock";
 
 export const dynamic = "force-dynamic";
 
-const userTs = fs.readFileSync(
-  path.join(process.cwd(), "src/lib/optimizely/user.ts"),
+const visitorTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/optimizely/visitor.ts"),
   "utf8"
 );
-const catchAllTs = fs.readFileSync(
-  path.join(process.cwd(), "src/app/[[...slug]]/page.tsx"),
+const odpTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/optimizely/odp.ts"),
   "utf8"
 );
 
@@ -77,6 +77,7 @@ export default async function PersonalizationDemoPage() {
   const device = attributes.device as string;
   const demoLoggedIn = attributes.logged_in as boolean;
   const demoPersona = attributes.persona as string | undefined;
+  const pageViews = attributes.page_views as number | undefined;
 
   const odpSegments = await queryOdpSegments(userId);
   const odpVariationKey = resolveVariationKey(odpSegments);
@@ -87,95 +88,196 @@ export default async function PersonalizationDemoPage() {
     <>
       <DemoHero
         title="Personalization & Audiences"
-        description="Know who your visitor is at request time - device, persona, auth state, geo - and feed that into Feature Experimentation to decide which content variant each segment sees. This page goes deep on where those audience signals come from: lightweight native attributes evaluated in-process, or ODP segments built from behavior over time."
+        description="Four paths to personalized CMS content - from the full Optimizely stack (FX + ODP) down to bringing your own audience logic entirely. All server-side paths feed the same Graph variation filter."
       >
         <div className="flex flex-wrap gap-3 mt-8">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-            ✓ Native attributes
+            ✓ FX: delivery engine + experiment results
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
+            ✓ ODP: audience layer, works with or without FX
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-            In-process, no network call
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-            ODP behavioral layer
+            FX + ODP combination supported
           </span>
         </div>
       </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-16">
 
-        {/* Section A - recap of the generic flow; full walkthrough lives on the FX page */}
+        {/* Page-level intro */}
+        <div className="max-w-3xl space-y-3">
+          <p className="text-sm text-on-surface-variant leading-relaxed">
+            Optimizely has several products that all touch personalization - FX, ODP, Web Experimentation,
+            and the CMS each have their own audience system and their own way of showing different content
+            to different visitors. That overlap is real and intentional, but it can make it hard to know
+            which to reach for, or whether to combine them.
+          </p>
+          <p className="text-sm text-on-surface-variant leading-relaxed">
+            The clearest way to think about it is in <strong className="text-on-surface">layers</strong>, not alternatives:{" "}
+            ODP is the data layer (who is this visitor, based on their history);
+            FX is the decision layer (which variant should they see, and can we measure lift);
+            Optimizely Graph is always the delivery layer (it serves the right CMS variant once it has a variation key).
+            The four paths below are different ways of stacking those layers - from the full Optimizely stack down to
+            bringing your own logic entirely.
+          </p>
+        </div>
+
+        {/* Section A - three paths to personalized content */}
         <section id="how-it-works">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            The Flow, in One Glance{" "}
+            Four Paths to Personalized Content{" "}
             <a href="#how-it-works" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            Personalization is one input to the same pipeline the{" "}
-            <Link href="/demo/feature-experimentation#how-it-works" className="text-brand hover:underline">Feature Experimentation</Link>{" "}
-            page walks through end to end. Whatever you know about a visitor at request time is turned
-            into a variation key, and that key selects the CMS content Graph returns. This page focuses
-            on <strong>where those audience signals come from</strong> - not the FX and Graph plumbing.
-          </p>
+          <ul className="text-sm text-on-surface-variant mb-8 max-w-3xl space-y-2">
+            <li><strong className="text-on-surface">Feature Experimentation (FX)</strong> - delivery engine: configures audiences, buckets traffic, runs A/B experiments, and produces statistical results.</li>
+            <li><strong className="text-on-surface">ODP (Optimizely Data Platform)</strong> - audience layer only: builds behavioral profiles from cross-session events. No delivery role - plugs into FX as an audience source, or drives Graph directly.</li>
+            <li><strong className="text-on-surface">Optimizely Graph</strong> - content delivery API: always the final step, regardless of which path resolves the variation key. Serves the right CMS variant based on the key it receives.</li>
+            <li><strong className="text-on-surface">Web Experimentation / Personalization (standalone)</strong> - client-side only: own visual editor and audience system, no server or CMS integration.</li>
+            <li className="text-on-surface-variant/70">FX and ODP can be combined - ODP segments used as FX audience conditions. Path 3 is the escape hatch for bringing your own audience logic entirely.</li>
+          </ul>
 
-          {/* Pipeline strip */}
-          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-6">
-            <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
-              From audience signal to personalized CMS content
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              {[
-                { label: "Audience signal", sub: "device, persona, geo, behavior" },
-                { label: "FX decision", sub: "audience rules → variationKey" },
-                { label: "Graph filter", sub: "getContentByPath()" },
-                { label: "CMS variant", sub: "or original fallback", highlight: true },
-              ].map((step, i, arr) => (
-                <div key={step.label} className="flex items-center gap-3">
-                  <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
-                    <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
-                    <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+          {/* Triple pipeline */}
+          <div className="space-y-3 mb-8">
+            <div className="bg-surface-lowest border-2 border-brand/40 rounded-2xl p-5">
+              <p className="text-[10px] font-mono text-brand uppercase tracking-wider mb-3">Path 1 - Feature Experimentation (server-side, CMS-integrated)</p>
+              <div className="flex flex-wrap items-center gap-3 mb-3">
+                {[
+                  { label: "Audience signal", sub: "device, persona, geo, auth" },
+                  { label: "FX engine", sub: "delivery, experiments, results" },
+                  { label: "Graph filter", sub: "getContentByPath()" },
+                  { label: "CMS variant", sub: "or original fallback", highlight: true },
+                ].map((step, i, arr) => (
+                  <div key={step.label} className="flex items-center gap-3">
+                    <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
+                      <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                      <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                    </div>
+                    {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
                   </div>
-                  {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
-                </div>
-              ))}
+                ))}
+              </div>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                FX is the delivery engine: it evaluates audience rules in-process, buckets traffic,
+                and returns a variation key that Graph uses to serve the right CMS variant. The FX
+                results page tracks impressions and conversions per variation and runs a{" "}
+                <strong className="text-on-surface">statistical significance test</strong> - you can declare
+                a winner with a measured confidence interval. FX audience conditions can be fed from
+                native request-time attributes <em>or</em> ODP segments (the combination) - see FX Audience
+                Sources below. Use this path when you need experiments, hold-out groups, or measurable lift.
+              </p>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">Path 2 - ODP direct (server-side, no Feature Experimentation)</p>
+              <div className="flex flex-wrap items-center gap-3 mb-3">
+                {[
+                  { label: "ODP segments API", sub: "queryOdpSegments(userId)" },
+                  { label: "Segment map", sub: "segment name → variationKey" },
+                  { label: "Graph filter", sub: "getContentByPath()" },
+                  { label: "CMS variant", sub: "or original fallback", highlight: true },
+                ].map((step, i, arr) => (
+                  <div key={step.label} className="flex items-center gap-3">
+                    <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
+                      <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                      <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                    </div>
+                    {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                ODP is an <strong className="text-on-surface">audience layer only</strong> - it has no delivery
+                role. Query it for the visitor&apos;s behavioral segments, map a segment name to a variation
+                key, and pass it straight to Graph. CMS/Graph still does the content delivery, just as
+                in Path 1 - only the decision layer differs. ODP reporting covers{" "}
+                <strong className="text-on-surface">audience analytics</strong> (segment reach, engagement
+                trends) - not a controlled statistical test. Use this path for pure personalization for
+                known behavioral segments with no experiment to run.
+              </p>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">Path 3 - Custom audience layer (server-side, direct to Graph)</p>
+              <div className="flex flex-wrap items-center gap-3 mb-3">
+                {[
+                  { label: "Custom logic", sub: "cookie, DB, API, 3rd-party service" },
+                  { label: "Variation key", sub: "resolved by your code" },
+                  { label: "Graph filter", sub: "getContentByPath()" },
+                  { label: "CMS variant", sub: "or original fallback", highlight: true },
+                ].map((step, i, arr) => (
+                  <div key={step.label} className="flex items-center gap-3">
+                    <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
+                      <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                      <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                    </div>
+                    {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Graph&apos;s variation filter accepts any string as the variation key - it does not care
+                where it came from. Plug in whatever audience system you already have: read a cookie
+                your own system wrote, call an internal API, query a database, or derive the key from
+                request headers. Resolve the key in your Server Component and pass it to{" "}
+                <code className="bg-surface-low px-1 rounded font-mono">getContentByPath(url, {`{ variation: { include: "SOME", value: [key], includeOriginal: true } }`})</code>.
+                The rest of the delivery pipeline - Graph filter, CMS variant, original fallback - works
+                identically to Paths 1 and 2.
+              </p>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">Path 4 - Web Experimentation / Personalization (client-side, no CMS integration)</p>
+              <div className="flex flex-wrap items-center gap-3 mb-3">
+                {[
+                  { label: "Page loads", sub: "base CMS content served" },
+                  { label: "Client script", sub: "own audience rules evaluated" },
+                  { label: "DOM updated", sub: "visual editor variations" },
+                  { label: "Results", sub: "own stats + reports", highlight: true },
+                ].map((step, i, arr) => (
+                  <div key={step.label} className="flex items-center gap-3">
+                    <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
+                      <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                      <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                    </div>
+                    {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Optimizely Web Experimentation / Personalization (standalone) is delivered via a{" "}
+                <strong className="text-on-surface">JavaScript snippet</strong> with its own visual editor,
+                audience system, and statistical results - all evaluated in the browser, not on the server.
+                The base CMS content renders first and the variation is applied client-side, so there
+                is no CMS integration.
+              </p>
             </div>
           </div>
 
-          {/* This page vs FX page */}
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-6 h-6 rounded bg-brand/10 flex items-center justify-center shrink-0">
-                  <span className="text-brand text-[10px] font-bold">P</span>
-                </span>
-                <h3 className="font-display font-semibold text-on-surface text-sm">This page covers</h3>
-              </div>
-              <ul className="space-y-2 text-sm text-on-surface-variant">
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> The two sources for FX audiences - native attributes vs ODP segments</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Collecting native signals (device, persona, geo, auth) via <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code></li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Extending the visitor context with new attributes</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Using ODP as a behavioral layer for deeper targeting</li>
-              </ul>
-            </div>
+          <div className="space-y-3 mb-8">
+            <Callout variant="note">
+              <strong>FX and ODP are not mutually exclusive.</strong>{" "}
+              ODP segments can be used as FX audience conditions - the decision still runs through
+              FX&apos;s delivery engine (bucketing, experiments, statistical results), but the audience
+              condition references a behavioral segment rather than a request-time attribute. This
+              is the combination: ODP depth with FX infrastructure. It is covered in the{" "}
+              <a href="#targeting-sources" className="text-brand hover:underline">FX Audience Sources</a>{" "}
+              section below.
+            </Callout>
 
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-6 h-6 rounded bg-brand/10 flex items-center justify-center shrink-0">
-                  <span className="text-brand text-[10px] font-bold">FX</span>
-                </span>
-                <h3 className="font-display font-semibold text-on-surface text-sm">
-                  <Link href="/demo/feature-experimentation" className="hover:text-brand transition-colors">
-                    Feature Experimentation page covers →
-                  </Link>
-                </h3>
-              </div>
-              <ul className="space-y-2 text-sm text-on-surface-variant">
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> The Configure and Serve lifecycle and the flag/variation contract</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Connecting FX variation keys to CMS content variations</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Middleware, user helper, catch-all route, and impression firing</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Your live flag decisions and active variation keys</li>
-              </ul>
-            </div>
+            <Callout variant="note">
+              <strong>Coming from CMS12/13 Visitor Groups / Audiences?</strong>{" "}
+              In Optimizely CMS12/13 (.NET), this feature was called Visitor Groups and later renamed
+              to Audiences. Criteria are defined in the CMS admin UI and evaluated server-side
+              in-process at request time via <code className="bg-surface-low px-1 rounded font-mono text-xs">IsMatch()</code>.
+              Content blocks show or hide at the component level based on audience membership.
+              No separate SDK - purely rules-based, built into the CMS, no A/B testing or statistical results.{" "}
+              <strong>In the SaaS CMS (this demo), Visitor Groups / Audiences do not exist</strong> - the CMS
+              is headless with no built-in rendering layer. Personalization is externalized:
+              FX audience rules take the place of criteria for request-time facts (device, country, login state);
+              ODP segments take the place of behavioral criteria (page view history, high-value, churn risk).
+              FX also adds what Visitor Groups never had: experiments, traffic splits, and statistical results.
+            </Callout>
           </div>
 
           {/* Deep links into FX page */}
@@ -205,15 +307,15 @@ export default async function PersonalizationDemoPage() {
               </p>
             </Link>
             <Link
-              href="/demo/feature-experimentation#code-middleware"
+              href="/demo/odp"
               className="bg-surface-lowest border border-ghost-border hover:border-brand/40 rounded-2xl p-5 transition-colors group"
             >
-              <p className="text-xs font-mono text-on-surface-variant mb-2 uppercase tracking-wider">FX Guide</p>
+              <p className="text-xs font-mono text-on-surface-variant mb-2 uppercase tracking-wider">ODP Guide</p>
               <p className="font-display font-semibold text-on-surface group-hover:text-brand transition-colors text-sm mb-1">
-                Integration Code
+                ODP: Profiles and Segments
               </p>
               <p className="text-xs text-on-surface-variant">
-                Middleware, user helper, catch-all route, and impression firing
+                How ODP builds visitor profiles, ingests events, and computes segments
               </p>
             </Link>
           </div>
@@ -222,14 +324,16 @@ export default async function PersonalizationDemoPage() {
         {/* Section B - the two sources for FX audiences */}
         <section id="targeting-sources">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Two Ways to Target Audiences: Native Attributes vs ODP{" "}
+            FX Audience Sources: Native Attributes vs ODP Segments{" "}
             <a href="#targeting-sources" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            An FX audience can be fed from two very different sources. The first is built into your app
-            and costs nothing extra; the second is a dedicated data layer that sits in front of FX and
-            remembers what a visitor did over time. Both resolve to the same variation key - they differ
-            in what they can express and what they cost.
+            ODP is an audience layer, not a delivery engine - it plugs into FX&apos;s audience
+            configuration to provide behavioral depth. Within the FX path, an audience condition
+            can be fed from two sources: native request-time attributes already in your app, or
+            ODP segments computed from cross-session behavior. Both resolve to the same variation
+            key and run through the same FX delivery engine - they differ in what they can express
+            and what they cost.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -245,7 +349,7 @@ export default async function PersonalizationDemoPage() {
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code>,{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">logged_in</code>, geo, plan, UTM - are
                 collected by <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code> and passed
-                straight into <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decide()</code>. The SDK matches
+                straight into <code className="bg-surface-low px-1 rounded font-mono text-xs">userCtx.decide()</code>. The SDK matches
                 them against your audience rules <strong>locally, in-process</strong> - no extra service, no network round-trip.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
@@ -276,250 +380,18 @@ export default async function PersonalizationDemoPage() {
             </div>
           </div>
 
-          {/* Comparison table */}
-          <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden mb-6">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="border-b border-ghost-border">
-                    <th className="text-left font-mono text-xs text-on-surface-variant uppercase tracking-wider px-5 py-3 font-medium">Dimension</th>
-                    <th className="text-left font-display font-semibold text-on-surface px-5 py-3">Native attributes</th>
-                    <th className="text-left font-display font-semibold text-on-surface px-5 py-3">ODP segments</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ["Signal source", "Cookies + request headers, in your app", "Behavioral events ingested into ODP"],
-                    ["Where evaluated", "In-process, same request", "ODP computes; FX reads via a lookup"],
-                    ["Network call", "None", "Yes - request to ODP"],
-                    ["Persists across sessions", "No - only what this request carries", "Yes - stored on the profile"],
-                    ["Captures behavior over time", "No", "Yes - events accumulate into segments"],
-                    ["Setup cost", "One-file change + FX audience condition", "Event instrumentation + ODP account + mapping"],
-                    ["Best for", "Request-time facts: device, geo, auth, plan", "History and intent: RFM, high-value, churn risk"],
-                  ].map(([dim, native, odp]) => (
-                    <tr key={dim} className="border-b border-ghost-border last:border-0">
-                      <td className="px-5 py-3 font-mono text-xs text-on-surface align-top">{dim}</td>
-                      <td className="px-5 py-3 text-on-surface-variant align-top">{native}</td>
-                      <td className="px-5 py-3 text-on-surface-variant align-top">{odp}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           <Callout variant="note">
-            <strong>Both paths end the same way.</strong> Native attributes and ODP segments both resolve to a
-            variation key that runs the identical{" "}
+            <strong>Both FX audience sources resolve to the same variation key</strong> and run the identical{" "}
             <Link href="/demo/feature-experimentation#how-it-works" className="text-brand hover:underline">FX → Graph → CMS pipeline</Link>.
-            ODP simply adds a data layer <em>before</em> the FX decision. Start native; reach for ODP when a
-            single request can&apos;t tell you what you need to know.
+            ODP simply adds a behavioral data layer <em>before</em> the FX decision. For a path that bypasses
+            FX entirely, see the ODP direct section below.
           </Callout>
-        </section>
-
-        {/* Audience Switcher */}
-        <section id="audience-switcher">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Demo: Audience Switcher{" "}
-            <a href="#audience-switcher" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            The floating pill in the bottom-right corner lets a presenter instantly switch
-            between audience segments without waiting for FX bucketing - useful for showing
-            clients exactly which content each segment sees.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <h3 className="font-display font-semibold text-on-surface mb-3">What it sets</h3>
-              <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
-                The switcher writes two cookies that{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
-                picks up on every subsequent server request. These map directly to FX audience conditions
-                - no client-side SDK involved.
-              </p>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-2">Persona</p>
-                  <div className="space-y-1.5">
-                    {[
-                      { key: "personal", note: 'demo_persona = "personal"' },
-                      { key: "business", note: 'demo_persona = "business"' },
-                    ].map(({ key, note }) => (
-                      <div key={key} className="flex items-center justify-between gap-3 text-sm">
-                        <code className="font-mono text-xs bg-surface-low px-2 py-0.5 rounded text-on-surface">{key}</code>
-                        <span className="text-xs text-on-surface-variant">{note}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-2">Auth State</p>
-                  <div className="space-y-1.5">
-                    {[
-                      { label: "Guest", note: "demo_logged_in = false" },
-                      { label: "Logged In", note: "demo_logged_in = true" },
-                    ].map(({ label, note }) => (
-                      <div key={label} className="flex items-center justify-between gap-3 text-sm">
-                        <span className="text-on-surface font-medium text-xs">{label}</span>
-                        <span className="text-xs text-on-surface-variant font-mono">{note}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-ghost-border bg-surface-low">
-                <span className="text-xs font-mono text-on-surface-variant">src/lib/optimizely/visitor.ts</span>
-              </div>
-              <CodeBlock code={`// Audience Switcher → POST /api/demo/set-persona
-// Sets demo_persona cookie (1-day maxAge)
-
-// visitor.ts reads it on every server request:
-const persona = cookieStore.get("demo_persona")?.value;
-const loggedIn =
-  cookieStore.get("demo_logged_in")?.value === "true";
-
-// Both are included in the FX attribute map:
-// { device: "desktop", persona: "personal", logged_in: true }
-
-// FX evaluates these against audience conditions:
-//   persona == "personal"  → variation key: "personal"
-//   persona == "business"  → variation key: "business"
-//   logged_in == true      → your custom audience`} />
-            </div>
-          </div>
-
-          <Callout variant="warning">
-            <strong>The Audience Switcher is demo tooling only.</strong>{" "}
-            In production, replace the{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_persona</code> cookie
-            with real audience signals - auth session data, CRM enrichment, or onboarding answers.
-            The FX audience conditions and targeting logic stay the same; only the attribute source changes.
-          </Callout>
-        </section>
-
-        {/* Your session */}
-        <section id="your-session">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Your Session{" "}
-            <a href="#your-session" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            The attributes below are what{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
-            resolved for your current request. These are passed to Feature Experimentation as your
-            audience attribute map on every page load - no round-trip, evaluated entirely in-process.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <h3 className="font-display font-semibold text-on-surface mb-4">Current Attributes</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
-                    User ID
-                  </span>
-                  <code className="text-sm font-mono text-on-surface">
-                    {userId.slice(0, 8)}…{userId.slice(-4)}
-                  </code>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
-                    device
-                  </span>
-                  <code className="text-sm font-mono text-on-surface">{device}</code>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
-                    logged_in
-                  </span>
-                  <code className={`text-sm font-mono ${demoLoggedIn ? "text-brand" : "text-on-surface"}`}>
-                    {String(demoLoggedIn)}
-                  </code>
-                </div>
-                {demoPersona ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
-                      persona
-                    </span>
-                    <code className="text-sm font-mono text-brand">{demoPersona}</code>
-                  </div>
-                ) : (
-                  <p className="text-xs text-on-surface-variant italic pt-1">
-                    No persona set - use the audience switcher to add one.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <h3 className="font-display font-semibold text-on-surface mb-1">
-                Audience Condition Preview
-              </h3>
-              <p className="text-xs text-on-surface-variant mb-4">
-                How FX evaluates common audience conditions against your current attributes.
-                Use the switcher to see these update in real time.
-              </p>
-              <div>
-                <MatchRow
-                  condition='persona = "personal"'
-                  value={demoPersona ?? "not set"}
-                  matches={demoPersona === "personal"}
-                />
-                <MatchRow
-                  condition='persona = "business"'
-                  value={demoPersona ?? "not set"}
-                  matches={demoPersona === "business"}
-                />
-                <MatchRow
-                  condition="logged_in = true"
-                  value={String(demoLoggedIn)}
-                  matches={demoLoggedIn}
-                />
-                <MatchRow
-                  condition='device = "mobile"'
-                  value={device}
-                  matches={device === "mobile"}
-                />
-                <MatchRow
-                  condition='device = "desktop"'
-                  value={device}
-                  matches={device === "desktop"}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex items-start gap-4">
-            <div className="shrink-0 w-9 h-9 rounded-lg bg-brand/10 flex items-center justify-center">
-              <span className="text-brand font-bold font-mono text-[10px] leading-none">FX</span>
-            </div>
-            <div>
-              <p className="font-display font-semibold text-on-surface mb-1">
-                See your live flag decisions on the Feature Experimentation page
-              </p>
-              <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                The Feature Experimentation demo shows which flags are enabled for your session,
-                the variation keys being passed to Graph, and the exact CMS content filter
-                applied on every page request.
-              </p>
-              <Link
-                href="/demo/feature-experimentation#your-session"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
-              >
-                View your session on the FX demo →
-              </Link>
-            </div>
-          </div>
         </section>
 
         {/* Audience attributes */}
         <section id="audience-attributes">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Native Attributes in Depth{" "}
+            FX Native Attributes in Depth{" "}
             <a href="#audience-attributes" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
@@ -536,7 +408,8 @@ const loggedIn =
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">1</span>
-                <h3 className="font-display font-semibold text-on-surface">Device &amp; User-Agent (already live)</h3>
+                <h3 className="font-display font-semibold text-on-surface">Device &amp; User-Agent</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium shrink-0">already live</span>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
                 <div>
@@ -558,7 +431,7 @@ const device = /mobile|android|iphone|ipad/i.test(ua)
   ? "mobile"
   : "desktop";
 
-// Included automatically in getOptimizelyUser() attributes
+// Pass as part of attributes to createUserContext(userId, { device, ... })
 // FX audience condition: device = "mobile"`} />
               </div>
             </div>
@@ -567,7 +440,8 @@ const device = /mobile|android|iphone|ipad/i.test(ua)
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">2</span>
-                <h3 className="font-display font-semibold text-on-surface">Persona (already live - set by the Audience Switcher)</h3>
+                <h3 className="font-display font-semibold text-on-surface">Persona</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium shrink-0">already live</span>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
                 <div>
@@ -596,7 +470,9 @@ const persona = cookieStore.get("demo_persona")?.value;
 
 // FX audience conditions:
 //   persona = "personal"
-//   persona = "business"`} />
+//   persona = "business"
+//   persona = "mortgages"
+//   persona = "investments"`} />
               </div>
             </div>
 
@@ -604,7 +480,8 @@ const persona = cookieStore.get("demo_persona")?.value;
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">3</span>
-                <h3 className="font-display font-semibold text-on-surface">Auth session (logged-in state - also live via the switcher)</h3>
+                <h3 className="font-display font-semibold text-on-surface">Auth session</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium shrink-0">already live</span>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
                 <div>
@@ -622,21 +499,18 @@ const persona = cookieStore.get("demo_persona")?.value;
                   </p>
                 </div>
                 <CodeBlock code={`import { getServerSession } from "next-auth";
-import { getVisitorContext } from "@/lib/optimizely/visitor";
-import { getDecision } from "@/lib/optimizely/experimentation";
 
 const session = await getServerSession();
-const { userId: cookieId, attributes } = await getVisitorContext();
-
-// Use account ID for stable cross-device bucketing
+// Use the account ID as userId for stable cross-device bucketing
 const userId = session?.user?.id ?? cookieId;
 
-const decision = await getDecision("premium_feature", userId, {
+const userCtx = client.createUserContext(userId, {
   ...attributes,
-  logged_in:  Boolean(session),
-  plan:       session?.user?.plan ?? "free",
-  role:       session?.user?.role ?? "guest",
+  logged_in: Boolean(session),
+  plan:      session?.user?.plan ?? "free",
+  role:      session?.user?.role ?? "guest",
 });
+const decision = userCtx.decide("premium_feature", [DISABLE_DECISION_EVENT]);
 // FX audiences:
 //   logged_in = true
 //   plan = "premium"
@@ -705,14 +579,14 @@ export default async function CmsPage({
   searchParams,
 }) {
   const sp = await searchParams;
-  const { userId, attributes } = await getVisitorContext();
-
-  const decision = await getDecision("campaign_hero", userId, {
+  const userCtx = client.createUserContext(userId, {
     ...attributes,
     utm_source:   sp.utm_source ?? "direct",
     utm_medium:   sp.utm_medium ?? "none",
     utm_campaign: sp.utm_campaign ?? "none",
   });
+
+  const decision = userCtx.decide("campaign_hero", [DISABLE_DECISION_EVENT]);
   // FX audience: utm_source = "google"
 }`} />
               </div>
@@ -726,22 +600,14 @@ export default async function CmsPage({
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                    All attributes are available as conditions in the FX dashboard.
-                    Combine them with AND/OR/NOT to create precise segments. The SDK evaluates
-                    conditions locally against the attribute map - no network call per decision.
+                  <p className="text-sm text-on-surface-variant leading-relaxed">
+                    All attributes are available as AND/OR/NOT conditions in the FX dashboard.
+                    The SDK evaluates them locally against the attribute map - no network call per decision.
                   </p>
-                  <ul className="space-y-1 text-sm text-on-surface-variant leading-relaxed">
-                    <li>→ <strong className="text-on-surface">String match:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">persona = &quot;business&quot;</code></li>
-                    <li>→ <strong className="text-on-surface">Boolean:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">logged_in = true</code></li>
-                    <li>→ <strong className="text-on-surface">Substring:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">plan contains &quot;premium&quot;</code></li>
-                    <li>→ <strong className="text-on-surface">Numeric range:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">account_age_days &gt; 30</code></li>
-                  </ul>
                 </div>
-                <CodeBlock code={`// Pass everything you know about the user
-const { userId, attributes } = await getVisitorContext();
-const decision = await getDecision("homepage", userId, {
-  // From getVisitorContext() (device, persona, logged_in)
+                <CodeBlock code={`// All attributes are set once when creating the user context
+const userCtx = client.createUserContext(userId, {
+  // Base attributes (device, persona, logged_in) from getVisitorContext()
   ...attributes,
 
   // From auth session
@@ -755,6 +621,7 @@ const decision = await getDecision("homepage", userId, {
   // From query params
   utm_source: sp.utm_source ?? "direct",
 });
+const decision = userCtx.decide("homepage", [DISABLE_DECISION_EVENT]);
 // FX evaluates ALL of these server-side.
 // Zero client-side data exposure.`} />
               </div>
@@ -764,10 +631,10 @@ const decision = await getDecision("homepage", userId, {
         </section>
 
         {/* Extending the visitor context */}
-        <section id="setup-guide">
+        <section id="extending-visitor-context">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
             Extending the Visitor Context{" "}
-            <a href="#setup-guide" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            <a href="#extending-visitor-context" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Adding a new audience signal is a one-file change. Once an attribute flows into{" "}
@@ -828,70 +695,19 @@ const decision = await getDecision("homepage", userId, {
 
         {/* Section D - ODP as the behavioral layer for deeper targeting */}
         <section id="odp-personalization">
-          <span id="variation-resolution" className="block" aria-hidden="true" />
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
             ODP: The Behavioral Layer for Deeper Targeting{" "}
             <a href="#odp-personalization" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            ODP is the behavioral layer from the comparison above - a profile store that remembers
-            what a visitor did over time. There are two ways to put it to work. Reference an ODP
-            segment as an{" "}
+            ODP is a behavioral profile store - it remembers what a visitor did over time. You can
+            use it in two ways: reference an ODP segment as an{" "}
             <Link href="/demo/feature-experimentation#audience-targeting" className="text-brand hover:underline">FX audience</Link>{" "}
-            and the decision still runs through FX (experiments, hold-out groups, results). Or - for
-            pure personalization with no experiment - skip FX entirely: query ODP for the visitor&apos;s
-            segments, map a segment name to a CMS variation key, and pass it straight to Graph. The
-            comparison below shows that ODP-direct path against the FX path; both feed the same Graph
-            variation filter. For how ODP builds those profiles (identity stitching, events, segments),
-            see the <Link href="/demo/odp" className="text-brand hover:underline">ODP page</Link>.
+            (decision still runs through FX, with experiments and statistical results), or skip FX entirely -
+            query ODP directly, map a segment name to a CMS variation key, and pass it straight to Graph.
+            For how ODP builds profiles (identity stitching, events, segments), see the{" "}
+            <Link href="/demo/odp" className="text-brand hover:underline">ODP page</Link>.
           </p>
-
-          {/* Pipeline comparison */}
-          <div className="space-y-3 mb-8">
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
-              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">
-                Without FX - ODP direct
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                {[
-                  { label: "ODP segments API", sub: "queryOdpSegments(userId)" },
-                  { label: "Mapping config", sub: "ODP name → variation key" },
-                  { label: "Graph variation filter", sub: "getContentByPath()" },
-                  { label: "CMS variant", sub: "or original fallback", highlight: true },
-                ].map((step, i, arr) => (
-                  <div key={step.label} className="flex items-center gap-3">
-                    <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
-                      <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
-                      <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
-                    </div>
-                    {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 opacity-60">
-              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">
-                With FX - for experiments
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                {[
-                  { label: "Audience signals", sub: "getVisitorContext()" },
-                  { label: "FX SDK", sub: "audience evaluation → variationKey" },
-                  { label: "Graph variation filter", sub: "getContentByPath()" },
-                  { label: "CMS variant", sub: "or original fallback" },
-                ].map((step, i, arr) => (
-                  <div key={step.label} className="flex items-center gap-3">
-                    <div className="text-center bg-surface-low rounded-xl px-4 py-3 min-w-[130px]">
-                      <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
-                      <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
-                    </div>
-                    {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
 
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             {/* Your ODP segments */}
@@ -964,23 +780,250 @@ ${mappingEntries.length > 0
             Use the ODP direct path when the goal is personalizing content for known segments - no
             control group, no statistical test. Use the FX path when you need to run a real
             experiment: split traffic, measure lift, and declare a winner with confidence. Both paths
-            feed the same Graph variation filter - only the decision layer differs.{" "}
-            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
+            feed the same Graph variation filter - only the decision layer differs.
           </Callout>
+        </section>
+
+        {/* Audience Switcher */}
+        <section id="audience-switcher">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Demo: Audience Switcher{" "}
+            <a href="#audience-switcher" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
+            The floating pill in the bottom-right corner lets a presenter instantly switch
+            between audience segments without waiting for FX bucketing - useful for showing
+            clients exactly which content each segment sees.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
+              <h3 className="font-display font-semibold text-on-surface mb-3">What it sets</h3>
+              <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
+                The switcher writes two cookies that{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
+                picks up on every subsequent server request. These map directly to FX audience conditions
+                - no client-side SDK involved. The{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_bucketing_id</code>{" "}
+                cookie also serves as the FX bucketing ID, keeping the visitor in the same traffic
+                bucket across page loads.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-2">Persona</p>
+                  <div className="space-y-1.5">
+                    {[
+                      { key: "new_visitor", note: "demo_persona absent (default)" },
+                      { key: "personal", note: 'demo_persona = "personal"' },
+                      { key: "business", note: 'demo_persona = "business"' },
+                      { key: "mortgages", note: 'demo_persona = "mortgages"' },
+                      { key: "investments", note: 'demo_persona = "investments"' },
+                    ].map(({ key, note }) => (
+                      <div key={key} className="flex items-center justify-between gap-3 text-sm">
+                        <code className="font-mono text-xs bg-surface-low px-2 py-0.5 rounded text-on-surface">{key}</code>
+                        <span className="text-xs text-on-surface-variant">{note}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-2">Auth State</p>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: "Guest", note: "demo_bucketing_id absent" },
+                      { label: "Logged In", note: "demo_bucketing_id = [hash]" },
+                    ].map(({ label, note }) => (
+                      <div key={label} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-on-surface font-medium text-xs">{label}</span>
+                        <span className="text-xs text-on-surface-variant font-mono">{note}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-ghost-border bg-surface-low">
+                <span className="text-xs font-mono text-on-surface-variant">src/lib/optimizely/visitor.ts</span>
+              </div>
+              <CodeBlock code={`// Audience Switcher writes two cookies.
+// Persona: POST /api/demo/set-persona → demo_persona (1-day)
+// Logged In: POST /api/demo/set-bucketing-id → demo_bucketing_id
+//   Value: SHA-256 of "demo-account@mosey.bank" (stable hash)
+
+// visitor.ts reads both on every server request:
+const persona     = cookieStore.get("demo_persona")?.value;
+const bucketingId = cookieStore.get("demo_bucketing_id")?.value;
+
+// demo_bucketing_id serves two roles:
+//   1. logged_in: !!bucketingId  (the FX attribute)
+//   2. passed to createUserContext() as bucketingId
+//      for stable cross-device traffic bucketing in FX
+
+// FX attribute map produced:
+// { device: "desktop", persona: "personal", logged_in: true }
+// FX audience conditions:
+//   persona == "personal"  → variation key: "personal"
+//   persona == "business"  → variation key: "business"
+//   logged_in == true      → your custom audience`} />
+            </div>
+          </div>
+
+          <Callout variant="warning">
+            <strong>The Audience Switcher is demo tooling only.</strong>{" "}
+            In production, replace the{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_persona</code> cookie
+            with real audience signals - auth session data, CRM enrichment, or onboarding answers.
+            The FX audience conditions and targeting logic stay the same; only the attribute source changes.
+          </Callout>
+        </section>
+
+        {/* Your session */}
+        <section id="your-session">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Your Session{" "}
+            <a href="#your-session" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
+            The attributes below are what{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
+            resolved for your current request. These are passed to Feature Experimentation as your
+            audience attribute map on every page load - no round-trip, evaluated entirely in-process.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
+              <h3 className="font-display font-semibold text-on-surface mb-4">Current Attributes</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
+                    User ID
+                  </span>
+                  <code className="text-sm font-mono text-on-surface">
+                    {userId.slice(0, 8)}…{userId.slice(-4)}
+                  </code>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
+                    device
+                  </span>
+                  <code className="text-sm font-mono text-on-surface">{device}</code>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
+                    logged_in
+                  </span>
+                  <code className={`text-sm font-mono ${demoLoggedIn ? "text-brand" : "text-on-surface"}`}>
+                    {String(demoLoggedIn)}
+                  </code>
+                </div>
+                {demoPersona ? (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
+                      persona
+                    </span>
+                    <code className="text-sm font-mono text-brand">{demoPersona}</code>
+                  </div>
+                ) : (
+                  <p className="text-xs text-on-surface-variant italic pt-1">
+                    No persona set - use the audience switcher to add one.
+                  </p>
+                )}
+                {pageViews !== undefined && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
+                      page_views
+                    </span>
+                    <code className="text-sm font-mono text-on-surface">{pageViews}</code>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
+              <h3 className="font-display font-semibold text-on-surface mb-1">
+                Audience Condition Preview
+              </h3>
+              <p className="text-xs text-on-surface-variant mb-4">
+                How FX evaluates common audience conditions against your current attributes.
+                Use the switcher to see these update in real time.
+              </p>
+              <div>
+                <MatchRow
+                  condition='persona = "personal"'
+                  value={demoPersona ?? "not set"}
+                  matches={demoPersona === "personal"}
+                />
+                <MatchRow
+                  condition='persona = "business"'
+                  value={demoPersona ?? "not set"}
+                  matches={demoPersona === "business"}
+                />
+                <MatchRow
+                  condition='persona = "mortgages"'
+                  value={demoPersona ?? "not set"}
+                  matches={demoPersona === "mortgages"}
+                />
+                <MatchRow
+                  condition='persona = "investments"'
+                  value={demoPersona ?? "not set"}
+                  matches={demoPersona === "investments"}
+                />
+                <MatchRow
+                  condition="logged_in = true"
+                  value={String(demoLoggedIn)}
+                  matches={demoLoggedIn}
+                />
+                <MatchRow
+                  condition='device = "mobile"'
+                  value={device}
+                  matches={device === "mobile"}
+                />
+                <MatchRow
+                  condition='device = "desktop"'
+                  value={device}
+                  matches={device === "desktop"}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex items-start gap-4">
+            <div className="shrink-0 w-9 h-9 rounded-lg bg-brand/10 flex items-center justify-center">
+              <span className="text-brand font-bold font-mono text-[10px] leading-none">FX</span>
+            </div>
+            <div>
+              <p className="font-display font-semibold text-on-surface mb-1">
+                See your live flag decisions on the Feature Experimentation page
+              </p>
+              <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
+                The Feature Experimentation demo shows which flags are enabled for your session,
+                the variation keys being passed to Graph, and the exact CMS content filter
+                applied on every page request.
+              </p>
+              <Link
+                href="/demo/feature-experimentation#your-session"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
+              >
+                View your session on the FX demo →
+              </Link>
+            </div>
+          </div>
         </section>
 
         <SourcePanel
           heading="Source files"
           files={[
             {
-              label: "user.ts",
-              path: "src/lib/optimizely/user.ts",
-              content: userTs,
+              label: "visitor.ts",
+              path: "src/lib/optimizely/visitor.ts",
+              content: visitorTs,
             },
             {
-              label: "[[...slug]]/page.tsx",
-              path: "src/app/[[...slug]]/page.tsx",
-              content: catchAllTs,
+              label: "odp.ts",
+              path: "src/lib/optimizely/odp.ts",
+              content: odpTs,
             },
           ]}
         />

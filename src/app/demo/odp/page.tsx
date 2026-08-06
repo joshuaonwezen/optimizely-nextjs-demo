@@ -89,9 +89,47 @@ export function resolveVariationKey(segments: string[]): string | undefined {
   }
 }
 
-// Usage (see /demo/personalization): query the visitor's segments, resolve a
-// CMS variation name, pass it to Graph's variation filter so the visitor gets
-// the matching page variation - with includeOriginal: true as the fallback.`;
+// Usage - see the Direct Path to CMS Variants section below:
+// queryOdpSegments(userId) → resolveVariationKey(segments) →
+// getContentByPath(url, { variation: { include: "SOME", value: [key],
+//   includeOriginal: true } })
+// includeOriginal: true means the original page is served when no key matches.`;
+
+const DIRECT_PATH_SNIPPET = `// Any Server Component - the complete ODP direct → Graph pipeline.
+// No FX engine in the loop; just segments, a key, and a Graph filter.
+
+import { getVisitorContext } from "@/lib/optimizely/visitor";
+import { queryOdpSegments, resolveVariationKey } from "@/lib/optimizely/odp";
+import { getClient } from "@optimizely/cms-sdk";
+
+export default async function Page({ params }) {
+  const { userId } = await getVisitorContext();
+
+  // 1. Ask ODP which segments this visitor qualifies for.
+  //    Only the segments in ODP_SEGMENT_TO_VARIATION are checked.
+  //    Result is cached 300s - does not hit ODP on every page request.
+  const segments = await queryOdpSegments(userId);
+
+  // 2. Map the first qualifying segment to a CMS variation key.
+  //    Returns undefined when no segment matches - original content served.
+  const variationKey = resolveVariationKey(segments);
+
+  // 3. Build the Graph variation filter and fetch the page.
+  //    includeOriginal: true is required - without it, unmatched visitors
+  //    get no content at all instead of the default page.
+  const variationFilter = variationKey
+    ? { variation: { include: "SOME" as const, value: [variationKey], includeOriginal: true } }
+    : undefined;
+
+  const url = "/" + ((await params).slug ?? []).join("/");
+  const [page] = await getClient().getContentByPath(url, {
+    ...variationFilter,
+    next: { revalidate: 3600, tags: ["page"] },
+  } as any);
+
+  // Render page normally - Graph returns the matched CMS variation,
+  // or the original page when no variation key was resolved.
+}`;
 
 const EVENTS_SNIPPET = `// Two event pipelines run side by side in this app - don't conflate them:
 //
@@ -127,7 +165,7 @@ export default function OdpDemoPage() {
             <SectionAnchor id="what" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            Three things flow through ODP here. The browser sends events (pageviews, identity) via
+            Several things flow through ODP in this app. The browser sends events (pageviews, identity) via
             the ODP tag. ODP aggregates those into a customer profile and evaluates segment
             membership (&quot;high-value-customers&quot;, &quot;retail-consumer&quot;). The server then
             queries that membership by visitor ID and maps qualifying segments to CMS content
@@ -181,11 +219,56 @@ export default function OdpDemoPage() {
             systems, so the contract between them is a single explicit map. First qualifying segment
             wins. The resolved variation key feeds Graph&apos;s variation filter exactly like an FX
             bucketing decision does (see{" "}
-            <Link href="/demo/personalization#variation-resolution" className="text-brand hover:underline font-medium">
-              variation resolution
-            </Link>).
+            <Link href="/demo/personalization#odp-personalization" className="text-brand hover:underline font-medium">
+              ODP personalization
+            </Link>{" "}on the personalization page).
+            The map is <strong className="text-on-surface">empty by default</strong> — ODP has no
+            effect on content until you populate it with real segment-to-variation entries matching
+            your ODP account and your CMS variation names.
           </p>
           <CodeBlock code={MAPPING_SNIPPET} label="The one place both sides meet" />
+        </section>
+
+        <section id="direct-path">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Direct path: ODP segments to CMS variants
+            <SectionAnchor id="direct-path" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            No FX engine in the loop. Query the visitor&apos;s segments, map one to a CMS variation
+            key, pass that key straight to Graph. Graph returns the matching CMS variant - or the
+            original page if nothing matches. Use this path when personalizing for known behavioral
+            segments with no experiment to run: no traffic split, no control group, no statistical
+            results. If you need any of those, use the{" "}
+            <Link href="/demo/feature-experimentation" className="text-brand hover:underline font-medium">
+              FX path
+            </Link>{" "}
+            instead - it runs the identical Graph variation filter but adds bucketing, hold-out
+            groups, and significance testing.
+          </p>
+
+          {/* Pipeline card */}
+          <div className="bg-surface-lowest border-2 border-brand/40 rounded-2xl p-5 mb-6">
+            <p className="text-[10px] font-mono text-brand uppercase tracking-wider mb-3">ODP direct pipeline</p>
+            <div className="flex flex-wrap items-center gap-3">
+              {[
+                { label: "queryOdpSegments()", sub: "subset filtered, 300s cached" },
+                { label: "resolveVariationKey()", sub: "first matching segment wins" },
+                { label: "Graph variation filter", sub: "getContentByPath({ variation })" },
+                { label: "CMS variant", sub: "or original fallback", highlight: true },
+              ].map((step, i, arr) => (
+                <div key={step.label} className="flex items-center gap-3">
+                  <div className={`text-center rounded-xl px-4 py-3 min-w-[150px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
+                    <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                    <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                  </div>
+                  {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <CodeBlock code={DIRECT_PATH_SNIPPET} label="Complete Server Component — copy and adapt" />
         </section>
 
         <section id="events">
@@ -210,6 +293,7 @@ export default function OdpDemoPage() {
           <><strong className="text-on-surface">Cache segment membership.</strong> It changes slowly; revalidate: 300 keeps ODP off the request hot path.</>,
           <><strong className="text-on-surface">Fail to the default content.</strong> queryOdpSegments returns [] on any error - the visitor gets the original page, not a 500.</>,
           <><strong className="text-on-surface">Keep the segment-to-variation map in one file.</strong> ODP and the CMS name things independently; a single explicit contract is the only rename-safe design.</>,
+          <><strong className="text-on-surface">ODP direct skips FX entirely.</strong> Resolve a variation key from segments and pass it straight to Graph - no bucketing, no experiment. Add FX when you need traffic splits or statistical results.</>,
           <><strong className="text-on-surface">ODP events and FX events are separate pipelines.</strong> Profiles and segments come from ODP events; experiment results come from FX events.</>,
         ]} />
 

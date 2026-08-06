@@ -18,9 +18,9 @@ export default function DemoHero({
         <h1 className="font-display text-4xl md:text-5xl font-extrabold text-on-brand mb-4">
           {title}
         </h1>
-        <p className="text-on-brand-muted max-w-2xl text-lg leading-relaxed">
+        <div className="text-on-brand-muted max-w-2xl text-lg leading-relaxed">
           {description}
-        </p>
+        </div>
         {children}
       </div>
     </section>

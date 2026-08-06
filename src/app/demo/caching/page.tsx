@@ -94,7 +94,10 @@ export async function POST(request: NextRequest) {
   revalidateTag("page");         // bust Graph fetch cache for CMS pages
   revalidateTag("navigation");   // navigation tree (1-hour TTL)
   revalidateTag("banner");       // site banner (1-hour TTL)
+  revalidateTag("footer");       // site footer (1-hour TTL)
+  revalidateTag("settings");     // site settings (1-hour TTL)
   revalidateTag("quotes");       // external quotes (1-hour TTL)
+  revalidateTag("quote-blocks"); // quote blocks (1-hour TTL)
   return NextResponse.json({ received: true, timestamp: Date.now() });
 }`;
 
@@ -192,8 +195,9 @@ const NO_STORE_PATTERN = `// Pattern 1 - cookies() or headers() anywhere in the 
 import { cookies } from "next/headers";
 
 export default async function AnyServerComponent() {
-  const session = cookies().get("session"); // forces no-store on entire response
-  // ...                                    // even if the page has revalidate = 60
+  const cookieStore = await cookies();
+  const session = cookieStore.get("session"); // forces no-store on entire response
+  // ...                                      // even if the page has revalidate = 60
 }
 
 // Pattern 2 - explicit opt-out on the page or a parent layout
@@ -252,9 +256,12 @@ const PREFETCH_SNIPPET = `// Next.js <Link> prefetch behaviour in App Router (pr
 
 const CACHE_TABLE = [
   { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "3600s (1 hr)", tag: "-",            revalidatedBy: "revalidatePath('/', 'layout') in /api/webhooks (page-output ISR only)" },
-  { data: "Navigation tree",   location: "getNavigation()",                ttl: "3600s (1 hr)", tag: "navigation",  revalidatedBy: "revalidateTag('navigation') in /api/webhooks" },
-  { data: "Site banner",       location: "getSiteBanner()",                ttl: "3600s (1 hr)", tag: "banner",      revalidatedBy: "revalidateTag('banner') in /api/webhooks" },
-  { data: "External quotes",   location: "getQuotes()",                    ttl: "3600s (1 hr)", tag: "quotes",      revalidatedBy: "revalidateTag('quotes') in /api/webhooks" },
+  { data: "Navigation tree",   location: "getNavigation()",                ttl: "3600s (1 hr)", tag: "navigation",    revalidatedBy: "revalidateTag('navigation') in /api/webhooks" },
+  { data: "Site banner",       location: "getSiteBanner()",                ttl: "3600s (1 hr)", tag: "banner",        revalidatedBy: "revalidateTag('banner') in /api/webhooks" },
+  { data: "Site footer",       location: "getFooter()",                    ttl: "3600s (1 hr)", tag: "footer",        revalidatedBy: "revalidateTag('footer') in /api/webhooks" },
+  { data: "Site settings",     location: "getSiteSettings()",              ttl: "3600s (1 hr)", tag: "settings",      revalidatedBy: "revalidateTag('settings') in /api/webhooks" },
+  { data: "External quotes",   location: "getQuotes()",                    ttl: "3600s (1 hr)", tag: "quotes",        revalidatedBy: "revalidateTag('quotes') in /api/webhooks" },
+  { data: "Quote blocks",      location: "getQuoteBlocks()",               ttl: "3600s (1 hr)", tag: "quote-blocks",  revalidatedBy: "revalidateTag('quote-blocks') in /api/webhooks" },
   { data: "Page metadata",     location: "generateMetadata()",             ttl: "3600s (1 hr)", tag: "-",           revalidatedBy: "All three webhooks via revalidatePath('/', 'layout')" },
   { data: "Static page paths", location: "generateStaticParams()",         ttl: "3600s (1 hr)", tag: "-",           revalidatedBy: "Next.js build / deploy" },
   { data: "FX datafile",       location: "middleware.ts + experimentation.ts", ttl: "60s",    tag: "-",            revalidatedBy: "Automatic (fetch cache, next: { revalidate: 60 })" },
@@ -510,8 +517,7 @@ export default function CachingDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">fetch()</code> call,
             because both methods route through{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">this.request()</code> which does not
-            forward Next.js fetch options. They participate in page-output ISR only  -  not fetch-level tag revalidation.{" "}
-            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
+            forward Next.js fetch options. They participate in page-output ISR only  -  not fetch-level tag revalidation.
           </Callout>
 
           <Callout label="When does the custom wrapper add value?">

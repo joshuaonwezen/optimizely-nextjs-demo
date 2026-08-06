@@ -158,8 +158,7 @@ async function CmsPage({
     if (meta) {
       try {
         page = await client.getContent(
-          { key: meta.key, version: String(meta.version) },
-          { next: { revalidate: CACHE_TTL, tags: ["page"] } } as any
+          { key: meta.key, version: String(meta.version) }
         );
       } catch {
         // Graph unavailable — fall through to notFound()
