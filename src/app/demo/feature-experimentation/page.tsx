@@ -787,7 +787,9 @@ export default async function FeatureFlagsDemoPage() {
             <strong>SDK attributes</strong> passed at decision time, or <strong>ODP segments</strong> the
             visitor already qualifies for. Both are matched on the server - the browser never knows which
             audience it was matched to. Either way the rule resolves to a variation key, and everything
-            downstream (Graph filter, CMS variant, impression) is identical.
+            downstream (Graph filter, CMS variant, impression) is identical. For the full breakdown of
+            these two sources - native attributes vs the ODP behavioral layer - see{" "}
+            <Link href="/demo/personalization#targeting-sources" className="text-brand hover:underline">Personalization</Link>.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 mb-6">

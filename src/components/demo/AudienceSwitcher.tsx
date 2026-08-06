@@ -3,12 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/tracking";
+import { clearSegment, PERSONA_LABELS, useCurrentSegment, writeSegment, type Persona } from "@/lib/segment";
 
-const PERSONAS = [
-  { key: "",          label: "Default" },
-  { key: "personal",  label: "Personal Banking" },
-  { key: "business",  label: "Business Banking" },
-];
+// Segment options mirror the personas the homepage can serve. new_visitor is the
+// default (no persona / base experience, before any section has been browsed).
+const SEGMENT_ORDER: Persona[] = ["new_visitor", "personal", "business", "mortgages", "investments"];
 
 const DEMO_ACCOUNT = "demo-account@mosey.bank";
 
@@ -25,7 +24,6 @@ function getCookie(name: string): string {
 }
 
 export default function AudienceSwitcher() {
-  const [current, setCurrent] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
   const [bucketingId, setBucketingId] = useState("");
   const [userId, setUserId] = useState("anonymous");
@@ -35,10 +33,12 @@ export default function AudienceSwitcher() {
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const currentLabel = PERSONAS.find((p) => p.key === current)?.label ?? "Default";
+  // Live browsing-derived segment (updates on every navigation via AutoTracker).
+  const segment = useCurrentSegment();
+
+  const currentLabel = PERSONA_LABELS[segment];
 
   useEffect(() => {
-    setCurrent(getCookie("demo_persona"));
     const bid = getCookie("demo_bucketing_id");
     setBucketingId(bid);
     setLoggedIn(!!bid);
@@ -52,18 +52,17 @@ export default function AudienceSwitcher() {
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
-  async function selectPersona(key: string) {
-    if (key === current || loading) return;
-    setLoading(true);
+  // Manual override of the live segment. Writes the same sessionStorage + session
+  // cookie the browsing signal uses (writeSegment), or clears it for new_visitor,
+  // then refreshes so the server re-renders the homepage variation. Browsing a
+  // section afterwards will overwrite this choice.
+  function selectSegment(key: Persona) {
+    if (key === segment || loading) return;
+    const from = segment;
     setOpen(false);
-    await fetch("/api/demo/set-persona", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ persona: key }),
-    });
-    setCurrent(key);
-    setLoading(false);
-    trackEvent("mb_audience_switch", { from: current || "default", to: key || "default" });
+    if (key === "new_visitor") clearSegment();
+    else writeSegment(key);
+    trackEvent("mb_audience_switch", { from, to: key });
     router.refresh();
   }
 
@@ -112,28 +111,39 @@ export default function AudienceSwitcher() {
       {open && (
         <div className="bg-surface-lowest border border-outline-variant rounded-2xl shadow-xl overflow-hidden w-56">
 
-          {/* Persona section */}
+          {/* Segment - reflects the section last browsed; click any to override */}
           <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider">
-            Persona
+            Segment
           </p>
-          {PERSONAS.map((p) => (
-            <button
-              key={p.key}
-              onClick={() => selectPersona(p.key)}
-              className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 transition-colors ${
-                p.key === current
-                  ? "text-brand font-semibold bg-brand/5"
-                  : "text-on-surface hover:bg-surface-low"
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 ${
-                  p.key === current ? "bg-brand" : "bg-outline-variant"
+          {SEGMENT_ORDER.map((key) => {
+            const active = key === segment;
+            return (
+              <button
+                key={key}
+                onClick={() => selectSegment(key)}
+                className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 transition-colors ${
+                  active
+                    ? "text-brand font-semibold bg-brand/5"
+                    : "text-on-surface hover:bg-surface-low"
                 }`}
-              />
-              {p.label}
-            </button>
-          ))}
+              >
+                <span className="relative flex h-2 w-2 shrink-0 items-center justify-center">
+                  {active && (
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-brand/60 animate-ping" />
+                  )}
+                  <span
+                    className={`relative inline-flex h-2 w-2 rounded-full ${
+                      active ? "bg-brand" : "bg-outline-variant"
+                    }`}
+                  />
+                </span>
+                {PERSONA_LABELS[key]}
+              </button>
+            );
+          })}
+          <p className="px-4 pt-1 pb-2 text-xs font-mono text-on-surface-variant">
+            auto from browsing · click to override
+          </p>
 
           {/* Attributes section */}
           <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider border-t border-outline-variant mt-1">

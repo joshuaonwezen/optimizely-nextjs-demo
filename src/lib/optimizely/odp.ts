@@ -38,9 +38,20 @@ export async function queryOdpSegments(userId: string): Promise<string[]> {
 
 // The explicit contract between ODP segment names and CMS variation names.
 // This is the only place to update when either side renames something.
+//
+// FUTURE SWAP - replacing the sessionStorage-derived signal with real ODP audiences:
+// today the browsing-derived persona is set client-side in src/lib/segment.ts
+// (personaFromPath -> writeSegment -> demo_persona cookie -> `persona` FX attribute).
+// When ODP is live, populate this map and drive the `persona` value from ODP instead:
+// call queryOdpSegments(userId), pass the result through resolveVariationKey(), and set
+// the demo_persona cookie / `persona` attribute from that. The downstream pipeline
+// (middleware -> FX `homepage` audiences -> Graph variation filter) is unchanged - the
+// variation keys below must match the CMS variation names and FX variation keys exactly.
 export const ODP_SEGMENT_TO_VARIATION: Record<string, string> = {
   // "high-value-customers": "business",
   // "retail-consumer":      "personal",
+  // "mortgage-intent":      "mortgages",
+  // "investor":             "investments",
 };
 
 export function resolveVariationKey(segments: string[]): string | undefined {

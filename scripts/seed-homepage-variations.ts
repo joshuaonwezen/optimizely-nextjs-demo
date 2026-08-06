@@ -5,6 +5,11 @@
  *   - "new_visitor" → New Visitor homepage (default experience)
  *   - "personal"    → Personal Banking homepage
  *   - "business"    → Business Banking homepage
+ *   - "mortgages"   → Mortgages homepage
+ *   - "investments" → Investments homepage
+ *
+ * The active variation is chosen from the `persona` FX attribute, which is set
+ * from the section the visitor last browsed (see src/lib/segment.ts).
  *
  * Prerequisites:
  *   1. Run seed-content.ts first so the homepage exists in the CMS.
@@ -372,6 +377,182 @@ function buildNewVisitorVariation(): CompNode[] {
   ];
 }
 
+function buildMortgagesVariation(): CompNode[] {
+  return [
+    rootComponent("Hero", "Mortgages Hero", {
+      heading: "A mortgage that moves at your pace",
+      summary:
+        "Decision in principle in 10 minutes, rates from 4.19% fixed, and an advisor by your side from application to key handover.",
+      theme: "dark",
+    }),
+    sectionComponent("SectionHeadingBlock", "Products Heading", {
+      heading: "Mortgages for every move",
+      subheading:
+        "Whether you're buying your first home, remortgaging, or building a portfolio - we make the numbers simple.",
+    }),
+    gridSection("Mortgages Product Cards", [
+      elementComponent("ProductCardBlock", "First Time Buyer Card", {
+        icon: "mortgage",
+        title: "First-Time Buyers",
+        description:
+          "Deposits from 5%, first-time-buyer rates, and a step-by-step guide from offer to moving day.",
+        linkUrl: "/en/mortgage",
+        linkText: "Check your rate →",
+      }),
+      elementComponent("ProductCardBlock", "Remortgage Card", {
+        icon: "savings",
+        title: "Remortgaging",
+        description:
+          "Switch and save when your fixed rate ends. See what you could save in minutes with no obligation.",
+        linkUrl: "/en/mortgage",
+        linkText: "Compare deals →",
+      }),
+      elementComponent("ProductCardBlock", "Buy To Let Card", {
+        icon: "business",
+        title: "Buy-to-Let",
+        description:
+          "Competitive landlord rates and lending decisions built around rental yield, not just salary.",
+        linkUrl: "/en/mortgage",
+        linkText: "Explore buy-to-let →",
+      }),
+      elementComponent("ProductCardBlock", "Overpayments Card", {
+        icon: "account",
+        title: "Overpayments",
+        description:
+          "Overpay up to 10% a year with no penalty and watch your term - and your interest - shrink.",
+        linkUrl: "/en/mortgage",
+        linkText: "See how it works →",
+      }),
+    ]),
+    gridSection("Mortgages Stats", [
+      elementComponent("StatsCounterBlock", "Rate Stat", {
+        value: "4.19",
+        suffix: "%",
+        label: "Fixed rate from",
+      }),
+      elementComponent("StatsCounterBlock", "Decision Stat", {
+        value: "10",
+        suffix: " min",
+        label: "Decision in principle",
+      }),
+      elementComponent("StatsCounterBlock", "Deposit Stat", {
+        value: "5",
+        suffix: "%",
+        label: "Minimum deposit",
+      }),
+      elementComponent("StatsCounterBlock", "Approved Stat", {
+        value: "50",
+        suffix: "K+",
+        label: "Mortgages approved",
+      }),
+    ]),
+    sectionComponent("TestimonialBlock", "Mortgages Testimonial", {
+      quote:
+        "We got our decision in principle before we'd finished our coffee. Our advisor handled the paperwork and we picked up the keys six weeks later.",
+      authorName: "James & Amelia Okafor",
+      authorRole: "First-time buyers",
+    }),
+    rootComponent("LogoGridBlock", "Trusted By", {
+      heading: "50,000 homes bought and remortgaged with Mosey",
+      subheading:
+        "From first homes to buy-to-let portfolios - straightforward mortgages with a real advisor behind them.",
+      logos: [],
+    }),
+    sectionComponent("CallToAction", "Mortgages CTA", {
+      label: "Get a decision in principle",
+      link: "/en/mortgage",
+    }),
+  ];
+}
+
+function buildInvestmentsVariation(): CompNode[] {
+  return [
+    rootComponent("Hero", "Investments Hero", {
+      heading: "Investing, made straightforward",
+      summary:
+        "Stocks & Shares ISAs, pensions, and ready-made portfolios - low fees, tax-efficient, and built for the long term.",
+      theme: "dark",
+    }),
+    sectionComponent("SectionHeadingBlock", "Products Heading", {
+      heading: "Grow your money with confidence",
+      subheading:
+        "Whether you're opening your first ISA or consolidating pensions, put your money to work with clear, low fees.",
+    }),
+    gridSection("Investments Product Cards", [
+      elementComponent("ProductCardBlock", "Stocks ISA Card", {
+        icon: "savings",
+        title: "Stocks & Shares ISA",
+        description:
+          "Invest up to £20,000 a year tax-free in ready-made or self-select portfolios. Start from £25 a month.",
+        linkUrl: "/en/investments",
+        linkText: "Open an ISA →",
+      }),
+      elementComponent("ProductCardBlock", "Pensions Card", {
+        icon: "account",
+        title: "Pensions",
+        description:
+          "Consolidate old pensions into one clear plan, claim tax relief, and track it all in the app.",
+        linkUrl: "/en/investments",
+        linkText: "Plan your pension →",
+      }),
+      elementComponent("ProductCardBlock", "Junior ISA Card", {
+        icon: "mortgage",
+        title: "Junior ISA",
+        description:
+          "Give your children a tax-free head start. Invest up to £9,000 a year that's theirs at 18.",
+        linkUrl: "/en/investments",
+        linkText: "Start a Junior ISA →",
+      }),
+      elementComponent("ProductCardBlock", "General Investment Card", {
+        icon: "business",
+        title: "General Investment",
+        description:
+          "No allowance limits and full flexibility for when you've used your ISA and pension allowances.",
+        linkUrl: "/en/investments",
+        linkText: "Explore investing →",
+      }),
+    ]),
+    gridSection("Investments Stats", [
+      elementComponent("StatsCounterBlock", "Fee Stat", {
+        value: "0.25",
+        suffix: "%",
+        label: "Annual platform fee",
+      }),
+      elementComponent("StatsCounterBlock", "Allowance Stat", {
+        value: "20",
+        suffix: "K",
+        label: "Tax-free ISA allowance",
+      }),
+      elementComponent("StatsCounterBlock", "Start Stat", {
+        value: "25",
+        suffix: "/mo",
+        label: "Start investing from",
+      }),
+      elementComponent("StatsCounterBlock", "Investors Stat", {
+        value: "300",
+        suffix: "K+",
+        label: "Investors on the platform",
+      }),
+    ]),
+    sectionComponent("TestimonialBlock", "Investments Testimonial", {
+      quote:
+        "I moved three old pensions into one Mosey plan in an afternoon. Seeing everything in one place - and the low fees - completely changed how I think about retirement.",
+      authorName: "Elena Rossi",
+      authorRole: "Mosey investor",
+    }),
+    rootComponent("LogoGridBlock", "Trusted By", {
+      heading: "£4bn invested by 300,000 Mosey customers",
+      subheading:
+        "ISAs, pensions, and general investing - tax-efficient, low-fee, and simple to manage from your phone.",
+      logos: [],
+    }),
+    sectionComponent("CallToAction", "Investments CTA", {
+      label: "Start investing today",
+      link: "/en/investments",
+    }),
+  ];
+}
+
 // Graph — find homepage key
 
 async function findHomepageKey(): Promise<string | null> {
@@ -526,6 +707,16 @@ async function main() {
       displayName: "Homepage – New Visitor",
       nodes: buildNewVisitorVariation(),
     },
+    {
+      variationKey: "mortgages",
+      displayName: "Homepage – Mortgages",
+      nodes: buildMortgagesVariation(),
+    },
+    {
+      variationKey: "investments",
+      displayName: "Homepage – Investments",
+      nodes: buildInvestmentsVariation(),
+    },
   ];
 
   let allSucceeded = true;
@@ -577,6 +768,20 @@ function printFallbackInstructions(): void {
   console.log("   Products: Business Account, Business Lending, Merchant Services, Business Payroll");
   console.log("   Stats: 120K+ Businesses, £8B+ Lending, 99.9% Uptime, 24/7 Support");
   console.log("   Testimonial: Tom Hartley — 'Opened a business current account in under 15 minutes...'");
+  console.log("");
+  console.log("Variation 4 — name exactly: mortgages");
+  console.log("   Hero: 'A mortgage that moves at your pace'");
+  console.log("   Summary: 'Decision in principle in 10 minutes, rates from 4.19% fixed, and an advisor by your side from application to key handover.'");
+  console.log("   Products: First-Time Buyers, Remortgaging, Buy-to-Let, Overpayments");
+  console.log("   Stats: 4.19% Fixed rate from, 10 min Decision, 5% Min deposit, 50K+ Approved");
+  console.log("   Testimonial: James & Amelia Okafor — 'We got our decision in principle before we'd finished our coffee...'");
+  console.log("");
+  console.log("Variation 5 — name exactly: investments");
+  console.log("   Hero: 'Investing, made straightforward'");
+  console.log("   Summary: 'Stocks & Shares ISAs, pensions, and ready-made portfolios - low fees, tax-efficient, and built for the long term.'");
+  console.log("   Products: Stocks & Shares ISA, Pensions, Junior ISA, General Investment");
+  console.log("   Stats: 0.25% Fee, 20K ISA allowance, £25/mo start, 300K+ Investors");
+  console.log("   Testimonial: Elena Rossi — 'I moved three old pensions into one Mosey plan in an afternoon...'");
   console.log("");
   console.log("Variation names are case-sensitive and must match FX variation keys exactly.");
   console.log("Publish each variation, wait 30-60s for Graph to index, then test the audience switcher.");

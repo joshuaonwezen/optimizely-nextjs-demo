@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { trackEvent } from "@/lib/tracking";
+import { personaFromPath, readSegment, reconcileSegment, writeSegment } from "@/lib/segment";
 
 function parseTags(raw: string | null): Record<string, unknown> {
   if (!raw) return {};
@@ -31,6 +32,12 @@ export default function AutoTracker() {
   const lastPath = useRef<string | null>(null);
   // Tracks "elementKey:depthPct" pairs already fired to prevent repeat events.
   const viewedMarks = useRef(new Set<string>());
+
+  // Reconcile the per-tab segment with the demo_persona cookie once on mount so a
+  // tab opened mid-session inherits the browser-session segment.
+  useEffect(() => {
+    reconcileSegment();
+  }, []);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -159,6 +166,15 @@ export default function AutoTracker() {
 
     if (pathname?.startsWith("/demo")) {
       trackEvent("mb_demo_page_view", { path: pathname });
+    }
+
+    // Realtime audience: qualify the visitor for a segment based on the section
+    // they are browsing. writeSegment mirrors it to sessionStorage + the
+    // demo_persona cookie so FX serves the matching homepage variation on the
+    // next request. Only fire when the derived persona actually changed.
+    const persona = personaFromPath(pathname);
+    if (persona && persona !== readSegment() && writeSegment(persona)) {
+      trackEvent("mb_segment_qualified", { segment: persona });
     }
 
     const timers = [30, 60, 180].map((secs) =>

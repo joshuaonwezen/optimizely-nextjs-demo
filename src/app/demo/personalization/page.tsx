@@ -87,81 +87,234 @@ export default async function PersonalizationDemoPage() {
     <>
       <DemoHero
         title="Personalization & Audiences"
-        description="Know who your visitor is at request time - device, persona, auth state, geo - before a single byte of HTML is streamed. All audience signals are collected server-side and fed into Feature Experimentation, which decides which content variant each segment receives."
+        description="Know who your visitor is at request time - device, persona, auth state, geo - and feed that into Feature Experimentation to decide which content variant each segment sees. This page goes deep on where those audience signals come from: lightweight native attributes evaluated in-process, or ODP segments built from behavior over time."
       >
         <div className="flex flex-wrap gap-3 mt-8">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
-            ✓ Zero client JS
+            ✓ Native attributes
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-            Server-side attribute collection
+            In-process, no network call
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
-            Feeds FX audience targeting
+            ODP behavioral layer
           </span>
         </div>
       </DemoHero>
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-16">
 
-        {/* How audience targeting works */}
+        {/* Section A - recap of the generic flow; full walkthrough lives on the FX page */}
         <section id="how-it-works">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            How Audience Targeting Works{" "}
+            The Flow, in One Glance{" "}
             <a href="#how-it-works" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            Before any component renders, three things happen in sequence. Every signal is
-            collected server-side - nothing is deferred to the browser.
+            Personalization is one input to the same pipeline the{" "}
+            <Link href="/demo/feature-experimentation#how-it-works" className="text-brand hover:underline">Feature Experimentation</Link>{" "}
+            page walks through end to end. Whatever you know about a visitor at request time is turned
+            into a variation key, and that key selects the CMS content Graph returns. This page focuses
+            on <strong>where those audience signals come from</strong> - not the FX and Graph plumbing.
           </p>
 
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center mb-4">
-                <span className="text-brand font-bold font-mono text-sm">1</span>
-              </div>
-              <h3 className="font-display font-semibold text-on-surface mb-2">Collect signals</h3>
-              <p className="text-sm text-on-surface-variant leading-relaxed">
-                On every request,{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
-                builds an attribute map from cookies and request headers:{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">device</code> from
-                the User-Agent,{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code> and{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">logged_in</code> from
-                cookies, plus any signals you add - geo, auth session, query params.
-              </p>
-            </div>
-
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center mb-4">
-                <span className="text-brand font-bold font-mono text-sm">2</span>
-              </div>
-              <h3 className="font-display font-semibold text-on-surface mb-2">Classify against audiences</h3>
-              <p className="text-sm text-on-surface-variant leading-relaxed">
-                Feature Experimentation evaluates the attribute map against audience rules
-                you define in the FX dashboard - entirely server-side with no extra network call.
-                A visitor matching{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">persona = "business"</code>{" "}
-                receives the{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code>{" "}
-                variation key.
-              </p>
-            </div>
-
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center mb-4">
-                <span className="text-brand font-bold font-mono text-sm">3</span>
-              </div>
-              <h3 className="font-display font-semibold text-on-surface mb-2">Serve the right experience</h3>
-              <p className="text-sm text-on-surface-variant leading-relaxed">
-                The variation key drives what the visitor sees - a different CMS page composition,
-                different feature variable values, or a separate layout entirely. Editors manage
-                content variants in Visual Builder; the SDK wires audience targeting at request time
-                with no code change per experiment.
-              </p>
+          {/* Pipeline strip */}
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-6">
+            <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
+              From audience signal to personalized CMS content
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              {[
+                { label: "Audience signal", sub: "device, persona, geo, behavior" },
+                { label: "FX decision", sub: "audience rules → variationKey" },
+                { label: "Graph filter", sub: "getContentByPath()" },
+                { label: "CMS variant", sub: "or original fallback", highlight: true },
+              ].map((step, i, arr) => (
+                <div key={step.label} className="flex items-center gap-3">
+                  <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
+                    <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                    <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                  </div>
+                  {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
+                </div>
+              ))}
             </div>
           </div>
+
+          {/* This page vs FX page */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-6 h-6 rounded bg-brand/10 flex items-center justify-center shrink-0">
+                  <span className="text-brand text-[10px] font-bold">P</span>
+                </span>
+                <h3 className="font-display font-semibold text-on-surface text-sm">This page covers</h3>
+              </div>
+              <ul className="space-y-2 text-sm text-on-surface-variant">
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> The two sources for FX audiences - native attributes vs ODP segments</li>
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Collecting native signals (device, persona, geo, auth) via <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code></li>
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Extending the visitor context with new attributes</li>
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Using ODP as a behavioral layer for deeper targeting</li>
+              </ul>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-6 h-6 rounded bg-brand/10 flex items-center justify-center shrink-0">
+                  <span className="text-brand text-[10px] font-bold">FX</span>
+                </span>
+                <h3 className="font-display font-semibold text-on-surface text-sm">
+                  <Link href="/demo/feature-experimentation" className="hover:text-brand transition-colors">
+                    Feature Experimentation page covers →
+                  </Link>
+                </h3>
+              </div>
+              <ul className="space-y-2 text-sm text-on-surface-variant">
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> The Configure and Serve lifecycle and the flag/variation contract</li>
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Connecting FX variation keys to CMS content variations</li>
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Middleware, user helper, catch-all route, and impression firing</li>
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Your live flag decisions and active variation keys</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Deep links into FX page */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <Link
+              href="/demo/feature-experimentation#how-it-works"
+              className="bg-surface-lowest border border-ghost-border hover:border-brand/40 rounded-2xl p-5 transition-colors group"
+            >
+              <p className="text-xs font-mono text-on-surface-variant mb-2 uppercase tracking-wider">FX Guide</p>
+              <p className="font-display font-semibold text-on-surface group-hover:text-brand transition-colors text-sm mb-1">
+                Architecture Overview
+              </p>
+              <p className="text-xs text-on-surface-variant">
+                How FX SDK, Graph, and CMS Variations fit together end-to-end
+              </p>
+            </Link>
+            <Link
+              href="/demo/feature-experimentation#setup-guide"
+              className="bg-surface-lowest border border-ghost-border hover:border-brand/40 rounded-2xl p-5 transition-colors group"
+            >
+              <p className="text-xs font-mono text-on-surface-variant mb-2 uppercase tracking-wider">FX Guide</p>
+              <p className="font-display font-semibold text-on-surface group-hover:text-brand transition-colors text-sm mb-1">
+                Setting Up CMS Variations
+              </p>
+              <p className="text-xs text-on-surface-variant">
+                Step-by-step: flags in FX dashboard, Visual Builder, update script
+              </p>
+            </Link>
+            <Link
+              href="/demo/feature-experimentation#code-middleware"
+              className="bg-surface-lowest border border-ghost-border hover:border-brand/40 rounded-2xl p-5 transition-colors group"
+            >
+              <p className="text-xs font-mono text-on-surface-variant mb-2 uppercase tracking-wider">FX Guide</p>
+              <p className="font-display font-semibold text-on-surface group-hover:text-brand transition-colors text-sm mb-1">
+                Integration Code
+              </p>
+              <p className="text-xs text-on-surface-variant">
+                Middleware, user helper, catch-all route, and impression firing
+              </p>
+            </Link>
+          </div>
+        </section>
+
+        {/* Section B - the two sources for FX audiences */}
+        <section id="targeting-sources">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Two Ways to Target Audiences: Native Attributes vs ODP{" "}
+            <a href="#targeting-sources" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            An FX audience can be fed from two very different sources. The first is built into your app
+            and costs nothing extra; the second is a dedicated data layer that sits in front of FX and
+            remembers what a visitor did over time. Both resolve to the same variation key - they differ
+            in what they can express and what they cost.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            {/* Native */}
+            <div className="bg-surface-lowest border-2 border-brand/40 rounded-2xl p-6 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <h3 className="font-display font-semibold text-on-surface">Native FX attributes</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">default · app-native</span>
+              </div>
+              <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
+                Attributes you already know at request time -{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">device</code>,{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code>,{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">logged_in</code>, geo, plan, UTM - are
+                collected by <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code> and passed
+                straight into <code className="bg-surface-low px-1 rounded font-mono text-xs">user.decide()</code>. The SDK matches
+                them against your audience rules <strong>locally, in-process</strong> - no extra service, no network round-trip.
+              </p>
+              <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Zero network calls - evaluated in the same request</span></div>
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">One-file setup: add to visitor.ts, define the FX condition</span></div>
+                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Only sees this request - no memory of past behavior</span></div>
+              </div>
+            </div>
+
+            {/* ODP */}
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <h3 className="font-display font-semibold text-on-surface">ODP segments</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-surface-low text-on-surface-variant font-medium">behavioral layer</span>
+              </div>
+              <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
+                ODP is a customer data platform that <strong>sits between the visitor and FX</strong>. It ingests
+                behavioral events over time, builds a persistent per-visitor profile, and computes{" "}
+                <strong>segments</strong>. An FX audience can reference an ODP segment; qualifying the visitor
+                requires a <strong>network call</strong> to ODP. Use it when targeting depends on history a single
+                request can&apos;t see - &ldquo;viewed pricing 3x this week&rdquo;, high-value customer, churn risk.
+              </p>
+              <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Remembers behavior across sessions and devices</span></div>
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Rich segments from events, not just request facts</span></div>
+                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Network call + latency; needs event instrumentation and an ODP account</span></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Comparison table */}
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden mb-6">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-ghost-border">
+                    <th className="text-left font-mono text-xs text-on-surface-variant uppercase tracking-wider px-5 py-3 font-medium">Dimension</th>
+                    <th className="text-left font-display font-semibold text-on-surface px-5 py-3">Native attributes</th>
+                    <th className="text-left font-display font-semibold text-on-surface px-5 py-3">ODP segments</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["Signal source", "Cookies + request headers, in your app", "Behavioral events ingested into ODP"],
+                    ["Where evaluated", "In-process, same request", "ODP computes; FX reads via a lookup"],
+                    ["Network call", "None", "Yes - request to ODP"],
+                    ["Persists across sessions", "No - only what this request carries", "Yes - stored on the profile"],
+                    ["Captures behavior over time", "No", "Yes - events accumulate into segments"],
+                    ["Setup cost", "One-file change + FX audience condition", "Event instrumentation + ODP account + mapping"],
+                    ["Best for", "Request-time facts: device, geo, auth, plan", "History and intent: RFM, high-value, churn risk"],
+                  ].map(([dim, native, odp]) => (
+                    <tr key={dim} className="border-b border-ghost-border last:border-0">
+                      <td className="px-5 py-3 font-mono text-xs text-on-surface align-top">{dim}</td>
+                      <td className="px-5 py-3 text-on-surface-variant align-top">{native}</td>
+                      <td className="px-5 py-3 text-on-surface-variant align-top">{odp}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <Callout variant="note">
+            <strong>Both paths end the same way.</strong> Native attributes and ODP segments both resolve to a
+            variation key that runs the identical{" "}
+            <Link href="/demo/feature-experimentation#how-it-works" className="text-brand hover:underline">FX → Graph → CMS pipeline</Link>.
+            ODP simply adds a data layer <em>before</em> the FX decision. Start native; reach for ODP when a
+            single request can&apos;t tell you what you need to know.
+          </Callout>
         </section>
 
         {/* Audience Switcher */}
@@ -366,15 +519,15 @@ const loggedIn =
         {/* Audience attributes */}
         <section id="audience-attributes">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Audience Attributes &amp; Targeting Criteria{" "}
+            Native Attributes in Depth{" "}
             <a href="#audience-attributes" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            FX audiences are matched against the attributes you return from{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>.
-            Everything is evaluated server-side - headers, cookies, auth sessions, geo data, and
-            any database value are available before HTML is streamed. Below are practical
-            patterns for the most common attribute sources.
+            The native path in detail. FX audiences are matched against the attributes you return from{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>,
+            all evaluated in-process - headers, cookies, auth sessions, geo data, and any database
+            value are available before HTML is streamed, with no network call to a separate service.
+            Below are practical patterns for the most common attribute sources.
           </p>
 
           <div className="space-y-8">
@@ -579,9 +732,9 @@ export default async function CmsPage({
                     conditions locally against the attribute map - no network call per decision.
                   </p>
                   <ul className="space-y-1 text-sm text-on-surface-variant leading-relaxed">
-                    <li>→ <strong className="text-on-surface">String match:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">persona = "business"</code></li>
+                    <li>→ <strong className="text-on-surface">String match:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">persona = &quot;business&quot;</code></li>
                     <li>→ <strong className="text-on-surface">Boolean:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">logged_in = true</code></li>
-                    <li>→ <strong className="text-on-surface">Substring:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">plan contains "premium"</code></li>
+                    <li>→ <strong className="text-on-surface">Substring:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">plan contains &quot;premium&quot;</code></li>
                     <li>→ <strong className="text-on-surface">Numeric range:</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">account_age_days &gt; 30</code></li>
                   </ul>
                 </div>
@@ -607,138 +760,6 @@ const decision = await getDecision("homepage", userId, {
               </div>
             </div>
 
-          </div>
-        </section>
-
-        {/* How this connects to Feature Experimentation */}
-        <section id="integration-code">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            How This Connects to Feature Experimentation{" "}
-            <a href="#integration-code" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            Audience attributes are the bridge between visitor identity and experiment bucketing.
-            The signals you collect here flow directly into the FX SDK, which decides which
-            variation key a visitor receives - and that key determines which CMS content variant
-            Graph returns.
-          </p>
-
-          {/* Pipeline */}
-          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-6">
-            <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
-              From audience signal to personalized CMS content
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="text-center">
-                <div className="bg-surface-low rounded-xl px-4 py-3 min-w-[130px]">
-                  <p className="text-xs font-mono font-semibold text-on-surface">Audience signals</p>
-                  <p className="text-xs text-on-surface-variant mt-0.5">device, persona, geo, auth</p>
-                  <p className="text-[10px] font-mono text-on-surface-variant mt-1">getVisitorContext()</p>
-                </div>
-              </div>
-              <div className="text-on-surface-variant text-lg">→</div>
-              <div className="text-center">
-                <div className="bg-surface-low rounded-xl px-4 py-3 min-w-[130px]">
-                  <p className="text-xs font-mono font-semibold text-on-surface">FX SDK</p>
-                  <p className="text-xs text-on-surface-variant mt-0.5">evaluates audience rules</p>
-                  <p className="text-[10px] font-mono text-brand mt-1">→ variationKey</p>
-                </div>
-              </div>
-              <div className="text-on-surface-variant text-lg">→</div>
-              <div className="text-center">
-                <div className="bg-surface-low rounded-xl px-4 py-3 min-w-[130px]">
-                  <p className="text-xs font-mono font-semibold text-on-surface">Graph query</p>
-                  <p className="text-xs text-on-surface-variant mt-0.5">variation filter applied</p>
-                  <p className="text-[10px] font-mono text-on-surface-variant mt-1">getContentByPath()</p>
-                </div>
-              </div>
-              <div className="text-on-surface-variant text-lg">→</div>
-              <div className="text-center">
-                <div className="bg-brand/10 border border-brand/30 rounded-xl px-4 py-3 min-w-[130px]">
-                  <p className="text-xs font-mono font-semibold text-on-surface">CMS variant</p>
-                  <p className="text-xs text-on-surface-variant mt-0.5">matched by variation name</p>
-                  <p className="text-[10px] font-mono text-brand mt-1">or original fallback</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* What each page covers */}
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-6 h-6 rounded bg-brand/10 flex items-center justify-center shrink-0">
-                  <span className="text-brand text-[10px] font-bold">P</span>
-                </span>
-                <h3 className="font-display font-semibold text-on-surface text-sm">This page covers</h3>
-              </div>
-              <ul className="space-y-2 text-sm text-on-surface-variant">
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Collecting audience signals (device, persona, geo, auth)</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Extending <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code> with new attribute sources</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> FX audience condition types - string, boolean, numeric, substring</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> The Audience Switcher demo tool and the cookies it sets</li>
-              </ul>
-            </div>
-
-            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-6 h-6 rounded bg-brand/10 flex items-center justify-center shrink-0">
-                  <span className="text-brand text-[10px] font-bold">FX</span>
-                </span>
-                <h3 className="font-display font-semibold text-on-surface text-sm">
-                  <Link href="/demo/feature-experimentation" className="hover:text-brand transition-colors">
-                    Feature Experimentation page covers →
-                  </Link>
-                </h3>
-              </div>
-              <ul className="space-y-2 text-sm text-on-surface-variant">
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Creating flags, experiments, and variation keys in the FX dashboard</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Connecting FX variation keys to CMS content variations in Visual Builder</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Feature variables - typed values delivered per variation</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Impression events, experiment results, and winner declaration</li>
-                <li className="flex gap-2"><span className="text-brand shrink-0">→</span> Your live flag decisions and active variation keys</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Deep links into FX page */}
-          <div className="grid md:grid-cols-3 gap-4">
-            <Link
-              href="/demo/feature-experimentation#how-it-works"
-              className="bg-surface-lowest border border-ghost-border hover:border-brand/40 rounded-2xl p-5 transition-colors group"
-            >
-              <p className="text-xs font-mono text-on-surface-variant mb-2 uppercase tracking-wider">FX Guide</p>
-              <p className="font-display font-semibold text-on-surface group-hover:text-brand transition-colors text-sm mb-1">
-                Architecture Overview
-              </p>
-              <p className="text-xs text-on-surface-variant">
-                How FX SDK, Graph, and CMS Variations fit together end-to-end
-              </p>
-            </Link>
-            <Link
-              href="/demo/feature-experimentation#setup-guide"
-              className="bg-surface-lowest border border-ghost-border hover:border-brand/40 rounded-2xl p-5 transition-colors group"
-            >
-              <p className="text-xs font-mono text-on-surface-variant mb-2 uppercase tracking-wider">FX Guide</p>
-              <p className="font-display font-semibold text-on-surface group-hover:text-brand transition-colors text-sm mb-1">
-                Setting Up CMS Variations
-              </p>
-              <p className="text-xs text-on-surface-variant">
-                Step-by-step: flags in FX dashboard, Visual Builder, update script
-              </p>
-            </Link>
-            <Link
-              href="/demo/feature-experimentation#integration-code"
-              className="bg-surface-lowest border border-ghost-border hover:border-brand/40 rounded-2xl p-5 transition-colors group"
-            >
-              <p className="text-xs font-mono text-on-surface-variant mb-2 uppercase tracking-wider">FX Guide</p>
-              <p className="font-display font-semibold text-on-surface group-hover:text-brand transition-colors text-sm mb-1">
-                Integration Code
-              </p>
-              <p className="text-xs text-on-surface-variant">
-                Middleware, user helper, catch-all route, and impression firing
-              </p>
-            </Link>
           </div>
         </section>
 
@@ -778,7 +799,7 @@ const decision = await getDecision("homepage", userId, {
             <Step number={3} title="Build an audience using the new attribute">
               Create a new audience in the FX dashboard with a condition on your attribute
               (e.g.{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">country = "GB"</code>).
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">country = &quot;GB&quot;</code>).
               Assign the audience to a delivery rule on any flag. The string between the FX
               condition and your attribute key is the only coupling - it must match exactly
               (case-sensitive).
@@ -805,16 +826,24 @@ const decision = await getDecision("homepage", userId, {
           </div>
         </section>
 
-        {/* ODP Direct Personalization */}
+        {/* Section D - ODP as the behavioral layer for deeper targeting */}
         <section id="odp-personalization">
+          <span id="variation-resolution" className="block" aria-hidden="true" />
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            ODP Direct Personalization{" "}
+            ODP: The Behavioral Layer for Deeper Targeting{" "}
             <a href="#odp-personalization" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            For pure personalization - no experiments, no hold-out groups - you can skip Feature
-            Experimentation entirely. Query ODP for the visitor&apos;s segments, map a segment name
-            to a CMS variation key, and pass it directly to Graph. Fewer moving parts, same result.
+            ODP is the behavioral layer from the comparison above - a profile store that remembers
+            what a visitor did over time. There are two ways to put it to work. Reference an ODP
+            segment as an{" "}
+            <Link href="/demo/feature-experimentation#audience-targeting" className="text-brand hover:underline">FX audience</Link>{" "}
+            and the decision still runs through FX (experiments, hold-out groups, results). Or - for
+            pure personalization with no experiment - skip FX entirely: query ODP for the visitor&apos;s
+            segments, map a segment name to a CMS variation key, and pass it straight to Graph. The
+            comparison below shows that ODP-direct path against the FX path; both feed the same Graph
+            variation filter. For how ODP builds those profiles (identity stitching, events, segments),
+            see the <Link href="/demo/odp" className="text-brand hover:underline">ODP page</Link>.
           </p>
 
           {/* Pipeline comparison */}
