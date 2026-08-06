@@ -126,7 +126,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
 
           {/* Drawer header */}
           <div className="flex items-center justify-between px-5 h-16 border-b border-ghost-border flex-shrink-0">
-            <Link href={buildLocaleUrl("/", currentLocale)} aria-label={`${settings.logoTextPrimary} ${settings.logoTextSecondary} home`} onClick={() => setMobileOpen(false)}>
+            <Link href={buildLocaleUrl("/", currentLocale)} prefetch={false} aria-label={`${settings.logoTextPrimary} ${settings.logoTextSecondary} home`} onClick={() => setMobileOpen(false)}>
               <MoseyBankLogo primary={settings.logoTextPrimary} secondary={settings.logoTextSecondary} />
             </Link>
             <button
@@ -634,7 +634,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
             { href: "/demo",                label: "Demo",     icon: <><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5"/><path d="M9.5 8.5l5 3.5-5 3.5V8.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></> },
             { href: "/demo/personalization",label: "Account",  icon: <><circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></> },
           ].map(({ href, label, icon }) => (
-            <Link key={href} href={localizeHref(href, currentLocale)} className="flex-1 flex flex-col items-center py-3 gap-1 text-on-surface-variant hover:text-brand transition-colors">
+            <Link key={href} href={localizeHref(href, currentLocale)} prefetch={false} className="flex-1 flex flex-col items-center py-3 gap-1 text-on-surface-variant hover:text-brand transition-colors">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">{icon}</svg>
               <span className="text-[10px] font-medium">{label}</span>
             </Link>

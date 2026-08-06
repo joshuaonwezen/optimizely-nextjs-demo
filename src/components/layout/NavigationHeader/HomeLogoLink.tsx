@@ -18,7 +18,7 @@ export default function HomeLogoLink({ className, onClick, logoText }: Props) {
   const href = buildLocaleUrl("/", getCurrentLocale(pathname));
 
   return (
-    <Link href={href} aria-label={`${logoText?.primary ?? "Mosey"} ${logoText?.secondary ?? "Bank"} home`} className={className} onClick={onClick}>
+    <Link href={href} prefetch={false} aria-label={`${logoText?.primary ?? "Mosey"} ${logoText?.secondary ?? "Bank"} home`} className={className} onClick={onClick}>
       <MoseyBankLogo primary={logoText?.primary} secondary={logoText?.secondary} />
     </Link>
   );
