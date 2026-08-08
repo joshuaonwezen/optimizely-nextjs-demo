@@ -444,6 +444,56 @@ export default async function FeatureFlagsDemoPage() {
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
 
+        {/* Two experimentation paths - server-side FX (this demo) vs client-side Web Experimentation */}
+        <section id="experimentation-paths">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Two Ways to Experiment <a href="#experimentation-paths" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            Optimizely Experimentation offers two mechanisms for testing content. They differ in
+            where the decision runs: <strong>Feature Experimentation</strong> decides on the server
+            and integrates with CMS content variations through Graph; <strong>Web Experimentation</strong>
+            decides in the browser and changes the delivered page directly. This page covers the
+            server-side path end to end.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-surface-lowest border-2 border-brand/40 rounded-2xl p-6 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <h3 className="font-display font-semibold text-on-surface">Feature Experimentation - server-side</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">this demo</span>
+              </div>
+              <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
+                Edge middleware evaluates the flag, rewrites the URL with the variation key, and Graph
+                returns the matching CMS content variant - so every variation is its own ISR cache
+                entry. A small client component fires the bucketing event after the visitor sees it.
+                The rest of this page details this path.
+              </p>
+              <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Server-rendered - no flicker, full ISR caching per variation</span></div>
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Drives real CMS content variations via the Graph variation filter</span></div>
+              </div>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <h3 className="font-display font-semibold text-on-surface">Web Experimentation - client-side</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-surface-low text-on-surface-variant font-medium">client-side</span>
+              </div>
+              <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
+                A browser snippet plus the visual editor mutate the already-delivered DOM in the
+                client (an anti-flicker snippet hides the page until the variation applies). Great for
+                fast marketing tests with no deploy - but it changes the rendered page in the browser
+                rather than driving server-side Graph content variations the way the server-side path does.
+              </p>
+              <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Visual editor - marketers ship tests without a code change</span></div>
+                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Client-side DOM mutation - not wired into the Graph variation filter</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── Architecture overview ── */}
         <section id="how-it-works">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
@@ -754,8 +804,7 @@ export default async function FeatureFlagsDemoPage() {
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">queryOdpSegments(userId)</code> in{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">src/lib/optimizely/odp.ts</code> resolves the
                 visitor&apos;s qualified segments; those feed the FX decision the same way attributes do. See{" "}
-                <Link href="/demo/personalization" className="text-brand hover:underline">Personalization</Link> and{" "}
-                <Link href="/demo/odp" className="text-brand hover:underline">ODP</Link> for the full walkthrough.
+                <Link href="/demo/personalization#odp" className="text-brand hover:underline">Personalization → ODP</Link> for the full walkthrough.
               </p>
             </div>
           </div>

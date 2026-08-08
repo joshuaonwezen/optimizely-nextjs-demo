@@ -59,7 +59,7 @@ query GetLocalizedPage($url: String!, $locale: [Locales]) {
 const locale = params.lang ?? "en";
 const res = await graphqlFetch(GET_LOCALIZED_PAGE, { url, locale: [locale] });`;
 
-const ROUTING_SNIPPET = `// Option A - [lang] URL segment (recommended for most projects)
+const ROUTING_SNIPPET = `// Option A - [lang] URL segment
 // URL structure: /en/about, /fr/about, /de/about
 // The lang param is always explicit in the URL - no ambiguity.
 
@@ -249,12 +249,17 @@ export default function LocalizationDemoPage() {
             <SectionAnchor id="routing" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            Two common approaches: a <code className="bg-surface-low px-1 rounded font-mono text-xs">[lang]</code>{" "}
-            URL segment (<code className="bg-surface-low px-1 rounded font-mono text-xs">/en/about</code>,{" "}
+            This app keeps locale out of the URL: it uses a single{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">src/app/[[...slug]]</code>{" "}
+            catch-all and resolves the language as a Graph dimension (the locale filter shown above),
+            so a page key has one path and many locale variants. When a project instead needs the
+            locale visible in the URL, two patterns add it: a{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">[lang]</code> URL segment
+            (<code className="bg-surface-low px-1 rounded font-mono text-xs">/en/about</code>,{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">/fr/about</code>) or
             a subdomain per locale (<code className="bg-surface-low px-1 rounded font-mono text-xs">fr.site.com/about</code>).
-            The segment approach is simpler - all routing is in one Next.js app, the locale is always
-            visible in the URL (good for SEO), and{" "}
+            The segment approach keeps all routing in one Next.js app, the locale is always visible in
+            the URL (good for SEO), and{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">hreflang</code> links are
             easy to generate. Subdomains are better when different locales need separate deployments or
             CDN regions.
@@ -262,7 +267,7 @@ export default function LocalizationDemoPage() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <p className="text-xs font-medium text-on-surface-variant mb-2">Option A - URL segment (recommended)</p>
+              <p className="text-xs font-medium text-on-surface-variant mb-2">Option A - URL segment</p>
               <CodeBlock code={ROUTING_SNIPPET} label="src/app/[lang]/[[...slug]]/page.tsx" />
             </div>
             <div>

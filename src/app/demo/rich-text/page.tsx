@@ -1,13 +1,51 @@
 import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
+import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import SectionAnchor from "@/components/demo/SectionAnchor";
 import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
+import LiveDemoShell from "@/components/demo/LiveDemoShell";
 
 export const dynamic = "force-dynamic";
+
+// A static richText JSON AST (Slate/HTML-node shape) rendered live below by
+// the SDK's <RichText> component - no CMS fetch needed.
+const SAMPLE_RICHTEXT_JSON = {
+  type: "richText",
+  children: [
+    { type: "h2", children: [{ text: "Rendered live by <RichText>" }] },
+    {
+      type: "p",
+      children: [
+        { text: "This paragraph comes from a JSON AST, not an HTML string. The component maps each node to semantic HTML - " },
+        { text: "bold", bold: true },
+        { text: ", " },
+        { text: "italic", italic: true },
+        { text: ", and " },
+        { type: "link", url: "https://www.optimizely.com/", children: [{ text: "a link" }] },
+        { text: "." },
+      ],
+    },
+    {
+      type: "ul",
+      children: [
+        { type: "li", children: [{ text: "Node types map to elements you can override" }] },
+        { type: "li", children: [{ text: "Leaf marks (bold, italic) become spans" }] },
+      ],
+    },
+  ],
+};
+
+const SAMPLE_RICHTEXT_HTML = `<h2>Rendered from an HTML string</h2>
+<p>This block was requested as <code>body.html</code> and injected with <strong>dangerouslySetInnerHTML</strong>. Simpler, but no custom node rendering and no embedded blocks.</p>
+<ul><li>One line of code</li><li>No SDK import</li></ul>`;
+
+// Legible defaults for raw rendered elements, since Tailwind preflight strips
+// heading/list styling.
+const PROSE = "[&_h2]:font-display [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-on-surface [&_h2]:mb-2 [&_p]:text-sm [&_p]:text-on-surface-variant [&_p]:leading-relaxed [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_li]:text-sm [&_li]:text-on-surface-variant [&_a]:text-brand [&_a]:underline [&_strong]:font-semibold [&_strong]:text-on-surface [&_code]:bg-surface [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_code]:text-xs";
 
 const richTextBlockTs = fs.readFileSync(
   path.join(process.cwd(), "src/components/blocks/RichTextBlock/index.tsx"),
@@ -265,6 +303,37 @@ export default function RichTextDemoPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section id="live-render">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Live render - same content, both strategies
+            <SectionAnchor id="live-render" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            The left card renders a static JSON AST through the SDK&apos;s{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">&lt;RichText&gt;</code>{" "}
+            component; the right card injects an equivalent HTML string with{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">dangerouslySetInnerHTML</code>.
+            Both produce semantic markup - the difference is control, not output.
+          </p>
+          <LiveDemoShell label="Rendered on the server from a static sample - no CMS fetch">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-xs font-medium text-on-surface-variant mb-3">body.json → &lt;RichText&gt;</p>
+                <div className={`bg-surface border border-ghost-border rounded-xl p-5 ${PROSE}`}>
+                  <RichText content={SAMPLE_RICHTEXT_JSON as unknown as RichTextProps["content"]} />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-on-surface-variant mb-3">body.html → dangerouslySetInnerHTML</p>
+                <div
+                  className={`bg-surface border border-ghost-border rounded-xl p-5 ${PROSE}`}
+                  dangerouslySetInnerHTML={{ __html: SAMPLE_RICHTEXT_HTML }}
+                />
+              </div>
+            </div>
+          </LiveDemoShell>
         </section>
 
         <section id="pa-placement">

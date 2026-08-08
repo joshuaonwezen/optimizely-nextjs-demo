@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import SectionAnchor from "@/components/demo/SectionAnchor";
@@ -78,31 +79,6 @@ query GetPage($url: String!) {
 
 // ❌ This would be wrong - "status" is not a Graph filter field:
 _Content(where: { _metadata: { status: { eq: "Published" } } })   // doesn't exist`;
-
-const PREVIEW_SCHEDULED_SNIPPET = `// How to preview content before its startPublish date arrives.
-//
-// The CMS generates a preview token when an editor clicks "Preview" in Visual Builder.
-// This token is scoped to that editor's session and bypasses the Published filter -
-// it returns Draft, In Review, Approved, and Scheduled content.
-//
-// In the catch-all route, getContentByPath with a previewToken fetches draft content:
-
-// src/app/preview/page.tsx
-import { getPreviewContent } from "@optimizely/cms-sdk/server";
-
-export default async function PreviewPage({ searchParams }) {
-  const { token, url } = searchParams;
-
-  if (!token) redirect("/");
-
-  const content = await getPreviewContent(url, { previewToken: token });
-  if (!content) redirect(\`/en\${url}\`);
-
-  return <OptimizelyComponent content={content} />;
-}
-
-// An editor can preview a Scheduled item at any time before startPublish.
-// The preview URL contains the token - share it with reviewers for approval.`;
 
 const WEBHOOK_EVENTS_SNIPPET = `// Webhook events tied to the content lifecycle
 // Register these endpoints in CMS Settings → Events
@@ -253,14 +229,15 @@ export default function ContentLifecycleDemoPage() {
             <SectionAnchor id="preview-scheduled" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            Editors and reviewers need to see scheduled content before its{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">startPublish</code> date. The
-            preview token issued by the CMS bypasses Graph&apos;s Published filter - it returns content
-            in any state. Pass the token to{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">getPreviewContent()</code> to
-            render the exact version that will go live.
+            A <strong>Scheduled</strong> item is a draft with a future{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">startPublish</code> date, so it
+            previews exactly like any other draft: the CMS preview token bypasses Graph&apos;s Published
+            filter and returns the item in any state, including Scheduled. Share the tokenized preview URL
+            with reviewers to approve a page before its go-live date arrives. The preview route itself -{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">getPreviewContent()</code>, token
+            handling, and in-context editing - is covered on the{" "}
+            <Link href="/demo/preview" className="text-brand hover:underline font-medium">Draft Mode &amp; Preview</Link> page.
           </p>
-          <CodeBlock code={PREVIEW_SCHEDULED_SNIPPET} label="Preview route - preview token bypasses the Published filter" />
         </section>
 
         <section id="webhooks">

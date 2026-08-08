@@ -19,10 +19,113 @@ const odpTs = fs.readFileSync(
   path.join(process.cwd(), "src/lib/optimizely/odp.ts"),
   "utf8"
 );
+const odpSetupTsx = fs.readFileSync(
+  path.join(process.cwd(), "src/components/OdpSetup.tsx"),
+  "utf8"
+);
 
 export const metadata: Metadata = {
   title: "Personalization & Audiences",
 };
+
+const ODP_TAG_SNIPPET = `// src/app/layout.tsx - the ODP tag is inlined in <head> so the zaius
+// command queue exists synchronously during HTML parsing. Events fired
+// before the async script loads are queued and replayed.
+
+var zaius = window['zaius'] || (window['zaius'] = []);
+zaius.methods = ['initialize','onload','customer','entity','event', /* ... */];
+// ...queue shim...
+e.src = 'https://d1igp3oop3iho5.cloudfront.net/v2/' +
+        NEXT_PUBLIC_OPTIMIZELY_ODP_TRACKER_ID + '/zaius-min.js';`;
+
+const ODP_IDENTITY_SNIPPET = `// src/components/OdpSetup.tsx ("use client", rendered in the root layout)
+//
+// ODP assigns every browser its own vuid cookie. To query segments
+// server-side using the FX visitor ID, the two identities must be linked:
+// send optimizelyEndUserId to ODP as the fs_user_id identifier once.
+
+useEffect(() => {
+  const fsUserId = getCookie("optimizelyEndUserId");
+  if (fsUserId) window.zaius?.entity("customer", { fs_user_id: fsUserId });
+}, []);
+
+// SPA route changes don't reload the page, so fire a pageview per navigation:
+useEffect(() => {
+  window.zaius?.event("pageview");
+}, [pathname]);`;
+
+const ODP_SEGMENT_QUERY_SNIPPET = `// src/lib/optimizely/odp.ts - server-side segment membership query.
+// Auth is the ODP API key in an x-api-key header (server-only env var).
+
+const SEGMENT_QUERY = \`
+  query GetSegments($userId: String!, $segmentFilter: [String!]!) {
+    customer(vuid: $userId) {
+      audiences(subset: $segmentFilter) {
+        edges { node { name state } }
+      }
+    }
+  }
+\`;
+
+export async function queryOdpSegments(userId: string): Promise<string[]> {
+  const res = await fetch(\`\${ODP_API_HOST}/v3/graphql\`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": ODP_API_KEY },
+    body: JSON.stringify({ query: SEGMENT_QUERY, variables: { userId, segmentFilter } }),
+    next: { revalidate: 300 },   // segment membership changes slowly - cache it
+  });
+  // ...filter edges to state === "qualified", return segment names
+}`;
+
+const ODP_DIRECT_PATH_SNIPPET = `// Any Server Component - the complete ODP direct → Graph pipeline.
+// No FX engine in the loop; just segments, a key, and a Graph filter.
+
+import { getVisitorContext } from "@/lib/optimizely/visitor";
+import { queryOdpSegments, resolveVariationKey } from "@/lib/optimizely/odp";
+import { getClient } from "@optimizely/cms-sdk";
+
+export default async function Page({ params }) {
+  const { userId } = await getVisitorContext();
+
+  // 1. Ask ODP which segments this visitor qualifies for.
+  //    Only the segments in ODP_SEGMENT_TO_VARIATION are checked.
+  //    Result is cached 300s - does not hit ODP on every page request.
+  const segments = await queryOdpSegments(userId);
+
+  // 2. Map the first qualifying segment to a CMS variation key.
+  //    Returns undefined when no segment matches - original content served.
+  const variationKey = resolveVariationKey(segments);
+
+  // 3. Build the Graph variation filter and fetch the page.
+  //    includeOriginal: true is required - without it, unmatched visitors
+  //    get no content at all instead of the default page.
+  const variationFilter = variationKey
+    ? { variation: { include: "SOME" as const, value: [variationKey], includeOriginal: true } }
+    : undefined;
+
+  const url = "/" + ((await params).slug ?? []).join("/");
+  const [page] = await getClient().getContentByPath(url, {
+    ...variationFilter,
+    next: { revalidate: 3600, tags: ["page"] },
+  } as any);
+
+  // Render page normally - Graph returns the matched CMS variation,
+  // or the original page when no variation key was resolved.
+}`;
+
+const ODP_EVENTS_SNIPPET = `// Two event pipelines run side by side in this app - don't conflate them:
+//
+// 1. ODP events (behavioral profile, segments, campaigns)
+//    window.zaius.event("pageview")            <- OdpSetup, per route change
+//    window.zaius.entity("customer", {...})    <- identity stitching
+//
+// 2. FX events (experiment metrics and impressions)
+//    trackEvent("mb_scroll_depth", {...})      <- AutoTracker via the FX SDK
+//    user.decide("flag", [])                    <- impression on render
+//
+// ODP events build the profile that segments are computed from.
+// FX events power experiment results. Both key off the same visitor ID
+// (optimizelyEndUserId) - which is exactly why OdpSetup links the IDs.`;
 
 function Step({
   number,
@@ -328,8 +431,8 @@ export default async function PersonalizationDemoPage() {
                 Step-by-step: flags in FX dashboard, Visual Builder, update script
               </p>
             </Link>
-            <Link
-              href="/demo/odp"
+            <a
+              href="#odp"
               className="bg-surface-lowest border border-ghost-border hover:border-brand/40 rounded-2xl p-5 transition-colors group"
             >
               <p className="text-xs font-mono text-on-surface-variant mb-2 uppercase tracking-wider">ODP Guide</p>
@@ -339,7 +442,7 @@ export default async function PersonalizationDemoPage() {
               <p className="text-xs text-on-surface-variant">
                 How ODP builds visitor profiles, ingests events, and computes segments
               </p>
-            </Link>
+            </a>
           </div>
         </section>
 
@@ -727,8 +830,9 @@ const decision = userCtx.decide("homepage", [DISABLE_DECISION_EVENT]);
             <Link href="/demo/feature-experimentation#audience-targeting" className="text-brand hover:underline">FX audience</Link>{" "}
             (decision still runs through FX, with experiments and statistical results), or skip FX entirely -
             query ODP directly, map a segment name to a CMS variation key, and pass it straight to Graph.
-            For how ODP builds profiles (identity stitching, events, segments), see the{" "}
-            <Link href="/demo/odp" className="text-brand hover:underline">ODP page</Link>.
+            For how ODP builds profiles (identity stitching, events, segments) and the full
+            direct-path Server Component, see{" "}
+            <a href="#odp" className="text-brand hover:underline">identity, events &amp; segments</a> below.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -804,6 +908,108 @@ ${mappingEntries.length > 0
             experiment: split traffic, measure lift, and declare a winner with confidence. Both paths
             feed the same Graph variation filter - only the decision layer differs.
           </Callout>
+        </section>
+
+        {/* How ODP builds the profiles: identity, events, segments, direct path */}
+        <section id="odp">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            ODP: identity, events &amp; segments{" "}
+            <a href="#odp" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            The segments above don&apos;t appear by magic - ODP (Optimizely Data Platform) builds a
+            behavioral profile per visitor from events the browser sends, then evaluates segment
+            membership in real time. Three things flow through it: an event tag in the page{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">head</code>, identity
+            stitching that links ODP&apos;s cookie to the FX visitor ID, and a server-side query that
+            reads segment membership back out. Once you have a segment, the direct path maps it to a
+            CMS variation and passes it straight to Graph - no FX engine required.
+          </p>
+
+          <div className="space-y-8">
+            <div>
+              <h3 className="font-display text-lg font-bold text-on-surface mb-1">The ODP tag</h3>
+              <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+                The browser sends events (pageviews, identity) through the ODP tag. It is inlined in the
+                root layout&apos;s <code className="bg-surface-low px-1 rounded font-mono text-xs">head</code>{" "}
+                so the <code className="bg-surface-low px-1 rounded font-mono text-xs">zaius</code> command
+                queue exists synchronously - events fired before the async script loads are queued and
+                replayed.
+              </p>
+              <CodeBlock code={ODP_TAG_SNIPPET} label="The ODP tag (inlined in the root layout head)" />
+            </div>
+
+            <div>
+              <h3 className="font-display text-lg font-bold text-on-surface mb-1">Identity stitching</h3>
+              <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+                ODP tracks browsers by its own <code className="bg-surface-low px-1 rounded font-mono text-xs">vuid</code>{" "}
+                cookie, but everything else in this app keys off{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code>{" "}
+                (set by middleware, used by Feature Experimentation). Linking the two once via the{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">fs_user_id</code> identifier
+                is what lets the server ask ODP about the same visitor the FX SDK is bucketing.
+              </p>
+              <CodeBlock code={ODP_IDENTITY_SNIPPET} label="src/components/OdpSetup.tsx" />
+            </div>
+
+            <div>
+              <h3 className="font-display text-lg font-bold text-on-surface mb-1">Server-side segment queries</h3>
+              <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+                ODP exposes a GraphQL API for profile data. The app asks one narrow question per request:
+                of the segments this app cares about, which does the visitor qualify for? The subset filter
+                keeps the query cheap, the 300s cache keeps it off the hot path, and any failure returns an
+                empty array - personalization degrades to the default content, never to an error page.
+              </p>
+              <CodeBlock code={ODP_SEGMENT_QUERY_SNIPPET} label="src/lib/optimizely/odp.ts" />
+            </div>
+
+            <div>
+              <h3 className="font-display text-lg font-bold text-on-surface mb-1">Direct path: ODP segments to CMS variants</h3>
+              <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+                No FX engine in the loop. Query the visitor&apos;s segments, map one to a CMS variation
+                key, pass that key straight to Graph - which returns the matching variant, or the original
+                page if nothing matches. Use this when personalizing for known behavioral segments with no
+                experiment to run; reach for the{" "}
+                <Link href="/demo/feature-experimentation" className="text-brand hover:underline">FX path</Link>{" "}
+                when you need traffic splits, hold-out groups, or significance testing (it runs the identical
+                Graph variation filter, just behind the FX decision engine).
+              </p>
+              <div className="bg-surface-lowest border-2 border-brand/40 rounded-2xl p-5 mb-4">
+                <p className="text-[10px] font-mono text-brand uppercase tracking-wider mb-3">ODP direct pipeline</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  {[
+                    { label: "queryOdpSegments()", sub: "subset filtered, 300s cached" },
+                    { label: "resolveVariationKey()", sub: "first matching segment wins" },
+                    { label: "Graph variation filter", sub: "getContentByPath({ variation })" },
+                    { label: "CMS variant", sub: "or original fallback", highlight: true },
+                  ].map((step, i, arr) => (
+                    <div key={step.label} className="flex items-center gap-3">
+                      <div className={`text-center rounded-xl px-4 py-3 min-w-[150px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
+                        <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
+                        <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
+                      </div>
+                      {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <CodeBlock code={ODP_DIRECT_PATH_SNIPPET} label="Complete Server Component - copy and adapt" />
+            </div>
+
+            <div>
+              <h3 className="font-display text-lg font-bold text-on-surface mb-1">ODP events vs FX events</h3>
+              <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+                This app runs two tracking pipelines that are easy to confuse. ODP events feed the
+                behavioral profile that segments are computed from. FX events (fired by{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">AutoTracker</code> through
+                the FX SDK) feed experiment metrics. They share a visitor ID but nothing else - an ODP
+                pageview never shows up in experiment results, and an FX conversion never moves segment
+                membership. For the conversion side, see{" "}
+                <Link href="/demo/event-tracking" className="text-brand hover:underline">Event Tracking</Link>.
+              </p>
+              <CodeBlock code={ODP_EVENTS_SNIPPET} label="Two pipelines, one visitor ID" />
+            </div>
+          </div>
         </section>
 
         {/* Web Experimentation bridge */}
@@ -1227,6 +1433,11 @@ const bucketingId = cookieStore.get("demo_bucketing_id")?.value;
               label: "odp.ts",
               path: "src/lib/optimizely/odp.ts",
               content: odpTs,
+            },
+            {
+              label: "OdpSetup.tsx",
+              path: "src/components/OdpSetup.tsx",
+              content: odpSetupTsx,
             },
           ]}
         />

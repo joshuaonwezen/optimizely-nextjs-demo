@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getArticles, type ArticleListItem, type ArticleFacetBucket, type ArticleListResult } from "@/lib/graphql/queries/GetArticles";
@@ -6,10 +8,33 @@ import CodeBlock from "@/components/demo/CodeBlock";
 import SectionAnchor from "@/components/demo/SectionAnchor";
 import LiveDemoShell from "@/components/demo/LiveDemoShell";
 import KeyPoints from "@/components/demo/KeyPoints";
+import SourcePanel from "@/components/demo/SourcePanel";
+import FacetedSearchDemo from "./FacetedSearchDemo";
 
 export const metadata: Metadata = {
   title: "Content Listing & Discovery",
 };
+
+const getArticlesTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/graphql/queries/GetArticles.ts"),
+  "utf8"
+);
+const searchQueryTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/graphql/queries/SearchContent.ts"),
+  "utf8"
+);
+const searchRouteTs = fs.readFileSync(
+  path.join(process.cwd(), "src/app/api/search/route.ts"),
+  "utf8"
+);
+const autocompleteRouteTs = fs.readFileSync(
+  path.join(process.cwd(), "src/app/api/search/autocomplete/route.ts"),
+  "utf8"
+);
+const facetedSearchDemoTs = fs.readFileSync(
+  path.join(process.cwd(), "src/app/demo/listing/FacetedSearchDemo.tsx"),
+  "utf8"
+);
 
 const CATEGORY_LABELS: Record<string, string> = {
   "personal-finance": "Personal Finance",
@@ -284,6 +309,69 @@ function FacetSidebar({ facets, activeTag, activeSince }) {
 }`;
 
 
+const AUTOCOMPLETE_SNIPPET = `# autocomplete sits alongside items/total. Each eligible field
+# takes (limit, value) and returns matching VALUES from the index -
+# not documents. Two flavours used by the demo above:
+#
+#   - ArticlePage tags: suggest query terms ("mo" → mortgage)
+#   - _Content _metadata.url.default: suggest pages by path segment
+#     ("sav" → /articles-demo/savings-tips-2025/)
+
+query Autocomplete($value: String!) {
+  ArticlePage {
+    autocomplete {
+      tags(limit: 5, value: $value)
+    }
+  }
+  _Content {
+    autocomplete {
+      _metadata {
+        url { default(limit: 6, value: $value) }
+      }
+    }
+  }
+}`;
+
+const TYPES_FACET_SNIPPET = `# Metadata fields facet too - no schema changes needed.
+# _metadata.types buckets results by content type, useful for
+# an "All / Articles / Pages" filter bar on a global search.
+
+query SearchWithTypeFacet($query: String!) {
+  _Content(where: { _fulltext: { match: $query } }) {
+    total
+    facets {
+      _metadata {
+        types(limit: 10) { name count }
+      }
+    }
+  }
+}
+
+# → _Page (26), DynamicExperience (12), TraditionalPage (7),
+#   ArticlePage (5), FaqItemBlock (4), ...`;
+
+const QUERYABLE_INDEXING_SNIPPET = `// Facets and autocomplete only work on fields Graph indexed for
+// querying. searchable and queryable serve different engines:
+// searchable feeds the full-text index (prose users search),
+// queryable feeds the structured index (metadata you filter/sort/facet).
+
+export const ArticlePageType = contentType({
+  key: "ArticlePage",
+  baseType: "_page",
+  properties: {
+    // searchable → _fulltext finds it, but it CANNOT facet
+    title:    { type: "string", indexingType: "searchable" },
+
+    // queryable → filter, sort, facet, autocomplete
+    category: { type: "string", indexingType: "queryable", enum: { values: [...] } },
+    tags:     { type: "array", items: { type: "string" }, indexingType: "queryable" },
+  },
+});
+
+// Metadata fields (_metadata.types, url, locale, status) are always
+// facetable - no configuration needed. Faceting a searchable-only field
+// returns a schema error, not empty buckets.`;
+
 function ArticleCard({ item }: { item: ArticleListItem }) {
   const url = item._metadata?.url?.default ?? "#";
   const categoryLabel = CATEGORY_LABELS[item.category ?? ""] ?? item.category;
@@ -449,7 +537,7 @@ export default async function ListingDemoPage({
         description={<>How to build article lists, filtered index pages, and faceted browsing interfaces
             using Graph queries, cursor pagination,{" "}
             <code className="bg-on-brand/10 px-1 rounded font-mono text-sm">where</code> conditions,
-            and facet aggregations.</>}
+            facet aggregations, and type-ahead autocomplete.</>}
       />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
@@ -599,6 +687,38 @@ export default async function ListingDemoPage({
           </div>
         </section>
 
+        <section id="autocomplete">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Search-driven facets &amp; autocomplete
+            <SectionAnchor id="autocomplete" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            The browse example above filters a list. Pair the same{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">facets</code> block with a{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">_fulltext</code> search and
+            add type-ahead, and you get a full discovery interface - all computed by Graph in the same
+            query as the results, no separate aggregation or suggestion service. Type{" "}
+            <strong>banking</strong> or <strong>mortgage</strong> and pause: autocomplete suggests tags
+            and page paths as you type, then the checkboxes drill into the results with live counts.
+          </p>
+          <FacetedSearchDemo />
+
+          <p className="text-sm text-on-surface-variant mt-8 mb-4 max-w-3xl leading-relaxed">
+            The <code className="bg-surface-low px-1 rounded font-mono text-xs">autocomplete</code> field
+            returns matching <em>values</em> from the index rather than documents - cheap and needs no
+            ranking, ideal for type-ahead. This demo combines two sources in one query: tag values
+            (suggesting search terms) and URL paths (suggesting pages to jump to). Like search,
+            autocomplete responses use{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">cache: &quot;no-store&quot;</code> -
+            every keystroke is a unique query.
+          </p>
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <CodeBlock code={AUTOCOMPLETE_SNIPPET} label="Two autocomplete sources in one query" />
+            <CodeBlock code={TYPES_FACET_SNIPPET} label="Faceting on metadata: _metadata.types" />
+          </div>
+          <CodeBlock code={QUERYABLE_INDEXING_SNIPPET} label="Prerequisite: queryable indexing decides what can facet" />
+        </section>
+
         <section id="pagination">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
             Cursor pagination
@@ -670,7 +790,21 @@ export default async function ListingDemoPage({
           <><strong className="text-on-surface">Pre-render page 1 with generateStaticParams; leave pages 2+ on-demand.</strong> This gives the most-visited page zero TTFB without pre-building every paginated offset at deploy time.</>,
           <><strong className="text-on-surface">_metadata.published is the canonical sort key for recency.</strong> It reflects the last publish date, not the creation date - republishing updates it, which is the right behaviour for editors who update old articles.</>,
           <><strong className="text-on-surface">Facet counts are scoped to the active where clause.</strong> If a user has filtered by category, the date histogram counts only articles in that category - not the whole index. Request facets in the same query as items so you pay one round trip.</>,
+          <><strong className="text-on-surface">Facet ordering uses orderType, not orderBy.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">orderType: COUNT | VALUE</code> picks the sort key; <code className="bg-surface-low px-1 rounded font-mono text-xs">orderBy: ASC | DESC</code> picks the direction.</>,
+          <><strong className="text-on-surface">Autocomplete returns values, not documents.</strong> Each field takes <code className="bg-surface-low px-1 rounded font-mono text-xs">(limit, value)</code> and suggests indexed values - combine multiple fields (tags, URL paths) in one query for richer suggestions.</>,
+          <><strong className="text-on-surface">Facets and autocomplete require queryable indexing.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">indexingType: &quot;queryable&quot;</code> on the field definition; metadata fields like <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata.types</code> facet out of the box. A searchable-only field returns a schema error, not empty buckets.</>,
         ]} />
+
+        <SourcePanel
+          heading="Source files"
+          files={[
+            { label: "GetArticles.ts", path: "src/lib/graphql/queries/GetArticles.ts", content: getArticlesTs },
+            { label: "SearchContent.ts", path: "src/lib/graphql/queries/SearchContent.ts", content: searchQueryTs },
+            { label: "search/route.ts", path: "src/app/api/search/route.ts", content: searchRouteTs },
+            { label: "autocomplete/route.ts", path: "src/app/api/search/autocomplete/route.ts", content: autocompleteRouteTs },
+            { label: "FacetedSearchDemo.tsx", path: "src/app/demo/listing/FacetedSearchDemo.tsx", content: facetedSearchDemoTs },
+          ]}
+        />
 
       </div>
     </>

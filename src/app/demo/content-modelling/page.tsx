@@ -204,6 +204,42 @@ navOrder:    { type: "integer",  displayName: "Nav Order" },   // sort order
 publishDate: { type: "dateTime", displayName: "Publish Date" }, // same timestamp
 category:    { type: "string",   displayName: "Category",  indexingType: "queryable" }, // enum key`;
 
+const SPECTRUM_COMPONENT = `// type: "component" - inline embed
+// The child is stored inside the parent record. No independent CMS identity.
+cta: {
+  type: "component",
+  contentType: ButtonComponentType,
+  displayName: "CTA Button",
+}`;
+
+const SPECTRUM_CONTENT = `// type: "content" - Content Area Item (single slot)
+// The parent stores a pointer to an independent content item.
+// Graph returns only _metadata (key, url) - fields are NOT inline-expanded.
+featuredBlock: {
+  type: "content",
+  allowedTypes: [FaqContainerBlockType],
+  displayName: "Featured FAQ Block",
+}`;
+
+const SPECTRUM_ARRAY = `// type: "array" - Content Area (ordered list)
+// Graph DOES inline-expand these - all item fields arrive in the page query.
+faqItems: {
+  type: "array",
+  items: { type: "content", allowedTypes: [FaqItemBlockType] },
+  displayName: "FAQ Items",
+}`;
+
+const SPECTRUM_REFERENCE = `// type: "contentReference" - reference to existing content only
+// Editors pick from the content tree - they cannot create inline.
+// With allowedTypes: Graph returns _metadata (key + url) only.
+// With contentType (specific type): Graph returns the full object.
+backgroundImage: {
+  type: "contentReference",
+  allowedTypes: ["_image"],
+  displayName: "Background Image",
+  indexingType: "disabled",
+}`;
+
 
 function SectionHeading({ id, children }: { id: string; children: React.ReactNode }) {
   return (
@@ -1018,6 +1054,213 @@ export default function ContentModellingPage() {
                   fetches the full item via getClient().getContent() before rendering.
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 8b. The four ways to relate content */}
+        <section id="content-spectrum">
+          <SectionHeading id="content-spectrum">
+            The four ways to relate content
+          </SectionHeading>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
+            The inline-vs-referenced choice above is really a spectrum of four property types. They
+            differ in how tightly the child is coupled to its parent, how Graph resolves them in
+            queries, and whether editing the child affects every parent that uses it.{" "}
+            <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
+          </p>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div className="space-y-3">
+              <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+                <p className="text-xs font-mono font-semibold text-on-surface mb-1">type: &quot;component&quot;</p>
+                <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                  The child is stored <strong>inside</strong> the parent record. It has no independent
+                  identity in the CMS - it only exists as part of this parent.
+                </p>
+                <p className="text-xs text-on-surface-variant"><span className="font-medium">Graph: </span>Inline-expanded automatically</p>
+                <p className="text-xs text-on-surface-variant"><span className="font-medium">Example: </span>CTA button on a hero block</p>
+              </div>
+              <CodeBlock code={SPECTRUM_COMPONENT} />
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+                <p className="text-xs font-mono font-semibold text-on-surface mb-1">type: &quot;content&quot;</p>
+                <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                  A single slot for an independent item. The editor can pick an existing item
+                  or create a new inline block. Updating the referenced item affects every parent.
+                </p>
+                <p className="text-xs text-on-surface-variant"><span className="font-medium">Graph: </span>Returns <Code>_metadata</Code> only - must self-fetch</p>
+                <p className="text-xs text-on-surface-variant"><span className="font-medium">Example: </span>Featured FAQ on a product page</p>
+              </div>
+              <CodeBlock code={SPECTRUM_CONTENT} />
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+                <p className="text-xs font-mono font-semibold text-on-surface mb-1">type: &quot;array&quot;</p>
+                <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                  An ordered list of Content Area Items. Editors add blocks via drag-and-drop.
+                  Graph <em>does</em> inline-expand these - all fields arrive with the page query.
+                </p>
+                <p className="text-xs text-on-surface-variant"><span className="font-medium">Graph: </span>Inline-expanded automatically</p>
+                <p className="text-xs text-on-surface-variant"><span className="font-medium">Example: </span>FAQ items list, logo grid</p>
+              </div>
+              <CodeBlock code={SPECTRUM_ARRAY} />
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+                <p className="text-xs font-mono font-semibold text-on-surface mb-1">type: &quot;contentReference&quot;</p>
+                <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                  A reference to an existing item only - editors pick from the content tree,
+                  they cannot create inline. The only reference type available on{" "}
+                  <Code>elementEnabled</Code> blocks.
+                </p>
+                <p className="text-xs text-on-surface-variant"><span className="font-medium">Graph: </span>Full object (specific type) or <Code>_metadata</Code> (allowedTypes)</p>
+                <p className="text-xs text-on-surface-variant"><span className="font-medium">Example: </span>Background image on a hero</p>
+              </div>
+              <CodeBlock code={SPECTRUM_REFERENCE} />
+            </div>
+          </div>
+
+          <p className="text-sm font-semibold text-on-surface mb-3">CMS terminology vs SDK types</p>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            The Optimizely CMS UI and the official docs use different names than the SDK property
+            types. This table maps them so you can read either without confusion.
+          </p>
+          <div className="overflow-auto rounded-2xl border border-ghost-border">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-surface-low border-b border-ghost-border">
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">CMS UI / docs term</th>
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold font-mono">SDK type</th>
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">When Graph expands it</th>
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">Can create inline?</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { term: "Content Area", sdk: 'array (items: { type: "content" })', graph: "Always - all items inlined", inline: "Yes" },
+                  { term: "Content Area Item (standalone)", sdk: "content", graph: "Never - _metadata only", inline: "Yes" },
+                  { term: "Content Reference", sdk: "contentReference", graph: "Only with specific contentType", inline: "No" },
+                  { term: "Component / Block (in UI)", sdk: "component", graph: "Always (no _metadata wrapper)", inline: "Stored inside parent" },
+                ].map((row, i) => (
+                  <tr
+                    key={row.term}
+                    className={`border-b border-ghost-border ${i % 2 === 0 ? "bg-surface" : "bg-surface-lowest"}`}
+                  >
+                    <td className="px-4 py-3 text-on-surface-variant">{row.term}</td>
+                    <td className="px-4 py-3 font-mono text-brand">{row.sdk}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{row.graph}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{row.inline}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* 8c. Content drift and single source of truth */}
+        <section id="content-drift">
+          <SectionHeading id="content-drift">
+            Content drift and single source of truth
+          </SectionHeading>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            The reason the reference-vs-embed choice matters editorially: embedded content diverges
+            over time. The more pages that hold their own copy of a piece of content, the higher the
+            chance that some copies get updated and others don&apos;t. This is content drift - an
+            editorial risk, not a developer bug.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-surface-lowest border border-green-200 rounded-2xl p-6">
+              <p className="text-xs font-semibold text-green-700 mb-3">Referenced - single source of truth</p>
+              <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
+                A promo block is referenced from 12 landing pages. The marketing team updates the
+                offer text once in the CMS. All 12 pages show the new text after the next publish and
+                ISR revalidation.
+              </p>
+              <p className="text-xs text-on-surface-variant italic">Edit count: 1. Pages updated: 12.</p>
+            </div>
+            <div className="bg-surface-lowest border border-orange-200 rounded-2xl p-6">
+              <p className="text-xs font-semibold text-orange-700 mb-3">Embedded - copied on save</p>
+              <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
+                The same promo is embedded as a <Code>type: &quot;component&quot;</Code> on each page.
+                To update the offer text, an editor must open and re-publish all 12 pages individually.
+              </p>
+              <p className="text-xs text-on-surface-variant italic">Edit count: 12. Risk of inconsistency: high.</p>
+            </div>
+          </div>
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 max-w-3xl mb-8">
+            <p className="text-sm font-semibold text-on-surface mb-4">A real scenario</p>
+            <ol className="space-y-3 text-sm text-on-surface-variant leading-relaxed list-none">
+              {[
+                "A legal disclaimer appears on 40 product pages. Each page has its own embedded copy.",
+                "Legal sends a correction. A developer updates the disclaimer on 3 pages and marks the ticket done.",
+                "The remaining 37 pages still show the old, incorrect disclaimer.",
+                "Six months later, no one knows which pages are correct - there are now multiple versions in the wild.",
+              ].map((step, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="text-brand font-bold shrink-0 tabular-nums">{i + 1}.</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="text-sm text-on-surface mt-5 pt-5 border-t border-ghost-border">
+              <strong>The fix:</strong> model the disclaimer as a single referenced content item.
+              Legal updates it once - all 40 pages reflect the change automatically.
+            </p>
+          </div>
+
+          <p className="text-sm font-semibold text-on-surface mb-4">When to reference vs embed</p>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-surface-lowest border border-green-200 rounded-2xl p-6">
+              <p className="text-xs font-semibold text-green-700 mb-4">
+                Content Area (<Code>type: &quot;array&quot;</Code>) when:
+              </p>
+              <ul className="space-y-2 text-sm text-on-surface-variant">
+                {[
+                  "An ordered list of blocks editors assemble themselves",
+                  "Items need drag-and-drop reordering in Visual Builder",
+                  "Each item has its own fields editors fill in",
+                  "Examples: FAQ list, logo grid, feature items, team members",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2"><span className="text-green-600 shrink-0">-</span>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-surface-lowest border border-green-200 rounded-2xl p-6">
+              <p className="text-xs font-semibold text-green-700 mb-4">
+                Reference (<Code>type: &quot;content&quot;</Code> / <Code>type: &quot;contentReference&quot;</Code>) when:
+              </p>
+              <ul className="space-y-2 text-sm text-on-surface-variant">
+                {[
+                  "The same item appears on multiple pages",
+                  "Editors need to update it once and see it everywhere",
+                  "The item has its own editorial lifecycle (draft, review, publish)",
+                  "Examples: shared promo, legal disclaimer, author bio, featured FAQ",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2"><span className="text-green-600 shrink-0">-</span>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
+              <p className="text-xs font-semibold text-on-surface mb-4">
+                Embed (<Code>type: &quot;component&quot;</Code>) when:
+              </p>
+              <ul className="space-y-2 text-sm text-on-surface-variant">
+                {[
+                  "The child is specific to this parent - no meaning outside it",
+                  "Editors configure it per-parent, not from a shared library",
+                  "It changes alongside the parent and only the parent",
+                  "Examples: CTA button on a hero block, price badge on a product card",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2"><span className="text-brand/50 shrink-0">-</span>{item}</li>
+                ))}
+              </ul>
             </div>
           </div>
         </section>

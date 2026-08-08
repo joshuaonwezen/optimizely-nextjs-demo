@@ -97,6 +97,14 @@ const HEADING_SIZE_CHOICES: Array<{ key: string; label: string }> = [
   { key: "sm", label: "Small (H4)" },
 ];
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function Section({
   title,
   description,
@@ -106,9 +114,13 @@ function Section({
   description: string;
   children: React.ReactNode;
 }) {
+  const id = slugify(title);
   return (
-    <section className="mb-20">
-      <h2 className="font-display text-2xl font-extrabold text-on-surface mb-2">{title}</h2>
+    <section id={id} className="mb-20">
+      <h2 className="font-display text-2xl font-extrabold text-on-surface mb-2">
+        {title}
+        <a href={`#${id}`} className="ml-2 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+      </h2>
       <p className="text-sm text-on-surface-variant max-w-2xl mb-8">{description}</p>
       {children}
     </section>
@@ -447,12 +459,15 @@ export default function DisplayTemplatesDemoPage() {
       </div>
 
       {/* Full-bleed hero blocks render outside the grid so their w-screen layout is visible */}
-      <div className="max-w-7xl mx-auto px-8">
-        <h2 className="font-display text-2xl font-extrabold text-on-surface mb-2">Heroes</h2>
+      <section id="heroes" className="max-w-7xl mx-auto px-8">
+        <h2 className="font-display text-2xl font-extrabold text-on-surface mb-2">
+          Heroes
+          <a href="#heroes" className="ml-2 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+        </h2>
         <p className="text-sm text-on-surface-variant max-w-2xl mb-8">
           Full-width blocks with their own template settings: the Hero Default template controls alignment, height, heading size, and font; the Product Hero Compact template reduces height.
         </p>
-      </div>
+      </section>
       <div className="mb-10">
         <p className="max-w-7xl mx-auto px-8 text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-3">
           Hero, Default template, centered

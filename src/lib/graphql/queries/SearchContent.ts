@@ -32,7 +32,7 @@ export const SEARCH_FACETED_QUERY = /* GraphQL */ `
       }
       orderBy: { _ranking: RELEVANCE }
       limit: 10
-      tracking: { phrase: $query, source: "/demo/faceted-search" }
+      tracking: { phrase: $query, source: "/demo/listing" }
     ) {
       total
       items {

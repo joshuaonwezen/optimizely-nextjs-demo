@@ -13,6 +13,14 @@ const clientTs = fs.readFileSync(
   path.join(process.cwd(), "src/lib/optimizely/client.ts"),
   "utf8"
 );
+const webhookRouteTs = fs.readFileSync(
+  path.join(process.cwd(), "src/app/api/webhooks/route.ts"),
+  "utf8"
+);
+const registerWebhookMjs = fs.readFileSync(
+  path.join(process.cwd(), "scripts/register-webhook.mjs"),
+  "utf8"
+);
 
 // This page regenerates every 30s so the "last rendered" timestamp visibly
 // updates - proof that ISR is working without a full redeploy. Intentionally
@@ -74,8 +82,7 @@ export async function POST(request: NextRequest) {
 }`;
 
 const WEBHOOKS_SNIPPET = `// POST /api/webhooks  (registered via: npm run webhook:register)
-// Triggered by Optimizely Graph on every content change - no secret required
-// (Graph signs requests with HMAC; validate in production)
+// Triggered by Optimizely Graph on every content change.
 
 // Payload shapes:
 // { "type": "bulk.completed",  ... }  - Graph finished a content sync
@@ -89,6 +96,15 @@ import { revalidateTag as _revalidateTag } from "next/cache";
 const revalidateTag = _revalidateTag as (tag: string) => void;
 
 export async function POST(request: NextRequest) {
+  // Graph webhook registration controls only the URL, not custom headers, so
+  // the shared secret rides along as a query param. Deny by default.
+  const secret =
+    request.nextUrl.searchParams.get("secret") ??
+    request.headers.get("x-revalidate-secret");
+  if (secret !== process.env.OPTIMIZELY_REVALIDATE_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json();
   revalidatePath("/", "layout"); // bust ISR page output cache
   revalidateTag("page");         // bust Graph fetch cache for CMS pages
@@ -100,6 +116,47 @@ export async function POST(request: NextRequest) {
   revalidateTag("quote-blocks"); // quote blocks (1-hour TTL)
   return NextResponse.json({ received: true, timestamp: Date.now() });
 }`;
+
+const WEBHOOK_REGISTER_SNIPPET = `// scripts/register-webhook.mjs (run with: npm run webhook:register)
+//
+// Graph's webhook API authenticates with HTTP Basic auth using the
+// OPTIMIZELY_APP_KEY / OPTIMIZELY_APP_SECRET pair (the same credentials
+// used for the Content Source API - created in CMS Settings > API Keys).
+
+const credentials = Buffer.from(\`\${APP_KEY}:\${APP_SECRET}\`).toString("base64");
+
+await fetch("https://cg.optimizely.com/api/webhooks", {
+  method: "POST",
+  headers: {
+    Authorization: \`Basic \${credentials}\`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    disabled: false,
+    request: {
+      // Graph only lets you control the URL, not custom headers - so the
+      // shared secret rides along as a query parameter.
+      url: "https://your-app.com/api/webhooks?secret=<OPTIMIZELY_REVALIDATE_SECRET>",
+      method: "post",
+    },
+    topic: ["*.*"],   // all events; narrow to e.g. ["doc.updated"] if preferred
+  }),
+});
+
+// List registered webhooks at any time:
+//   curl -u '<app-key>:<app-secret>' https://cg.optimizely.com/api/webhooks`;
+
+const WEBHOOK_LOCAL_DEV_SNIPPET = `# Graph can't reach localhost - expose your dev server with a tunnel first:
+npx ngrok http 3000          # or: cloudflared tunnel --url http://localhost:3000
+
+# Then register the tunnel URL:
+npm run webhook:register
+# > Enter your public base URL: https://<random>.ngrok-free.app
+
+# Test the receiver by hand (should be 401 without the secret):
+curl -X POST http://localhost:3000/api/webhooks
+curl -X POST "http://localhost:3000/api/webhooks?secret=$OPTIMIZELY_REVALIDATE_SECRET" \\
+  -H "Content-Type: application/json" -d '{"topic":"doc.updated"}'`;
 
 const PUBLISH_SNIPPET = `// POST /api/publish
 // Header: x-revalidate-secret: <OPTIMIZELY_REVALIDATE_SECRET>
@@ -854,13 +911,13 @@ export default function CachingDemoPage() {
               <code className="bg-surface-low px-1 rounded text-xs font-mono">doc.updated</code> (single item changed),{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">doc.expired</code> (item hit its StopPublish date).
             </p>
-            <Callout label="HMAC validation is required before production use">
-              This demo accepts any POST to <code className="bg-surface-low px-1 rounded font-mono text-xs">/api/webhooks</code> without authentication.
-              In production, Graph signs each request with an HMAC-SHA256 signature in the{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">X-Graph-Signature</code> header.
-              Validate it before calling <code className="bg-surface-low px-1 rounded font-mono text-xs">revalidatePath</code> or{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">revalidateTag</code> - an unauthenticated endpoint lets anyone trigger
-              a full-site cache bust on demand.
+            <Callout label="Always verify the sender">
+              An open receiver is a free cache-flush endpoint - anyone who can POST here can force
+              every request back to Graph. Graph webhook registration controls only the URL, not custom
+              headers, so this app appends a shared secret as a query parameter
+              (<code className="bg-surface-low px-1 rounded font-mono text-xs">?secret=OPTIMIZELY_REVALIDATE_SECRET</code>)
+              and the route compares it before invalidating - denying by default. See{" "}
+              <a href="#webhook-registration" className="text-brand hover:underline">Registering &amp; testing webhooks</a> below.
             </Callout>
             <CodeBlock code={WEBHOOKS_SNIPPET} className="mt-4" />
           </div>
@@ -878,6 +935,44 @@ export default function CachingDemoPage() {
               <strong>CMS Settings → Events</strong> alongside <code className="bg-surface-low px-1 rounded text-xs font-mono">/api/revalidate</code>.
             </p>
             <CodeBlock code={PUBLISH_SNIPPET} />
+          </div>
+        </section>
+
+        {/* Registering & testing webhooks */}
+        <section id="webhook-registration" className="space-y-8">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+              Registering &amp; testing webhooks <a href="#webhook-registration" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            </h2>
+            <p className="text-sm text-on-surface-variant max-w-3xl">
+              The <code className="bg-surface-low px-1 rounded text-xs font-mono">/api/webhooks</code> receiver above only
+              fires once Graph is told where to send events. Registration happens against Graph&apos;s management endpoint
+              with Basic auth, and because Graph can only reach public URLs, local development needs a tunnel.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-display text-lg font-bold text-on-surface mb-1">Registration</h3>
+            <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+              Webhooks are registered with Basic auth using the{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">OPTIMIZELY_APP_KEY</code> /{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">OPTIMIZELY_APP_SECRET</code> pair
+              (created in CMS Settings → API Keys). Registration controls only the URL and method - no custom
+              headers - so the shared secret is appended as a query parameter. The{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">npm run webhook:register</code> script
+              wraps this in a prompt for your public base URL.
+            </p>
+            <CodeBlock code={WEBHOOK_REGISTER_SNIPPET} label="POST https://cg.optimizely.com/api/webhooks" />
+          </div>
+
+          <div>
+            <h3 className="font-display text-lg font-bold text-on-surface mb-1">Testing locally</h3>
+            <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+              Graph needs a public URL to deliver events, so local development requires a tunnel. You can also
+              exercise the receiver directly with curl - useful for confirming the 401 path before registering
+              anything.
+            </p>
+            <CodeBlock code={WEBHOOK_LOCAL_DEV_SNIPPET} label="Tunnel + manual testing" />
           </div>
         </section>
 
@@ -909,6 +1004,16 @@ export default function CachingDemoPage() {
               label: "client.ts",
               path: "src/lib/optimizely/client.ts",
               content: clientTs,
+            },
+            {
+              label: "api/webhooks/route.ts",
+              path: "src/app/api/webhooks/route.ts",
+              content: webhookRouteTs,
+            },
+            {
+              label: "register-webhook.mjs",
+              path: "scripts/register-webhook.mjs",
+              content: registerWebhookMjs,
             },
           ]}
         />
