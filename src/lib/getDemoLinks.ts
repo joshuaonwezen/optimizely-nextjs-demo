@@ -26,7 +26,7 @@ export function getDemoCategories(): DemoCategory[] {
     {
       label: "Integrations",
       links: [
-        { href: "/demo/feature-experimentation", label: "Feature Experimentation", description: "A/B tests, flags, and bucketing" },
+        { href: "/demo/feature-experimentation", label: "Experimentation", description: "A/B tests, flags, and bucketing" },
         { href: "/demo/personalization",          label: "Personalization",         description: "Audiences, personas, and variation filter" },
         { href: "/demo/event-tracking",           label: "Event Tracking",          description: "Global tracking layer and conversion events" },
         { href: "/demo/external-content",         label: "External Content",        description: "Third-party data via Content Source API" },

@@ -193,7 +193,7 @@ export const DEMO_NAV_DATA: NavNode[] = [
       },
       {
         key: 'feature-experimentation',
-        label: 'Feature Experimentation',
+        label: 'Experimentation',
         href: '/feature-experimentation',
         children: [
           { key: 'feature-flags',        label: 'Feature Flags',        href: '/feature-flags',        children: [] },

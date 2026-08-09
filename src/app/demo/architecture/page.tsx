@@ -1056,7 +1056,7 @@ export default function ArchitecturePage() {
           <div className="grid md:grid-cols-3 gap-4">
             {[
               { href: "/demo/caching",                label: "ISR Caching",                description: "Cache layers, revalidation tags, webhooks, and what kills ISR." },
-              { href: "/demo/feature-experimentation", label: "Feature Experimentation",    description: "Middleware FX evaluation, URL rewriting, and client-side bucketing events." },
+              { href: "/demo/feature-experimentation", label: "Experimentation",    description: "Middleware FX evaluation, URL rewriting, and client-side bucketing events." },
               { href: "/demo/personalization",         label: "Personalization",            description: "Audience targeting via CMS variation filter and the demo_persona cookie." },
               { href: "/demo/error-handling",          label: "Error Handling",             description: "Graceful degradation: error boundaries, fallbacks, and not-found handling." },
               { href: "/demo/media",                   label: "Media & DAM",                description: "Asset workflow, image delivery, and next/image optimization." },

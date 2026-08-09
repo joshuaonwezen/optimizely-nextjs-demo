@@ -1,6 +1,6 @@
 # Optimizely Next.js Demo — Project Context
 
-This is a Next.js 16 + Optimizely SaaS CMS + Feature Experimentation demo project for a retail banking brand (Mosey Bank). The `/demo/*` pages are SDK documentation — never change their content or purpose.
+This is a Next.js 16 + Optimizely SaaS CMS + Feature Experimentation demo project for a retail banking brand (Mosey Bank). The `/demo/*` pages are SDK documentation — do not change their content or purpose unless explicitly asked.
 
 ---
 
@@ -661,7 +661,7 @@ Authorization: `Basic ${Buffer.from(`${GRAPH_APP_KEY}:${GRAPH_APP_SECRET}`).toSt
 ```
 src/
   app/[[...slug]]/     — catch-all route, evaluates FX flags → passes variation keys to Graph
-  app/demo/            — SDK documentation pages, do NOT change content
+  app/demo/            — SDK documentation pages, do NOT change content unless explicitly asked
   components/blocks/   — each block: index.tsx (type + component) + *.fragment.ts
   lib/optimizely/
     client.ts          — graphqlFetch wrapper (handles published vs draft auth)

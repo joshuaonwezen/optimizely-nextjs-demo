@@ -581,7 +581,7 @@ app.listen(3001);`} />
             >
               <p className="text-xs font-mono text-on-surface-variant mb-2 uppercase tracking-wider">Related Demo</p>
               <p className="font-display font-semibold text-on-surface group-hover:text-brand transition-colors text-sm mb-1">
-                Feature Experimentation →
+                Experimentation →
               </p>
               <p className="text-xs text-on-surface-variant">
                 How Opal&apos;s Variation Development Agent creates A/B test variants that FX routes to the right audience

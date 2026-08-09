@@ -19,7 +19,7 @@ const userTs = fs.readFileSync(
 );
 
 export const metadata: Metadata = {
-  title: "Feature Experimentation Demo",
+  title: "Experimentation Demo",
 };
 
 // Small lucide-style icons for the Serve pipeline; inherit the chip's accent via currentColor.
@@ -430,7 +430,7 @@ export default async function FeatureFlagsDemoPage() {
   return (
     <>
       <DemoHero
-        title="Feature Experimentation"
+        title="Experimentation"
         description="Optimizely Feature Experimentation runs alongside SaaS CMS on the same platform. Flag decisions are evaluated in edge middleware - the URL is rewritten with the variation key before the page renders, enabling full ISR caching per variation. Bucketing events fire client-side after the user sees the variation, connecting A/B experiments directly to editor-created content variations."
       >
         <div className="flex flex-wrap gap-3 mt-8">
@@ -452,9 +452,10 @@ export default async function FeatureFlagsDemoPage() {
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Optimizely Experimentation offers two mechanisms for testing content. They differ in
             where the decision runs: <strong>Feature Experimentation</strong> decides on the server
-            and integrates with CMS content variations through Graph; <strong>Web Experimentation</strong>
-            decides in the browser and changes the delivered page directly. This page covers the
-            server-side path end to end.
+            and integrates with CMS content variations through Graph;{" "}
+            <strong>Web Experimentation &amp; Personalization</strong> is a standalone product with
+            its own visual editor that decides in the browser, separate from the CMS and Graph. This
+            page covers the server-side path end to end.
           </p>
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -477,18 +478,27 @@ export default async function FeatureFlagsDemoPage() {
 
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <h3 className="font-display font-semibold text-on-surface">Web Experimentation - client-side</h3>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-surface-low text-on-surface-variant font-medium">client-side</span>
+                <h3 className="font-display font-semibold text-on-surface">Web Experimentation &amp; Personalization - client-side</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-surface-low text-on-surface-variant font-medium">not covered here</span>
               </div>
+              <p className="text-sm text-on-surface-variant leading-relaxed">
+                <strong className="text-on-surface">Best for fast in-browser changes; the wrong tool when you
+                need CMS-authored, server-rendered content.</strong> A separate, standalone Optimizely product
+                (standalone Personalization is the same engine sold on its own) with its <strong>own visual
+                editor and its own client-side delivery</strong> - it buckets visitors and mutates the page in
+                the browser, independent of the CMS and Graph. Its upside: it can change <em>anything</em> on the
+                rendered page, even edits never modeled in the CMS, without a developer exposing a field or
+                component first.
+              </p>
               <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
-                A browser snippet plus the visual editor mutate the already-delivered DOM in the
-                client (an anti-flicker snippet hides the page until the variation applies). Great for
-                fast marketing tests with no deploy - but it changes the rendered page in the browser
-                rather than driving server-side Graph content variations the way the server-side path does.
+                Routing a WX bucket to a real CMS variation needs a bridge (a cookie on the next request, or a
+                client-side refetch with a flicker). <strong>Not covered in this demo</strong> - see the{" "}
+                <Link href="/demo/personalization#web-experimentation-bridge" className="text-brand hover:underline">Web Experimentation bridge</Link>.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Visual editor - marketers ship tests without a code change</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Client-side DOM mutation - not wired into the Graph variation filter</span></div>
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Own visual editor - marketers ship tests without a code change</span></div>
+                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Change anything on the page - no developer needed to pre-model it in the CMS</span></div>
+                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Content lives in WX, not your CMS - wrong tool for CMS-authored content</span></div>
               </div>
             </div>
           </div>

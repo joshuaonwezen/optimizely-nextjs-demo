@@ -233,10 +233,10 @@ export default async function PersonalizationDemoPage() {
             <a href="#how-it-works" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <ul className="text-sm text-on-surface-variant mb-8 max-w-3xl space-y-2">
-            <li><strong className="text-on-surface">Feature Experimentation (FX)</strong> - delivery engine: configures audiences, buckets traffic, runs A/B experiments, and produces statistical results.</li>
+            <li><strong className="text-on-surface">Feature Experimentation (FX)</strong> - delivery engine: configures audiences, buckets traffic, runs A/B experiments, and produces statistical results. Managed in your source code, so the decision can run at the <strong className="text-on-surface">edge / server-side</strong> or <strong className="text-on-surface">client-side</strong> via an SDK.</li>
             <li><strong className="text-on-surface">ODP (Optimizely Data Platform)</strong> - audience layer only: builds behavioral profiles from cross-session events. No delivery role - plugs into FX as an audience source, or drives Graph directly.</li>
             <li><strong className="text-on-surface">Optimizely Graph</strong> - content delivery API: always the final step, regardless of which path resolves the variation key. Serves the right CMS variant based on the key it receives.</li>
-            <li><strong className="text-on-surface">Web Experimentation / Personalization</strong> - buckets visitors client-side via a JavaScript snippet. A cookie bridge connects WX bucket assignments to the same CMS variation pipeline used by Paths 1-3, with a one-request lag.</li>
+            <li><strong className="text-on-surface">Web Experimentation / Personalization</strong> - a separate, standalone Optimizely product with its own visual editor and its own <strong className="text-on-surface">client-side</strong> delivery: it buckets visitors and applies changes in the browser, independent of the CMS and Graph. It <em>can</em> be bridged to CMS content as a last resort, but the server-side paths above are simpler and have no lag.</li>
             <li className="text-on-surface-variant/70">FX and ODP can be combined - ODP segments used as FX audience conditions. Path 3 is the escape hatch for bringing your own audience logic entirely.</li>
           </ul>
 
@@ -330,51 +330,16 @@ export default async function PersonalizationDemoPage() {
             </div>
 
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
-              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">Path 4 - Web Experimentation cookie bridge (CMS-integrated)</p>
-              <div className="space-y-2 mb-3">
-                <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mb-1">Request 1</p>
-                <div className="flex flex-wrap items-center gap-3">
-                  {[
-                    { label: "WX snippet fires", sub: "in-browser, after HTML served" },
-                    { label: "Audience matched", sub: "WX evaluates its own rules" },
-                    { label: "Cookie written", sub: "opti_wx_variation=flag--key" },
-                  ].map((step, i, arr) => (
-                    <div key={step.label} className="flex items-center gap-3">
-                      <div className="text-center rounded-xl px-4 py-3 min-w-[130px] bg-surface-low">
-                        <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
-                        <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
-                      </div>
-                      {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mt-3 mb-1">Request 2+</p>
-                <div className="flex flex-wrap items-center gap-3">
-                  {[
-                    { label: "Cookie in request", sub: "middleware reads it" },
-                    { label: "__v_ segment injected", sub: "URL rewritten internally" },
-                    { label: "Graph filter", sub: "getContentByPath()" },
-                    { label: "CMS variant", sub: "or original fallback", highlight: true },
-                  ].map((step, i, arr) => (
-                    <div key={step.label} className="flex items-center gap-3">
-                      <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
-                        <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
-                        <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
-                      </div>
-                      {i < arr.length - 1 && <span className="text-on-surface-variant text-lg">→</span>}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">Path 4 - Web Experimentation / Personalization (separate, standalone product)</p>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                Web Experimentation buckets visitors client-side via its JavaScript snippet. A{" "}
-                <strong className="text-on-surface">custom JS action</strong> writes an{" "}
-                <code className="bg-surface-low px-1 rounded font-mono">opti_wx_variation</code>{" "}
-                cookie encoding the variation key. On the next request, middleware reads the cookie and
-                injects a <code className="bg-surface-low px-1 rounded font-mono">__v_</code>{" "}
-                URL segment - routing Graph to serve the matching CMS variation. The first page load
-                always shows base content; the CMS variant appears from the second request onwards.{" "}
-                <a href="#web-experimentation-bridge" className="text-brand hover:underline">Full setup guide below.</a>
+                Unlike Paths 1-3, this is not a server-side route to CMS content - it is a{" "}
+                <strong className="text-on-surface">separate, standalone Optimizely product</strong> with its own
+                visual editor and its own client-side delivery. It buckets visitors and applies changes in the
+                browser, independent of the CMS and Graph, and tracks its own results. It <em>can</em> be bridged
+                to serve CMS content, but only as a <strong className="text-on-surface">last resort</strong> - a
+                cookie with a one-request lag, or a client-side refetch with a flicker; the server-side paths
+                above are simpler and have no lag.{" "}
+                <a href="#web-experimentation-bridge" className="text-brand hover:underline">See the fallback bridge below.</a>
               </p>
             </div>
           </div>
@@ -804,7 +769,7 @@ const decision = userCtx.decide("homepage", [DISABLE_DECISION_EVENT]);
               development, or use a VPN/proxy.
             </Step>
 
-            <Step number={5} title="Validate on the Feature Experimentation page">
+            <Step number={5} title="Validate on the Experimentation page">
               Once your audience matches, the variation key will appear in your live flag
               decisions on the FX demo page - confirming the attribute is flowing correctly
               through to FX and the Graph variation filter.{" "}
@@ -1015,21 +980,90 @@ ${mappingEntries.length > 0
         {/* Web Experimentation bridge */}
         <section id="web-experimentation-bridge">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Web Experimentation: CMS Variation Bridge{" "}
+            Web Experimentation → CMS Content: a Fallback Bridge{" "}
             <a href="#web-experimentation-bridge" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
+
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
-            Optimizely Web Experimentation buckets visitors entirely in the browser - its snippet
-            evaluates audience rules after the HTML has already been sent. This makes it impossible
-            to serve a CMS variation on the same request. The bridge works around this with a
-            persistent cookie: Web Experimentation writes the bucket decision client-side, and the
-            middleware reads it on the next request to route Graph to the correct CMS variation.
+            Teams that already run Web Experimentation and then adopt a headless CMS almost always hit the
+            same question: how do I make my WX experiments and personalization serve content from the CMS
+            content model? It is worth slowing down here, because the instinct - bridge WX straight into
+            Graph - is usually not the best answer. There are three ways to get a WX-style change onto the
+            page, and the bridge is the last resort, not the default.
           </p>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
+            The root of it: WX decides <strong>in the browser, after</strong> the server has already
+            rendered and sent the page. A server-side decision (FX or ODP-direct) happens <strong>before</strong>{" "}
+            the response, so the CMS variant is baked into the first paint. That ordering is why the two
+            server-side options below have no lag and no flicker, and why the bridge - reaching backwards
+            from a client-side decision to server-rendered CMS content - always costs you one or the other.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex flex-col gap-3">
+              <h3 className="font-display font-semibold text-on-surface">Author it in Web Experimentation</h3>
+              <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
+                Build the change in WX&apos;s own visual editor; the snippet mutates the page in the browser,
+                with no CMS or Graph involvement. Its real advantage is reach - it can change <em>anything</em>{" "}
+                on the rendered page, even edits nobody modeled in the CMS, without waiting on a developer. The
+                tradeoff: the content does not live in your CMS, so if you only need changes the CMS already
+                supports, the server-side paths are cleaner.
+              </p>
+              <span className="self-start text-xs px-2 py-0.5 rounded-full bg-surface-low text-on-surface-variant font-medium">no CMS needed</span>
+            </div>
+
+            <div className="bg-surface-lowest border-2 border-brand/40 rounded-2xl p-6 flex flex-col gap-3">
+              <h3 className="font-display font-semibold text-on-surface">Decide server-side, serve CMS content</h3>
+              <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
+                When the content must come from the CMS - so editors own it and it is server-rendered and
+                cached - make the decision <em>before</em> the HTML is sent.{" "}
+                <Link href="/demo/feature-experimentation" className="text-brand hover:underline">Feature Experimentation</Link>{" "}
+                for experiments; the{" "}
+                <Link href="#how-it-works" className="text-brand hover:underline">ODP-direct / custom paths (Paths 1-3)</Link>{" "}
+                for personalization. The variant is in the first response - no lag, no flicker.
+              </p>
+              <span className="self-start text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">recommended</span>
+            </div>
+
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex flex-col gap-3">
+              <h3 className="font-display font-semibold text-on-surface">Bridge WX to the CMS</h3>
+              <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
+                Only when you must keep <strong>WX as the decisioning engine</strong> <em>and</em> the
+                content must come from the <strong>CMS content model</strong>. That narrow case is what the
+                rest of this section covers - via a cookie (next request) or a client-side refetch (same
+                view, with a flicker). Expect one of those two tradeoffs.
+              </p>
+              <span className="self-start text-xs px-2 py-0.5 rounded-full bg-surface-low text-on-surface-variant font-medium">last resort</span>
+            </div>
+          </div>
+
+          <h3 className="font-display text-lg font-bold text-on-surface mt-8 mb-2">
+            The bridge, for that edge case
+          </h3>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            Web Experimentation buckets visitors entirely in the browser - its snippet evaluates
+            audience rules after the HTML has already been sent. There are two ways to connect that
+            client-side bucket to a CMS variation; pick by goal:
+          </p>
+          <ul className="text-sm text-on-surface-variant mb-4 max-w-3xl space-y-2">
+            <li><strong className="text-on-surface">Experiment measured over a journey</strong> - the{" "}
+              <strong>cookie</strong> method (walked through below): WX writes the bucket to a cookie,
+              middleware reads it on the <strong>next</strong> request and routes Graph to the variant.
+              No flicker; the one-request lag is invisible across a multi-page journey.</li>
+            <li><strong className="text-on-surface">First-touch personalization on the landing page itself</strong> - a
+              client-side <strong>refetch</strong>: once the snippet resolves the variation, a client component
+              refetches the variant from Graph (reusing the same{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">variation: {`{ include: SOME, includeOriginal: true }`}</code>{" "}
+              filter) and swaps it in on the <strong>same</strong> view. Content is fetched twice and there is
+              a brief flicker - the same tradeoff as{" "}
+              <Link href="/demo/feature-experimentation#approaches" className="text-brand hover:underline">Approach C - Client-side only</Link>.</li>
+          </ul>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Identity is already shared:{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code>{" "}
             is written domain-wide by middleware and is the same cookie the Web snippet uses for visitor
-            identity. Both products see the same visitor with no extra coordination needed.
+            identity. Both products see the same visitor with no extra coordination needed. The walkthrough
+            below implements the cookie method.
           </p>
 
           {/* Two-request architecture diagram */}
@@ -1176,12 +1210,13 @@ if (wxVariation && wxVariation.includes("--")) {
           </div>
 
           <div className="space-y-3">
-            <Callout variant="note">
-              <strong>The one-request lag is inherent to all client-side experiment tools.</strong>{" "}
-              For multi-page journeys - visitors arriving from search, ads, or a landing page before
-              reaching the experiment page - this is invisible in practice. For experiments where the
-              very first page view must show a variation, use FX instead: it evaluates server-side
-              before the HTML is sent, with no lag.
+            <Callout variant="warning">
+              <strong>The cookie lag suits experiments, not first-touch personalization.</strong>{" "}
+              An experiment is measured across many visitors and multi-page journeys, so a variant that only
+              appears from the second request is invisible in aggregate. Personalization tailors the page the
+              visitor is on <em>now</em> - if the variant waits for their second view, you have already served
+              the generic version once, and they may never return. For that, use the same-view client-side
+              refetch, or better a server-side path (Paths 1-3).
             </Callout>
 
             <Callout variant="note">
@@ -1404,10 +1439,10 @@ const bucketingId = cookieStore.get("demo_bucketing_id")?.value;
             </div>
             <div>
               <p className="font-display font-semibold text-on-surface mb-1">
-                See your live flag decisions on the Feature Experimentation page
+                See your live flag decisions on the Experimentation page
               </p>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                The Feature Experimentation demo shows which flags are enabled for your session,
+                The Experimentation demo shows which flags are enabled for your session,
                 the variation keys being passed to Graph, and the exact CMS content filter
                 applied on every page request.
               </p>
