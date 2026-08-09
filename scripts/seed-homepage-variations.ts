@@ -115,11 +115,10 @@ function rootComponent(
 
 function buildPersonalVariation(): CompNode[] {
   return [
-    rootComponent("Hero", "Personal Hero", {
-      heading: "Banking built around you",
-      summary:
+    rootComponent("HeroBlock", "Personal Hero", {
+      headline: "Banking built around you",
+      subheadline:
         "Your salary, your savings goals, your mortgage — all in one app, with the rates and tools to make each one work harder for you.",
-      theme: "dark",
     }),
     sectionComponent("SectionHeadingBlock", "Products Heading", {
       heading: "Your money, your milestones",
@@ -203,11 +202,10 @@ function buildPersonalVariation(): CompNode[] {
 
 function buildBusinessVariation(): CompNode[] {
   return [
-    rootComponent("Hero", "Business Hero", {
-      heading: "Banking built for business",
-      summary:
+    rootComponent("HeroBlock", "Business Hero", {
+      headline: "Banking built for business",
+      subheadline:
         "Multi-user access, instant reconciliation with Xero and QuickBooks, and lending decisions in 48 hours — built for businesses that can't afford friction.",
-      theme: "dark",
     }),
     sectionComponent("SectionHeadingBlock", "Products Heading", {
       heading: "Every financial tool your business needs",
@@ -291,11 +289,10 @@ function buildBusinessVariation(): CompNode[] {
 
 function buildNewVisitorVariation(): CompNode[] {
   return [
-    rootComponent("Hero", "New Visitor Hero", {
-      heading: "See what everyone's banking on",
-      summary:
+    rootComponent("HeroBlock", "New Visitor Hero", {
+      headline: "See what everyone's banking on",
+      subheadline:
         "Join 2 million people who switched to Mosey for fee-free accounts, market-leading savings rates, and a mortgage experience that doesn't feel like hard work.",
-      theme: "dark",
     }),
     sectionComponent("SectionHeadingBlock", "Products Heading", {
       heading: "Everything you need in one place",
@@ -379,11 +376,10 @@ function buildNewVisitorVariation(): CompNode[] {
 
 function buildMortgagesVariation(): CompNode[] {
   return [
-    rootComponent("Hero", "Mortgages Hero", {
-      heading: "A mortgage that moves at your pace",
-      summary:
+    rootComponent("HeroBlock", "Mortgages Hero", {
+      headline: "A mortgage that moves at your pace",
+      subheadline:
         "Decision in principle in 10 minutes, rates from 4.19% fixed, and an advisor by your side from application to key handover.",
-      theme: "dark",
     }),
     sectionComponent("SectionHeadingBlock", "Products Heading", {
       heading: "Mortgages for every move",
@@ -467,11 +463,10 @@ function buildMortgagesVariation(): CompNode[] {
 
 function buildInvestmentsVariation(): CompNode[] {
   return [
-    rootComponent("Hero", "Investments Hero", {
-      heading: "Investing, made straightforward",
-      summary:
+    rootComponent("HeroBlock", "Investments Hero", {
+      headline: "Investing, made straightforward",
+      subheadline:
         "Stocks & Shares ISAs, pensions, and ready-made portfolios - low fees, tax-efficient, and built for the long term.",
-      theme: "dark",
     }),
     sectionComponent("SectionHeadingBlock", "Products Heading", {
       heading: "Grow your money with confidence",

@@ -36,27 +36,38 @@ export async function queryOdpSegments(userId: string): Promise<string[]> {
   }
 }
 
-// The explicit contract between ODP segment names and CMS variation names.
-// This is the only place to update when either side renames something.
+// The explicit contract between ODP audience identifiers and CMS variation names.
+// This is the only place to update when either side renames something. Keys are the exact
+// ODP audience `name` (case-sensitive - list them with `npx tsx scripts/test-odp.ts`);
+// values are the CMS variation names, which must match the homepage CMS Variations exactly.
 //
-// FUTURE SWAP - replacing the sessionStorage-derived signal with real ODP audiences:
-// today the browsing-derived persona is set client-side in src/lib/segment.ts
-// (personaFromPath -> writeSegment -> demo_persona cookie -> `persona` FX attribute).
-// When ODP is live, populate this map and drive the `persona` value from ODP instead:
-// call queryOdpSegments(userId), pass the result through resolveVariationKey(), and set
-// the demo_persona cookie / `persona` attribute from that. The downstream pipeline
-// (middleware -> FX `homepage` audiences -> Graph variation filter) is unchanged - the
-// variation keys below must match the CMS variation names and FX variation keys exactly.
+// Today the two sides are named differently (`business_banking_customer` -> `business`), so an
+// explicit value is needed. When they are renamed to match (audience `business` -> variation
+// `business`), you can leave the value blank ("") - resolveVariationKey falls back to the
+// audience name itself, so identical naming needs no paired value. Either style works.
+//
+// The homepage in the CMS carries four variations: business, personal, mortgages, investments.
+// ODP only has audiences for business/personal, so only those two resolve today. Mortgages and
+// investments are seeded in the CMS but have no backing ODP audience yet - the variation exists
+// but is never selected. That "half-configured" state is intentional (see below); create the
+// audiences in ODP and add their identifiers here to light them up.
 export const ODP_SEGMENT_TO_VARIATION: Record<string, string> = {
-  // "high-value-customers": "business",
-  // "retail-consumer":      "personal",
-  // "mortgage-intent":      "mortgages",
-  // "investor":             "investments",
+  business_banking_customer: "business",
+  personal_banking_customers: "personal",
+  // No ODP audience exists for these yet - the CMS variation is seeded but will never be
+  // served until an audience is created and mapped here:
+  //   "<mortgage-intent-audience>":  "mortgages",
+  //   "<investor-audience>":         "investments",
 };
 
-export function resolveVariationKey(segments: string[]): string | undefined {
+// Resolves the first qualifying ODP audience to a CMS variation key. A blank map value means
+// "the audience and variation share a name" - fall back to the audience name itself. The `map`
+// parameter defaults to the module map and exists so the resolution logic can be unit-tested.
+export function resolveVariationKey(
+  segments: string[],
+  map: Record<string, string> = ODP_SEGMENT_TO_VARIATION,
+): string | undefined {
   for (const segment of segments) {
-    const key = ODP_SEGMENT_TO_VARIATION[segment];
-    if (key) return key;
+    if (segment in map) return map[segment] || segment;
   }
 }

@@ -11,33 +11,54 @@ for (const line of envFile.split("\n")) {
 const host = process.env.OPTIMIZELY_ODP_API_HOST!;
 const apiKey = process.env.OPTIMIZELY_ODP_API_KEY!;
 
-const SEGMENT_QUERY = `
-  query GetSegments($userId: String!, $segmentFilter: [String!]!) {
-    customer(vuid: $userId) {
-      audiences(subset: $segmentFilter) {
-        edges { node { name state } }
-      }
-    }
-  }
-`;
-
-async function test(userId: string, segmentFilter: string[]) {
-  console.log(`\nQuerying ODP for userId: ${userId}`);
-  console.log("Subset:", segmentFilter);
+async function odp<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
   const res = await fetch(`${host}/v3/graphql`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": apiKey },
-    body: JSON.stringify({ query: SEGMENT_QUERY, variables: { userId, segmentFilter } }),
+    body: JSON.stringify({ query, variables }),
   });
-  console.log("Status:", res.status);
   const json = await res.json();
-  console.log(JSON.stringify(json, null, 2));
-  const qualified: string[] = (json.data?.customer?.audiences?.edges ?? [])
-    .filter((e: { node: { state: string } }) => e.node.state === "qualified")
-    .map((e: { node: { name: string } }) => e.node.name);
-  console.log("Qualified segments:", qualified.length ? qualified : "(none)");
+  if (json.errors) console.error("ODP errors:", JSON.stringify(json.errors, null, 2));
+  return json.data as T;
 }
 
-// Replace USER_ID with a real vuid from your ODP account (check ODP → People or use the optimizelyEndUserId cookie)
-// Replace segment names with real segment names from your ODP account
-test("test-visitor-123", ["has_email", "opted_in"]);
+// Account-level list of every audience definition and its identifier. The `name` values
+// here are exactly what ODP_SEGMENT_TO_VARIATION keys (and the ODP subset filter) must use.
+async function listAllAudiences() {
+  const data = await odp<{ audiences?: { edges?: Array<{ node: { name: string; description?: string } }> } }>(
+    `{ audiences { edges { node { name description } } } }`
+  );
+  const edges = data?.audiences?.edges ?? [];
+  console.log(`\nAccount audiences (${edges.length}):\n`);
+  for (const e of edges) console.log(`  ${e.node.name}\n      ${e.node.description ?? ""}`);
+}
+
+// Per-visitor membership. `subset` is REQUIRED by ODP — pass the audience names you care about.
+async function testVisitor(vuid: string, subset: string[]) {
+  console.log(`\nMembership for vuid "${vuid}" against [${subset.join(", ")}]:\n`);
+  const data = await odp<{ customer?: { audiences?: { edges?: Array<{ node: { name: string; state: string } }> } } }>(
+    `query($userId: String!, $subset: [String!]!) {
+      customer(vuid: $userId) { audiences(subset: $subset) { edges { node { name state } } } }
+    }`,
+    { userId: vuid, subset }
+  );
+  const edges = data?.customer?.audiences?.edges ?? [];
+  if (!edges.length) {
+    console.log("  (no data — vuid unknown to ODP, or none of the subset applies)");
+    return;
+  }
+  for (const e of edges) console.log(`  ${e.node.name}  →  ${e.node.state}`);
+  const qualified = edges.filter((e) => e.node.state === "qualified").map((e) => e.node.name);
+  console.log("\n  Qualified:", qualified.length ? qualified.join(", ") : "(none)");
+}
+
+// Usage:
+//   npx tsx scripts/test-odp.ts                    → list every account audience identifier
+//   npx tsx scripts/test-odp.ts <vuid> [names...]  → test one visitor's membership
+//     e.g. npx tsx scripts/test-odp.ts abc-123 business_banking_customer personal_banking_customers
+const [vuid, ...names] = process.argv.slice(2);
+if (!vuid) {
+  listAllAudiences();
+} else {
+  testVisitor(vuid, names.length ? names : ["business_banking_customer", "personal_banking_customers"]);
+}

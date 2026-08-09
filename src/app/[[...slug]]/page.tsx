@@ -7,6 +7,8 @@ import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths"
 import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
 import { VARIATION_MARKER, FLAG_VAR_SEP } from "@/middleware";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
+import { getVisitorContext } from "@/lib/optimizely/visitor";
+import { queryOdpSegments, resolveVariationKey } from "@/lib/optimizely/odp";
 
 // Registers all content types, display templates, and React components.
 // Also calls config() so getClient() works throughout the app.
@@ -97,11 +99,26 @@ async function CmsPage({
 
   const client = getClient();
 
-  // When variations are active (encoded in the URL path by middleware), pass them
-  // as a Graph filter so Graph returns the matching variation or base content.
+  // Two personalization signals feed the same Graph variation filter:
+  //   1. FX path - middleware decides an experiment and encodes the variation in the URL
+  //      (`__v_flag--variation`). ISR-cached per variation segment; no cookies read here.
+  //   2. ODP-direct fallback - only for the homepage, and only when FX set no variation
+  //      (no experiment on this route). Fetches the visitor's ODP audiences server-side and
+  //      maps one to a variation key. Reading the visitor id calls cookies(), so this makes
+  //      the homepage render dynamic - which is why it's scoped to `!cleanSlug` so every
+  //      other route stays static/ISR and never calls ODP.
+  let variationValues = activeVariations;
+  if (variationValues.length === 0 && !cleanSlug) {
+    const { userId } = await getVisitorContext();
+    const key = resolveVariationKey(await queryOdpSegments(userId));
+    if (key) variationValues = [key];
+  }
+
+  // When a variation is active (from FX or ODP), pass it as a Graph filter so Graph returns
+  // the matching variation or base content (includeOriginal keeps unmatched visitors served).
   const variationFilter =
-    activeVariations.length > 0
-      ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
+    variationValues.length > 0
+      ? { variation: { include: "SOME" as const, value: variationValues, includeOriginal: true } }
       : undefined;
 
   let page: any = null;
@@ -117,7 +134,7 @@ async function CmsPage({
       } as any);
       if (items.length > 0) {
         const variationMatch = variationFilter
-          ? items.find((item: any) => activeVariations.includes(item._metadata?.variation))
+          ? items.find((item: any) => variationValues.includes(item._metadata?.variation))
           : null;
         page = variationMatch ?? items[0];
         break;
@@ -148,7 +165,7 @@ async function CmsPage({
     // Prefer a version whose variation name matches the active persona,
     // fall back to the highest base version (no variation name).
     const variationMatch = candidates.find(
-      (m) => m.variation != null && activeVariations.includes(m.variation)
+      (m) => m.variation != null && variationValues.includes(m.variation)
     );
     const baseFallback = candidates
       .filter((m) => !m.variation)
