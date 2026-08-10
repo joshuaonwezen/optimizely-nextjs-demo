@@ -23,6 +23,18 @@ function getCookie(name: string): string {
   return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1] ?? "";
 }
 
+// One live ODP audience the visitor qualifies for. Mapped audiences (those in
+// ODP_SEGMENT_TO_VARIATION) drive a homepage variation and are highlighted.
+function AudienceRow({ name, mapped }: { name: string; mapped: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`inline-flex h-1.5 w-1.5 shrink-0 rounded-full ${mapped ? "bg-emerald-500" : "bg-outline-variant"}`} />
+      <span className={`text-xs font-mono truncate ${mapped ? "text-on-surface" : "text-on-surface-variant"}`}>{name}</span>
+      {mapped && <span className="text-xs text-emerald-600 shrink-0">mapped</span>}
+    </div>
+  );
+}
+
 export default function AudienceSwitcher() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [bucketingId, setBucketingId] = useState("");
@@ -30,6 +42,9 @@ export default function AudienceSwitcher() {
   const [frequentCustomer, setFrequentCustomer] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [odp, setOdp] = useState<{ segments: string[]; mapped: string[]; variation: string | null } | null>(null);
+  const [odpLoading, setOdpLoading] = useState(false);
+  const [odpExpanded, setOdpExpanded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -37,6 +52,31 @@ export default function AudienceSwitcher() {
   const segment = useCurrentSegment();
 
   const currentLabel = PERSONA_LABELS[segment];
+
+  // Live ODP membership for this visitor - the real server-side qualification that drives
+  // the homepage variation (queried by fs_user_id), independent of the demo_persona override
+  // above. Refetched each time the panel opens so it reflects the current visitor_id.
+  async function loadOdpMembership() {
+    setOdpLoading(true);
+    setOdpExpanded(false);
+    try {
+      const res = await fetch("/api/demo/odp-segments", { cache: "no-store" });
+      const data = await res.json();
+      setOdp({
+        segments: data.qualifiedSegments ?? [],
+        mapped: data.mappedSegments ?? [],
+        variation: data.resolvedVariation ?? null,
+      });
+    } catch {
+      setOdp({ segments: [], mapped: [], variation: null });
+    } finally {
+      setOdpLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (open) loadOdpMembership();
+  }, [open]);
 
   useEffect(() => {
     const bid = getCookie("demo_bucketing_id");
@@ -144,6 +184,59 @@ export default function AudienceSwitcher() {
           <p className="px-4 pt-1 pb-2 text-xs font-mono text-on-surface-variant">
             auto from browsing · click to override
           </p>
+
+          {/* Live ODP membership - the real server-side qualification (queried by fs_user_id)
+              that actually drives the homepage variation, shown to verify the ODP path. */}
+          <div className="px-4 pt-3 pb-3 border-t border-outline-variant mt-1">
+            <div className="flex items-center justify-between pb-2">
+              <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
+                ODP membership · live
+              </p>
+              <button
+                onClick={loadOdpMembership}
+                disabled={odpLoading}
+                title="Re-query ODP for this visitor"
+                className="text-xs text-brand hover:underline disabled:opacity-60"
+              >
+                {odpLoading ? "checking…" : "refresh"}
+              </button>
+            </div>
+            {odpLoading && !odp ? (
+              <p className="text-xs font-mono text-on-surface-variant">querying ODP…</p>
+            ) : odp && odp.segments.length > 0 ? (
+              <div className="space-y-1.5">
+                {/* One match: show it inline. Many: collapse behind a count so a large
+                    account (100s of audiences) doesn't flood the widget. */}
+                {odp.segments.length === 1 ? (
+                  <AudienceRow name={odp.segments[0]} mapped={odp.mapped.includes(odp.segments[0])} />
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setOdpExpanded((e) => !e)}
+                      className="w-full flex items-center justify-between text-xs font-mono text-on-surface"
+                    >
+                      <span>{odp.segments.length} audiences qualified</span>
+                      <span className={`text-on-surface-variant transition-transform ${odpExpanded ? "rotate-180" : ""}`}>▾</span>
+                    </button>
+                    {odpExpanded && (
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto pt-0.5">
+                        {odp.segments.map((name) => (
+                          <AudienceRow key={name} name={name} mapped={odp.mapped.includes(name)} />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+                <p className="text-xs font-mono text-on-surface-variant pt-0.5">
+                  variation → {odp.variation ?? "(none — no mapped audience)"}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs font-mono text-on-surface-variant">
+                not qualified for any ODP audience
+              </p>
+            )}
+          </div>
 
           {/* Attributes section */}
           <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider border-t border-outline-variant mt-1">

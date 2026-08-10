@@ -1,9 +1,12 @@
 const ODP_API_HOST = process.env.OPTIMIZELY_ODP_API_HOST ?? "https://api.zaius.com";
 const ODP_API_KEY  = process.env.OPTIMIZELY_ODP_API_KEY  ?? "";
 
+// Look up membership by fs_user_id: OdpSetup stitches the FX visitor id (optimizelyEndUserId)
+// into ODP as fs_user_id, so the profile lives under that identifier - NOT vuid. Querying by
+// vuid here returns an empty customer and no audiences ever resolve.
 const SEGMENT_QUERY = `
   query GetSegments($userId: String!, $segmentFilter: [String!]!) {
-    customer(vuid: $userId) {
+    customer(fs_user_id: $userId) {
       audiences(subset: $segmentFilter) {
         edges { node { name state } }
       }
@@ -11,18 +14,37 @@ const SEGMENT_QUERY = `
   }
 `;
 
-// Queries ODP for the segments in ODP_SEGMENT_TO_VARIATION that the visitor qualifies for.
-// The subset is derived from the mapping keys so we only ask ODP about segments we actually use.
-export async function queryOdpSegments(userId: string): Promise<string[]> {
+// Lists every audience `name` defined on the ODP account. Used to build the "all audiences"
+// subset for the verification panel - ODP's `audiences(subset:)` requires an explicit list.
+const ALL_AUDIENCES_QUERY = `{ audiences { edges { node { name } } } }`;
+
+async function listAudienceNames(fresh = false): Promise<string[]> {
   if (!ODP_API_KEY) return [];
-  const segmentFilter = Object.keys(ODP_SEGMENT_TO_VARIATION);
-  if (segmentFilter.length === 0) return [];
   try {
     const res = await fetch(`${ODP_API_HOST}/v3/graphql`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": ODP_API_KEY },
-      body: JSON.stringify({ query: SEGMENT_QUERY, variables: { userId, segmentFilter } }),
-      next: { revalidate: 300 },
+      body: JSON.stringify({ query: ALL_AUDIENCES_QUERY }),
+      ...(fresh ? { cache: "no-store" as const } : { next: { revalidate: 3600 } }),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.data?.audiences?.edges ?? []).map((e: { node: { name: string } }) => e.node.name);
+  } catch {
+    return [];
+  }
+}
+
+// Queries ODP for which of `subset` the visitor currently qualifies for. `fresh` bypasses the
+// 5-min fetch cache (used by the live verification panel, which must reflect current state).
+async function querySegments(userId: string, subset: string[], fresh: boolean): Promise<string[]> {
+  if (!ODP_API_KEY || subset.length === 0) return [];
+  try {
+    const res = await fetch(`${ODP_API_HOST}/v3/graphql`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": ODP_API_KEY },
+      body: JSON.stringify({ query: SEGMENT_QUERY, variables: { userId, segmentFilter: subset } }),
+      ...(fresh ? { cache: "no-store" as const } : { next: { revalidate: 300 } }),
     });
     if (!res.ok) return [];
     const data = await res.json();
@@ -34,6 +56,19 @@ export async function queryOdpSegments(userId: string): Promise<string[]> {
   } catch {
     return [];
   }
+}
+
+// Production path: only asks ODP about the segments in ODP_SEGMENT_TO_VARIATION (the ones that
+// actually drive a homepage variation).
+export async function queryOdpSegments(userId: string, fresh = false): Promise<string[]> {
+  return querySegments(userId, Object.keys(ODP_SEGMENT_TO_VARIATION), fresh);
+}
+
+// Verification path: every ODP audience the visitor qualifies for, whether mapped or not. Lets
+// the switcher panel show the full picture (e.g. "in active_visitors, just not a mapped one").
+export async function queryAllQualifiedSegments(userId: string, fresh = false): Promise<string[]> {
+  const all = await listAudienceNames(fresh);
+  return querySegments(userId, all, fresh);
 }
 
 // The explicit contract between ODP audience identifiers and CMS variation names.

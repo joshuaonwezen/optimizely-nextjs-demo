@@ -19,8 +19,12 @@ export default function OdpSetup() {
     if (fsUserId) window.zaius?.entity("customer", { fs_user_id: fsUserId });
   }, []);
 
+  // Attach fs_user_id to the pageview so realtime segments (which are built on the pageview
+  // event and evaluated at event time on the identifiers in the event) qualify the customer
+  // profile - not just the anonymous vuid. Custom events already send it via odpDestination.
   useEffect(() => {
-    window.zaius?.event("pageview");
+    const fsUserId = getCookie("optimizelyEndUserId");
+    window.zaius?.event("pageview", fsUserId ? { fs_user_id: fsUserId } : undefined);
   }, [pathname]);
 
   return null;
