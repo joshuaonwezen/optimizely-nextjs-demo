@@ -15,7 +15,7 @@ export const SpotlightBlockType = contentType({
   properties: {
     person:    { type: "string",           displayName: "Person",    indexingType: "searchable", isLocalized: true },
     quote:     { type: "string",           displayName: "Quote",     indexingType: "searchable", isLocalized: true },
-    image:     { type: "contentReference", displayName: "Image",     allowedTypes: ["imageCustom"] },
+    image:     { type: "contentReference", displayName: "Image",     allowedTypes: ["_image"] },
     textfield: { type: "richText",         displayName: "Text",      indexingType: "searchable" },
     spacing: {
       type: "string",
