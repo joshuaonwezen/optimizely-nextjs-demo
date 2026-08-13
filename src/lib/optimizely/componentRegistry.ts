@@ -47,6 +47,7 @@ import ContactFormBlock, { ContactFormBlockType } from "@/components/blocks/Cont
 import BranchFinderBlock, { BranchFinderBlockType, BranchFinderBlockDefaultTemplate } from "@/components/blocks/BranchFinderBlock";
 import QuoteBlock, { QuoteBlockType, QuoteBlockDefaultTemplate } from "@/components/blocks/QuoteBlock";
 import CustomerVoicesBlock, { CustomerVoicesBlockType, CustomerVoicesBlockDefaultTemplate } from "@/components/blocks/CustomerVoicesBlock";
+import SpotlightBlock, { SpotlightBlockType, SpotlightBlockDefaultTemplate } from "@/components/blocks/SpotlightBlock";
 
 import DynamicExperience from "@/components/experience/DynamicExperience";
 import BlankExperience from "@/components/experience/BlankExperience";
@@ -195,6 +196,7 @@ export function initComponentRegistry() {
     BranchFinderBlockType,
     QuoteBlockType,
     CustomerVoicesBlockType,
+    SpotlightBlockType,
     ArticlePageType,
     CaseStudyPageType,
     ConsultantPageType,
@@ -233,6 +235,7 @@ export function initComponentRegistry() {
     TeamMemberHorizontalTemplate,
     FeaturedContentCardTemplate,
     RawHtmlBlockDefaultTemplate,
+    SpotlightBlockDefaultTemplate,
     DefaultRowTemplate,
     DefaultColumnTemplate,
     DefaultSectionTemplate,
@@ -348,6 +351,7 @@ export function initComponentRegistry() {
       BranchFinderBlock,
       QuoteBlock,
       CustomerVoicesBlock,
+      spotlightBlock: SpotlightBlock,
       Navigation: NavigationBlock,
       NavigationItem: NavigationItemPreview,
       Footer: FooterPreview,

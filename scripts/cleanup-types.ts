@@ -56,6 +56,7 @@ const KEEP = new Set([
   "BranchFinderBlock",
   "QuoteBlock",
   "CustomerVoicesBlock",
+  "spotlightBlock",
   // Optimizely Forms native types (activated via CMS Settings → Forms)
   "OptiFormsContainerData",
   "OptiFormsTextboxElement",
@@ -134,6 +135,7 @@ const KEEP_TEMPLATES = new Set([
   "TeamMemberHorizontalTemplate",
   "FeaturedContentCardTemplate",
   "RawHtmlBlockDefaultTemplate",
+  "SpotlightBlockDefaultTemplate",
   "DefaultRowTemplate",
   "DefaultColumnTemplate",
   "DefaultSectionTemplate",
