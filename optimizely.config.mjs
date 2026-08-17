@@ -11,11 +11,14 @@ export const SEOContract = contract({
   key: "SEO",
   displayName: "SEO Properties",
   properties: {
-    metaTitle:       { type: "string", displayName: "Meta Title",       isLocalized: true },
-    metaDescription: { type: "string", displayName: "Meta Description", isLocalized: true },
+    // group: "SEO" places these in their own section in the CMS editor panel
+    // (the SEO_GROUP registered in buildConfig below). Applies to every type
+    // that extends this contract.
+    metaTitle:       { type: "string", displayName: "Meta Title",       isLocalized: true, group: "SEO", sortOrder: 0 },
+    metaDescription: { type: "string", displayName: "Meta Description", isLocalized: true, group: "SEO", sortOrder: 1 },
     // No indexingType here — "disabled" on a _page contentReference would make the SDK
     // skip the field in generated fragments and ogImage would always be null.
-    ogImage:         { type: "contentReference", displayName: "Social Share Image", allowedTypes: ["_image"] },
+    ogImage:         { type: "contentReference", displayName: "Social Share Image", allowedTypes: ["_image"], group: "SEO", sortOrder: 2 },
   },
 });
 
@@ -36,6 +39,39 @@ export const DynamicExperienceType = contentType({
   extends: SEOContract,
   properties: {
     lastSync: { type: "dateTime", displayName: "Last Sync" },
+  },
+});
+
+// Blog post experience — a Visual Builder page with a fixed masthead (the five
+// properties below, rendered at the top of the page by BlogExperience.tsx) above
+// an editable composition. Mirrors DynamicExperience but adds the blog header fields.
+export const BlogExperienceType = contentType({
+  key: "BlogExperience",
+  displayName: "Blog Experience",
+  baseType: "_experience",
+  mayContainTypes: [
+    "_self",
+    "TraditionalPage", "ArticlePage", "CaseStudyPage", "ConsultantPage",
+    "AuthorBlock", "OutcomeItemBlock", "TestimonialBlock",
+    "FaqItemBlock", "FaqContainerBlock",
+    "TimelineMilestoneBlock", "TeamMemberBlock",
+    "ContactFormBlock",
+    "NavigationItem", "Navigation",
+    "Footer", "SiteSettings", "SiteBanner",
+  ],
+  extends: SEOContract,
+  properties: {
+    // sortOrder pins the editor-panel order: Hero Image, Heading, Subheading, Author, Published Date.
+    // indexingType omitted on the image reference — a contentReference only accepts
+    // "disabled", which would strip it from the generated fragment (see CLAUDE.md).
+    heroImage:     { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"], sortOrder: 0 },
+    heading:       { type: "string", displayName: "Heading",    indexingType: "searchable", isLocalized: true, sortOrder: 1 },
+    subheading:    { type: "string", displayName: "Subheading", indexingType: "searchable", isLocalized: true, sortOrder: 2 },
+    // Single content item pointing at an AuthorBlock. Graph does NOT inline-expand
+    // single content refs (returns _metadata.key only), so BlogExperience.tsx resolves
+    // it via getClient().getContent({ key }) — same pattern as ArticlePage.
+    author:        { type: "content", displayName: "Author", allowedTypes: ["AuthorBlock"], sortOrder: 3 },
+    publishedDate: { type: "dateTime", displayName: "Published Date", indexingType: "queryable", sortOrder: 4 },
   },
 });
 
@@ -299,4 +335,9 @@ export const DefaultSectionTemplate = displayTemplate({
 
 export default buildConfig({
   components: ["./optimizely.config.mjs", "./src/components/**/*.tsx"],
+  // Custom editor property groups. sortOrder 100 keeps SEO below each type's
+  // own content fields. Referenced via `group: "SEO"` on the SEOContract props.
+  propertyGroups: [
+    { key: "SEO", displayName: "SEO", sortOrder: 100 },
+  ],
 });

@@ -258,6 +258,7 @@ const GET_PAGE_META_QUERY = /* GraphQL */ `
           url { default }
         }
         ... on DynamicExperience { ${SEO_FIELDS} }
+        ... on BlogExperience { ${SEO_FIELDS} }
         ... on TraditionalPage { ${SEO_FIELDS} }
         ... on ArticlePage { ${SEO_FIELDS} summary }
         ... on CaseStudyPage { ${SEO_FIELDS} summary }

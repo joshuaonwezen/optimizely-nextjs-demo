@@ -21,6 +21,7 @@ const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 const KEEP = new Set([
   // Experience / page types — use the content type KEY, not the variable name
   "DynamicExperience",
+  "BlogExperience",
   "TraditionalPage",   // LandingPageType.key in optimizely.config.mjs
   "ArticlePage",
   "CaseStudyPage",

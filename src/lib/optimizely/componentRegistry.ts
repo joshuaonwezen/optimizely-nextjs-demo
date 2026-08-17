@@ -50,6 +50,7 @@ import CustomerVoicesBlock, { CustomerVoicesBlockType, CustomerVoicesBlockDefaul
 import SpotlightBlock, { SpotlightBlockType, SpotlightBlockDefaultTemplate } from "@/components/blocks/SpotlightBlock";
 
 import DynamicExperience from "@/components/experience/DynamicExperience";
+import BlogExperience from "@/components/experience/BlogExperience";
 import BlankExperience from "@/components/experience/BlankExperience";
 import BlankSection from "@/components/experience/BlankSection";
 import TraditionalPage from "@/components/pages/TraditionalPage";
@@ -60,6 +61,7 @@ import ConsultantPage from "@/components/pages/ConsultantPage";
 // Experience/page types and structural templates stay in optimizely.config.mjs
 import {
   DynamicExperienceType,
+  BlogExperienceType,
   LandingPageType,
   ArticlePageType,
   CaseStudyPageType,
@@ -156,6 +158,7 @@ export function initComponentRegistry() {
     BlankExperienceContentType,
     BlankSectionContentType,
     DynamicExperienceType,
+    BlogExperienceType,
     LandingPageType,
     HeroBlockType,
     ProductHeroBlockType,
@@ -251,6 +254,7 @@ export function initComponentRegistry() {
   const componentMap: Record<string, unknown> = {
       // Experience / page types
       DynamicExperience,
+      BlogExperience,
       BlankExperience,
       BlankSection,
       TraditionalPage,
