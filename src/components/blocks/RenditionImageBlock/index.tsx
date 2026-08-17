@@ -1,6 +1,14 @@
 import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
+
+// The rendition enum implies a shape; ask the CDN to crop to it (as height/width)
+// so the intended crop holds even when the named rendition is missing on the asset.
+const CROP_RATIOS: Record<string, number> = {
+  "portrait-crop":  4 / 3,   // taller than wide
+  "landscape-crop": 9 / 16,  // wider than tall
+};
 
 export const RenditionImageBlockType = contentType({
   key: "RenditionImageBlock",
@@ -70,6 +78,18 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
 
   if (!imageUrl) return null;
 
+  // Prefer CDN on-the-fly resizing for DAM URLs (responsive widths independent of
+  // the asset's renditions, cropped to the selected shape); fall back to the SDK's
+  // rendition-based srcset for CMS globalassets.
+  const cropRatio = CROP_RATIOS[data.rendition ?? ""];
+  const cdnSrcSet = buildDamSrcset(
+    imageUrl,
+    undefined,
+    cropRatio ? { action: "Crop", aspectRatio: cropRatio } : {},
+  );
+  const srcSet = cdnSrcSet ?? getSrcset(data.image as any);
+  const baseSrc = damImageUrl(imageUrl, { width: 1280 });
+
   return (
     <figure
       data-component="RenditionImageBlock"
@@ -78,8 +98,8 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
       <div {...pa("image")} className="overflow-hidden rounded-2xl">
         {/* eslint-disable-next-line @next/next/no-img-element -- DAM URLs carry a preview token; next/image would re-optimise and strip it */}
         <img
-          src={imageUrl}
-          srcSet={getSrcset(data.image as any)}
+          src={baseSrc}
+          srcSet={srcSet}
           sizes="(max-width: 1280px) 100vw, 1280px"
           alt={getAlt(data.image as any, data.altText ?? "")}
           className="w-full h-auto block"

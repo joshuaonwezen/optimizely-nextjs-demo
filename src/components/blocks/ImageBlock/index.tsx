@@ -1,6 +1,7 @@
 import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
 
 export const ImageBlockType = contentType({
   key: "ImageBlock",
@@ -87,6 +88,22 @@ const ASPECT_RATIOS: Record<string, string> = {
   r1x1:  "1 / 1",
 };
 
+// Same choices as height/width, used to ask the CDN for a server-side crop so we
+// don't download the pixels CSS object-cover would clip away.
+const CROP_RATIOS: Record<string, number> = {
+  r16x9: 9 / 16,
+  r4x3:  3 / 4,
+  r1x1:  1,
+};
+
+// DAM FocalPoint (when present) is normalized 0-1; the CDN wants 0-100 percentages.
+function focalPercent(image: unknown): { centerWidth?: number; centerHeight?: number } {
+  const fp = (image as any)?.item?.FocalPoint;
+  if (!fp || typeof fp.x !== "number" || typeof fp.y !== "number") return {};
+  const pct = (n: number) => Math.round((n <= 1 ? n * 100 : n));
+  return { centerWidth: pct(fp.x), centerHeight: pct(fp.y) };
+}
+
 export default function ImageBlock(props: ImageBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
@@ -102,11 +119,27 @@ export default function ImageBlock(props: ImageBlockProps) {
 
   if (!imageUrl) return null;
 
-  const srcSet = getSrcset(data.image as any);
   const altText = getAlt(data.image as any, data.altText ?? "");
 
   const isRounded = props.displayTemplateKey === "ImageBlockRoundedTemplate";
-  const aspectRatio = ASPECT_RATIOS[(ds?.aspectRatio as string) ?? "auto"];
+  const ratioKey = (ds?.aspectRatio as string) ?? "auto";
+  const aspectRatio = ASPECT_RATIOS[ratioKey];
+  const cropRatio = CROP_RATIOS[ratioKey];
+
+  // Prefer CDN on-the-fly resizing for DAM URLs: builds a responsive srcset at
+  // real display widths (independent of whatever renditions the asset has). When
+  // an aspect ratio is chosen, crop server-side with the asset's focal point.
+  // Falls back to the SDK's rendition-based srcset for CMS globalassets.
+  const cdnSrcSet = buildDamSrcset(
+    imageUrl,
+    undefined,
+    cropRatio
+      ? { action: "Crop", aspectRatio: cropRatio, ...focalPercent(data.image) }
+      : {},
+  );
+  const srcSet = cdnSrcSet ?? getSrcset(data.image as any);
+  // Cap the base src (the srcSet fallback) so it is never the full-res original.
+  const baseSrc = damImageUrl(imageUrl, { width: 1280 });
   const style = resolveStyleClasses(ds, { background: "transparent" });
 
   return (
@@ -120,7 +153,7 @@ export default function ImageBlock(props: ImageBlockProps) {
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- DAM URLs carry a preview token; next/image would re-optimise and strip it */}
         <img
-          src={imageUrl}
+          src={baseSrc}
           srcSet={srcSet}
           sizes="(max-width: 1280px) 100vw, 1280px"
           alt={altText}
