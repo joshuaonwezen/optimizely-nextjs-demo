@@ -42,7 +42,10 @@ export default async function BlogExperience({ content }: { content: any }) {
   const authorName = author?.name ?? null;
   const authorRole = author?.role ?? null;
   const authorAvatarUrl =
-    author?.avatar?.url?.default ?? author?.avatar?._metadata?.url?.default ?? null;
+    src(author?.avatar) ??
+    author?.avatar?.url?.default ??
+    author?.avatar?._metadata?.url?.default ??
+    null;
 
   const formattedDate = formatDate(content?.publishedDate);
   const nodes: any[] = content?.composition?.nodes ?? [];

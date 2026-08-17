@@ -17,7 +17,11 @@ export const AuthorBlockType = contentType({
     name:        { type: "string",           displayName: "Name",        indexingType: "searchable", isLocalized: true },
     role:        { type: "string",           displayName: "Role",        isLocalized: true },
     bio:         { type: "richText",         displayName: "Bio",         indexingType: "searchable", isLocalized: true },
-    avatar:      { type: "contentReference", displayName: "Avatar", allowedTypes: ["_image"], indexingType: "disabled" },
+    // indexingType omitted (NOT "disabled") so the SDK keeps `avatar` in the generated
+    // fragment. "disabled" strips it from inline composition expansions and the avatar
+    // never reaches the renderer. A contentReference only accepts "disabled" or omitted,
+    // so omitting is the only way to include it. Breaking change: push with --force.
+    avatar:      { type: "contentReference", displayName: "Avatar", allowedTypes: ["_image"] },
     linkedinUrl: { type: "url",              displayName: "LinkedIn URL" },
   },
 });
