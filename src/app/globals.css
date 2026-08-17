@@ -52,6 +52,12 @@
   /* Ghost border */
   --ghost-border-color: rgba(8, 37, 26, 0.10);
 
+  /* Corner radius — squircle system. 32px hits the "precise but friendly"
+     sweet spot for modules; controls stay tighter since smoothing barely
+     reads below it. Theme-invariant, so no dark-mode override needed. */
+  --radius-module: 2rem;
+  --radius-control: 1rem;
+
   /* Nav & badge (need live overrides for dark mode) */
   --nav-glass: rgba(239, 246, 233, 0.80);
   --badge-bg: rgba(8, 37, 26, 0.12);
@@ -143,6 +149,10 @@ html[data-theme="dark"] {
   /* Shadows */
   --shadow-ambient: var(--shadow-ambient);
   --shadow-lift: var(--shadow-lift);
+
+  /* Radius */
+  --radius-module: var(--radius-module);
+  --radius-control: var(--radius-control);
 }
 
 body {
@@ -176,6 +186,45 @@ html[data-theme="dark"] .code-block-body .shiki span {
    renaming and migrating published content. */
 .bg-gradient-brand {
   background: var(--primary-fill);
+}
+
+/* ── Opal texture — the one named exception to "no gradients" ───────────
+   Expressive-tier accent only (see DESIGN.md §9): hero/expressive blocks,
+   opted into per block, never a page's default surface, never behind body
+   text. Built from existing brand hues, not invented colors - each stop
+   reflows with the theme the same way every other token here does. */
+:root {
+  --opal-texture: linear-gradient(
+    135deg,
+    var(--primary-fill) 0%,
+    var(--secondary-container) 35%,
+    var(--tertiary) 65%,
+    var(--primary-container) 100%
+  );
+}
+.opal-surface {
+  background: var(--opal-texture);
+}
+
+/* ── Squircle corner system — the "Opal pillow" shape ────────────────
+   Native CSS has no corner-smoothing, so we approximate a superellipse
+   (exponent 5, ~70% smoothing) with an inline-SVG mask stretched to the
+   box via mask-size: 100% 100%. Distorts on very non-square boxes, but
+   reads correctly on the card/module aspect ratios it's used for.
+
+   Caveat: mask-image clips box-shadow. Squircle surfaces must rely on
+   tonal layering for depth (a surface-lowest element over a
+   surface-container background, see DESIGN.md §4) rather than
+   --shadow-ambient. */
+.squircle {
+  --squircle-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M100.0 50.0 L99.83 72.14 L99.31 79.12 L98.44 84.05 L97.2 87.89 L95.58 91.0 L93.53 93.53 L91.0 95.58 L87.89 97.2 L84.05 98.44 L79.12 99.31 L72.14 99.83 L50.0 100.0 L27.86 99.83 L20.88 99.31 L15.95 98.44 L12.11 97.2 L9.0 95.58 L6.47 93.53 L4.42 91.0 L2.8 87.89 L1.56 84.05 L0.69 79.12 L0.17 72.14 L0.0 50.0 L0.17 27.86 L0.69 20.88 L1.56 15.95 L2.8 12.11 L4.42 9.0 L6.47 6.47 L9.0 4.42 L12.11 2.8 L15.95 1.56 L20.88 0.69 L27.86 0.17 L50.0 0.0 L72.14 0.17 L79.12 0.69 L84.05 1.56 L87.89 2.8 L91.0 4.42 L93.53 6.47 L95.58 9.0 L97.2 12.11 L98.44 15.95 L99.31 20.88 L99.83 27.86 Z'/%3E%3C/svg%3E");
+  -webkit-mask-image: var(--squircle-svg);
+  mask-image: var(--squircle-svg);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  border-radius: var(--radius-module);
 }
 
 /* ── Type scale — leading/tracking from the brand type specimens ────── */

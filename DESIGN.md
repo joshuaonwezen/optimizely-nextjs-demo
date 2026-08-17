@@ -50,7 +50,7 @@ Treat the UI as a physical stack of material. Boundaries come from **background 
 In dark mode this same ramp runs Dark Fir → Mid Fir → Light Fir, with Neutral 3 as the text color.
 
 ### Don'ts
-- **No gradients.** Anywhere. (`.bg-gradient-brand` is a legacy class name that now paints a solid LFGreen - the name survives only because it is baked into published CMS content.)
+- **No gradients.** Anywhere, with exactly one named exception - see §8 "Levels of Expression." (`.bg-gradient-brand` is a legacy class name that now paints a solid LFGreen - the name survives only because it is baked into published CMS content. It is not the exception; don't repurpose it for texture.)
 - **No tertiary colors as a background.**
 - **No color other than Dark Fir as a stroke.** Borders are Dark Fir at low alpha; that is what `--outline-variant` and `--ghost-border-color` are.
 - **No new color combinations.** Muted text and strokes are *alpha of Dark Fir*, not invented hues - no palette entry lands in the muted-text contrast band, so alpha is the sanctioned escape hatch.
@@ -97,13 +97,15 @@ Prioritize **tonal layering** over drop shadows.
 ## 5. Components
 
 ### Buttons
-- **Primary:** LFGreen fill (`bg-brand-fill`), Dark Fir text (`text-on-brand`), `DEFAULT` (0.5rem) radius. Hover to Grass (`hover:bg-brand-fill-dim`).
+- **Primary:** LFGreen fill (`bg-brand-fill`), Dark Fir text (`text-on-brand`), `rounded-control` (1rem) radius. Hover to Grass (`hover:bg-brand-fill-dim`).
 - **Secondary:** `surface-container-highest` background with `on-surface` text. No border.
 - **Tertiary/ghost:** Dark Fir stroke at low alpha, `text-brand` label.
+- Use the `<Button>` primitive (`src/components/ui/Button.tsx`) rather than hand-rolling these classes - it covers `default`, `fullWidth`, `iconButton`, `secondary`, and `ghost` variants.
 
 ### Cards & Lists
 - No divider lines. Separate with `spacing-8` (2rem) of vertical space or a background shift to `surface-low`.
-- Corner radius `lg` (1rem).
+- Corner radius `rounded-module` (2rem) via the `.squircle` utility - a superellipse mask (~70% smoothing) approximating the guideline's "Opal pillow" shape, not a plain `border-radius`. See the `.squircle` comment in `globals.css` for the box-shadow caveat: masked surfaces need tonal layering for depth, not `--shadow-ambient`.
+- Small controls (inputs, chips-with-corners) use `rounded-control` (1rem) instead - the smoothing reads negligibly below ~16px, so a plain `border-radius` is enough. Pills and data chips keep `rounded-full`.
 
 ### Input Fields
 - **Container:** `surface-container-highest` at 40% opacity.
@@ -123,3 +125,18 @@ Prioritize **tonal layering** over drop shadows.
 
 ## 7. Signature Component: The "Insight Rail"
 A 2px vertical accent line in solid Light Fir (`--primary`), placed to the left of headline groups to anchor content and thread a signature through the journey. Formerly a gradient; flattened to a solid, per the no-gradients rule.
+
+---
+
+## 8. Levels of Expression
+The brand guideline defines three tiers of visual energy. Every surface in this project defaults to **Clear**; the other two are opt-in accents, never a global setting.
+
+- **Clear** - the system documented in §§1-7: neutral backdrops, sparing green, Dark Fir ink, no gradients. The default for every block.
+- **Playful** - chunky, high-energy type and color, reserved for one-off marketing moments (a hero headline, a promo banner). No new tokens - push the existing `.type-h1` treatment harder (larger scale, its already-tight -3% tracking) rather than inventing a second type ramp.
+- **Expressive** - the iridescent "Opal texture" and stylized illustration. This is the one place gradients are allowed - see below.
+
+### The Opal texture exception
+The "No gradients. Anywhere." rule (§2) holds everywhere except this one named surface. `.opal-surface` (see `globals.css`) is a fixed, tokenized gradient across the existing brand hues - never an ad hoc gradient authored inside a component. Rules for using it:
+- Hero and expressive blocks only, opted into per block via the "Expressive (Opal)" background choice - never a page's default surface.
+- Never behind body text - it's a backdrop for a headline or a card, not a reading surface.
+- Rare. If more than one Opal surface is visible on a page at once, it has stopped being rare.

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 import { HEADING_CLASSES, FONT_CLASSES } from "../_shared/displayTemplateSettings";
+import { Button } from "@/components/ui/Button";
 
 // Preview-attribute objects from the SDK's pa() helper (empty in published mode).
 type PreviewAttrs = Record<string, string | undefined>;
@@ -111,24 +112,27 @@ export function HeroBlockClient({
           {(ctaLink || edit || secondaryLabel) && (
             <div className={`flex gap-4 flex-wrap ${effectiveCentered ? "justify-center" : ""}`}>
               {(ctaLink || edit) && (
-                <a
+                <Button
                   href={edit ? undefined : (ctaLink ?? undefined)}
+                  variant="surface"
+                  size="large"
                   data-track-event="mb_hero_cta_click"
                   data-track-tags={JSON.stringify({ label: ctaText ?? "", placement: "primary" })}
-                  className="hover-lift font-display inline-block px-8 py-4 rounded-lg font-semibold text-lg bg-surface-lowest text-brand"
                 >
                   <span {...paCtaText}>{ctaText ?? "Learn More"}</span>
-                </a>
+                </Button>
               )}
               {secondaryLabel && secondaryUrl && (
-                <a
+                <Button
                   href={secondaryUrl}
+                  variant="ghost"
+                  size="large"
+                  className={textClass}
                   data-track-event="mb_hero_cta_click"
                   data-track-tags={JSON.stringify({ label: secondaryLabel, placement: "secondary" })}
-                  className={`font-display inline-block px-8 py-4 rounded-lg font-semibold text-lg border-2 border-current/25 ${textClass} hover:bg-current/10 transition-colors`}
                 >
                   {secondaryLabel}
-                </a>
+                </Button>
               )}
               {edit && (
                 <p

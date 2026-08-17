@@ -111,7 +111,7 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
     return (
       <div data-component="StatsCounterBlock" className={`insight-rail py-6 ${alignClass}`}>
         {data.value && (
-          <p className={`font-display ${baseValueClass} font-extrabold mb-2 ${valueColor}`}>
+          <p className={`type-h1 ${baseValueClass} mb-2 ${valueColor}`}>
             <span {...pa("value")}>{data.value}</span>
             {data.suffix && (
               <span {...pa("suffix")} className={suffixClass}>{data.suffix}</span>
@@ -135,7 +135,7 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
   const suffixClass = HEADING_CLASSES[suffixSizeKey] ?? "text-3xl md:text-4xl";
 
   const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "center"];
-  const boxClass = isHighlight ? `${bg.wrapper} rounded-xl` : "";
+  const boxClass = isHighlight ? `${bg.wrapper} squircle` : "";
 
   return (
     <div
@@ -143,7 +143,7 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
       className={`p-8 ${alignClass} ${boxClass}`}
     >
       {data.value && (
-        <p className={`font-display ${baseValueClass} font-extrabold mb-2 ${bg.text || "text-brand"}`}>
+        <p className={`type-h1 ${baseValueClass} mb-2 ${bg.text || "text-brand"}`}>
           <span {...pa("value")}>{data.value}</span>
           {data.suffix && (
             <span {...pa("suffix")} className={suffixClass}>{data.suffix}</span>

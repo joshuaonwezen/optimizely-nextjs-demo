@@ -25,6 +25,7 @@ export const BACKGROUND: { background: SelectSetting } = {
       purple:      { displayName: "Teal",            sortOrder: 4 },
       dark:        { displayName: "Dark",            sortOrder: 5 },
       transparent: { displayName: "None",            sortOrder: 6 },
+      opal:        { displayName: "Expressive (Opal)", sortOrder: 7 },
     },
   },
 };
@@ -117,6 +118,7 @@ export const BG_CLASSES: Record<string, { wrapper: string; text: string; textMut
   purple:      { wrapper: "bg-tertiary/10 border border-tertiary/20",         text: "text-tertiary",       textMuted: "text-on-surface-variant" },
   dark:        { wrapper: "bg-on-surface",                                    text: "text-surface-lowest", textMuted: "text-surface-high" },
   transparent: { wrapper: "",                                                 text: "text-on-surface",     textMuted: "text-on-surface-variant" },
+  opal:        { wrapper: "opal-surface",                                     text: "text-on-brand",       textMuted: "text-on-brand-subtle" },
 };
 
 // Heading size → Tailwind text size classes

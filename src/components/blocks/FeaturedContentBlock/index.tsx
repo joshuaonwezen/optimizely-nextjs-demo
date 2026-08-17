@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
 } from "../_shared/displayTemplateSettings";
+import { Button } from "@/components/ui/Button";
 
 export const FeaturedContentBlockType = contentType({
   key: "FeaturedContentBlock",
@@ -87,13 +87,10 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
 
   const sectionClass = isCard
-    ? `rounded-2xl p-10 ${isBrand ? "bg-gradient-brand" : "bg-surface-lowest border border-outline-variant"}`
+    ? `squircle p-10 ${isBrand ? "bg-gradient-brand" : "bg-surface-lowest border border-outline-variant"}`
     : "py-20";
   const innerClass   = isBrand ? "max-w-2xl" : "insight-rail max-w-2xl";
   const headingColor = isBrand ? "text-on-brand" : "text-on-surface";
-  const ctaClass     = isBrand
-    ? "bg-on-brand text-brand hover:opacity-90 transition-opacity"
-    : "bg-brand-fill text-on-brand hover:opacity-90 transition-opacity";
 
   return (
     <section data-component="FeaturedContentBlock" className={`${sectionClass} ${alignClass}`}>
@@ -106,15 +103,17 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
         </h2>
 
         {(pageUrl || data.__context?.edit) && (
-          <Link
+          <Button
             href={data.__context?.edit ? "#" : (pageUrl ?? "#")}
-            className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm ${ctaClass}`}
+            size="compact"
+            variant={isBrand ? "custom" : "primary"}
+            className={isBrand ? "bg-on-brand text-brand hover:opacity-90" : undefined}
           >
             <span>Read More</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M3 8H13M9 4L13 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-          </Link>
+          </Button>
         )}
       </div>
     </section>

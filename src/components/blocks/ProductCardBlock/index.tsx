@@ -140,7 +140,7 @@ export default async function ProductCardBlock(props: ProductCardBlockProps) {
       className={`hover-ambient group flex flex-col h-full rounded-2xl p-8 ${bg.wrapper} ${featuredClass}`.trim()}
     >
       {showIcon && (
-        <div className={`w-12 h-12 mb-6 rounded-xl flex items-center justify-center p-3 shrink-0 ${iconBgClass}`}>
+        <div className={`w-12 h-12 mb-6 rounded-control flex items-center justify-center p-3 shrink-0 ${iconBgClass}`}>
           {icon}
         </div>
       )}

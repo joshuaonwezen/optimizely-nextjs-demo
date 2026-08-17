@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFormTracking } from "@/lib/tracking/useFormTracking";
 import { identifyCustomer } from "@/lib/tracking/customer";
 import { resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { Button } from "@/components/ui/Button";
 
 interface ContactFormBlockData {
   heading?: string | null;
@@ -133,13 +134,9 @@ export default function ContactForm(props: ContactFormProps) {
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={status === "submitting"}
-            className="hover-lift font-display inline-block px-10 py-4 rounded-lg font-semibold text-base text-on-brand bg-gradient-brand border-none cursor-pointer disabled:opacity-60"
-          >
+          <Button type="submit" size="large" disabled={status === "submitting"}>
             {status === "submitting" ? "Submitting..." : (data.submitLabel ?? "Submit")}
-          </button>
+          </Button>
 
           {status === "error" && (
             <p className="text-sm mt-3 text-error">Something went wrong. Please try again.</p>

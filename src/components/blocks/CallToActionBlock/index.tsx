@@ -1,6 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { Button } from "@/components/ui/Button";
 
 export const CallToActionType = contentType({
   key: "CallToAction",
@@ -90,8 +91,11 @@ type CallToActionProps = CallToActionData & {
   displayTemplateKey?: string;
 };
 
+// Button.tsx's built-in variants don't cover "outline"/"surface" pixel-for-pixel
+// (solid border-brand instead of a low-alpha ghost stroke, an extra border on
+// the white button) - use variant="custom" with these classes to preserve the
+// existing look rather than silently drifting it while migrating to the primitive.
 const VARIANT_CLASSES: Record<string, string> = {
-  brand:   "bg-gradient-brand text-on-brand",
   outline: "bg-transparent text-brand border-2 border-brand",
   surface: "bg-surface-lowest text-brand border-2 border-outline-variant",
 };
@@ -136,19 +140,22 @@ export default function CallToActionBlock(props: CallToActionProps) {
     );
   }
 
-  const vs = VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.brand;
+  const customClass = VARIANT_CLASSES[variant];
 
   return (
     <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className="py-12 text-center">
       {(data.link || data.__context?.edit) && (
-        <a
+        <Button
           href={data.__context?.edit ? undefined : (data.link ?? undefined)}
+          variant={customClass ? "custom" : "primary"}
+          size={isLarge ? "large" : "default"}
+          fontClassName={fontClass}
+          className={customClass}
           data-track-event="mb_cta_click"
           data-track-tags={JSON.stringify({ label: data.label ?? "", variant })}
-          className={`hover-lift ${fontClass} inline-block rounded-lg font-semibold ${isLarge ? "px-12 py-5 text-lg" : "px-10 py-4 text-base"} ${vs}`}
         >
           <span {...pa("label")}>{data.label ?? "Get Started"}</span>
-        </a>
+        </Button>
       )}
       {data.__context?.edit && (
         <p

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback, type FormEvent } from "react";
+import { Button } from "@/components/ui/Button";
 
 interface NearbyLocation {
   branchName: string;
@@ -65,19 +66,19 @@ export default function BranchFinderWidget({ placeholder, buttonLabel, defaultRa
     <div className="space-y-6">
       <form
         onSubmit={search}
-        className="flex flex-col sm:flex-row gap-3 bg-surface-lowest border border-outline-variant rounded-2xl p-5"
+        className="flex flex-col sm:flex-row gap-3 bg-surface-lowest border border-outline-variant rounded-control p-5"
       >
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder ?? "City or address, e.g. Berlin"}
-          className="flex-1 px-4 py-2 text-sm bg-surface border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-brand/30"
+          className="flex-1 px-4 py-2 text-sm bg-surface border border-outline-variant rounded-control text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-brand/30"
         />
         <select
           value={radius}
           onChange={(e) => setRadius(Number(e.target.value))}
-          className="px-3 py-2 text-sm bg-surface border border-outline-variant rounded-xl text-on-surface focus:outline-none"
+          className="px-3 py-2 text-sm bg-surface border border-outline-variant rounded-control text-on-surface focus:outline-none"
           aria-label="Search radius"
         >
           {RADIUS_OPTIONS.map((r) => (
@@ -86,13 +87,9 @@ export default function BranchFinderWidget({ placeholder, buttonLabel, defaultRa
             </option>
           ))}
         </select>
-        <button
-          type="submit"
-          disabled={loading || query.trim().length < 2}
-          className="px-5 py-2 text-sm font-medium bg-brand-fill text-on-brand rounded-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand/30"
-        >
+        <Button type="submit" size="compact" fontClassName="" disabled={loading || query.trim().length < 2}>
           {loading ? "Searching…" : (buttonLabel ?? "Search")}
-        </button>
+        </Button>
       </form>
 
       {data?.origin && !message && (
@@ -113,7 +110,7 @@ export default function BranchFinderWidget({ placeholder, buttonLabel, defaultRa
           {results.map((loc) => (
             <li
               key={loc.branchName}
-              className="flex items-start justify-between gap-4 bg-surface-lowest border border-outline-variant rounded-2xl p-5"
+              className="flex items-start justify-between gap-4 bg-surface-lowest border border-outline-variant rounded-control p-5"
             >
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-on-surface">{loc.branchName}</p>

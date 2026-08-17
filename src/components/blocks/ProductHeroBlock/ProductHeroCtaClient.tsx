@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getOptimizelyBrowserClient } from "@/lib/optimizely/browser-client";
+import { Button } from "@/components/ui/Button";
 
 // Keys are stored in CMS content, so they stay put even though the brand
 // palette they now map onto has nothing to do with the original color names.
@@ -18,7 +19,7 @@ const STYLE_MODIFIERS: Record<string, string> = {
   filled:  "",
 };
 
-const DEFAULT_CLASS = "hover-lift font-display inline-block px-8 py-3.5 rounded-lg font-semibold bg-surface-lowest text-brand";
+const DEFAULT_CLASS = "bg-surface-lowest text-brand";
 
 function getCookie(name: string): string | undefined {
   return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1];
@@ -58,16 +59,16 @@ export function ProductHeroCtaClient({ href, label, isEditMode, ctaUrlDisplay, p
         const style = decision.variables.button_style as string;
         const colorClass = COLOR_CLASSES[color] || "bg-surface-lowest text-brand";
         const styleMod = STYLE_MODIFIERS[style] || "";
-        setCtaClass(`hover-lift font-display inline-block px-8 py-3.5 rounded-lg font-semibold ${colorClass} ${styleMod}`.trim());
+        setCtaClass(`${colorClass} ${styleMod}`.trim());
       }
     })();
   }, []);
 
   return (
     <div data-component="ProductHeroCtaClient">
-      <a href={isEditMode ? undefined : (href ?? undefined)} className={ctaClass}>
+      <Button href={isEditMode ? undefined : (href ?? undefined)} variant="custom" size="large" className={ctaClass}>
         <span {...paAttrs}>{label ?? "Learn More"}</span>
-      </a>
+      </Button>
       {isEditMode && (
         <p {...paUrlAttrs} className="mt-2 text-xs font-mono text-on-brand-subtle/70 cursor-pointer hover:text-on-brand-subtle transition-colors">
           {ctaUrlDisplay || "Click to set CTA URL…"}

@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 import { getCurrentLocale, localizeHref } from "@/lib/localeUrl";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
+import { Button } from "@/components/ui/Button";
 
 export function FooterCtaClient() {
   const pathname = usePathname();
@@ -23,12 +23,15 @@ export function FooterCtaClient() {
                 <p className="font-display font-bold text-xl text-on-surface">Start earning today</p>
                 <p className="text-sm text-on-surface-variant mt-1">Open an account in 3 minutes. No fees, no minimums.</p>
               </div>
-              <Link
+              <Button
                 href={localizeHref("/personal/checking", getCurrentLocale(pathname))}
-                className="flex-shrink-0 px-6 py-3 rounded-full bg-brand-fill text-on-brand text-sm font-semibold hover:bg-brand-fill-dim transition-colors"
+                pill
+                size="compact"
+                fontClassName=""
+                className="flex-shrink-0"
               >
                 Open an account &rarr;
-              </Link>
+              </Button>
             </>
           ) : (
             <>
@@ -37,18 +40,12 @@ export function FooterCtaClient() {
                 <p className="text-sm text-on-surface-variant mt-1">Available on iOS and Android. 4.9★ rated.</p>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
-                <a
-                  href="#"
-                  className="px-5 py-2.5 rounded-xl bg-on-surface text-surface text-sm font-semibold hover:opacity-90 transition-opacity"
-                >
+                <Button href="#" size="compact" fontClassName="" variant="custom" className="bg-on-surface text-surface hover:opacity-90">
                   App Store
-                </a>
-                <a
-                  href="#"
-                  className="px-5 py-2.5 rounded-xl bg-on-surface text-surface text-sm font-semibold hover:opacity-90 transition-opacity"
-                >
+                </Button>
+                <Button href="#" size="compact" fontClassName="" variant="custom" className="bg-on-surface text-surface hover:opacity-90">
                   Google Play
-                </a>
+                </Button>
               </div>
             </>
           )}

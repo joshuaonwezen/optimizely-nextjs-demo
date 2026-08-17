@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { Button } from "@/components/ui/Button";
 
 export const PricingTierBlockType = contentType({
   key: "PricingTierBlock",
@@ -84,18 +84,16 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
 
   let wrapperStyle: string;
   if (bg) {
-    wrapperStyle = `rounded-2xl ${padding} border h-full flex flex-col transition-shadow ${bg.wrapper}`;
+    wrapperStyle = `squircle ${padding} border h-full flex flex-col transition-shadow ${bg.wrapper}`;
   } else {
     wrapperStyle = data.highlighted
-      ? `rounded-2xl ${padding} border h-full flex flex-col transition-shadow bg-brand-fill text-on-brand border-brand shadow-lift`
-      : `rounded-2xl ${padding} border h-full flex flex-col transition-shadow bg-surface-lowest border-ghost-border hover-ambient`;
+      ? `squircle ${padding} border h-full flex flex-col transition-shadow bg-brand-fill text-on-brand border-brand`
+      : `squircle ${padding} border h-full flex flex-col transition-shadow bg-surface-lowest border-ghost-border`;
   }
 
   const textColor = bg ? bg.text : (data.highlighted ? "text-on-brand" : "text-on-surface");
   const mutedColor = bg ? bg.textMuted : (data.highlighted ? "opacity-80" : "text-on-surface-variant");
-  const ctaClass = bg?.wrapper?.includes("gradient") || (data.highlighted && !bg)
-    ? "bg-on-brand text-brand hover:opacity-90"
-    : "bg-brand-fill text-on-brand hover:opacity-90";
+  const ctaIsDarkChip = bg?.wrapper?.includes("gradient") || (data.highlighted && !bg);
 
   return (
     <div data-component="PricingTierBlock" className={wrapperStyle}>
@@ -150,14 +148,17 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
       )}
 
       {data.ctaText && data.ctaLink && (
-        <Link
+        <Button
           href={data.ctaLink}
+          size="compact"
+          fontClassName=""
+          variant={ctaIsDarkChip ? "custom" : "primary"}
+          className={ctaIsDarkChip ? "bg-on-brand text-brand hover:opacity-90" : undefined}
           data-track-event="mb_pricing_tier_click"
           data-track-tags={JSON.stringify({ tier: data.name ?? "", label: data.ctaText ?? "", highlighted: !!data.highlighted })}
-          className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-opacity ${ctaClass}`}
         >
           <span {...pa("ctaText")}>{data.ctaText}</span>
-        </Link>
+        </Button>
       )}
     </div>
   );

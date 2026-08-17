@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "@/lib/tracking";
 import { identifyCustomer } from "@/lib/tracking/customer";
+import { Button } from "@/components/ui/Button";
 
 interface OptiFormsSubmitData {
   Label?: string | null;
@@ -161,15 +162,15 @@ export default function OptiFormsSubmit(props: OptiFormsSubmitProps) {
 
   return (
     <div data-component="OptiFormsSubmit" ref={ref} className="max-w-2xl mx-auto px-8 pt-4 pb-2">
-      <button
+      <Button
         type="button"
         onClick={handleClick}
         disabled={status === "submitting"}
         title={data.Tooltip ?? undefined}
-        className="hover-lift font-display inline-block px-10 py-4 rounded-lg font-semibold text-base text-on-brand bg-gradient-brand border-none cursor-pointer disabled:opacity-60"
+        size="large"
       >
         {status === "submitting" ? "Submitting..." : (data.Label ?? "Submit")}
-      </button>
+      </Button>
       {status === "error" && (
         <p className="text-sm mt-3 text-error">Something went wrong. Please try again.</p>
       )}
