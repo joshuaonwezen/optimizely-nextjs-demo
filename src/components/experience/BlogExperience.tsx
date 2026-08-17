@@ -43,7 +43,22 @@ export default async function BlogExperience({ content }: { content: any }) {
 
   return (
     <div data-component="BlogExperience">
-      <header className="max-w-3xl mx-auto px-8 pt-16 pb-8">
+      {heroUrl && (
+        <div
+          {...pa("heroImage")}
+          className="relative w-full max-w-4xl mx-auto aspect-[16/9] mt-8 mb-4 rounded-2xl overflow-hidden"
+        >
+          <Image
+            src={heroUrl}
+            alt={content?.heading ?? ""}
+            fill
+            className="object-cover"
+            sizes="(max-width: 896px) 100vw, 896px"
+          />
+        </div>
+      )}
+
+      <header className="max-w-3xl mx-auto px-8 pt-4 pb-8">
         {content?.heading && (
           <h1
             {...pa("heading")}
@@ -73,21 +88,6 @@ export default async function BlogExperience({ content }: { content: any }) {
           )}
         </div>
       </header>
-
-      {heroUrl && (
-        <div
-          {...pa("heroImage")}
-          className="relative w-full max-w-4xl mx-auto aspect-[16/9] mb-12 rounded-2xl overflow-hidden"
-        >
-          <Image
-            src={heroUrl}
-            alt={content?.heading ?? ""}
-            fill
-            className="object-cover"
-            sizes="(max-width: 896px) 100vw, 896px"
-          />
-        </div>
-      )}
 
       <OptimizelyComposition nodes={nodes} ComponentWrapper={ComponentWrapper} />
     </div>
