@@ -61,17 +61,18 @@ export const BlogExperienceType = contentType({
   ],
   extends: SEOContract,
   properties: {
-    // sortOrder pins the editor-panel order: Hero Image, Heading, Subheading, Author, Published Date.
+    // All five are required (isRequired). sortOrder pins the editor-panel order:
+    // Hero Image, Heading, Subheading, Author, Published Date.
     // indexingType omitted on the image reference — a contentReference only accepts
     // "disabled", which would strip it from the generated fragment (see CLAUDE.md).
-    heroImage:     { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"], sortOrder: 0 },
-    heading:       { type: "string", displayName: "Heading",    indexingType: "searchable", isLocalized: true, sortOrder: 1 },
-    subheading:    { type: "string", displayName: "Subheading", indexingType: "searchable", isLocalized: true, sortOrder: 2 },
-    // Single content item pointing at an AuthorBlock. Graph does NOT inline-expand
-    // single content refs (returns _metadata.key only), so BlogExperience.tsx resolves
+    heroImage:     { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"], sortOrder: 0, isRequired: true },
+    heading:       { type: "string", displayName: "Heading",    indexingType: "searchable", isLocalized: true, sortOrder: 1, isRequired: true },
+    subheading:    { type: "string", displayName: "Subheading", indexingType: "searchable", isLocalized: true, sortOrder: 2, isRequired: true },
+    // Single content item pointing at an AuthorBlock. An inline item arrives fully
+    // expanded; a reference returns base metadata only and BlogExperience.tsx resolves
     // it via getClient().getContent({ key }) — same pattern as ArticlePage.
-    author:        { type: "content", displayName: "Author", allowedTypes: ["AuthorBlock"], sortOrder: 3 },
-    publishedDate: { type: "dateTime", displayName: "Published Date", indexingType: "queryable", sortOrder: 4 },
+    author:        { type: "content", displayName: "Author", allowedTypes: ["AuthorBlock"], sortOrder: 3, isRequired: true },
+    publishedDate: { type: "dateTime", displayName: "Published Date", indexingType: "queryable", sortOrder: 4, isRequired: true },
   },
 });
 

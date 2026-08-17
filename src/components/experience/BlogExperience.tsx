@@ -2,7 +2,6 @@ import Image from "next/image";
 import { getClient } from "@optimizely/cms-sdk";
 import {
   OptimizelyComposition,
-  OptimizelyComponent,
   getPreviewUtils,
   type ComponentContainerProps,
 } from "@optimizely/cms-sdk/react/server";
@@ -29,14 +28,21 @@ export default async function BlogExperience({ content }: { content: any }) {
     content?.heroImage?._metadata?.url?.default ??
     null;
 
-  // Single content reference — Graph returns base metadata only, so resolve the
-  // full AuthorBlock before rendering (same pattern as ArticlePage).
-  const authorKey = content?.author?.key ?? content?.author?._metadata?.key ?? null;
-  const author = authorKey
-    ? await getClient()
-        .getContent({ key: authorKey }, { next: { revalidate: CACHE_TTL } } as any)
-        .catch(() => null)
-    : null;
+  // Author is a single "content" property. An inline item arrives fully expanded
+  // (__typename AuthorBlock, name set, key null); a reference to an existing
+  // AuthorBlock arrives as base metadata only (__typename _Content) and must be
+  // resolved by key. Handle both.
+  let author: any = content?.author ?? null;
+  const authorKey = author?.key ?? author?._metadata?.key ?? null;
+  if (author && !author.name && authorKey) {
+    author = await getClient()
+      .getContent({ key: authorKey }, { next: { revalidate: CACHE_TTL } } as any)
+      .catch(() => null);
+  }
+  const authorName = author?.name ?? null;
+  const authorRole = author?.role ?? null;
+  const authorAvatarUrl =
+    author?.avatar?.url?.default ?? author?.avatar?._metadata?.url?.default ?? null;
 
   const formattedDate = formatDate(content?.publishedDate);
   const nodes: any[] = content?.composition?.nodes ?? [];
@@ -75,8 +81,29 @@ export default async function BlogExperience({ content }: { content: any }) {
         )}
 
         <div className="flex items-center gap-4 mt-8 pt-8 border-t border-ghost-border">
-          {author && author.__typename !== "_Content" && (
-            <OptimizelyComponent content={author} />
+          {(authorName || authorRole) && (
+            <div {...pa("author")} className="flex items-center gap-3">
+              {authorAvatarUrl && (
+                <Image
+                  src={authorAvatarUrl}
+                  alt={authorName ?? ""}
+                  width={40}
+                  height={40}
+                  className="rounded-full object-cover flex-shrink-0"
+                />
+              )}
+              <div className="leading-tight">
+                {authorName && (
+                  <p className="text-sm font-semibold text-on-surface">{authorName}</p>
+                )}
+                {authorRole && (
+                  <p className="text-xs text-on-surface-variant">{authorRole}</p>
+                )}
+              </div>
+            </div>
+          )}
+          {(authorName || authorRole) && formattedDate && (
+            <span className="text-on-surface-variant">·</span>
           )}
           {formattedDate && (
             <time
