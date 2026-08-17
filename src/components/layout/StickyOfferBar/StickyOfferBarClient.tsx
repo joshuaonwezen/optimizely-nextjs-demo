@@ -38,11 +38,11 @@ export function StickyOfferBarClient() {
     <>
     <div
       data-component="StickyOfferBar"
-      className={`fixed inset-x-0 z-40 bg-gradient-brand text-on-brand shadow-xl border-t border-white/10 ${tabsActive ? "bottom-16 md:bottom-0" : "bottom-0"}`}
+      className={`fixed inset-x-0 z-40 bg-gradient-brand text-on-brand shadow-xl border-t border-on-brand/15 ${tabsActive ? "bottom-16 md:bottom-0" : "bottom-0"}`}
     >
       <div className="max-w-7xl mx-auto px-4 md:px-8 h-14 flex items-center gap-3">
         {expiryLabel && (
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-white/20 flex-shrink-0">
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-on-brand/15 flex-shrink-0">
             &#9889; {expiryLabel}
           </span>
         )}
@@ -58,7 +58,7 @@ export function StickyOfferBarClient() {
         <button
           onClick={dismiss}
           aria-label="Dismiss offer"
-          className="flex-shrink-0 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+          className="flex-shrink-0 p-1.5 rounded-lg hover:bg-on-brand/10 transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />

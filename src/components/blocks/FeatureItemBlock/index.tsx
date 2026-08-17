@@ -1,8 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, HEADING_SIZE, FONT_STYLE,
-  BG_CLASSES, HEADING_CLASSES, FONT_CLASSES,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const FeatureItemBlockType = contentType({
@@ -18,6 +17,7 @@ export const FeatureItemBlockType = contentType({
 
 const FEATURE_SETTINGS = {
   ...BACKGROUND,
+  ...TEXT_COLOR,
   ...HEADING_SIZE,
   ...FONT_STYLE,
 };
@@ -27,6 +27,18 @@ const FLAT_SETTINGS = {
   ...HEADING_SIZE,
   ...FONT_STYLE,
 };
+
+export const FeatureItemBlockDefaultTemplate = displayTemplate({
+  key: "FeatureItemBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "FeatureItemBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
 
 export const FeatureItemOutlinedTemplate = displayTemplate({
   key: "FeatureItemOutlinedTemplate",
@@ -76,8 +88,9 @@ export default function FeatureItemBlock(props: FeatureItemBlockProps) {
   const isFlat = props.displayTemplateKey === "FeatureItemFlatTemplate";
   const isBrand = props.displayTemplateKey === "FeatureItemBrandTemplate";
 
-  const bgKey = (ds?.background as string) || (isBrand ? "blueGrad" : isFlat ? "transparent" : "white");
-  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
+  const bg = resolveStyleClasses(ds, {
+    background: isBrand ? "blueGrad" : isFlat ? "transparent" : "white",
+  });
   const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
 

@@ -7,70 +7,101 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* ── Design Tokens: The Precision Architect ────────────────────────── */
+/* ── Design Tokens: Optimizely brand ───────────────────────────────────
+   Bright greens on neutral backdrops, grounded by Dark Fir.
+
+   The brand splits one job the old blue palette did with a single token:
+   LFGreen is a *light* color, so it can only ever be a fill with Dark Fir
+   text on it - never text itself (~1.1:1 on a neutral background). So:
+
+     --primary       ink      Light Fir. text-brand, border-brand, tints.
+     --primary-fill  surface  LFGreen. bg-brand-fill, always + text-on-brand.
+
+   Muted text and strokes are alpha of Dark Fir rather than palette entries:
+   the brand forbids inventing colors, and no palette color lands in the
+   muted-text contrast band. Only Dark Fir is allowed as a stroke. */
 :root {
-  /* Surface hierarchy */
-  --surface: #f5f7f9;
-  --surface-container-low: #eef1f3;
-  --surface-container: #e4e8eb;
-  --surface-container-high: #dfe3e6;
-  --surface-container-highest: #d9dde0;
+  /* Surface hierarchy — Neutral 1-6 */
+  --surface: #eff6e9;
+  --surface-container-low: #e4f0da;
+  --surface-container: #d8e4cb;
+  --surface-container-high: #c3ceaf;
+  --surface-container-highest: #a1ac8d;
   --surface-container-lowest: #ffffff;
 
   /* Brand palette */
-  --primary: #004be3;
-  --primary-dim: #0041c8;
-  --primary-container: #819bff;
-  --on-primary: #f2f1ff;
-  --secondary-container: #d3e4fb;
-  --on-secondary-container: #435365;
-  --tertiary: #7a23dc;
+  --primary: #197050;
+  --primary-dim: #0d3a29;
+  --primary-fill: #abff44;
+  --primary-fill-dim: #7ddd3d;
+  --primary-container: #7ddd3d;
+  --on-primary: #08251a;
+  --secondary-container: #91dbda;
+  --on-secondary-container: #08251a;
+  --tertiary: #007b79;
 
   /* Text */
-  --on-surface: #2c2f31;
-  --on-surface-variant: #5f6368;
-  --outline-variant: #abadaf;
+  --on-surface: #08251a;
+  --on-surface-variant: rgba(8, 37, 26, 0.72);
+  --outline-variant: rgba(8, 37, 26, 0.18);
 
   /* Ambient shadow */
-  --shadow-ambient: 0 20px 40px rgba(44, 47, 49, 0.06);
-  --shadow-lift: 0 8px 24px rgba(44, 47, 49, 0.08);
+  --shadow-ambient: 0 20px 40px rgba(8, 37, 26, 0.08);
+  --shadow-lift: 0 8px 24px rgba(8, 37, 26, 0.10);
 
   /* Ghost border */
-  --ghost-border-color: rgba(171, 173, 175, 0.15);
+  --ghost-border-color: rgba(8, 37, 26, 0.10);
 
   /* Nav & badge (need live overrides for dark mode) */
-  --nav-glass: rgba(255, 255, 255, 0.80);
-  --badge-bg: rgba(242, 241, 255, 0.15);
+  --nav-glass: rgba(239, 246, 233, 0.80);
+  --badge-bg: rgba(8, 37, 26, 0.12);
 
-  /* Gradients */
-  --gradient-brand: linear-gradient(135deg, var(--primary), var(--primary-container));
-  --gradient-insight: linear-gradient(180deg, var(--primary), var(--tertiary));
+  /* On-brand text tiers — Dark Fir, since brand fills are light */
+  --on-brand-muted: rgba(8, 37, 26, 0.75);
+  --on-brand-subtle: rgba(8, 37, 26, 0.85);
+
+  /* Error — Dark Pink. Flips to Light Pink in dark mode; Dark Pink only
+     clears 2.5:1 on a Dark Fir background. */
+  --error: #8f4764;
+  --on-error: #ffffff;
+
+  /* Tertiary flips foreground per theme: Dark Blue needs white on it,
+     Light Blue needs Dark Fir. */
+  --on-tertiary: #ffffff;
 }
 
-/* ── Dark mode token overrides ─────────────────────────────────────── */
+/* ── Dark mode token overrides ─────────────────────────────────────────
+   Dark Fir base with LFGreen accents - a pairing from the brand guide.
+   The intermediate surface steps are Dark Fir → Light Fir interpolations,
+   not new hues; the palette has no mid greens of its own. */
 html[data-theme="dark"] {
   color-scheme: dark;
-  --surface: #0f1217;
-  --surface-container-low: #161c22;
-  --surface-container: #1c2329;
-  --surface-container-high: #222a32;
-  --surface-container-highest: #283038;
-  --surface-container-lowest: #0a0d10;
-  --primary: #8ab4f8;
-  --primary-dim: #7aa5f0;
-  --primary-container: #1e3a5f;
-  --on-primary: #0a1628;
-  --secondary-container: #1a2c40;
-  --on-secondary-container: #b8cfe2;
-  --tertiary: #bb86fc;
-  --on-surface: #dde1e6;
-  --on-surface-variant: #8a9199;
-  --outline-variant: #2d3640;
+  --surface: #08251a;
+  --surface-container-low: #0b3123;
+  --surface-container: #0d3a29;
+  --surface-container-high: #124a36;
+  --surface-container-highest: #197050;
+  --surface-container-lowest: #061b12;
+  --primary: #abff44;
+  --primary-dim: #7ddd3d;
+  --primary-fill: #abff44;
+  --primary-fill-dim: #7ddd3d;
+  --primary-container: #197050;
+  --on-primary: #08251a;
+  --secondary-container: #007b79;
+  --on-secondary-container: #e4f0da;
+  --tertiary: #91dbda;
+  --on-surface: #e4f0da;
+  --on-surface-variant: #a1ac8d;
+  --outline-variant: rgba(228, 240, 218, 0.18);
   --shadow-ambient: 0 20px 40px rgba(0, 0, 0, 0.5);
   --shadow-lift: 0 8px 24px rgba(0, 0, 0, 0.6);
-  --ghost-border-color: rgba(255, 255, 255, 0.07);
-  --nav-glass: rgba(15, 18, 23, 0.88);
-  --badge-bg: rgba(255, 255, 255, 0.10);
+  --ghost-border-color: rgba(228, 240, 218, 0.08);
+  --nav-glass: rgba(8, 37, 26, 0.88);
+  --badge-bg: rgba(8, 37, 26, 0.20);
+  --error: #ff99b6;
+  --on-error: #08251a;
+  --on-tertiary: #08251a;
 }
 
 @theme inline {
@@ -81,24 +112,33 @@ html[data-theme="dark"] {
   --color-surface-high: var(--surface-container-high);
   --color-surface-highest: var(--surface-container-highest);
   --color-surface-lowest: var(--surface-container-lowest);
+  /* Ink (text, borders, tints) vs fill (solid brand surfaces) — see :root */
   --color-brand: var(--primary);
   --color-brand-dim: var(--primary-dim);
+  --color-brand-fill: var(--primary-fill);
+  --color-brand-fill-dim: var(--primary-fill-dim);
   --color-brand-container: var(--primary-container);
   --color-on-brand: var(--on-primary);
-  --color-on-brand-muted: rgba(242, 241, 255, 0.80);
-  --color-on-brand-subtle: rgba(242, 241, 255, 0.85);
+  --color-on-brand-muted: var(--on-brand-muted);
+  --color-on-brand-subtle: var(--on-brand-subtle);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
   --color-on-surface: var(--on-surface);
   --color-on-surface-variant: var(--on-surface-variant);
   --color-tertiary: var(--tertiary);
+  --color-on-tertiary: var(--on-tertiary);
   --color-outline-variant: var(--outline-variant);
   --color-ghost-border: var(--ghost-border-color);
-  --color-error: #d32f2f;
+  --color-error: var(--error);
+  --color-on-error: var(--on-error);
   --color-nav-glass: var(--nav-glass);
   --color-badge-bg: var(--badge-bg);
 
-  /* Fonts */
-  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-body: "Inter", system-ui, sans-serif;
+  /* Fonts — these MUST resolve through the next/font variables set on <body>.
+     Hardcoding a family name here silently ignores the loaded font. */
+  --font-display: var(--font-display-local), Tahoma, sans-serif;
+  --font-body: var(--font-body-local), Arial, sans-serif;
+  --font-mono: var(--font-mono-local), ui-monospace, monospace;
 
   /* Shadows */
   --shadow-ambient: var(--shadow-ambient);
@@ -130,9 +170,42 @@ html[data-theme="dark"] .code-block-body .shiki span {
   color: var(--shiki-dark);
 }
 
-/* Utility: brand gradient background */
+/* Brand fill. The class name is a holdover from the old gradient system —
+   the brand forbids gradients, but this name is baked into the `blueGrad`
+   CMS background choice and ~10 components, so flattening the value beats
+   renaming and migrating published content. */
 .bg-gradient-brand {
-  background: var(--gradient-brand);
+  background: var(--primary-fill);
+}
+
+/* ── Type scale — leading/tracking from the brand type specimens ────── */
+.type-h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.type-h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.type-eyebrow {
+  font-family: var(--font-mono);
+  line-height: 1.1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.type-body {
+  font-family: var(--font-body);
+  line-height: 1.3;
+  letter-spacing: normal;
+}
+.type-caption {
+  font-family: var(--font-mono);
+  line-height: 1.25;
+  letter-spacing: 0.03em;
 }
 
 /* Utility: hover lift effect */
@@ -158,7 +231,7 @@ html[data-theme="dark"] .code-block-body .shiki span {
 .insight-rail::before {
   content: "";
   @apply absolute left-0 top-1 bottom-1 w-0.5 rounded-sm;
-  background: var(--gradient-insight);
+  background: var(--primary);
 }
 
 /* Rich-text body styling for TraditionalPage (no Tailwind Typography plugin, so
@@ -173,7 +246,7 @@ html[data-theme="dark"] .code-block-body .shiki span {
   font-weight: 800;
   font-size: 1.5rem;
   line-height: 1.25;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   margin-top: 2.75rem;
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;

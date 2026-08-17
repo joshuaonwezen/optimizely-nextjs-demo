@@ -185,6 +185,22 @@ export const ConsultantPageType = contentType({
   },
 });
 
+const TEXT_COLOR_SETTING = {
+  textColor: {
+    editor: "select",
+    displayName: "Text color",
+    sortOrder: 1,
+    choices: {
+      auto:  { displayName: "Automatic", sortOrder: 0 },
+      dark:  { displayName: "Dark",      sortOrder: 1 },
+      muted: { displayName: "Muted",     sortOrder: 2 },
+      brand: { displayName: "Green",     sortOrder: 3 },
+      teal:  { displayName: "Teal",      sortOrder: 4 },
+      light: { displayName: "Light",     sortOrder: 5 },
+    },
+  },
+};
+
 export const DefaultRowTemplate = displayTemplate({
   key: "DefaultRowTemplate",
   isDefault: true,
@@ -227,16 +243,6 @@ export const DefaultRowTemplate = displayTemplate({
       sortOrder: 3,
       choices: {},
     },
-    alignment: {
-      editor: "select",
-      displayName: "Vertical alignment",
-      sortOrder: 4,
-      choices: {
-        top:    { displayName: "Top",    sortOrder: 0 },
-        center: { displayName: "Center", sortOrder: 1 },
-        bottom: { displayName: "Bottom", sortOrder: 2 },
-      },
-    },
   },
 });
 
@@ -254,15 +260,16 @@ export const DefaultColumnTemplate = displayTemplate({
         transparent: { displayName: "None",         sortOrder: 0 },
         surface:     { displayName: "White",        sortOrder: 1 },
         surfaceLow:  { displayName: "Off-white",    sortOrder: 2 },
-        blue:        { displayName: "Blue",         sortOrder: 3 },
-        blueGrad:    { displayName: "Blue gradient", sortOrder: 4 },
-        purple:      { displayName: "Purple",       sortOrder: 5 },
+        blue:        { displayName: "Green",        sortOrder: 3 },
+        blueGrad:    { displayName: "Bright green", sortOrder: 4 },
+        purple:      { displayName: "Teal",         sortOrder: 5 },
       },
     },
+    ...TEXT_COLOR_SETTING,
     padding: {
       editor: "select",
       displayName: "Padding",
-      sortOrder: 1,
+      sortOrder: 2,
       choices: {
         none: { displayName: "None", sortOrder: 0 },
         compact: { displayName: "Compact", sortOrder: 1 },
@@ -273,7 +280,7 @@ export const DefaultColumnTemplate = displayTemplate({
     rounded: {
       editor: "checkbox",
       displayName: "Rounded Corners",
-      sortOrder: 2,
+      sortOrder: 3,
       choices: {},
     },
   },
@@ -293,16 +300,17 @@ export const DefaultSectionTemplate = displayTemplate({
         transparent: { displayName: "None",          sortOrder: 0 },
         surface:     { displayName: "White",         sortOrder: 1 },
         surfaceLow:  { displayName: "Off-white",     sortOrder: 2 },
-        brand:       { displayName: "Blue",          sortOrder: 3 },
-        blueGrad:    { displayName: "Blue gradient", sortOrder: 4 },
-        purple:      { displayName: "Purple",        sortOrder: 5 },
+        brand:       { displayName: "Green",         sortOrder: 3 },
+        blueGrad:    { displayName: "Bright green", sortOrder: 4 },
+        purple:      { displayName: "Teal",          sortOrder: 5 },
         dark:        { displayName: "Dark",          sortOrder: 6 },
       },
     },
+    ...TEXT_COLOR_SETTING,
     paddingY: {
       editor: "select",
       displayName: "Vertical Padding",
-      sortOrder: 1,
+      sortOrder: 2,
       choices: {
         none:     { displayName: "None",     sortOrder: 0 },
         compact:  { displayName: "Compact",  sortOrder: 1 },
@@ -313,7 +321,7 @@ export const DefaultSectionTemplate = displayTemplate({
     divider: {
       editor: "select",
       displayName: "Divider",
-      sortOrder: 2,
+      sortOrder: 3,
       choices: {
         none:   { displayName: "None",   sortOrder: 0 },
         top:    { displayName: "Top",    sortOrder: 1 },
@@ -324,7 +332,7 @@ export const DefaultSectionTemplate = displayTemplate({
     cornerRadius: {
       editor: "select",
       displayName: "Corner radius",
-      sortOrder: 3,
+      sortOrder: 4,
       choices: {
         none:  { displayName: "None",        sortOrder: 0 },
         lg:    { displayName: "Large",       sortOrder: 1 },

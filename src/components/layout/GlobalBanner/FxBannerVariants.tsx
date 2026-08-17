@@ -20,7 +20,7 @@ export function Banner1({ message, linkText }: BannerProps) {
 // Solid primary blue - clean, direct
 export function Banner2({ message, linkText }: BannerProps) {
   return (
-    <div data-component="Banner2" className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 bg-brand text-on-brand">
+    <div data-component="Banner2" className="h-9 flex items-center justify-center text-sm font-medium gap-2 px-4 bg-brand-fill text-on-brand">
       <span>{message}</span>
       {linkText && (
         <>
@@ -54,7 +54,7 @@ export function Banner3({ message, linkText }: BannerProps) {
 export function Banner4({ message, linkText }: BannerProps) {
   return (
     <div data-component="Banner4" className="h-9 flex items-center justify-center text-sm font-medium gap-3 px-4 bg-surface-low text-on-surface">
-      <span className="w-1.5 h-1.5 rounded-full bg-brand shrink-0" />
+      <span className="w-1.5 h-1.5 rounded-full bg-brand-fill shrink-0" />
       <span>{message}</span>
       {linkText && (
         <span className="text-brand font-semibold underline underline-offset-2">{linkText}</span>

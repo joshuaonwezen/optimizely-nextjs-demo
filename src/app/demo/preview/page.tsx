@@ -165,7 +165,7 @@ export default function PreviewDemoPage() {
               {
                 label: "Published",
                 badge: "ISR",
-                badgeColor: "bg-green-100 text-green-800",
+                badgeColor: "bg-brand/10 text-brand",
                 auth: "epi-single {SINGLE_KEY}",
                 cache: "next: { revalidate: 60 }",
                 description: "Default for all visitor traffic. Pages are pre-rendered and served from cache. Regenerated in the background after 60s or when a webhook fires.",
@@ -173,7 +173,7 @@ export default function PreviewDemoPage() {
               {
                 label: "Draft / Preview",
                 badge: "no-store",
-                badgeColor: "bg-amber-100 text-amber-800",
+                badgeColor: "bg-error/10 text-error",
                 auth: "Bearer {previewToken}",
                 cache: "cache: 'no-store'",
                 description: "Activated when the CMS calls /preview?preview_token=X&key=Y. getPreviewContent() fetches the latest draft version - unpublished changes visible only to the editor. The /preview route is force-dynamic and renders inside the CMS iframe when ctx=edit.",

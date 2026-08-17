@@ -2,10 +2,7 @@ import Image from "next/image";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import {
-  BACKGROUND, FONT_STYLE,
-  BG_CLASSES, FONT_CLASSES,
-} from "../_shared/displayTemplateSettings";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const SpotlightBlockType = contentType({
   key: "spotlightBlock",
@@ -36,6 +33,7 @@ export const SpotlightBlockDefaultTemplate = displayTemplate({
   contentType: "spotlightBlock",
   settings: {
     ...BACKGROUND,
+    ...TEXT_COLOR,
     ...FONT_STYLE,
   },
 });
@@ -71,8 +69,7 @@ export default function SpotlightBlock(props: SpotlightBlockProps) {
 
   const imageUrl = resolveImageUrl(data.image);
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
-  const bgKey = (ds?.background as string) || "white";
-  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
+  const bg = resolveStyleClasses(ds, { background: "white" });
 
   const isWide = data.spacing !== "narrow";
   const paddingClass = isWide ? "py-16 px-8" : "py-10 px-6";

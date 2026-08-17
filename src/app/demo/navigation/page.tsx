@@ -150,7 +150,7 @@ function TradeOffs({ pros, cons }: { pros: string[]; cons: string[] }) {
         <ul className="space-y-1">
           {pros.map((p) => (
             <li key={p} className="flex gap-2 text-on-surface-variant">
-              <span className="text-green-600 shrink-0">✓</span>
+              <span className="text-brand shrink-0">✓</span>
               <span>{p}</span>
             </li>
           ))}
@@ -161,7 +161,7 @@ function TradeOffs({ pros, cons }: { pros: string[]; cons: string[] }) {
         <ul className="space-y-1">
           {cons.map((c) => (
             <li key={c} className="flex gap-2 text-on-surface-variant">
-              <span className="text-amber-600 shrink-0">✗</span>
+              <span className="text-error shrink-0">✗</span>
               <span>{c}</span>
             </li>
           ))}

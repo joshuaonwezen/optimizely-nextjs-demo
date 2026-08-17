@@ -222,7 +222,7 @@ export default function ErrorHandlingDemoPage() {
                 causes: "Graph is down, network timeout, invalid API key, rate limit (429)",
                 result: "Error propagates up. Unhandled → Next.js 500 page.",
                 handle: "Wrap in try-catch and return fallback data, or let it 500.",
-                color: "border-orange-200",
+                color: "border-error/30",
               },
               {
                 label: "GraphQL error (returns)",

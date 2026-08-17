@@ -1,8 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  HEADING_SIZE, FONT_STYLE,
-  HEADING_CLASSES, FONT_CLASSES,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const FaqItemBlockType = contentType({
@@ -16,6 +15,18 @@ export const FaqItemBlockType = contentType({
   },
 });
 
+export const FaqItemBlockDefaultTemplate = displayTemplate({
+  key: "FaqItemBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "FaqItemBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 export const FaqItemFlatTemplate = displayTemplate({
   key: "FaqItemFlatTemplate",
   isDefault: false,
@@ -23,6 +34,8 @@ export const FaqItemFlatTemplate = displayTemplate({
   contentType: "FaqItemBlock",
   tag: "Flat",
   settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
     ...HEADING_SIZE,
     ...FONT_STYLE,
   },
@@ -50,6 +63,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
   const isFlat = props.displayTemplateKey === "FaqItemFlatTemplate";
   const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
+  const style = resolveStyleClasses(ds, { background: isFlat ? "transparent" : "white" });
 
   if (isFlat) {
     return (
@@ -57,7 +71,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
         <details className="group border-b border-outline-variant">
           <summary
             {...pa("question")}
-            className={`flex items-center justify-between gap-4 py-4 cursor-pointer select-none list-none ${fontClass} ${headingClass} font-medium text-on-surface hover:text-brand transition-colors`}
+            className={`flex items-center justify-between gap-4 py-4 cursor-pointer select-none list-none ${fontClass} ${headingClass} font-medium ${style.text} hover:text-brand transition-colors`}
           >
             {data.question}
             <svg
@@ -73,7 +87,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
           {data.answer && (
             <div
               {...pa("answer")}
-              className="pb-5 text-sm leading-relaxed text-on-surface-variant"
+              className={`pb-5 text-sm leading-relaxed ${style.textMuted}`}
             >
               {data.answer}
             </div>
@@ -85,10 +99,10 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
 
   return (
     <div data-component="FaqItemBlock" data-track-toggle="mb_faq_expand" className="max-w-3xl mx-auto px-8 mb-2">
-      <details className="group border border-ghost-border rounded-xl bg-surface-lowest overflow-hidden">
+      <details className={`group rounded-xl overflow-hidden ${style.wrapper || "border border-ghost-border bg-surface-lowest"}`}>
         <summary
           {...pa("question")}
-          className="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer select-none list-none font-medium text-on-surface hover:text-brand transition-colors"
+          className={`flex items-center justify-between gap-4 px-6 py-4 cursor-pointer select-none list-none ${fontClass} font-medium ${style.text} hover:text-brand transition-colors`}
         >
           {data.question}
           <svg
@@ -104,7 +118,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
         {data.answer && (
           <div
             {...pa("answer")}
-            className="px-6 pb-5 text-sm leading-relaxed text-on-surface-variant border-t border-ghost-border pt-4"
+            className={`px-6 pb-5 text-sm leading-relaxed ${style.textMuted} border-t border-ghost-border pt-4`}
           >
             {data.answer}
           </div>

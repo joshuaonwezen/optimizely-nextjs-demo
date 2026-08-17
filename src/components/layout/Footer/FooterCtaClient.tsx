@@ -25,7 +25,7 @@ export function FooterCtaClient() {
               </div>
               <Link
                 href={localizeHref("/personal/checking", getCurrentLocale(pathname))}
-                className="flex-shrink-0 px-6 py-3 rounded-full bg-brand text-on-brand text-sm font-semibold hover:bg-brand-dim transition-colors"
+                className="flex-shrink-0 px-6 py-3 rounded-full bg-brand-fill text-on-brand text-sm font-semibold hover:bg-brand-fill-dim transition-colors"
               >
                 Open an account &rarr;
               </Link>

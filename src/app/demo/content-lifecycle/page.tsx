@@ -189,10 +189,10 @@ export default function ContentLifecycleDemoPage() {
               { state: "Published", visible: true, desc: "Live - appears in all Graph queries. ISR cache is warm. Webhook fires on publish to bust stale caches." },
               { state: "Expired", visible: false, desc: "stopPublish date was reached. Automatically removed from Graph results. doc.expired webhook fires." },
             ].map(({ state, visible, desc }) => (
-              <div key={state} className={`bg-surface-lowest rounded-2xl p-5 border ${visible ? "border-green-200" : "border-ghost-border"}`}>
+              <div key={state} className={`bg-surface-lowest rounded-2xl p-5 border ${visible ? "border-brand/30" : "border-ghost-border"}`}>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-xs font-semibold ${visible ? "text-green-700" : "text-on-surface"}`}>{state}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${visible ? "bg-green-100 text-green-700" : "bg-surface-low text-on-surface-variant"}`}>
+                  <span className={`text-xs font-semibold ${visible ? "text-brand" : "text-on-surface"}`}>{state}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${visible ? "bg-brand/10 text-brand" : "bg-surface-low text-on-surface-variant"}`}>
                     {visible ? "visible in Graph" : "invisible in Graph"}
                   </span>
                 </div>

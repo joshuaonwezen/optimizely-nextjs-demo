@@ -2,8 +2,7 @@ import { contentType, displayTemplate, getClient } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import type { ReactNode } from "react";
 import {
-  BACKGROUND, HEADING_SIZE, FONT_STYLE,
-  BG_CLASSES, HEADING_CLASSES, FONT_CLASSES,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const ProductCardBlockType = contentType({
@@ -22,6 +21,7 @@ export const ProductCardBlockType = contentType({
 
 const PRODUCT_CARD_SETTINGS = {
   ...BACKGROUND,
+  ...TEXT_COLOR,
   showIcon: {
     editor: "checkbox" as const,
     displayName: "Show icon",
@@ -121,14 +121,14 @@ export default async function ProductCardBlock(props: ProductCardBlockProps) {
   const isFeatured = props.displayTemplateKey === "ProductCardFeaturedTemplate";
   const showIcon = ds?.showIcon !== false;
   const bgKey = (ds?.background as string) ?? "white";
-  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
+  const bg = resolveStyleClasses(ds, { background: "white" });
   const isInverted = bgKey === "dark" || bgKey === "blueGrad";
 
   const featuredClass = isFeatured ? "ring-2 ring-brand/30 shadow-ambient" : "";
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
 
-  const iconBgClass = isInverted ? "bg-white/10 text-on-brand" : "bg-brand/10 text-brand";
+  const iconBgClass = isInverted ? "bg-on-brand/10 text-on-brand" : "bg-brand/10 text-brand";
   const linkClass   = isInverted ? bg.text : "text-brand";
 
   return (

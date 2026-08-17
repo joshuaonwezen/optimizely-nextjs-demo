@@ -109,7 +109,7 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
               onClick={() => handleModeChange(m)}
               className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${
                 mode === m
-                  ? "bg-brand text-on-brand"
+                  ? "bg-brand-fill text-on-brand"
                   : "text-on-surface-variant hover:text-brand"
               }`}
             >
@@ -167,7 +167,7 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
                     }}
                     className={`flex items-center justify-between gap-4 px-5 py-3 transition-colors group ${
                       r.pinned
-                        ? "bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20"
+                        ? "bg-brand/10 hover:bg-brand/20"
                         : "hover:bg-surface-low"
                     }`}
                   >
@@ -177,7 +177,7 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
                           {r.title}
                         </span>
                         {r.pinned && (
-                          <span className="shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-medium uppercase tracking-wide px-2 py-0.5">
+                          <span className="shrink-0 rounded-full bg-brand/15 text-brand text-[10px] font-medium uppercase tracking-wide px-2 py-0.5">
                             Pinned
                           </span>
                         )}

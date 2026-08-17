@@ -292,10 +292,10 @@ export default function RichTextDemoPage() {
                 good: false,
               },
             ].map(({ label, pros, cons, good }) => (
-              <div key={label} className={`bg-surface-lowest border rounded-2xl p-5 ${good ? "border-green-200" : "border-ghost-border"}`}>
+              <div key={label} className={`bg-surface-lowest border rounded-2xl p-5 ${good ? "border-brand/30" : "border-ghost-border"}`}>
                 <p className="text-xs font-mono font-semibold text-on-surface mb-3">{label}</p>
                 <div className="space-y-1 mb-3">
-                  {pros.map((p) => <p key={p} className="text-xs text-green-700 flex gap-1.5"><span>✓</span>{p}</p>)}
+                  {pros.map((p) => <p key={p} className="text-xs text-brand flex gap-1.5"><span>✓</span>{p}</p>)}
                 </div>
                 <div className="space-y-1">
                   {cons.map((c) => <p key={c} className="text-xs text-on-surface-variant/60 flex gap-1.5"><span>–</span>{c}</p>)}

@@ -2,8 +2,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  TEXT_SIZE, TEXT_ALIGN, FONT_STYLE,
-  TEXT_SIZE_CLASSES, TEXT_ALIGN_CLASSES, FONT_CLASSES,
+  BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, FONT_CLASSES, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const TextBlockType = contentType({
@@ -16,6 +15,18 @@ export const TextBlockType = contentType({
   },
 });
 
+export const TextBlockDefaultTemplate = displayTemplate({
+  key: "TextBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "TextBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 export const TextBlockNarrowTemplate = displayTemplate({
   key: "TextBlockNarrowTemplate",
   isDefault: false,
@@ -23,13 +34,15 @@ export const TextBlockNarrowTemplate = displayTemplate({
   contentType: "TextBlock",
   tag: "Narrow",
   settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
     ...TEXT_SIZE,
     ...TEXT_ALIGN,
     ...FONT_STYLE,
     verticalPadding: {
       editor: "select" as const,
       displayName: "Vertical padding",
-      sortOrder: 5,
+      sortOrder: 10,
       choices: {
         default:  { displayName: "Standard", sortOrder: 0 },
         compact:  { displayName: "Compact",  sortOrder: 1 },
@@ -67,7 +80,9 @@ export default function TextBlock(props: TextBlockProps) {
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "classic"];
   const textSizeClass = TEXT_SIZE_CLASSES[(ds?.textSize as string) ?? "md"] ?? "text-base";
   const widthClass = isNarrow ? "max-w-2xl" : "max-w-4xl";
-  const containerClass = `${widthClass} mx-auto px-8 ${paddingClass} text-on-surface-variant ${alignClass}`;
+  const style = resolveStyleClasses(ds, { background: "transparent", fontStyle: "classic" });
+  const surfaceClass = style.wrapper ? `${style.wrapper} rounded-2xl` : "";
+  const containerClass = `${widthClass} mx-auto px-8 ${paddingClass} ${surfaceClass} ${style.textMuted} ${alignClass}`;
 
   if (data.body && typeof data.body === "object" && "json" in data.body && data.body.json) {
     return (

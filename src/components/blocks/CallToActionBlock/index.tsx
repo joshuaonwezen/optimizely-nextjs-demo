@@ -1,6 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { FONT_STYLE, FONT_CLASSES } from "../_shared/displayTemplateSettings";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const CallToActionType = contentType({
   key: "CallToAction",
@@ -17,14 +17,27 @@ const CTA_SIZE_SETTING = {
   size: {
     editor: "select" as const,
     displayName: "Button size",
-    sortOrder: 0,
+    sortOrder: 10,
     choices: {
       default: { displayName: "Default", sortOrder: 0 },
       large:   { displayName: "Large",   sortOrder: 1 },
     },
   },
+  ...TEXT_COLOR,
   ...FONT_STYLE,
 };
+
+export const CallToActionDefaultTemplate = displayTemplate({
+  key: "CallToActionDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "CallToAction",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
 
 export const CallToActionOutlineTemplate = displayTemplate({
   key: "CallToActionOutlineTemplate",
@@ -54,12 +67,13 @@ export const CallToActionGhostTemplate = displayTemplate({
     size: {
       editor: "select" as const,
       displayName: "Text size",
-      sortOrder: 0,
+      sortOrder: 10,
       choices: {
         default: { displayName: "Normal", sortOrder: 0 },
         large:   { displayName: "Large",  sortOrder: 1 },
       },
     },
+    ...TEXT_COLOR,
     ...FONT_STYLE,
   },
 });
@@ -87,6 +101,7 @@ export default function CallToActionBlock(props: CallToActionProps) {
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
+  const style = resolveStyleClasses(ds, { background: "transparent", textColor: "brand" });
 
   const isGhost = props.displayTemplateKey === "CallToActionGhostTemplate";
   const variant =
@@ -103,7 +118,7 @@ export default function CallToActionBlock(props: CallToActionProps) {
             href={data.__context?.edit ? undefined : (data.link ?? undefined)}
             data-track-event="mb_cta_click"
             data-track-tags={JSON.stringify({ label: data.label ?? "", variant: "ghost" })}
-            className={`${fontClass} inline-flex items-center gap-2 font-semibold text-brand hover:underline underline-offset-4 ${isLarge ? "text-lg" : "text-base"}`}
+            className={`${fontClass} inline-flex items-center gap-2 font-semibold ${style.text} hover:underline underline-offset-4 ${isLarge ? "text-lg" : "text-base"}`}
           >
             <span {...pa("label")}>{data.label ?? "Learn More"}</span>
             <span aria-hidden>→</span>

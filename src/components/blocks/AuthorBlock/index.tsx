@@ -3,10 +3,7 @@ import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import {
-  BACKGROUND, FONT_STYLE,
-  BG_CLASSES, FONT_CLASSES,
-} from "../_shared/displayTemplateSettings";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const AuthorBlockType = contentType({
   key: "AuthorBlock",
@@ -26,6 +23,18 @@ export const AuthorBlockType = contentType({
   },
 });
 
+export const AuthorBlockDefaultTemplate = displayTemplate({
+  key: "AuthorBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "AuthorBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 export const AuthorInlineTemplate = displayTemplate({
   key: "AuthorInlineTemplate",
   isDefault: false,
@@ -40,6 +49,7 @@ export const AuthorInlineTemplate = displayTemplate({
       choices: {},
     },
     ...BACKGROUND,
+    ...TEXT_COLOR,
     ...FONT_STYLE,
   },
 });
@@ -52,6 +62,7 @@ export const AuthorProfileTemplate = displayTemplate({
   tag: "Profile",
   settings: {
     ...BACKGROUND,
+    ...TEXT_COLOR,
     ...FONT_STYLE,
     showLinkedIn: {
       editor: "checkbox" as const,
@@ -108,11 +119,11 @@ export default function AuthorBlock(props: AuthorBlockProps) {
       : null;
   const bioHtml = typeof data.bio === "string" ? data.bio : null;
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
+  const fallback = resolveStyleClasses(ds, { background: "white" });
 
   if (isInline) {
     const showSocial = ds?.showSocial === true;
-    const bgKey = (ds?.background as string) || "transparent";
-    const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.transparent;
+    const bg = resolveStyleClasses(ds, { background: "transparent" });
     const wrapperBg = bg.wrapper ? `${bg.wrapper} rounded-xl px-4 py-2` : "";
     return (
       <div data-component="AuthorBlock" className={`flex items-center gap-3 ${wrapperBg}`}>
@@ -127,7 +138,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
         )}
         <div className="min-w-0">
           {data.name && (
-            <p {...pa("name")} className={`text-sm font-semibold ${bg.text || "text-on-surface"} leading-tight`}>
+            <p {...pa("name")} className={`${fontClass} text-sm font-semibold ${bg.text} leading-tight`}>
               {data.name}
             </p>
           )}
@@ -155,8 +166,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
   }
 
   if (isProfile) {
-    const bgKey = (ds?.background as string) || "white";
-    const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
+    const bg = resolveStyleClasses(ds, { background: "white" });
     const showLinkedIn = ds?.showLinkedIn === true;
     return (
       <div data-component="AuthorBlock" className={`rounded-2xl p-8 text-center ${bg.wrapper || "bg-surface-lowest border border-ghost-border"}`}>
@@ -197,7 +207,10 @@ export default function AuthorBlock(props: AuthorBlockProps) {
   }
 
   return (
-    <article data-component="AuthorBlock" className="max-w-2xl mx-auto px-8 py-12 rounded-2xl bg-surface-lowest border border-ghost-border">
+    <article
+      data-component="AuthorBlock"
+      className={`max-w-2xl mx-auto px-8 py-12 rounded-2xl ${fallback.wrapper || "bg-surface-lowest border border-ghost-border"}`}
+    >
       <div className="flex items-start gap-5">
         {avatarUrl && (
           <Image
@@ -210,7 +223,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
         )}
         <div className="min-w-0">
           {data.name && (
-            <h3 {...pa("name")} className={`${fontClass} text-xl font-bold text-on-surface`}>
+            <h3 {...pa("name")} className={`${fontClass} text-xl font-bold ${fallback.text}`}>
               {data.name}
             </h3>
           )}

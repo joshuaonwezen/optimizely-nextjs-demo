@@ -1,5 +1,6 @@
 import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const ImageBlockType = contentType({
   key: "ImageBlock",
@@ -24,6 +25,18 @@ export const ImageBlockType = contentType({
   },
 });
 
+export const ImageBlockDefaultTemplate = displayTemplate({
+  key: "ImageBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "ImageBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 export const ImageBlockRoundedTemplate = displayTemplate({
   key: "ImageBlockRoundedTemplate",
   isDefault: false,
@@ -34,7 +47,7 @@ export const ImageBlockRoundedTemplate = displayTemplate({
     aspectRatio: {
       editor: "select",
       displayName: "Aspect ratio",
-      sortOrder: 0,
+      sortOrder: 10,
       choices: {
         auto: { displayName: "Auto",           sortOrder: 0 },
         r16x9: { displayName: "16:9 Widescreen", sortOrder: 1 },
@@ -42,6 +55,9 @@ export const ImageBlockRoundedTemplate = displayTemplate({
         r1x1:  { displayName: "1:1 Square",      sortOrder: 3 },
       },
     },
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
   },
 });
 
@@ -91,9 +107,13 @@ export default function ImageBlock(props: ImageBlockProps) {
 
   const isRounded = props.displayTemplateKey === "ImageBlockRoundedTemplate";
   const aspectRatio = ASPECT_RATIOS[(ds?.aspectRatio as string) ?? "auto"];
+  const style = resolveStyleClasses(ds, { background: "transparent" });
 
   return (
-    <figure data-component="ImageBlock" className="max-w-7xl mx-auto px-8 py-8">
+    <figure
+      data-component="ImageBlock"
+      className={`max-w-7xl mx-auto px-8 py-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}
+    >
       <div
         className={`relative overflow-hidden ${isRounded ? "rounded-2xl" : ""}`}
         style={aspectRatio ? { aspectRatio } : undefined}
@@ -110,7 +130,7 @@ export default function ImageBlock(props: ImageBlockProps) {
       {data.caption && (
         <figcaption
           {...pa("caption")}
-          className="text-sm mt-4 text-center text-on-surface-variant"
+          className={`text-sm mt-4 text-center ${style.font} ${style.textMuted}`}
         >
           {data.caption}
         </figcaption>

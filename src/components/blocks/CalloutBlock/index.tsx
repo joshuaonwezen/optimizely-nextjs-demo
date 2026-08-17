@@ -1,6 +1,7 @@
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const CalloutBlockType = contentType({
   key: "CalloutBlock",
@@ -22,14 +23,26 @@ export const CalloutBlockType = contentType({
   },
 });
 
+export const CalloutBlockDefaultTemplate = displayTemplate({
+  key: "CalloutBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "CalloutBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 // Visual component (used by demo pages with hardcoded children)
 
 type CalloutVariant = "note" | "warning" | "do";
 
 const borderClass: Record<CalloutVariant, string> = {
   note:    "border-l-brand/50",
-  warning: "border-l-amber-400",
-  do:      "border-l-green-500",
+  warning: "border-l-error/60",
+  do:      "border-l-brand-fill",
 };
 
 interface CalloutProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -40,7 +53,7 @@ interface CalloutProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function Callout({ variant = "note", label, className, children, ...rest }: CalloutProps) {
   return (
-    <div className={`bg-surface-lowest rounded-lg border-l-4 p-4 ${borderClass[variant]}${className ? ` ${className}` : ""}`} {...rest}>
+    <div className={`${className?.includes("bg-") ? "" : "bg-surface-lowest"} rounded-lg border-l-4 p-4 ${borderClass[variant]}${className ? ` ${className}` : ""}`} {...rest}>
       {label && (
         <p className="text-xs font-semibold text-on-surface mb-1.5">{label}</p>
       )}
@@ -60,12 +73,14 @@ interface CalloutBlockData {
 
 type CalloutBlockProps = CalloutBlockData & {
   content?: CalloutBlockData;
+  displaySettings?: Record<string, string | boolean>;
 };
 
 export default function CalloutBlock(props: CalloutBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
   const variant = (data.variant as CalloutVariant | null | undefined) ?? "note";
+  const style = resolveStyleClasses(props.displaySettings, { background: "white" });
 
   const bodyContent = (() => {
     if (data.body && typeof data.body === "object" && "json" in data.body && data.body.json) {
@@ -84,7 +99,12 @@ export default function CalloutBlock(props: CalloutBlockProps) {
   if (!bodyContent) return null;
 
   return (
-    <Callout data-component="CalloutBlock" variant={variant} label={data.label ?? undefined}>
+    <Callout
+      data-component="CalloutBlock"
+      variant={variant}
+      label={data.label ?? undefined}
+      className={`${style.wrapper} ${style.font}`.trim() || undefined}
+    >
       {bodyContent}
     </Callout>
   );

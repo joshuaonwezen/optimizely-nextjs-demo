@@ -292,7 +292,7 @@ function FlagCard({ decision }: { decision: FxDecision }) {
         <span
           className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
             decision.enabled
-              ? "bg-green-100 text-green-800"
+              ? "bg-brand/10 text-brand"
               : "bg-surface-low text-on-surface-variant"
           }`}
         >
@@ -471,8 +471,8 @@ export default async function FeatureFlagsDemoPage() {
                 The rest of this page details this path.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Server-rendered - no flicker, full ISR caching per variation</span></div>
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Drives real CMS content variations via the Graph variation filter</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Server-rendered - no flicker, full ISR caching per variation</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Drives real CMS content variations via the Graph variation filter</span></div>
               </div>
             </div>
 
@@ -496,9 +496,9 @@ export default async function FeatureFlagsDemoPage() {
                 <Link href="/demo/personalization#web-experimentation-bridge" className="text-brand hover:underline">Web Experimentation bridge</Link>.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Own visual editor - marketers ship tests without a code change</span></div>
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Change anything on the page - no developer needed to pre-model it in the CMS</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Content lives in WX, not your CMS - wrong tool for CMS-authored content</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Own visual editor - marketers ship tests without a code change</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Change anything on the page - no developer needed to pre-model it in the CMS</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Content lives in WX, not your CMS - wrong tool for CMS-authored content</span></div>
               </div>
             </div>
           </div>
@@ -540,8 +540,8 @@ export default async function FeatureFlagsDemoPage() {
           <div className="flex flex-col lg:flex-row lg:items-stretch gap-2">
             {[
               { n: 5, env: "Edge", icon: ICON_ZAP, accent: "bg-brand/10 text-brand", file: "src/middleware.ts", essence: "Pick the variation, put it in the URL", explain: "FX chooses which variation this visitor should see (that choice is the “decision”), and the middleware writes it into the request path so the page can be cached per variation.", code: "decideAll([DISABLE_DECISION_EVENT])\n// → { homepage: { variationKey: 'business' } }\n// rewrite: /savings → /savings/__v_homepage--business", href: "#code-middleware" },
-              { n: 6, env: "Server · Graph (cached)", icon: ICON_DATABASE, accent: "bg-blue-100 text-blue-800", file: "src/app/[[...slug]]/page.tsx", essence: "Fetch the matching content from Graph", explain: "The page asks Optimizely Graph for the content variant whose name matches the chosen variation. The response is cached, so repeat visits stay fast.", code: "variation: {\n  include: 'SOME',\n  value: ['business'],\n  includeOriginal: true,\n}", href: "#code-page-route" },
-              { n: 7, env: "Client", icon: ICON_ACTIVITY, accent: "bg-emerald-100 text-emerald-800", file: "src/components/FxBucketingEvent.tsx", essence: "Record that the visitor saw it", explain: "In the browser, FX logs an “impression” - the event that tells the experiment this visitor was shown this variation, so results can be measured.", code: "decide('homepage')", href: "#code-bucketing-event" },
+              { n: 6, env: "Server · Graph (cached)", icon: ICON_DATABASE, accent: "bg-tertiary/10 text-tertiary", file: "src/app/[[...slug]]/page.tsx", essence: "Fetch the matching content from Graph", explain: "The page asks Optimizely Graph for the content variant whose name matches the chosen variation. The response is cached, so repeat visits stay fast.", code: "variation: {\n  include: 'SOME',\n  value: ['business'],\n  includeOriginal: true,\n}", href: "#code-page-route" },
+              { n: 7, env: "Client", icon: ICON_ACTIVITY, accent: "bg-brand/10 text-brand", file: "src/components/FxBucketingEvent.tsx", essence: "Record that the visitor saw it", explain: "In the browser, FX logs an “impression” - the event that tells the experiment this visitor was shown this variation, so results can be measured.", code: "decide('homepage')", href: "#code-bucketing-event" },
             ].flatMap((s, i, arr) => [
               <div key={s.n} className="flex-1 min-w-0 bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-2">
@@ -657,9 +657,9 @@ export default async function FeatureFlagsDemoPage() {
               <span className="text-sm font-mono text-on-surface">{device}</span>
               <span className="text-xs text-on-surface-variant">derived from User-Agent header (no cookie)</span>
             </div>
-            <div className={`rounded-xl px-5 py-4 flex flex-col gap-1 border ${bucketingId ? "bg-emerald-50 border-emerald-200" : "bg-surface-lowest border-ghost-border"}`}>
+            <div className={`rounded-xl px-5 py-4 flex flex-col gap-1 border ${bucketingId ? "bg-brand/10 border-brand/30" : "bg-surface-lowest border-ghost-border"}`}>
               <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider">Bucketing ID</span>
-              <span className={`text-sm font-mono ${bucketingId ? "text-emerald-700" : "text-on-surface-variant"}`}>
+              <span className={`text-sm font-mono ${bucketingId ? "text-brand" : "text-on-surface-variant"}`}>
                 {bucketingId ? `${bucketingId.slice(0, 8)}…${bucketingId.slice(-4)}` : "-"}
               </span>
               <span className="text-xs text-on-surface-variant">
@@ -878,15 +878,15 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
                 Quickest to start.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">One project, one datafile, one SDK key</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">The edge downloads and evaluates every flag, CMS or not</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Easy to forget cms_flag, or set it on the wrong experiment</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">One project, one datafile, one SDK key</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">The edge downloads and evaluates every flag, CMS or not</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Easy to forget cms_flag, or set it on the wrong experiment</span></div>
               </div>
             </div>
             <div className="bg-surface-lowest border-2 border-brand/40 rounded-2xl p-6 flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <h3 className="font-display font-semibold text-on-surface">A dedicated FX project</h3>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium">recommended</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">recommended</span>
               </div>
               <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
                 CMS-routing experiments live in their own FX project with their own datafile. Project membership
@@ -895,10 +895,10 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
                 still scopes each experiment to a page.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Smaller, faster edge datafile - only CMS flags</span></div>
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">A component experiment can never leak into CMS routing</span></div>
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Independent TTL, ownership, and blast radius</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Two SDK keys; the client impression must target this project too</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Smaller, faster edge datafile - only CMS flags</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">A component experiment can never leak into CMS routing</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Independent TTL, ownership, and blast radius</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Two SDK keys; the client impression must target this project too</span></div>
               </div>
             </div>
           </div>
@@ -984,7 +984,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
             <div className="bg-surface-lowest border-2 border-brand/40 rounded-2xl p-6 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-semibold text-brand uppercase tracking-wider">A - This demo</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium">ISR</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">ISR</span>
               </div>
               <h3 className="font-display font-semibold text-on-surface">Edge Middleware + URL rewrite</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
@@ -997,10 +997,10 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
                 A small client component fires the bucketing event after render.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">~10-50ms TTFB on cached requests</span></div>
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">CDN serves warm requests - server load scales down</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Bucketing event fires after page load (CSR)</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">More moving parts (middleware + browser SDK)</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">~10-50ms TTFB on cached requests</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">CDN serves warm requests - server load scales down</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Bucketing event fires after page load (CSR)</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">More moving parts (middleware + browser SDK)</span></div>
               </div>
             </div>
 
@@ -1019,10 +1019,10 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
                 Simpler code - no middleware changes or client component needed.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Simplest - everything in one server component</span></div>
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Bucketing event fires synchronously before HTML</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">~300-1000ms TTFB on every request (no caching)</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">cookies() blocks ISR - force-dynamic is required</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Simplest - everything in one server component</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Bucketing event fires synchronously before HTML</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">~300-1000ms TTFB on every request (no caching)</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">cookies() blocks ISR - force-dynamic is required</span></div>
               </div>
             </div>
 
@@ -1030,7 +1030,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-semibold text-on-surface-variant uppercase tracking-wider">C - Not recommended</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">CSR</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-error/10 text-error font-medium">CSR</span>
               </div>
               <h3 className="font-display font-semibold text-on-surface">Client-side only</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
@@ -1040,10 +1040,10 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
                 variation appears.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">No server changes required</span></div>
-                <div className="flex gap-2"><span className="text-red-500 font-bold shrink-0">-</span><span className="text-on-surface-variant">Visible flicker - base content shows for ~100-500ms</span></div>
-                <div className="flex gap-2"><span className="text-red-500 font-bold shrink-0">-</span><span className="text-on-surface-variant">Variation data in the waterfall - slower effective LCP</span></div>
-                <div className="flex gap-2"><span className="text-red-500 font-bold shrink-0">-</span><span className="text-on-surface-variant">CMS content fetched twice (base SSR + variation CSR)</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">No server changes required</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Visible flicker - base content shows for ~100-500ms</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Variation data in the waterfall - slower effective LCP</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">CMS content fetched twice (base SSR + variation CSR)</span></div>
               </div>
             </div>
           </div>
@@ -1122,7 +1122,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
               <div>
                 <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-3">
                   Account - bucketed by{" "}
-                  <span className={bucketingId ? "text-emerald-600" : "text-on-surface-variant"}>
+                  <span className={bucketingId ? "text-brand" : "text-on-surface-variant"}>
                     {bucketingId ? `$opt_bucketing_id: "${bucketingId.slice(0, 8)}…"` : "not set"}
                   </span>
                 </p>
@@ -1130,7 +1130,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
                   <>
                     <HeroCopyDemo decision={bucketedDecision} />
                     <p className="mt-2 text-xs font-mono text-on-surface-variant">
-                      variation: <span className="text-emerald-600">{bucketedDecision.variationKey ?? "off"}</span>
+                      variation: <span className="text-brand">{bucketedDecision.variationKey ?? "off"}</span>
                     </p>
                   </>
                 ) : (

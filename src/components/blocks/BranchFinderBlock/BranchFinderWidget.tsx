@@ -89,7 +89,7 @@ export default function BranchFinderWidget({ placeholder, buttonLabel, defaultRa
         <button
           type="submit"
           disabled={loading || query.trim().length < 2}
-          className="px-5 py-2 text-sm font-medium bg-brand text-on-brand rounded-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand/30"
+          className="px-5 py-2 text-sm font-medium bg-brand-fill text-on-brand rounded-xl disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand/30"
         >
           {loading ? "Searching…" : (buttonLabel ?? "Search")}
         </button>

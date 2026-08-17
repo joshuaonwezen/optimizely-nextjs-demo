@@ -1,5 +1,6 @@
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 // Columns and rows are modelled as JSON because the table shape is a
 // structured matrix — a row is a label + N values matched to columns by index.
@@ -17,6 +18,18 @@ export const ComparisonTableBlockType = contentType({
     columns:    { type: "json",   displayName: "Columns (JSON array)", isLocalized: true },
     // [{ label: "Monthly fee", values: ["£0", "£0", "£5"] }, ...]
     rows:       { type: "json",   displayName: "Rows (JSON array)",    isLocalized: true },
+  },
+});
+
+export const ComparisonTableBlockDefaultTemplate = displayTemplate({
+  key: "ComparisonTableBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "ComparisonTableBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
   },
 });
 
@@ -56,6 +69,7 @@ function parseJson<T>(value: T[] | string | null | undefined): T[] {
 export default function ComparisonTableBlock(props: ComparisonTableBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
+  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
   const columns = parseJson<ColumnDef>(data.columns);
   const rows = parseJson<RowDef>(data.rows);
 
@@ -66,7 +80,7 @@ export default function ComparisonTableBlock(props: ComparisonTableBlockProps) {
       {data.heading && (
         <h2
           {...pa("heading")}
-          className="font-display text-3xl md:text-4xl font-extrabold text-on-surface mb-3 text-center"
+          className={`${style.font} text-3xl md:text-4xl font-extrabold ${style.text} mb-3 text-center`}
         >
           {data.heading}
         </h2>
@@ -74,12 +88,12 @@ export default function ComparisonTableBlock(props: ComparisonTableBlockProps) {
       {data.subheading && (
         <p
           {...pa("subheading")}
-          className="text-base text-on-surface-variant mb-12 max-w-2xl mx-auto text-center"
+          className={`text-base ${style.textMuted} mb-12 max-w-2xl mx-auto text-center`}
         >
           {data.subheading}
         </p>
       )}
-      <div className="overflow-x-auto rounded-2xl border border-ghost-border bg-surface-lowest">
+      <div className={`overflow-x-auto rounded-2xl ${style.wrapper || "border border-ghost-border bg-surface-lowest"}`}>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-ghost-border">

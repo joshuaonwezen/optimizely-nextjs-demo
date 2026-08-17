@@ -1,8 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, HEADING_SIZE, TEXT_ALIGN,
-  BG_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, HEADING_CLASSES, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const StatsCounterBlockType = contentType({
@@ -14,6 +13,18 @@ export const StatsCounterBlockType = contentType({
     value: { type: "string", displayName: "Value" },
     label: { type: "string", displayName: "Label", isLocalized: true },
     suffix: { type: "string", displayName: "Suffix (e.g. %, +, K)", isLocalized: true },
+  },
+});
+
+export const StatsCounterBlockDefaultTemplate = displayTemplate({
+  key: "StatsCounterBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "StatsCounterBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
   },
 });
 
@@ -32,7 +43,7 @@ export const StatsCounterAccentTemplate = displayTemplate({
       sortOrder: 5,
       choices: {
         brand:    { displayName: "Blue",         sortOrder: 0 },
-        tertiary: { displayName: "Purple",       sortOrder: 1 },
+        tertiary: { displayName: "Teal",         sortOrder: 1 },
         surface:  { displayName: "Dark",         sortOrder: 2 },
       },
     },
@@ -47,6 +58,7 @@ export const StatsCounterHighlightTemplate = displayTemplate({
   tag: "Highlight",
   settings: {
     ...BACKGROUND,
+    ...TEXT_COLOR,
     ...HEADING_SIZE,
     ...TEXT_ALIGN,
     size: {
@@ -115,8 +127,7 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
     );
   }
 
-  const bgKey = (ds?.background as string) || (isHighlight ? "white" : "transparent");
-  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.transparent;
+  const bg = resolveStyleClasses(ds, { background: isHighlight ? "white" : "transparent" });
 
   const headingSizeKey = (ds?.headingSize as string) ?? (isCompact ? "md" : "lg");
   const baseValueClass = HEADING_CLASSES[headingSizeKey];

@@ -7,13 +7,13 @@ export const metadata: Metadata = {
 };
 
 const MARKERS = [
-  { id: "arr-blue",   color: "#3b82f6" },
-  { id: "arr-purple", color: "#9333ea" },
-  { id: "arr-orange", color: "#f97316" },
-  { id: "arr-teal",   color: "#0d9488" },
-  { id: "arr-red",    color: "#ef4444" },
-  { id: "arr-green",  color: "#16a34a" },
-  { id: "arr-lblue",  color: "#60a5fa" },
+  { id: "arr-blue",   color: "#007b79" },
+  { id: "arr-purple", color: "#8f4764" },
+  { id: "arr-orange", color: "#ff99b6" },
+  { id: "arr-teal",   color: "#197050" },
+  { id: "arr-red",    color: "#7ddd3d" },
+  { id: "arr-green",  color: "#3ab533" },
+  { id: "arr-lblue",  color: "#91dbda" },
 ];
 
 function Box({
@@ -42,7 +42,7 @@ function Box({
         <text
           key={i}
           x={x + w / 2} y={y + hh + 14 + i * 13}
-          textAnchor="middle" fill="#5f6368"
+          textAnchor="middle" fill="var(--on-surface-variant)"
           fontSize={9.5} fontFamily="system-ui,sans-serif"
         >
           {line}
@@ -109,9 +109,9 @@ export default function ArchitecturePage() {
                       {i > 0 && (
                         <span aria-hidden="true" className="self-center text-on-surface-variant/40 text-xs leading-none py-1.5">▼</span>
                       )}
-                      <div className={`rounded-xl border p-3 text-center ${amber ? "border-amber-300 bg-amber-50" : "border-ghost-border bg-surface-low"}`}>
-                        <p className={`text-sm font-semibold ${amber ? "text-amber-800" : "text-on-surface"}`}>{label}</p>
-                        <p className={`text-xs ${amber ? "text-amber-700" : "text-on-surface-variant"}`}>{sub}</p>
+                      <div className={`rounded-xl border p-3 text-center ${amber ? "border-error/30 bg-error/10" : "border-ghost-border bg-surface-low"}`}>
+                        <p className={`text-sm font-semibold ${amber ? "text-error" : "text-on-surface"}`}>{label}</p>
+                        <p className={`text-xs ${amber ? "text-error" : "text-on-surface-variant"}`}>{sub}</p>
                       </div>
                     </div>
                   ))}
@@ -120,7 +120,7 @@ export default function ArchitecturePage() {
             ))}
           </div>
           <div className="mb-8 flex items-center gap-2 text-xs text-on-surface-variant">
-            <span aria-hidden="true" className="shrink-0 w-4 h-4 rounded border border-amber-300 bg-amber-50" />
+            <span aria-hidden="true" className="shrink-0 w-4 h-4 rounded border border-error/30 bg-error/10" />
             <span>Where the HTML is rendered - in a coupled CMS the CMS renders the page; in a headless setup your frontend does.</span>
           </div>
           <div className="grid md:grid-cols-2 gap-5">
@@ -265,82 +265,82 @@ export default function ArchitecturePage() {
                   actual responder in both cases (cache hit served directly;
                   cache miss forwarded from Next.js and then cached + served). */}
               <line x1={444} y1={170} x2={144} y2={170}
-                stroke="#60a5fa" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-lblue)" />
+                stroke="#91dbda" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-lblue)" />
 
               {/* Browser → Edge Middleware - HTTPS */}
               <line x1={144} y1={222} x2={176} y2={222}
-                stroke="#3b82f6" strokeWidth={2} markerEnd="url(#arr-blue)" />
+                stroke="#007b79" strokeWidth={2} markerEnd="url(#arr-blue)" />
 
               {/* Edge Middleware → cdn.optimizely.com - datafile fetch (down) */}
               <line x1={245} y1={259} x2={245} y2={330}
-                stroke="#0d9488" strokeWidth={2} markerEnd="url(#arr-teal)" />
+                stroke="#197050" strokeWidth={2} markerEnd="url(#arr-teal)" />
 
               {/* cdn.optimizely.com → Edge Middleware - cached datafile (up, dashed) */}
               <line x1={269} y1={330} x2={269} y2={259}
-                stroke="#0d9488" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-teal)" />
+                stroke="#197050" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-teal)" />
 
               {/* Edge Middleware → Edge CDN - rewritten __v_ URL */}
               <line x1={338} y1={222} x2={370} y2={222}
-                stroke="#9333ea" strokeWidth={2} markerEnd="url(#arr-purple)" />
+                stroke="#8f4764" strokeWidth={2} markerEnd="url(#arr-purple)" />
 
               {/* Edge CDN → Next.js - ISR miss */}
               <line x1={518} y1={222} x2={550} y2={222}
-                stroke="#9333ea" strokeWidth={2} markerEnd="url(#arr-purple)" />
+                stroke="#8f4764" strokeWidth={2} markerEnd="url(#arr-purple)" />
 
               {/* Next.js → Graph - GraphQL query */}
               <path d="M 702,210 C 726,210 740,155 740,129"
-                fill="none" stroke="#f97316" strokeWidth={2} markerEnd="url(#arr-orange)" />
+                fill="none" stroke="#ff99b6" strokeWidth={2} markerEnd="url(#arr-orange)" />
 
               {/* Graph → Next.js - content response (dashed) */}
               <path d="M 740,148 C 730,180 718,232 702,232"
-                fill="none" stroke="#f97316" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-orange)" />
+                fill="none" stroke="#ff99b6" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-orange)" />
 
               {/* CMS → Graph - content sync on publish */}
               <line x1={819} y1={296} x2={819} y2={166}
-                stroke="#16a34a" strokeWidth={2} markerEnd="url(#arr-green)" />
+                stroke="#3ab533" strokeWidth={2} markerEnd="url(#arr-green)" />
 
               {/* Graph → Next.js - webhook for ISR invalidation (red dashed, routes below) */}
               <path d="M 898,132 L 926,132 L 926,412 L 626,412 L 626,259"
-                fill="none" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-red)" />
+                fill="none" stroke="#7ddd3d" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-red)" />
 
               {/* Browser → cdn.optimizely.com - client-side bucketing event (teal dashed) */}
               <path d="M 79,259 L 79,367 L 176,367"
-                fill="none" stroke="#0d9488" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-teal)" />
+                fill="none" stroke="#197050" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-teal)" />
 
               {/* ── Boxes (drawn on top of arrows) ── */}
 
-              <Box x={14}  y={185} w={130} hc="#2563eb" bc="#eff6ff" stroke="#bfdbfe"
+              <Box x={14}  y={185} w={130} hc="#007b79" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Browser" sub={["visitor · editor"]} />
 
-              <Box x={176} y={185} w={162} hc="#4f46e5" bc="#eef2ff" stroke="#c7d2fe"
+              <Box x={176} y={185} w={162} hc="#8f4764" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Edge Middleware" sub={["FX flag eval · decideAll()", "__v_ URL rewrite"]} />
 
-              <Box x={370} y={185} w={148} hc="#7c3aed" bc="#f5f3ff" stroke="#ddd6fe"
+              <Box x={370} y={185} w={148} hc="#8f4764" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Edge CDN" sub={["ISR cache", "per-variation entry"]} />
 
-              <Box x={550} y={185} w={152} hc="#15803d" bc="#f0fdf4" stroke="#bbf7d0"
+              <Box x={550} y={185} w={152} hc="#197050" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Next.js Server" sub={["App Router · RSC", "ISR · revalidate: 3600"]} />
 
-              <Box x={740} y={92}  w={158} hc="#ea580c" bc="#fff7ed" stroke="#fed7aa"
+              <Box x={740} y={92}  w={158} hc="#ff99b6" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Optimizely Graph" sub={["cg.optimizely.com", "GraphQL delivery API"]} />
 
-              <Box x={740} y={296} w={158} hc="#dc2626" bc="#fef2f2" stroke="#fecaca"
+              <Box x={740} y={296} w={158} hc="#7ddd3d" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Optimizely CMS" sub={["authoring UI", "Visual Builder"]} />
 
-              <Box x={176} y={330} w={162} hc="#0d9488" bc="#f0fdfa" stroke="#99f6e4"
+              <Box x={176} y={330} w={162} hc="#197050" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="cdn.optimizely.com" sub={["FX datafile · 60s cache", "bucketing events API"]} />
 
               {/* ── Arrow labels (drawn last, on top) ── */}
-              <text x={294} y={163} textAnchor="middle" fill="#60a5fa" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">HTML response</text>
-              <text x={160} y={215} textAnchor="middle" fill="#3b82f6" fontSize={9} fontFamily="system-ui,sans-serif">HTTPS</text>
-              <text x={210} y={297} textAnchor="end" fill="#0d9488" fontSize={9} fontFamily="system-ui,sans-serif">datafile</text>
-              <text x={354} y={215} textAnchor="middle" fill="#9333ea" fontSize={9} fontFamily="system-ui,sans-serif">__v_ URL</text>
-              <text x={534} y={215} textAnchor="middle" fill="#9333ea" fontSize={9} fontFamily="system-ui,sans-serif">ISR miss</text>
-              <text x={726} y={175} textAnchor="end" fill="#f97316" fontSize={9} fontFamily="system-ui,sans-serif">GraphQL</text>
-              <text x={714} y={220} textAnchor="middle" fill="#f97316" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">content</text>
-              <text x={858} y={232} textAnchor="start" fill="#16a34a" fontSize={9} fontFamily="system-ui,sans-serif">content sync</text>
-              <text x={780} y={425} textAnchor="middle" fill="#ef4444" fontSize={9} fontFamily="system-ui,sans-serif">Graph webhook</text>
-              <text x={112} y={392} textAnchor="middle" fill="#0d9488" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">bucketing event</text>
+              <text x={294} y={163} textAnchor="middle" fill="#91dbda" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">HTML response</text>
+              <text x={160} y={215} textAnchor="middle" fill="#007b79" fontSize={9} fontFamily="system-ui,sans-serif">HTTPS</text>
+              <text x={210} y={297} textAnchor="end" fill="#197050" fontSize={9} fontFamily="system-ui,sans-serif">datafile</text>
+              <text x={354} y={215} textAnchor="middle" fill="#8f4764" fontSize={9} fontFamily="system-ui,sans-serif">__v_ URL</text>
+              <text x={534} y={215} textAnchor="middle" fill="#8f4764" fontSize={9} fontFamily="system-ui,sans-serif">ISR miss</text>
+              <text x={726} y={175} textAnchor="end" fill="#ff99b6" fontSize={9} fontFamily="system-ui,sans-serif">GraphQL</text>
+              <text x={714} y={220} textAnchor="middle" fill="#ff99b6" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">content</text>
+              <text x={858} y={232} textAnchor="start" fill="#3ab533" fontSize={9} fontFamily="system-ui,sans-serif">content sync</text>
+              <text x={780} y={425} textAnchor="middle" fill="#7ddd3d" fontSize={9} fontFamily="system-ui,sans-serif">Graph webhook</text>
+              <text x={112} y={392} textAnchor="middle" fill="#197050" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">bucketing event</text>
 
             </svg>
           </div>
@@ -348,13 +348,13 @@ export default function ArchitecturePage() {
           {/* Legend */}
           <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-xs text-on-surface-variant">
             {[
-              { color: "#3b82f6", label: "HTTPS request",                              dashed: false },
-              { color: "#60a5fa", label: "HTML response",                               dashed: true  },
-              { color: "#9333ea", label: "Rewritten __v_ URL · CDN miss forward to Next.js", dashed: false },
-              { color: "#f97316", label: "GraphQL query · content response",            dashed: true  },
-              { color: "#0d9488", label: "FX datafile · bucketing event",               dashed: true  },
-              { color: "#16a34a", label: "CMS content sync on publish",                 dashed: false },
-              { color: "#ef4444", label: "Graph webhook - ISR cache invalidation",      dashed: true  },
+              { color: "#007b79", label: "HTTPS request",                              dashed: false },
+              { color: "#91dbda", label: "HTML response",                               dashed: true  },
+              { color: "#8f4764", label: "Rewritten __v_ URL · CDN miss forward to Next.js", dashed: false },
+              { color: "#ff99b6", label: "GraphQL query · content response",            dashed: true  },
+              { color: "#197050", label: "FX datafile · bucketing event",               dashed: true  },
+              { color: "#3ab533", label: "CMS content sync on publish",                 dashed: false },
+              { color: "#7ddd3d", label: "Graph webhook - ISR cache invalidation",      dashed: true  },
             ].map(({ color, label, dashed }) => (
               <div key={label} className="flex items-center gap-2">
                 <svg width={30} height={10} aria-hidden="true">
@@ -382,8 +382,8 @@ export default function ArchitecturePage() {
             {[
               {
                 label: "Edge Middleware",
-                color: "border-indigo-300 bg-indigo-50",
-                hcolor: "text-indigo-700",
+                color: "border-tertiary/30 bg-tertiary/10",
+                hcolor: "text-tertiary",
                 points: [
                   "Runs at the CDN edge before the cache is checked - on Vercel this is the Edge Runtime (V8 isolate), on Cloudflare it would be a Worker, on Akamai an EdgeWorker.",
                   "Fetches the Optimizely FX datafile (JSON) from cdn.optimizely.com. The fetch is edge-cached for 60s so each edge node only re-fetches the datafile once per minute.",
@@ -393,8 +393,8 @@ export default function ArchitecturePage() {
               },
               {
                 label: "Edge CDN / ISR Cache",
-                color: "border-purple-300 bg-purple-50",
-                hcolor: "text-purple-700",
+                color: "border-tertiary/30 bg-tertiary/10",
+                hcolor: "text-tertiary",
                 points: [
                   "Each __v_-rewritten URL is a separate CDN cache entry. Base users and each variation are cached independently at the same path hierarchy.",
                   "TTL: 60 seconds (set by export const revalidate = 60 in the catch-all route). Any CDN that supports path-based caching can serve this - no custom cache configuration needed.",
@@ -404,8 +404,8 @@ export default function ArchitecturePage() {
               },
               {
                 label: "Next.js Server",
-                color: "border-green-300 bg-green-50",
-                hcolor: "text-green-700",
+                color: "border-brand/30 bg-brand/10",
+                hcolor: "text-brand",
                 points: [
                   "Renders CMS pages with ISR. No cookies() or headers() calls anywhere in the server render tree - these would force cache-control: no-store globally.",
                   "Extracts variation keys from the URL slug via extractVariations(slug) - reads __v_ segments, no SDK call needed.",
@@ -415,8 +415,8 @@ export default function ArchitecturePage() {
               },
               {
                 label: "Optimizely Graph",
-                color: "border-orange-300 bg-orange-50",
-                hcolor: "text-orange-700",
+                color: "border-error/30 bg-error/10",
+                hcolor: "text-error",
                 points: [
                   "GraphQL delivery API at cg.optimizely.com. Serves CMS content, navigation, and banners.",
                   "Accepts a variation filter so a single query can return either the base content or a specific named variation.",
@@ -426,8 +426,8 @@ export default function ArchitecturePage() {
               },
               {
                 label: "Optimizely CMS",
-                color: "border-red-300 bg-red-50",
-                hcolor: "text-red-700",
+                color: "border-error/30 bg-error/10",
+                hcolor: "text-error",
                 points: [
                   "Authors create and manage pages, blocks, and navigation in Visual Builder.",
                   "CMS Variation names must exactly match FX variation key strings (case-sensitive). A mismatch means the variation content is never served.",
@@ -470,8 +470,8 @@ export default function ArchitecturePage() {
             Two distinct actors drive the system - content editors on the authoring side, and visitors on the delivery side. They never share a runtime.
           </p>
           <div className="grid md:grid-cols-2 gap-5">
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
-              <h3 className="font-display font-bold text-sm text-red-700 mb-1">Content Editor</h3>
+            <div className="rounded-2xl border border-error/30 bg-error/10 p-5">
+              <h3 className="font-display font-bold text-sm text-error mb-1">Content Editor</h3>
               <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
                 Works entirely inside Optimizely CMS. Never interacts with the Next.js app directly.
               </p>
@@ -484,14 +484,14 @@ export default function ArchitecturePage() {
                   "Preview mode bypasses the ISR cache entirely - the editor sees draft content via a previewToken that the app reads from the URL.",
                 ].map((p, i) => (
                   <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
-                    <span className="shrink-0 font-bold text-red-600">-</span>
+                    <span className="shrink-0 font-bold text-error">-</span>
                     <span>{p}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-              <h3 className="font-display font-bold text-sm text-blue-700 mb-1">Visitor</h3>
+            <div className="rounded-2xl border border-tertiary/30 bg-tertiary/10 p-5">
+              <h3 className="font-display font-bold text-sm text-tertiary mb-1">Visitor</h3>
               <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
                 Makes an HTTPS request. Three execution environments run on their behalf in sequence.
               </p>
@@ -504,7 +504,7 @@ export default function ArchitecturePage() {
                   "The browser SDK fires a bucketing event to cdn.optimizely.com for the active flag. This is the impression that appears in the FX Results tab.",
                 ].map((p, i) => (
                   <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
-                    <span className="shrink-0 font-bold text-blue-600">-</span>
+                    <span className="shrink-0 font-bold text-tertiary">-</span>
                     <span>{p}</span>
                   </li>
                 ))}
@@ -526,27 +526,27 @@ export default function ArchitecturePage() {
           <div className="space-y-2">
             {[
               {
-                n: "1", color: "bg-blue-500",
+                n: "1", color: "bg-tertiary",
                 label: "Browser sends HTTPS request",
                 detail: "e.g. GET /en/investments/stocks-isa - arrives at Vercel's edge network.",
               },
               {
-                n: "2", color: "bg-indigo-500",
+                n: "2", color: "bg-tertiary",
                 label: "Edge Middleware evaluates FX flags",
                 detail: "Fetches the FX datafile from cdn.optimizely.com (edge-cached for 60s). Reads user context from cookies (optimizelyEndUserId, demo_persona, demo_bucketing_id). Calls decideAll([DISABLE_DECISION_EVENT]) - no bucketing events yet. Rewrites the URL with active variation segments sorted for a stable cache key, e.g. /en/investments/stocks-isa/__v_homepage--variation_1/__v_cta--on.",
               },
               {
-                n: "3", color: "bg-purple-600",
+                n: "3", color: "bg-tertiary",
                 label: "Edge CDN checks the ISR cache",
                 detail: "The rewritten URL is looked up. Cache HIT: the ISR-cached page is returned to the browser in ~10-50ms. Cache MISS: the request is forwarded to the Next.js server.",
               },
               {
-                n: "4", color: "bg-green-700",
+                n: "4", color: "bg-brand-fill",
                 label: "Next.js renders the page (ISR miss only)",
                 detail: "The catch-all route extracts variation info from the URL slug - no cookies() or headers() calls. Queries Optimizely Graph with a variation filter to fetch the matching CMS content variation. Renders the page with export const revalidate = 60. The rendered output is stored in the CDN cache.",
               },
               {
-                n: "5", color: "bg-blue-500",
+                n: "5", color: "bg-tertiary",
                 label: "HTML returned to browser",
                 detail: "The response is served - from CDN on a hit, from Next.js on a miss. The browser receives identical HTML either way.",
               },
@@ -583,27 +583,27 @@ export default function ArchitecturePage() {
           <div className="space-y-2">
             {[
               {
-                n: "1", color: "bg-red-600",
+                n: "1", color: "bg-error",
                 label: "Editor publishes in Optimizely CMS",
                 detail: "Content is saved. The CMS begins syncing the change to Optimizely Graph.",
               },
               {
-                n: "2", color: "bg-orange-500",
+                n: "2", color: "bg-error",
                 label: "Graph indexes the content",
                 detail: "Optimizely Graph processes the change and makes the new content queryable via its GraphQL API.",
               },
               {
-                n: "3", color: "bg-red-500",
+                n: "3", color: "bg-error",
                 label: "Graph fires a POST webhook to /api/webhooks",
                 detail: "A small JSON payload signals that content changed. The webhook handler calls revalidatePath(\"/\", \"layout\") and revalidateTag() for page, navigation, banner, and quotes. Nothing is re-rendered yet - entries are just marked stale.",
               },
               {
-                n: "4", color: "bg-purple-600",
+                n: "4", color: "bg-tertiary",
                 label: "Next visitor gets the stale version instantly",
                 detail: "ISR always serves the existing cached page first. The visitor does not wait. In the background Next.js re-renders the page with fresh data from Graph.",
               },
               {
-                n: "5", color: "bg-green-700",
+                n: "5", color: "bg-brand-fill",
                 label: "All subsequent requests get the updated page",
                 detail: "The newly rendered output is stored in the CDN. No redeploy needed.",
               },
@@ -699,8 +699,8 @@ export default function ArchitecturePage() {
             {[
               {
                 label: "CMS down or in maintenance",
-                color: "border-red-300 bg-red-50",
-                hcolor: "text-red-700",
+                color: "border-error/30 bg-error/10",
+                hcolor: "text-error",
                 points: [
                   "Graph keeps serving from its own index - it does not read from the CMS at request time.",
                   "Visitors see no difference: ISR pages keep rendering with data from Graph.",
@@ -709,8 +709,8 @@ export default function ArchitecturePage() {
               },
               {
                 label: "Optimizely Graph unreachable",
-                color: "border-orange-300 bg-orange-50",
-                hcolor: "text-orange-700",
+                color: "border-error/30 bg-error/10",
+                hcolor: "text-error",
                 points: [
                   "Warm pages keep serving from the CDN ISR cache - a cache hit never queries Graph.",
                   "When a render does happen, query modules catch the failure and return static fallback data instead of throwing: GetNavigation.ts returns DEMO_NAV_DATA with fromCms: false, so the site chrome never disappears.",
@@ -719,8 +719,8 @@ export default function ArchitecturePage() {
               },
               {
                 label: "Webhook missed or delayed",
-                color: "border-purple-300 bg-purple-50",
-                hcolor: "text-purple-700",
+                color: "border-tertiary/30 bg-tertiary/10",
+                hcolor: "text-tertiary",
                 points: [
                   "The revalidate TTL is the backstop: page caches expire after 60 seconds, navigation after 300.",
                   "Worst case, visitors see content that is about a minute stale - then the next request triggers a background re-render with fresh Graph data.",
@@ -793,8 +793,8 @@ export default function ArchitecturePage() {
             {[
               {
                 label: "A/B Testing",
-                color: "border-indigo-200 bg-indigo-50",
-                hcolor: "text-indigo-700",
+                color: "border-tertiary/30 bg-tertiary/10",
+                hcolor: "text-tertiary",
                 description: "The simplest form. Two versions of a page (A and B) are shown to two random groups of users. You measure which version results in more sign-ups, clicks, or purchases - then keep the winner.",
                 points: [
                   "Purely random - no targeting logic.",
@@ -805,8 +805,8 @@ export default function ArchitecturePage() {
               },
               {
                 label: "Experimentation",
-                color: "border-purple-200 bg-purple-50",
-                hcolor: "text-purple-700",
+                color: "border-tertiary/30 bg-tertiary/10",
+                hcolor: "text-tertiary",
                 description: "A more powerful form of A/B testing. Instead of just two versions, you can have multiple variations and control exactly who is eligible to see them.",
                 points: [
                   "Multiple variations, not just A and B.",
@@ -865,13 +865,13 @@ export default function ArchitecturePage() {
               <h3 className="font-display font-semibold text-sm text-on-surface mb-4">The core problem: caching pages that differ by user</h3>
               <div className="grid md:grid-cols-2 gap-5">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-red-600 mb-2">The naive approach - and why it fails</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-error mb-2">The naive approach - and why it fails</p>
                   <p className="text-xs text-on-surface-variant leading-relaxed">
                     The obvious way to show different content to different users is to read a cookie on the server and render the appropriate version. The problem: CDNs cache by URL. Two users requesting the same URL get the same cached page regardless of their cookies. To fix this you would need to configure the CDN to vary its cache by cookie - which requires CDN-specific rules, disables most cache optimisations, and often results in every request hitting the server anyway.
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-green-700 mb-2">This architecture's solution</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-brand mb-2">This architecture's solution</p>
                   <ul className="space-y-1.5">
                     {[
                       "Evaluate which variation a user should see at the edge - before the CDN cache is checked.",
@@ -881,7 +881,7 @@ export default function ArchitecturePage() {
                       "All subsequent requests are served from CDN cache in ~10-50ms - no server involved.",
                     ].map((p, i) => (
                       <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
-                        <span className="shrink-0 font-bold text-green-700">-</span>
+                        <span className="shrink-0 font-bold text-brand">-</span>
                         <span>{p}</span>
                       </li>
                     ))}
@@ -912,8 +912,8 @@ export default function ArchitecturePage() {
               {
                 label: "Middleware",
                 subtitle: "Edge Runtime - every request",
-                color: "border-indigo-300 bg-indigo-50",
-                hcolor: "text-indigo-700",
+                color: "border-tertiary/30 bg-tertiary/10",
+                hcolor: "text-tertiary",
                 rows: [
                   { k: "When", v: "Every request, before the CDN cache is checked. Runs even on cache hits." },
                   { k: "Where", v: "V8 isolate on CDN edge nodes. No Node.js APIs (no fs, no process.env at runtime). Cold starts in under 1ms." },
@@ -926,8 +926,8 @@ export default function ArchitecturePage() {
               {
                 label: "Next.js Server",
                 subtitle: "Node.js - ISR miss only",
-                color: "border-green-300 bg-green-50",
-                hcolor: "text-green-700",
+                color: "border-brand/30 bg-brand/10",
+                hcolor: "text-brand",
                 rows: [
                   { k: "When", v: "Only on an ISR cache miss: the first request to a URL, or after a webhook marks it stale." },
                   { k: "Where", v: "Node.js process (serverless function or long-running server). Full Node.js APIs available." },
@@ -940,8 +940,8 @@ export default function ArchitecturePage() {
               {
                 label: "Browser",
                 subtitle: "Client-Side - after hydration",
-                color: "border-blue-300 bg-blue-50",
-                hcolor: "text-blue-700",
+                color: "border-tertiary/30 bg-tertiary/10",
+                hcolor: "text-tertiary",
                 rows: [
                   { k: "When", v: "After the browser receives HTML and React hydrates. Runs on every page load, including cache hits." },
                   { k: "Where", v: "Visitor's browser. Full Web APIs available (fetch, document.cookie, localStorage)." },

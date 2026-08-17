@@ -2,7 +2,9 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { QuoteBlockType } from "@/components/blocks/QuoteBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
-import { BACKGROUND, BG_CLASSES, HEADING_SIZE, HEADING_CLASSES } from "../_shared/displayTemplateSettings";
+import {
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE, HEADING_CLASSES, resolveStyleClasses,
+} from "../_shared/displayTemplateSettings";
 
 export const CustomerVoicesBlockType = contentType({
   key: "CustomerVoicesBlock",
@@ -29,6 +31,7 @@ export const CustomerVoicesBlockDefaultTemplate = displayTemplate({
   contentType: "CustomerVoicesBlock",
   settings: {
     ...BACKGROUND,
+    ...TEXT_COLOR,
     ...HEADING_SIZE,
   },
 });
@@ -56,8 +59,7 @@ export default function CustomerVoicesBlock(props: CustomerVoicesProps) {
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as never);
 
-  const bgKey = (ds?.background as string) || "offWhite";
-  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.offWhite;
+  const bg = resolveStyleClasses(ds, { background: "offWhite" });
   const headingKey = (ds?.headingSize as string) || "lg";
   const headingClass = HEADING_CLASSES[headingKey] ?? HEADING_CLASSES.lg;
 

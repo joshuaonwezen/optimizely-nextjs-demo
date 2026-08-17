@@ -2,8 +2,7 @@ import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE,
-  HEADING_CLASSES, TEXT_ALIGN_CLASSES, FONT_CLASSES,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
 } from "../_shared/displayTemplateSettings";
 
 export const FeaturedContentBlockType = contentType({
@@ -13,6 +12,18 @@ export const FeaturedContentBlockType = contentType({
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
     featuredPage: { type: "contentReference", displayName: "Featured Page", allowedTypes: ["_page"], indexingType: "disabled" },
+  },
+});
+
+export const FeaturedContentBlockDefaultTemplate = displayTemplate({
+  key: "FeaturedContentBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "FeaturedContentBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
   },
 });
 
@@ -26,16 +37,16 @@ export const FeaturedContentCardTemplate = displayTemplate({
     theme: {
       editor: "select" as const,
       displayName: "Background color",
-      sortOrder: 0,
+      sortOrder: 10,
       choices: {
         surface: { displayName: "White",         sortOrder: 0 },
-        brand:   { displayName: "Blue gradient", sortOrder: 1 },
+        brand:   { displayName: "Green",         sortOrder: 1 },
       },
     },
+    ...TEXT_COLOR,
     ...HEADING_SIZE,
     ...TEXT_ALIGN,
     ...FONT_STYLE,
-    ...TEXT_SIZE,
   },
 });
 
@@ -82,7 +93,7 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   const headingColor = isBrand ? "text-on-brand" : "text-on-surface";
   const ctaClass     = isBrand
     ? "bg-on-brand text-brand hover:opacity-90 transition-opacity"
-    : "bg-brand text-on-brand hover:opacity-90 transition-opacity";
+    : "bg-brand-fill text-on-brand hover:opacity-90 transition-opacity";
 
   return (
     <section data-component="FeaturedContentBlock" className={`${sectionClass} ${alignClass}`}>

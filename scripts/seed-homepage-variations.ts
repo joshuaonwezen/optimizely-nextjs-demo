@@ -39,6 +39,11 @@ const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 
 // Composition node builders (same as seed-content.ts)
 
+interface DisplaySettings {
+  displayTemplate: string;
+  settings: Record<string, string>;
+}
+
 interface CompNode {
   id: string;
   displayName: string;
@@ -46,11 +51,33 @@ interface CompNode {
   component?: { contentType: string; properties: Record<string, unknown> };
   nodes?: CompNode[];
   layoutType?: string;
+  displaySettings?: DisplaySettings;
 }
 
 function uid(): string {
   return randomUUID();
 }
+
+// Base-matching display settings. The base homepage's nodes carry NO display settings, so
+// they render with the renderer's plain defaults (BlankSection.tsx GAP.default = gap-8;
+// SectionHeadingBlock renders plain when background is "transparent"). Creating a variation
+// in Visual Builder instead stamps each node with its default display template, whose defaults
+// differ - the row gap comes out "compact" (gap-4) and the section heading "white" (a boxed
+// card). No seed sets displaySettings, so variations inherit those VB defaults and look off.
+// Setting these explicitly keeps a seeded variation visually consistent with the base homepage.
+const ROW_DISPLAY_SETTINGS: DisplaySettings = {
+  displayTemplate: "DefaultRowTemplate",
+  settings: { gap: "default", verticalAlign: "top", maxWidth: "default", reverse: "False" },
+};
+
+// Per-block display settings that reproduce the base's plain look. Keyed by content type;
+// only blocks that need an explicit override to match the base are listed.
+const PLAIN_BLOCK_DISPLAY_SETTINGS: Record<string, DisplaySettings> = {
+  SectionHeadingBlock: {
+    displayTemplate: "SectionHeadingDefaultTemplate",
+    settings: { background: "transparent", showAccent: "False", headingSize: "xl", textAlign: "left", fontStyle: "modern" },
+  },
+};
 
 function elementComponent(
   contentType: string,
@@ -62,6 +89,9 @@ function elementComponent(
     displayName,
     nodeType: "component",
     component: { contentType, properties: wrapProps(properties) },
+    ...(PLAIN_BLOCK_DISPLAY_SETTINGS[contentType] && {
+      displaySettings: PLAIN_BLOCK_DISPLAY_SETTINGS[contentType],
+    }),
   };
 }
 
@@ -77,6 +107,7 @@ function gridSection(displayName: string, items: CompNode[]): CompNode {
         id: uid(),
         displayName: "Row",
         nodeType: "row",
+        displaySettings: ROW_DISPLAY_SETTINGS,
         nodes: items.map((item) => ({
           id: uid(),
           displayName: "Column",
@@ -108,14 +139,43 @@ function rootComponent(
     displayName,
     nodeType: "component",
     component: { contentType, properties: wrapProps(properties) },
+    ...(PLAIN_BLOCK_DISPLAY_SETTINGS[contentType] && {
+      displaySettings: PLAIN_BLOCK_DISPLAY_SETTINGS[contentType],
+    }),
   };
+}
+
+// Which hero content type this instance has. Most instances carry the legacy `Hero`
+// type (heading/summary/theme) whose "dark" theme drives the styled homepage hero; some
+// instances (e.g. joshCMS) only have `HeroBlock` (headline/subheadline, no theme).
+// Detected once in main() so the composition uses whichever the instance actually has.
+let HERO_CONTENT_TYPE: "Hero" | "HeroBlock" = "Hero";
+
+// Builds the hero node using whichever type the instance has. On `Hero` the theme drives
+// the dark styling; `HeroBlock` has no theme (that instance's base homepage is plain too).
+function heroComponent(
+  displayName: string,
+  { headline, subheadline }: { headline: string; subheadline: string }
+): CompNode {
+  const properties =
+    HERO_CONTENT_TYPE === "Hero"
+      ? { heading: headline, summary: subheadline, theme: "dark" }
+      : { headline, subheadline };
+  return rootComponent(HERO_CONTENT_TYPE, displayName, properties);
+}
+
+async function detectHeroType(token: string): Promise<"Hero" | "HeroBlock"> {
+  const res = await fetch(`${API_BASE}/v1/contenttypes/Hero`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.ok ? "Hero" : "HeroBlock";
 }
 
 // Variation compositions
 
 function buildPersonalVariation(): CompNode[] {
   return [
-    rootComponent("HeroBlock", "Personal Hero", {
+    heroComponent("Personal Hero", {
       headline: "Banking built around you",
       subheadline:
         "Your salary, your savings goals, your mortgage — all in one app, with the rates and tools to make each one work harder for you.",
@@ -202,7 +262,7 @@ function buildPersonalVariation(): CompNode[] {
 
 function buildBusinessVariation(): CompNode[] {
   return [
-    rootComponent("HeroBlock", "Business Hero", {
+    heroComponent("Business Hero", {
       headline: "Banking built for business",
       subheadline:
         "Multi-user access, instant reconciliation with Xero and QuickBooks, and lending decisions in 48 hours — built for businesses that can't afford friction.",
@@ -289,7 +349,7 @@ function buildBusinessVariation(): CompNode[] {
 
 function buildNewVisitorVariation(): CompNode[] {
   return [
-    rootComponent("HeroBlock", "New Visitor Hero", {
+    heroComponent("New Visitor Hero", {
       headline: "See what everyone's banking on",
       subheadline:
         "Join 2 million people who switched to Mosey for fee-free accounts, market-leading savings rates, and a mortgage experience that doesn't feel like hard work.",
@@ -376,7 +436,7 @@ function buildNewVisitorVariation(): CompNode[] {
 
 function buildMortgagesVariation(): CompNode[] {
   return [
-    rootComponent("HeroBlock", "Mortgages Hero", {
+    heroComponent("Mortgages Hero", {
       headline: "A mortgage that moves at your pace",
       subheadline:
         "Decision in principle in 10 minutes, rates from 4.19% fixed, and an advisor by your side from application to key handover.",
@@ -463,7 +523,7 @@ function buildMortgagesVariation(): CompNode[] {
 
 function buildInvestmentsVariation(): CompNode[] {
   return [
-    rootComponent("HeroBlock", "Investments Hero", {
+    heroComponent("Investments Hero", {
       headline: "Investing, made straightforward",
       subheadline:
         "Stocks & Shares ISAs, pensions, and ready-made portfolios - low fees, tax-efficient, and built for the long term.",
@@ -702,6 +762,9 @@ async function main() {
   console.log(`[graph] Homepage key: ${homepageKey}\n`);
 
   const token = await getManagementToken();
+
+  HERO_CONTENT_TYPE = await detectHeroType(token);
+  console.log(`[schema] hero content type on this instance: ${HERO_CONTENT_TYPE}\n`);
 
   const variations: VariationDef[] = [
     {

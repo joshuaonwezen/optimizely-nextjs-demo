@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { getOptimizelyBrowserClient } from "@/lib/optimizely/browser-client";
 
+// Keys are stored in CMS content, so they stay put even though the brand
+// palette they now map onto has nothing to do with the original color names.
 const COLOR_CLASSES: Record<string, string> = {
-  blue:   "bg-blue-600 text-white",
-  green:  "bg-green-600 text-white",
-  red:    "bg-red-600 text-white",
-  purple: "bg-purple-600 text-white",
-  amber:  "bg-amber-500 text-white",
+  blue:   "bg-brand-fill text-on-brand",
+  green:  "bg-brand-fill-dim text-on-brand",
+  red:    "bg-error text-on-error",
+  purple: "bg-tertiary text-on-tertiary",
+  amber:  "bg-secondary-container text-on-secondary-container",
 };
 
 const STYLE_MODIFIERS: Record<string, string> = {

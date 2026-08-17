@@ -83,11 +83,20 @@ const RICH_TEXT_BODY =
 const BACKGROUND_CHOICES: Array<{ key: string; label: string }> = [
   { key: "white", label: "White" },
   { key: "offWhite", label: "Off-white" },
-  { key: "blue", label: "Blue" },
-  { key: "blueGrad", label: "Blue gradient" },
-  { key: "purple", label: "Purple" },
+  { key: "blue", label: "Green" },
+  { key: "blueGrad", label: "Bright green" },
+  { key: "purple", label: "Teal" },
   { key: "dark", label: "Dark" },
   { key: "transparent", label: "None" },
+];
+
+const TEXT_COLOR_CHOICES: Array<{ key: string; label: string }> = [
+  { key: "auto", label: "Automatic" },
+  { key: "dark", label: "Dark" },
+  { key: "muted", label: "Muted" },
+  { key: "brand", label: "Green" },
+  { key: "teal", label: "Teal" },
+  { key: "light", label: "Light" },
 ];
 
 const HEADING_SIZE_CHOICES: Array<{ key: string; label: string }> = [
@@ -186,8 +195,8 @@ export default function DisplayTemplatesDemoPage() {
         </Section>
 
         <Section
-          title="Shared settings: Heading size and Font style"
-          description="Heading size maps to responsive Tailwind text classes. Font style switches between Plus Jakarta Sans (Modern) and Inter (Classic)."
+          title="Shared settings: Heading size and Font family"
+          description="Heading size maps to responsive Tailwind text classes. Font family switches between VC Nudge (Display), Die Grotesk (Body) and Roboto Mono (Captions)."
         >
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             {HEADING_SIZE_CHOICES.map(({ key, label }) => (
@@ -200,22 +209,51 @@ export default function DisplayTemplatesDemoPage() {
               </Variant>
             ))}
           </div>
-          <div className="grid md:grid-cols-2 gap-6">
-            <Variant label="Modern (Plus Jakarta Sans)">
+          <div className="grid md:grid-cols-3 gap-6">
+            <Variant label="Display (VC Nudge)">
               <FeatureItemBlock
                 {...FEATURE}
                 displayTemplateKey="FeatureItemOutlinedTemplate"
                 displaySettings={{ fontStyle: "modern", headingSize: "md" }}
               />
             </Variant>
-            <Variant label="Classic (Inter)">
+            <Variant label="Body (Die Grotesk)">
               <FeatureItemBlock
                 {...FEATURE}
                 displayTemplateKey="FeatureItemOutlinedTemplate"
                 displaySettings={{ fontStyle: "classic", headingSize: "md" }}
               />
             </Variant>
+            <Variant label="Captions (Roboto Mono)">
+              <FeatureItemBlock
+                {...FEATURE}
+                displayTemplateKey="FeatureItemOutlinedTemplate"
+                displaySettings={{ fontStyle: "mono", headingSize: "md" }}
+              />
+            </Variant>
           </div>
+        </Section>
+
+        <Section
+          title="Shared setting: Text color"
+          description="Text color is independent of background. Automatic keeps the historic behaviour - text color is derived from the chosen background - so existing content is unaffected. The other choices override it."
+        >
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {TEXT_COLOR_CHOICES.map(({ key, label }) => (
+              <Variant key={key} label={label}>
+                <FeatureItemBlock
+                  {...FEATURE}
+                  displayTemplateKey="FeatureItemOutlinedTemplate"
+                  displaySettings={{ textColor: key, headingSize: "md" }}
+                />
+              </Variant>
+            ))}
+          </div>
+          <p className="mt-6 text-sm text-on-surface-variant">
+            Automatic over a dark background still yields light text, because the
+            background supplies it. Choosing Light explicitly does the same on any
+            background - useful when a section, not the block, carries the dark surface.
+          </p>
         </Section>
 
         <Section
@@ -229,7 +267,7 @@ export default function DisplayTemplatesDemoPage() {
             <Variant label="Featured (highlighted)">
               <ProductCardBlock {...PRODUCT} displayTemplateKey="ProductCardFeaturedTemplate" />
             </Variant>
-            <Variant label="Default, Blue gradient">
+            <Variant label="Default, bright green">
               <ProductCardBlock {...PRODUCT} displaySettings={{ background: "blueGrad" }} />
             </Variant>
             <Variant label="Default, no icon, Dark">
@@ -290,7 +328,7 @@ export default function DisplayTemplatesDemoPage() {
             <Variant label="Card (boxed), White">
               <TestimonialBlock {...QUOTE} displayTemplateKey="TestimonialCardTemplate" />
             </Variant>
-            <Variant label="Card (boxed), Blue gradient">
+            <Variant label="Card (boxed), bright green">
               <TestimonialBlock {...QUOTE} displayTemplateKey="TestimonialCardTemplate" displaySettings={{ background: "blueGrad" }} />
             </Variant>
             <Variant label="Minimal (pull-quote with accent)">
@@ -307,10 +345,10 @@ export default function DisplayTemplatesDemoPage() {
             <Variant label="No template (fallback)">
               <StatsCounterBlock value="2.4" suffix="M" label="Active customers" />
             </Variant>
-            <Variant label="Accent rail, Blue number">
+            <Variant label="Accent rail, green number">
               <StatsCounterBlock value="2.4" suffix="M" label="Active customers" displayTemplateKey="StatsCounterAccentTemplate" />
             </Variant>
-            <Variant label="Accent rail, Purple number">
+            <Variant label="Accent rail, teal number">
               <StatsCounterBlock value="2.4" suffix="M" label="Active customers" displayTemplateKey="StatsCounterAccentTemplate" displaySettings={{ accentColor: "tertiary" }} />
             </Variant>
             <Variant label="Highlighted, Dark, compact">
@@ -321,7 +359,7 @@ export default function DisplayTemplatesDemoPage() {
 
         <Section
           title="Outcome Stat"
-          description="Inline places the number and label side by side; Boxed defaults to the blue gradient."
+          description="Inline places the number and label side by side; Boxed defaults to the bright green fill."
         >
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             <Variant label="Inline stat">
@@ -364,7 +402,7 @@ export default function DisplayTemplatesDemoPage() {
             <Variant label="Horizontal card">
               <TeamMemberBlock {...TEAM_MEMBER} displayTemplateKey="TeamMemberHorizontalTemplate" />
             </Variant>
-            <Variant label="Horizontal card, Blue">
+            <Variant label="Horizontal card, green">
               <TeamMemberBlock {...TEAM_MEMBER} displayTemplateKey="TeamMemberHorizontalTemplate" displaySettings={{ background: "blue" }} />
             </Variant>
           </div>
@@ -384,7 +422,7 @@ export default function DisplayTemplatesDemoPage() {
             <Variant label="Compact">
               <PricingTierBlock {...PRICING} displayTemplateKey="PricingTierCompactTemplate" />
             </Variant>
-            <Variant label="Compact, Blue gradient">
+            <Variant label="Compact, bright green">
               <PricingTierBlock {...PRICING} displayTemplateKey="PricingTierCompactTemplate" displaySettings={{ background: "blueGrad" }} />
             </Variant>
           </div>
@@ -424,10 +462,10 @@ export default function DisplayTemplatesDemoPage() {
         >
           <div className="grid lg:grid-cols-2 gap-6 items-start">
             <Variant label="No template (natural size)">
-              <ImageBlock image={{ url: { default: SAMPLE_IMAGE } }} altText="Sample gradient" caption="Original aspect ratio" />
+              <ImageBlock image={{ url: { default: SAMPLE_IMAGE } }} altText="Sample image" caption="Original aspect ratio" />
             </Variant>
             <Variant label="Rounded corners, 1:1 Square">
-              <ImageBlock image={{ url: { default: SAMPLE_IMAGE } }} altText="Sample gradient" caption="Cropped square with rounded corners" displayTemplateKey="ImageBlockRoundedTemplate" displaySettings={{ aspectRatio: "r1x1" }} />
+              <ImageBlock image={{ url: { default: SAMPLE_IMAGE } }} altText="Sample image" caption="Cropped square with rounded corners" displayTemplateKey="ImageBlockRoundedTemplate" displaySettings={{ aspectRatio: "r1x1" }} />
             </Variant>
           </div>
         </Section>

@@ -452,8 +452,8 @@ export default function MediaDemoPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4 mt-6">
-            <div className="bg-surface-lowest border border-green-200 rounded-2xl p-5">
-              <p className="text-xs font-semibold text-green-700 mb-3">Use damAssets when</p>
+            <div className="bg-surface-lowest border border-brand/30 rounded-2xl p-5">
+              <p className="text-xs font-semibold text-brand mb-3">Use damAssets when</p>
               <ul className="space-y-1.5 text-xs text-on-surface-variant">
                 {[
                   "You want responsive srcset strings without building them manually",
@@ -461,7 +461,7 @@ export default function MediaDemoPage() {
                   "You need to distinguish image vs video vs file references at runtime",
                   "You want preview token handling in edit mode without custom code",
                 ].map((item) => (
-                  <li key={item} className="flex gap-2"><span className="text-green-600 shrink-0">→</span>{item}</li>
+                  <li key={item} className="flex gap-2"><span className="text-brand shrink-0">→</span>{item}</li>
                 ))}
               </ul>
             </div>

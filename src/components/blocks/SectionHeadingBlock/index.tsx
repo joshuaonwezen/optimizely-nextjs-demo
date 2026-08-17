@@ -1,8 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE,
-  BG_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES, FONT_CLASSES,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const SectionHeadingBlockType = contentType({
@@ -20,10 +19,11 @@ const HEADING_BLOCK_SETTINGS = {
   showAccent: {
     editor: "checkbox" as const,
     displayName: "Show accent bar",
-    sortOrder: 0,
+    sortOrder: 10,
     choices: {},
   },
   ...BACKGROUND,
+  ...TEXT_COLOR,
   ...HEADING_SIZE,
   ...TEXT_ALIGN,
   ...FONT_STYLE,
@@ -67,22 +67,20 @@ export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
   const showAccent = ds?.showAccent === true;
 
   const bgKey = (ds?.background as string) || "transparent";
-  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.transparent;
-  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "lg"];
-  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
+  const s = resolveStyleClasses(ds, { background: "transparent" });
   const alignKey = (ds?.textAlign as string) || (isCentered ? "center" : "left");
   const alignClass = TEXT_ALIGN_CLASSES[alignKey] ?? "text-left";
 
-  const hasBg = bgKey !== "transparent" && bg.wrapper;
+  const hasBg = bgKey !== "transparent" && s.wrapper;
   const outerPadding = hasBg ? "py-20 px-8 rounded-2xl" : "py-20";
 
   return (
-    <div data-component="SectionHeadingBlock" className={`${outerPadding} ${hasBg ? bg.wrapper : ""} ${alignClass}`}>
+    <div data-component="SectionHeadingBlock" className={`${outerPadding} ${hasBg ? s.wrapper : ""} ${alignClass}`}>
       <div className={`${showAccent && alignKey === "left" ? "insight-rail" : ""} ${alignKey === "center" ? "max-w-2xl mx-auto" : "max-w-2xl"}`}>
         {data.heading && (
           <h2
             {...pa("heading")}
-            className={`${fontClass} ${headingClass} font-extrabold mb-4 ${bg.text || "text-on-surface"}`}
+            className={`${s.font} ${s.heading} font-extrabold mb-4 ${s.text}`}
           >
             {data.heading}
           </h2>
@@ -90,7 +88,7 @@ export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
         {data.subheading && (
           <p
             {...pa("subheading")}
-            className={`text-base leading-relaxed ${bg.textMuted || "text-on-surface-variant"}`}
+            className={`text-base leading-relaxed ${s.textMuted}`}
           >
             {data.subheading}
           </p>

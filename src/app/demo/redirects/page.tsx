@@ -160,7 +160,7 @@ export default function RedirectsDemoPage() {
                   "No developer involvement needed",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2 text-xs text-on-surface-variant">
-                    <span className="mt-0.5 text-green-500 font-bold shrink-0">+</span>
+                    <span className="mt-0.5 text-brand font-bold shrink-0">+</span>
                     {item}
                   </li>
                 ))}
@@ -175,7 +175,7 @@ export default function RedirectsDemoPage() {
                   "App layer must manage redirects explicitly",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2 text-xs text-on-surface-variant">
-                    <span className="mt-0.5 text-amber-500 font-bold shrink-0">!</span>
+                    <span className="mt-0.5 text-error font-bold shrink-0">!</span>
                     {item}
                   </li>
                 ))}

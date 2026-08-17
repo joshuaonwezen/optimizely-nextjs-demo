@@ -1,8 +1,9 @@
-import { contentType, getClient } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate, getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { CACHE_TTL } from "@/lib/optimizely/client";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const TimelineBlockType = contentType({
   key: "TimelineBlock",
@@ -17,6 +18,18 @@ export const TimelineBlockType = contentType({
       displayName: "Milestones",
       items: { type: "contentReference", allowedTypes: [TimelineMilestoneBlockType] },
     },
+  },
+});
+
+export const TimelineBlockDefaultTemplate = displayTemplate({
+  key: "TimelineBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "TimelineBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
   },
 });
 
@@ -72,6 +85,7 @@ async function loadMilestones(keys: string[]): Promise<MilestoneData[]> {
 export default async function TimelineBlock(props: TimelineBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
+  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   const keys = (data.milestones ?? [])
     .map(extractKey)
@@ -83,7 +97,7 @@ export default async function TimelineBlock(props: TimelineBlockProps) {
       {data.heading && (
         <h2
           {...pa("heading")}
-          className="font-display text-3xl md:text-4xl font-extrabold text-on-surface mb-3"
+          className={`${style.font} text-3xl md:text-4xl font-extrabold ${style.text} mb-3`}
         >
           {data.heading}
         </h2>
@@ -91,7 +105,7 @@ export default async function TimelineBlock(props: TimelineBlockProps) {
       {data.subheading && (
         <p
           {...pa("subheading")}
-          className="text-base text-on-surface-variant mb-12 max-w-2xl"
+          className={`text-base ${style.textMuted} mb-12 max-w-2xl`}
         >
           {data.subheading}
         </p>

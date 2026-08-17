@@ -450,7 +450,7 @@ export default function SearchDemoPage() {
             ].map(({ label, note, good }) => (
               <div
                 key={label}
-                className={`bg-surface-lowest rounded-2xl p-5 border ${good === true ? "border-green-200" : good === false ? "border-orange-200" : "border-ghost-border"}`}
+                className={`bg-surface-lowest rounded-2xl p-5 border ${good === true ? "border-brand/30" : good === false ? "border-error/30" : "border-ghost-border"}`}
               >
                 <p className="text-xs font-mono font-semibold text-on-surface mb-2">{label}</p>
                 <p className="text-xs text-on-surface-variant leading-relaxed">{note}</p>

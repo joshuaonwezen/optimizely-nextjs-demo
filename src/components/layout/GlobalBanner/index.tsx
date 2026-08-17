@@ -23,8 +23,8 @@ export const SiteBannerType = contentType({
 const VARIANT_CLASSES: Record<string, string> = {
   brand:   "bg-gradient-brand text-on-brand",
   info:    "bg-brand/10 text-brand",
-  warning: "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300",
-  success: "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300",
+  warning: "bg-error/10 text-error",
+  success: "bg-brand-fill/20 text-brand",
 };
 
 interface SiteBannerData {

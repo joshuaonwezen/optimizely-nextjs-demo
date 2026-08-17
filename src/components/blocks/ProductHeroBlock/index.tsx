@@ -1,5 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { ProductHeroCtaClient } from "./ProductHeroCtaClient";
 
 export const ProductHeroBlockType = contentType({
@@ -16,6 +17,18 @@ export const ProductHeroBlockType = contentType({
   },
 });
 
+export const ProductHeroBlockDefaultTemplate = displayTemplate({
+  key: "ProductHeroBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "ProductHeroBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 export const ProductHeroCompactTemplate = displayTemplate({
   key: "ProductHeroCompactTemplate",
   isDefault: false,
@@ -26,12 +39,15 @@ export const ProductHeroCompactTemplate = displayTemplate({
     alignment: {
       editor: "select",
       displayName: "Text alignment",
-      sortOrder: 0,
+      sortOrder: 10,
       choices: {
         left: { displayName: "Left", sortOrder: 0 },
         center: { displayName: "Center", sortOrder: 1 },
       },
     },
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
   },
 });
 
@@ -57,19 +73,20 @@ export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
 
   const isCompact = props.displayTemplateKey === "ProductHeroCompactTemplate";
   const isCentered = ds?.alignment === "center";
+  const style = resolveStyleClasses(ds, { background: "blueGrad" });
 
   return (
     <section
       data-component="ProductHeroBlock"
       data-track-view="ProductHeroBlock"
-      className={`w-screen ml-[calc(50%-50vw)] bg-gradient-brand ${isCompact ? "py-16 md:py-20" : "py-28 md:py-36"}`}
+      className={`w-screen ml-[calc(50%-50vw)] ${style.wrapper} ${isCompact ? "py-16 md:py-20" : "py-28 md:py-36"}`}
     >
       <div className={`max-w-7xl mx-auto px-8 ${isCentered ? "text-center" : ""}`}>
         <div className={isCentered ? "max-w-3xl mx-auto" : "max-w-3xl"}>
           {data.badge && (
             <span
               {...pa("badge")}
-              className="inline-block font-body text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-8 text-on-brand bg-badge-bg"
+              className={`inline-block font-body text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-8 ${style.text} bg-badge-bg`}
             >
               {data.badge}
             </span>
@@ -77,7 +94,7 @@ export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
           {data.title && (
             <h1
               {...pa("title")}
-              className="font-display text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold leading-tight mb-8 text-on-brand"
+              className={`${style.font} text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold leading-tight mb-8 ${style.text}`}
             >
               {data.title}
             </h1>
@@ -85,7 +102,7 @@ export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
           {data.description && (
             <p
               {...pa("description")}
-              className="text-lg md:text-xl mb-12 max-w-2xl leading-relaxed text-on-brand-muted"
+              className={`text-lg md:text-xl mb-12 max-w-2xl leading-relaxed ${style.textMuted}`}
             >
               {data.description}
             </p>

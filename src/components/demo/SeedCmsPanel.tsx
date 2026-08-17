@@ -181,10 +181,10 @@ export default function SeedCmsPanel() {
           {running ? "Seeding... (takes several minutes)" : "Seed CMS"}
         </button>
         {result === "success" && (
-          <span className="text-sm font-semibold text-green-600">Seed completed</span>
+          <span className="text-sm font-semibold text-brand">Seed completed</span>
         )}
         {result === "failure" && (
-          <span className="text-sm font-semibold text-red-600">Seed finished with errors</span>
+          <span className="text-sm font-semibold text-error">Seed finished with errors</span>
         )}
       </div>
 

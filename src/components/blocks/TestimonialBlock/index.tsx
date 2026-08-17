@@ -2,8 +2,7 @@ import Image from "next/image";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_SIZE, TEXT_ALIGN, FONT_STYLE,
-  BG_CLASSES, TEXT_SIZE_CLASSES, TEXT_ALIGN_CLASSES, FONT_CLASSES,
+  BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, FONT_CLASSES, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const TestimonialBlockType = contentType({
@@ -19,6 +18,18 @@ export const TestimonialBlockType = contentType({
   },
 });
 
+export const TestimonialBlockDefaultTemplate = displayTemplate({
+  key: "TestimonialBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "TestimonialBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 export const TestimonialCardTemplate = displayTemplate({
   key: "TestimonialCardTemplate",
   isDefault: false,
@@ -27,6 +38,7 @@ export const TestimonialCardTemplate = displayTemplate({
   tag: "Card",
   settings: {
     ...BACKGROUND,
+    ...TEXT_COLOR,
     ...TEXT_SIZE,
   },
 });
@@ -75,8 +87,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
   let quoteClass: string;
 
   if (isCard) {
-    const bgKey = (ds?.background as string) || "white";
-    const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
+    const bg = resolveStyleClasses(ds, { background: "white" });
     const textSizeClass = TEXT_SIZE_CLASSES[(ds?.textSize as string) ?? "md"];
     wrapperClass = `${bg.wrapper} rounded-2xl p-10`;
     textColor = bg.text;
@@ -85,12 +96,16 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
   } else if (isMinimal) {
     const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
     const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
-    const textSizeClass = (ds?.textSize as string) === "sm"
-      ? "text-xl md:text-2xl"
-      : "text-2xl md:text-3xl";
+    const MINIMAL_SIZES: Record<string, string> = {
+      sm: "text-xl md:text-2xl",
+      md: "text-2xl md:text-3xl",
+      lg: "text-3xl md:text-4xl",
+    };
+    const textSizeClass = MINIMAL_SIZES[(ds?.textSize as string) ?? "md"] ?? MINIMAL_SIZES.md;
     wrapperClass = `insight-rail py-12 max-w-3xl mx-auto ${alignClass}`;
-    textColor = "text-on-surface";
-    mutedColor = "text-on-surface-variant";
+    const minimalStyle = resolveStyleClasses(ds, { background: "transparent" });
+    textColor = minimalStyle.text;
+    mutedColor = minimalStyle.textMuted;
     quoteClass = `${fontClass} ${textSizeClass} italic leading-relaxed mb-8`;
   } else {
     wrapperClass = "py-20 max-w-3xl mx-auto";

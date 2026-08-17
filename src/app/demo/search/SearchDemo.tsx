@@ -80,7 +80,7 @@ export default function SearchDemo() {
               key={r.url}
               className={`flex items-center justify-between gap-4 pt-2 first:pt-0 text-sm${
                 r.pinned
-                  ? " -mx-3 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 ring-1 ring-emerald-300/40"
+                  ? " -mx-3 px-3 py-2 rounded-lg bg-brand/10 dark:bg-brand-fill/10 ring-1 ring-emerald-300/40"
                   : ""
               }`}
             >
@@ -95,7 +95,7 @@ export default function SearchDemo() {
                   }}
                 >{r.title}</a>
                 {r.pinned && (
-                  <span className="shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-medium uppercase tracking-wide px-2 py-0.5">
+                  <span className="shrink-0 rounded-full bg-brand/10 dark:bg-brand-fill/20 text-brand dark:text-brand text-[10px] font-medium uppercase tracking-wide px-2 py-0.5">
                     Pinned
                   </span>
                 )}

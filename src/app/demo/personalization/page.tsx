@@ -165,7 +165,7 @@ function MatchRow({
         <code className="text-xs font-mono text-on-surface-variant shrink-0">{value}</code>
         <span
           className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-            matches ? "bg-green-100 text-green-800" : "bg-surface-low text-on-surface-variant"
+            matches ? "bg-brand/10 text-brand" : "bg-surface-low text-on-surface-variant"
           }`}
         >
           {matches ? "matches" : "no match"}
@@ -443,9 +443,9 @@ export default async function PersonalizationDemoPage() {
                 them against your audience rules <strong>locally, in-process</strong> - no extra service, no network round-trip.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Zero network calls - evaluated in the same request</span></div>
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">One-file setup: add to visitor.ts, define the FX condition</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Only sees this request - no memory of past behavior</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Zero network calls - evaluated in the same request</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">One-file setup: add to visitor.ts, define the FX condition</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Only sees this request - no memory of past behavior</span></div>
               </div>
             </div>
 
@@ -463,9 +463,9 @@ export default async function PersonalizationDemoPage() {
                 request can&apos;t see - &ldquo;viewed pricing 3x this week&rdquo;, high-value customer, churn risk.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Remembers behavior across sessions and devices</span></div>
-                <div className="flex gap-2"><span className="text-green-600 font-bold shrink-0">+</span><span className="text-on-surface-variant">Rich segments from events, not just request facts</span></div>
-                <div className="flex gap-2"><span className="text-amber-600 font-bold shrink-0">-</span><span className="text-on-surface-variant">Network call + latency; needs event instrumentation and an ODP account</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Remembers behavior across sessions and devices</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Rich segments from events, not just request facts</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Network call + latency; needs event instrumentation and an ODP account</span></div>
               </div>
             </div>
           </div>

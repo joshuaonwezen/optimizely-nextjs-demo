@@ -1,8 +1,9 @@
-import { contentType, getClient } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate, getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { TeamMemberBlockType } from "@/components/blocks/TeamMemberBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { CACHE_TTL } from "@/lib/optimizely/client";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const TeamGridBlockType = contentType({
   key: "TeamGridBlock",
@@ -17,6 +18,18 @@ export const TeamGridBlockType = contentType({
       displayName: "Members",
       items: { type: "contentReference", allowedTypes: [TeamMemberBlockType] },
     },
+  },
+});
+
+export const TeamGridBlockDefaultTemplate = displayTemplate({
+  key: "TeamGridBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "TeamGridBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
   },
 });
 
@@ -70,6 +83,7 @@ async function loadMembers(keys: string[]): Promise<MemberData[]> {
 export default async function TeamGridBlock(props: TeamGridBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
+  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   const keys = (data.members ?? [])
     .map(extractKey)
@@ -80,12 +94,12 @@ export default async function TeamGridBlock(props: TeamGridBlockProps) {
     <section data-component="TeamGridBlock" className="py-20 max-w-7xl mx-auto px-8">
       <div className="text-center mb-12 max-w-2xl mx-auto">
         {data.heading && (
-          <h2 {...pa("heading")} className="font-display text-3xl md:text-4xl font-extrabold text-on-surface mb-3">
+          <h2 {...pa("heading")} className={`${style.font} text-3xl md:text-4xl font-extrabold ${style.text} mb-3`}>
             {data.heading}
           </h2>
         )}
         {data.subheading && (
-          <p {...pa("subheading")} className="text-base text-on-surface-variant">
+          <p {...pa("subheading")} className={`text-base ${style.textMuted}`}>
             {data.subheading}
           </p>
         )}

@@ -1,5 +1,6 @@
-import { contentType, damAssets } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const RenditionImageBlockType = contentType({
   key: "RenditionImageBlock",
@@ -27,6 +28,18 @@ export const RenditionImageBlockType = contentType({
   },
 });
 
+export const RenditionImageBlockDefaultTemplate = displayTemplate({
+  key: "RenditionImageBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "RenditionImageBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 interface RenditionImageBlockData {
   // DAM renditions live under image.item and are read by src()/getSrcset. The
   // url/_metadata fallbacks cover CMS globalassets that have no DAM item.
@@ -40,12 +53,14 @@ interface RenditionImageBlockData {
 
 type RenditionImageBlockProps = RenditionImageBlockData & {
   content?: RenditionImageBlockData;
+  displaySettings?: Record<string, string | boolean>;
 };
 
 export default function RenditionImageBlock(props: RenditionImageBlockProps) {
   const data = props.content ?? props;
   const { pa, src } = getPreviewUtils(data as any);
   const { getSrcset, getAlt } = damAssets(data as any);
+  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   // src() resolves the DAM asset URL + preview token; fallbacks cover globalassets.
   const imageUrl =
@@ -56,7 +71,10 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
   if (!imageUrl) return null;
 
   return (
-    <figure data-component="RenditionImageBlock" className="max-w-7xl mx-auto px-8 py-8">
+    <figure
+      data-component="RenditionImageBlock"
+      className={`max-w-7xl mx-auto px-8 py-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}
+    >
       <div {...pa("image")} className="overflow-hidden rounded-2xl">
         {/* eslint-disable-next-line @next/next/no-img-element -- DAM URLs carry a preview token; next/image would re-optimise and strip it */}
         <img

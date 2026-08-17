@@ -19,6 +19,9 @@ export interface HeroBlockClientProps {
   showOverlay: boolean;
   headingSize?: string;
   fontStyle?: string;
+  surfaceClass?: string;
+  textClass?: string;
+  textMutedClass?: string;
   edit: boolean;
   paHeadline?: PreviewAttrs;
   paSubheadline?: PreviewAttrs;
@@ -37,6 +40,9 @@ export function HeroBlockClient({
   showOverlay,
   headingSize = "xl",
   fontStyle = "modern",
+  surfaceClass = "bg-gradient-brand",
+  textClass = "text-on-brand",
+  textMutedClass = "text-on-brand-subtle",
   edit,
   paHeadline = {},
   paSubheadline = {},
@@ -70,7 +76,7 @@ export function HeroBlockClient({
     <section
       data-component="HeroBlock"
       data-track-view="HeroBlock"
-      className={`w-screen ml-[calc(50%-50vw)] bg-gradient-brand relative flex items-center overflow-hidden ${isTall ? "min-h-screen" : "min-h-[640px]"}`}
+      className={`w-screen ml-[calc(50%-50vw)] ${surfaceClass} relative flex items-center overflow-hidden ${isTall ? "min-h-screen" : "min-h-[640px]"}`}
     >
       {bgUrl && (
         <Image
@@ -89,7 +95,7 @@ export function HeroBlockClient({
           {displayTitle && (
             <h1
               {...paHeadline}
-              className={`${titleFontClass} ${titleSizeClass} font-extrabold leading-tight mb-8 text-on-brand`}
+              className={`${titleFontClass} ${titleSizeClass} font-extrabold leading-tight mb-8 ${textClass}`}
             >
               {displayTitle}
             </h1>
@@ -97,7 +103,7 @@ export function HeroBlockClient({
           {displaySubtitle && (
             <p
               {...paSubheadline}
-              className="text-xl md:text-2xl mb-12 max-w-2xl leading-relaxed text-on-brand-subtle"
+              className={`text-xl md:text-2xl mb-12 max-w-2xl leading-relaxed ${textMutedClass}`}
             >
               {displaySubtitle}
             </p>
@@ -119,7 +125,7 @@ export function HeroBlockClient({
                   href={secondaryUrl}
                   data-track-event="mb_hero_cta_click"
                   data-track-tags={JSON.stringify({ label: secondaryLabel, placement: "secondary" })}
-                  className="font-display inline-block px-8 py-4 rounded-lg font-semibold text-lg border-2 border-white/30 text-on-brand hover:bg-white/10 transition-colors"
+                  className={`font-display inline-block px-8 py-4 rounded-lg font-semibold text-lg border-2 border-current/25 ${textClass} hover:bg-current/10 transition-colors`}
                 >
                   {secondaryLabel}
                 </a>
@@ -142,9 +148,9 @@ export function HeroBlockClient({
                 { stat: "$0",   label: "monthly fees" },
                 { stat: "FDIC", label: "insured" },
               ].map(({ stat, label }) => (
-                <span key={stat} className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5">
-                  <span className="text-on-brand font-bold text-sm">{stat}</span>
-                  <span className="text-on-brand-subtle text-sm">{label}</span>
+                <span key={stat} className="inline-flex items-center gap-1.5 bg-on-brand/10 backdrop-blur-sm rounded-full px-4 py-1.5">
+                  <span className={`${textClass} font-bold text-sm`}>{stat}</span>
+                  <span className={`${textMutedClass} text-sm`}>{label}</span>
                 </span>
               ))}
             </div>

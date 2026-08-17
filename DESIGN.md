@@ -1,90 +1,125 @@
-```markdown
-# Design System Strategy: The Precision Architect
+# Design System: Optimizely Brand
 
 ## 1. Overview & Creative North Star
-This design system is built upon the Creative North Star of **"The Precision Architect."** In an industry saturated with generic SaaS templates, this system rejects the "boxed-in" look in favor of high-end editorial layouts that mirror the sophisticated data-driven logic of the brand.
+Bright and playful hues offset by sophisticated darks and neutrals - a palette that balances play and professionalism.
 
-We achieve a premium feel through **Intentional Asymmetry** and **Tonal Depth**. By moving away from rigid, bordered grids and embracing expansive white space—punctuated by high-contrast typography—we create a digital environment that feels both innovative and authoritative. This is not just a UI; it is a curated experience where data and aesthetics converge.
-
----
-
-## 2. Colors: Tonal Architecture
-The palette centers on deep, trustworthy blues and vibrant tech-forward accents. However, the application of these colors must follow a strict architectural logic.
-
-### The "No-Line" Rule
-Standard 1px borders are strictly prohibited for defining sections. In this design system, boundaries are created through **Background Shifts**. 
-- Use `surface` (#f5f7f9) for global backgrounds.
-- Use `surface-container-low` (#eef1f3) to define a primary content area.
-- Use `surface-container-lowest` (#ffffff) to highlight a specific focus group within that area.
-
-### Surface Hierarchy & Nesting
-Treat the UI as a physical stack of material.
-- **Base Layer:** `surface`
-- **Mid Layer:** `surface-container-low` or `surface-container`
-- **Top Layer (Cards/Modals):** `surface-container-lowest`
-This nesting creates natural hierarchy without the visual clutter of lines.
-
-### The "Glass & Gradient" Rule
-To inject "visual soul," use the **Signature Texture**:
-- **CTAs & Heroes:** Apply a linear gradient from `primary` (#004be3) to `primary-container` (#819bff) at a 135-degree angle.
-- **Glassmorphism:** For floating navigation or overlays, use `surface-container-lowest` at 80% opacity with a `backdrop-filter: blur(20px)`. This allows the vibrant `tertiary` (#7a23dc) accents to bleed through softly, creating a sense of sophisticated depth.
+The system leads with **neutral backdrops**. Neutral 1 (white) and Neutral 3 are the stage; the vibrant greens are what shine on it. Green is used sparingly and with intent, never as an all-over wash. Dark Fir grounds everything: it is the text color, the stroke color, and the anchor that keeps the greens from reading as merely loud.
 
 ---
 
-## 3. Typography: Editorial Authority
-We utilize a dual-typeface system to balance innovation with utility.
+## 2. Colors
 
-- **Display & Headlines:** **Plus Jakarta Sans.** This is our brand’s voice—modern, geometric, and bold. Use `display-lg` (3.5rem) for hero statements to create an editorial impact that feels "large scale."
-- **Body & UI Labels:** **Inter.** Chosen for its mathematical precision and exceptional readability at small sizes. Use `body-md` (0.875rem) for standard text to maintain a clean, airy feel.
+### Primary
+| Name | Hex | Role |
+|---|---|---|
+| LFGreen | `#abff44` | The signature fill. Buttons, hero panels, badges. Always with Dark Fir on top. |
+| Grass | `#7ddd3d` | Hover/pressed state for LFGreen fills. |
+| Good-to-go | `#3ab533` | Fill only - 2.4:1 on neutrals, so never for text. |
+| Neutral 1 | `#ffffff` | Cards, top-layer surfaces. |
+| Neutral 3 | `#e4f0da` | Primary content areas. |
 
-**Hierarchy Strategy:** Never settle for uniform text blocks. Pair a `headline-lg` in `on-surface` (#2c2f31) with a `label-md` in `primary` (#004be3) to create a clear, data-driven entry point for the user’s eye.
+### Secondary
+| Name | Hex | Role |
+|---|---|---|
+| Light Blue | `#91dbda` | Accent fills, chips. |
+| Dark Fir | `#08251a` | All body text, all strokes, dark-mode base. |
+
+### Tertiary
+Dark Blue `#007b79` · Light Fir `#197050` · Mid Fir `#0d3a29` · Light Pink `#ff99b6` · Dark Pink `#8f4764` · Neutral 2 `#eff6e9` · Neutral 4 `#d8e4cb` · Neutral 5 `#c3ceaf` · Neutral 6 `#a1ac8d`
+
+### The ink/fill split - the one thing to understand before touching color
+LFGreen is a **light** color. On a neutral background it lands at roughly 1.1:1, so it can never be text. But it is also the brand's signature. The token layer resolves this by splitting the job:
+
+| Token | Value (light) | Use for |
+|---|---|---|
+| `--color-brand` | Light Fir `#197050` | **Ink.** `text-brand`, `border-brand`, `bg-brand/10` tints, focus rings. 5.5:1 on Neutral 2. |
+| `--color-brand-fill` | LFGreen `#abff44` | **Surfaces.** `bg-brand-fill`, always paired with `text-on-brand`. 13.3:1. |
+| `--color-brand-fill-dim` | Grass `#7ddd3d` | Hover on brand fills. |
+| `--color-on-brand` | Dark Fir `#08251a` | Anything sitting on a brand fill. |
+
+The practical rule: **`bg-brand-fill` always ships with `text-on-brand`.** If you find yourself writing `text-white` on a green surface, you have the polarity backwards.
+
+Two more tokens flip their foreground per theme, because their backgrounds invert: `--color-on-tertiary` (white in light, Dark Fir in dark) and `--color-on-error` (same). Use them rather than assuming.
+
+### Surface hierarchy
+Treat the UI as a physical stack of material. Boundaries come from **background shifts**, not lines.
+- **Base:** `surface` (Neutral 2)
+- **Mid:** `surface-low` (Neutral 3) or `surface-container` (Neutral 4)
+- **Top (cards, modals):** `surface-lowest` (Neutral 1, white)
+
+In dark mode this same ramp runs Dark Fir → Mid Fir → Light Fir, with Neutral 3 as the text color.
+
+### Don'ts
+- **No gradients.** Anywhere. (`.bg-gradient-brand` is a legacy class name that now paints a solid LFGreen - the name survives only because it is baked into published CMS content.)
+- **No tertiary colors as a background.**
+- **No color other than Dark Fir as a stroke.** Borders are Dark Fir at low alpha; that is what `--outline-variant` and `--ghost-border-color` are.
+- **No new color combinations.** Muted text and strokes are *alpha of Dark Fir*, not invented hues - no palette entry lands in the muted-text contrast band, so alpha is the sanctioned escape hatch.
+- **No colored type over photography** other than primary-palette colors.
+- **Don't use 100% black.** `on-surface` is Dark Fir `#08251a`.
 
 ---
 
-## 4. Elevation & Depth: Tonal Layering
-Traditional drop shadows are often a crutch for poor layout. In this system, we prioritize **Tonal Layering**.
+## 3. Typography
 
-- **The Layering Principle:** Place a `surface-container-lowest` (#ffffff) element atop a `surface-container-high` (#dfe3e6) background. The subtle 4% difference in luminosity creates a clean, "soft lift."
-- **Ambient Shadows:** When an element must float (e.g., a primary dropdown), use a highly diffused shadow: `box-shadow: 0 20px 40px rgba(44, 47, 49, 0.06)`. The shadow color is derived from `on-surface`, ensuring it looks like natural ambient light.
-- **The Ghost Border:** If a container sits on a background of similar value, use a **Ghost Border**: `1px solid` using the `outline-variant` (#abadaf) token at **15% opacity**. It should be felt, not seen.
+| Role | Family | Weights |
+|---|---|---|
+| Headlines | VC Nudge SemiNormal | ExtraBold (800) for H1 & H2, SemiBold (600) for H2 |
+| Body copy | Die Grotesk | Bold (700) & Medium (500) for eyebrows and subheadings, Regular (400) for body |
+| Captions & buttons | Roboto Mono | Regular (400) |
+
+### Metrics
+| Element | Leading | Tracking |
+|---|---|---|
+| H1 | 100% | -3% |
+| H2 | 100% | -2% |
+| Eyebrows & subheadings | 110% | 0 |
+| Body | 120-130% | 0 |
+| Captions | 120-130% | +3% |
+| Buttons | - | 0 |
+
+Use the `.type-h1`, `.type-h2`, `.type-eyebrow`, `.type-body`, `.type-caption` utilities in `globals.css` rather than hand-rolling tracking per block.
+
+### Fallback stack
+Where the licensed fonts are unavailable, the brand's own web-experience spec applies: **Tahoma** for headlines and buttons, **Arial** for body and subheadings. These are wired as `next/font` fallbacks, so degradation stays on-brand.
+
+**Wiring gotcha:** `--font-display` / `--font-body` / `--font-mono` in the `@theme inline` block must resolve through `var(--font-*-local)` - the variables `next/font` sets on `<body>`. Hardcoding a family name there compiles the utility to a literal string, and the loaded font is silently ignored with no error.
 
 ---
 
-## 5. Components: Precision Primitives
+## 4. Elevation & Depth
+Prioritize **tonal layering** over drop shadows.
+- Place a `surface-lowest` (white) element atop a `surface-container` background; the luminosity step alone creates the lift.
+- When something must genuinely float, use the diffused `--shadow-ambient` (`0 20px 40px rgba(8, 37, 26, 0.08)`). The shadow is Dark Fir at low alpha, so it reads as natural ambient light rather than gray haze.
+- **Ghost border:** where a container sits on a background of similar value, `1px solid var(--ghost-border-color)` - Dark Fir at 10%. Felt, not seen.
+
+---
+
+## 5. Components
 
 ### Buttons
-- **Primary:** Gradient fill (`primary` to `primary-container`), `on-primary` (#f2f1ff) text, and `DEFAULT` (0.5rem) rounded corners.
-- **Secondary:** `surface-container-highest` (#d9dde0) background with `on-surface` text. No border.
-- **Interaction:** On hover, use `primary_dim` (#0041c8) to create a subtle "press" effect.
+- **Primary:** LFGreen fill (`bg-brand-fill`), Dark Fir text (`text-on-brand`), `DEFAULT` (0.5rem) radius. Hover to Grass (`hover:bg-brand-fill-dim`).
+- **Secondary:** `surface-container-highest` background with `on-surface` text. No border.
+- **Tertiary/ghost:** Dark Fir stroke at low alpha, `text-brand` label.
 
 ### Cards & Lists
-- **Rule:** Absolute prohibition of divider lines.
-- **Separation:** Use `spacing-8` (2rem) of vertical white space or a background shift to `surface-container-low`.
-- **Corner Radius:** Cards must use `lg` (1rem) roundedness to soften the tech-heavy data.
+- No divider lines. Separate with `spacing-8` (2rem) of vertical space or a background shift to `surface-low`.
+- Corner radius `lg` (1rem).
 
 ### Input Fields
-- **Container:** `surface-container-highest` (#d9dde0) at 40% opacity.
-- **Active State:** A `2px` bottom-only highlight using the `primary` (#004be3) token. This maintains a clean, architectural look.
-- **Error:** Use the `error` (#b41340) token for text, but use `error_container` (#f74b6d) at 10% opacity for the field background.
+- **Container:** `surface-container-highest` at 40% opacity.
+- **Active:** 2px bottom-only highlight using `--color-brand` (Light Fir).
+- **Error:** `text-error` for the message, `bg-error/10` for the field background. Error is Dark Pink in light mode and Light Pink in dark - Dark Pink only clears 2.5:1 on a Dark Fir background, which is why the token flips.
 
 ### Data Chips
-- **Action Chips:** Use `secondary_container` (#d3e4fb) with `on_secondary_container` (#435365) text. Use `full` (9999px) roundedness to contrast against the `DEFAULT` corners of the rest of the UI.
+- `secondary-container` (Light Blue) with `on-secondary-container` text, `full` (9999px) radius to contrast the `DEFAULT` corners elsewhere.
 
 ---
 
-## 6. Do’s and Don'ts
+## 6. Do's
+- **Aggressive whitespace.** `spacing-20` / `spacing-24` between major sections.
+- **Let neutrals dominate.** Green is punctuation, not paragraph.
+- **Layer with intent.** Every lifted element needs a reason to be closer to the user.
+- **Reach for a token, never a hex.** The entire palette lives in the `:root` block of `globals.css`; a raw hex or a `bg-[#...]` class in a component is a bug.
 
-### Do:
-- **Use "Aggressive" Whitespace:** Use `spacing-20` (5rem) or `spacing-24` (6rem) between major sections to let the data breathe.
-- **Embrace Asymmetry:** Offset images or data visualizations from the text center-line to create a high-end editorial feel.
-- **Layer with Intent:** Ensure every "lifted" element has a logical reason to be closer to the user.
-
-### Don’t:
-- **Don't use 100% Black:** Never use `#000000` for text. Use `on-surface` (#2c2f31) to maintain a premium, soft-contrast feel.
-- **Don't use Dividers:** Avoid horizontal rules (`<hr>`). If you feel the need for one, increase the `spacing` scale instead.
-- **Don't Over-Round:** Stick to `DEFAULT` (0.5rem) for most components; reserve `xl` and `full` only for specialized chips or decorative elements to avoid a "bubbly" or "childish" appearance.
-
----
-
-## 7. Signature Brand Component: The "Insight Rail"
-To emphasize the "data-driven" nature of the brand, use a vertical accent line—2px wide—using a gradient of `primary` to `tertiary`. Place this to the left of "Headline-LG" groups to anchor the content and provide a signature visual thread throughout the journey.```
+## 7. Signature Component: The "Insight Rail"
+A 2px vertical accent line in solid Light Fir (`--primary`), placed to the left of headline groups to anchor content and thread a signature through the journey. Formerly a gradient; flattened to a solid, per the no-gradients rule.

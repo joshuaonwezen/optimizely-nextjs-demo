@@ -1,8 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, HEADING_SIZE, TEXT_ALIGN,
-  BG_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, HEADING_CLASSES, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const OutcomeItemBlockType = contentType({
@@ -17,6 +16,18 @@ export const OutcomeItemBlockType = contentType({
   },
 });
 
+export const OutcomeItemBlockDefaultTemplate = displayTemplate({
+  key: "OutcomeItemBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "OutcomeItemBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 export const OutcomeItemInlineTemplate = displayTemplate({
   key: "OutcomeItemInlineTemplate",
   isDefault: false,
@@ -26,6 +37,7 @@ export const OutcomeItemInlineTemplate = displayTemplate({
   settings: {
     ...HEADING_SIZE,
     ...BACKGROUND,
+    ...TEXT_COLOR,
     ...TEXT_ALIGN,
   },
 });
@@ -38,6 +50,7 @@ export const OutcomeItemBrandTemplate = displayTemplate({
   tag: "Brand",
   settings: {
     ...BACKGROUND,
+    ...TEXT_COLOR,
     ...HEADING_SIZE,
     ...TEXT_ALIGN,
   },
@@ -70,8 +83,7 @@ export default function OutcomeItemBlock(props: OutcomeItemBlockProps) {
     const statClass = HEADING_CLASSES[headingSizeKey];
     const suffixSizeKey = headingSizeKey === "xl" ? "lg" : headingSizeKey === "lg" ? "md" : "sm";
     const suffixClass = HEADING_CLASSES[suffixSizeKey] ?? "text-3xl md:text-4xl";
-    const bgKey = (ds?.background as string) || "transparent";
-    const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.transparent;
+    const bg = resolveStyleClasses(ds, { background: "transparent" });
     const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
     return (
       <div data-component="OutcomeItemBlock" className={`flex items-baseline gap-3 ${alignClass} ${bg.wrapper ? `${bg.wrapper} rounded-xl p-4` : ""}`}>
@@ -96,8 +108,7 @@ export default function OutcomeItemBlock(props: OutcomeItemBlockProps) {
     );
   }
 
-  const bgKey = (ds?.background as string) || (isBrand ? "blueGrad" : "transparent");
-  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.transparent;
+  const bg = resolveStyleClasses(ds, { background: isBrand ? "blueGrad" : "transparent" });
 
   const headingSizeKey = (ds?.headingSize as string) ?? "xl";
   const statClass = HEADING_CLASSES[headingSizeKey];

@@ -455,8 +455,8 @@ export default function GraphQueriesDemoPage() {
             data inline or just returns metadata.
           </p>
           <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-surface-lowest border border-green-200 rounded-2xl p-5">
-              <p className="text-xs font-semibold text-green-700 mb-3">
+            <div className="bg-surface-lowest border border-brand/30 rounded-2xl p-5">
+              <p className="text-xs font-semibold text-brand mb-3">
                 type: &quot;array&quot; - content area
               </p>
               <p className="text-sm text-on-surface-variant mb-3 leading-relaxed">
@@ -465,8 +465,8 @@ export default function GraphQueriesDemoPage() {
               </p>
               <CodeBlock code={CONTENT_AREA_SNIPPET} />
             </div>
-            <div className="bg-surface-lowest border border-orange-200 rounded-2xl p-5">
-              <p className="text-xs font-semibold text-orange-700 mb-3">
+            <div className="bg-surface-lowest border border-error/30 rounded-2xl p-5">
+              <p className="text-xs font-semibold text-error mb-3">
                 type: &quot;content&quot; - single reference
               </p>
               <p className="text-sm text-on-surface-variant mb-3 leading-relaxed">
@@ -523,9 +523,9 @@ export default function GraphQueriesDemoPage() {
             ].map(({ label, example, result, good }) => (
               <div
                 key={label}
-                className={`bg-surface-lowest rounded-2xl p-5 border ${good ? "border-green-200" : "border-orange-200"}`}
+                className={`bg-surface-lowest rounded-2xl p-5 border ${good ? "border-brand/30" : "border-error/30"}`}
               >
-                <p className={`text-xs font-semibold mb-1 ${good ? "text-green-700" : "text-orange-700"}`}>
+                <p className={`text-xs font-semibold mb-1 ${good ? "text-brand" : "text-error"}`}>
                   {good ? "✓" : "✗"} {label}
                 </p>
                 <p className="text-xs text-on-surface-variant mb-2 font-mono">{example}</p>

@@ -215,7 +215,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
                 onClick={() => toggleMobile("__demo__")}
                 className="w-full flex items-center justify-between px-3 py-3 rounded-lg"
               >
-                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-brand text-on-brand">
+                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-brand-fill text-on-brand">
                   Developer
                 </span>
                 <Chevron open={mobileExpanded === "__demo__"} />
@@ -273,7 +273,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
                       href={buildLocaleUrl(pathname, locale.code)}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                         locale.code === currentLocale
-                          ? "bg-brand text-on-brand"
+                          ? "bg-brand-fill text-on-brand"
                           : "text-on-surface-variant hover:bg-surface-low hover:text-brand"
                       }`}
                     >
@@ -290,7 +290,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
           <div className="px-4 py-4 flex flex-col gap-2">
             {isLoggedIn ? (
               <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-surface-low">
-                <span className="w-8 h-8 rounded-full bg-brand text-on-brand text-xs font-bold flex items-center justify-center flex-shrink-0">MB</span>
+                <span className="w-8 h-8 rounded-full bg-brand-fill text-on-brand text-xs font-bold flex items-center justify-center flex-shrink-0">MB</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-on-surface">My Account</p>
                   <p className="text-xs text-on-surface-variant">Logged in</p>
@@ -421,7 +421,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
         >
           <Link
             href="/demo"
-            className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold font-body transition-colors bg-brand text-on-brand hover:bg-brand-dim"
+            className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold font-body transition-colors bg-brand-fill text-on-brand hover:bg-brand-fill-dim"
           >
             Developer
             <Chevron open={activeKey === "__demo__"} />
@@ -557,7 +557,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
             onMouseLeave={() => setActiveKey(null)}
           >
             <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-full text-sm font-semibold transition-colors bg-surface-low text-on-surface hover:bg-surface">
-              <span className="w-6 h-6 rounded-full bg-brand text-on-brand text-[10px] font-bold flex items-center justify-center flex-shrink-0">MB</span>
+              <span className="w-6 h-6 rounded-full bg-brand-fill text-on-brand text-[10px] font-bold flex items-center justify-center flex-shrink-0">MB</span>
               <span>My Account</span>
               <Chevron open={activeKey === "__account__"} />
             </button>

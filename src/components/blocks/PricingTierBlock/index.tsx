@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import {
-  BACKGROUND, FONT_STYLE,
-  BG_CLASSES, FONT_CLASSES,
-} from "../_shared/displayTemplateSettings";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const PricingTierBlockType = contentType({
   key: "PricingTierBlock",
@@ -27,6 +24,18 @@ export const PricingTierBlockType = contentType({
   },
 });
 
+export const PricingTierBlockDefaultTemplate = displayTemplate({
+  key: "PricingTierBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "PricingTierBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 export const PricingTierCompactTemplate = displayTemplate({
   key: "PricingTierCompactTemplate",
   isDefault: false,
@@ -35,6 +44,7 @@ export const PricingTierCompactTemplate = displayTemplate({
   tag: "Compact",
   settings: {
     ...BACKGROUND,
+    ...TEXT_COLOR,
     ...FONT_STYLE,
   },
 });
@@ -70,14 +80,14 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
   const featureSpacing = isCompact ? "space-y-1.5 mb-5" : "space-y-3 mb-8";
 
   const bgKey = (ds?.background as string) || "";
-  const bg = bgKey ? BG_CLASSES[bgKey] : null;
+  const bg = bgKey ? resolveStyleClasses(ds, { background: bgKey }) : null;
 
   let wrapperStyle: string;
   if (bg) {
     wrapperStyle = `rounded-2xl ${padding} border h-full flex flex-col transition-shadow ${bg.wrapper}`;
   } else {
     wrapperStyle = data.highlighted
-      ? `rounded-2xl ${padding} border h-full flex flex-col transition-shadow bg-brand text-on-brand border-brand shadow-lift`
+      ? `rounded-2xl ${padding} border h-full flex flex-col transition-shadow bg-brand-fill text-on-brand border-brand shadow-lift`
       : `rounded-2xl ${padding} border h-full flex flex-col transition-shadow bg-surface-lowest border-ghost-border hover-ambient`;
   }
 
@@ -85,7 +95,7 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
   const mutedColor = bg ? bg.textMuted : (data.highlighted ? "opacity-80" : "text-on-surface-variant");
   const ctaClass = bg?.wrapper?.includes("gradient") || (data.highlighted && !bg)
     ? "bg-on-brand text-brand hover:opacity-90"
-    : "bg-brand text-on-brand hover:opacity-90";
+    : "bg-brand-fill text-on-brand hover:opacity-90";
 
   return (
     <div data-component="PricingTierBlock" className={wrapperStyle}>

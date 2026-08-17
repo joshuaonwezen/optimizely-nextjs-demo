@@ -369,7 +369,7 @@ export default function CachingDemoPage() {
             the same until the background regeneration completes.
           </p>
           <div className="inline-flex items-center gap-4 bg-surface-lowest border border-ghost-border rounded-2xl px-6 py-4">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+            <div className="w-2 h-2 rounded-full bg-brand-fill animate-pulse shrink-0" />
             <div>
               <div className="text-xs text-on-surface-variant font-mono uppercase tracking-wider mb-0.5">Last rendered by server</div>
               <div className="font-mono text-sm text-on-surface font-semibold">{renderedAt}</div>
@@ -392,31 +392,31 @@ export default function CachingDemoPage() {
           <div className="space-y-2 mb-8">
             {[
               {
-                n: "1", color: "bg-red-500", label: "Editor hits Publish in the CMS",
+                n: "1", color: "bg-error", label: "Editor hits Publish in the CMS",
                 detail: "Content is saved and the CMS begins syncing it to Optimizely Graph.",
               },
               {
-                n: "2", color: "bg-orange-500", label: "Graph indexes the updated content",
+                n: "2", color: "bg-error", label: "Graph indexes the updated content",
                 detail: "Optimizely Graph processes the change and makes the new content queryable via its GraphQL API.",
               },
               {
-                n: "3", color: "bg-orange-500", label: "Graph sends a POST webhook to /api/webhooks",
+                n: "3", color: "bg-error", label: "Graph sends a POST webhook to /api/webhooks",
                 detail: "Just a signal - a small JSON payload saying \"content changed\" (type: bulk.completed or doc.updated). No content is sent in the webhook itself.",
               },
               {
-                n: "4", color: "bg-green-600", label: "Next.js marks cached items as stale",
+                n: "4", color: "bg-brand-fill", label: "Next.js marks cached items as stale",
                 detail: "The webhook handler calls revalidatePath(\"/\", \"layout\") and revalidateTag() for navigation, banner, and quotes. Nothing is deleted or re-rendered yet - just flagged as stale.",
               },
               {
-                n: "5", color: "bg-purple-600", label: "Next visitor arrives - gets the old cached version instantly",
+                n: "5", color: "bg-tertiary", label: "Next visitor arrives - gets the old cached version instantly",
                 detail: "ISR always serves the existing cached version first, no matter what. The visitor doesn't wait for a re-render. This is what makes ISR fast.",
               },
               {
-                n: "6", color: "bg-purple-600", label: "Next.js re-renders in the background",
+                n: "6", color: "bg-tertiary", label: "Next.js re-renders in the background",
                 detail: "After serving the stale version, Next.js fetches fresh data from Graph and rebuilds the affected pages and layout components behind the scenes.",
               },
               {
-                n: "7", color: "bg-blue-600", label: "Every request after that gets the updated version",
+                n: "7", color: "bg-tertiary", label: "Every request after that gets the updated version",
                 detail: "The freshly rendered output is cached. Done - no redeploy needed.",
               },
             ].map(({ n, color, label, detail }) => (
@@ -486,8 +486,8 @@ export default function CachingDemoPage() {
                     <td className="px-4 py-3">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-mono font-medium ${
                         row.ttl === "no-store"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-green-100 text-green-800"
+                          ? "bg-error/10 text-error"
+                          : "bg-brand/10 text-brand"
                       }`}>
                         {row.ttl}
                       </span>
@@ -546,10 +546,10 @@ export default function CachingDemoPage() {
                       <td className="px-4 py-3 text-xs">
                         <span className={`inline-block px-2 py-0.5 rounded-full font-mono font-medium ${
                           row.isrLevel === "fetch"
-                            ? "bg-green-100 text-green-800"
+                            ? "bg-brand/10 text-brand"
                             : row.isrLevel === "page"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-amber-100 text-amber-800"
+                            ? "bg-tertiary/10 text-tertiary"
+                            : "bg-error/10 text-error"
                         }`}>
                           {row.isrLevel === "fetch" ? "Fetch-level" : row.isrLevel === "page" ? "Page-level" : "No"}
                         </span>

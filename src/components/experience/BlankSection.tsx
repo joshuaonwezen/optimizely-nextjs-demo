@@ -27,9 +27,18 @@ const COL_BG: Record<string, string> = {
 };
 
 const PADDING: Record<string, string> = {
+  none:     "",
   compact:  "p-4",
   default:  "p-8",
   spacious: "p-16",
+};
+
+const TEXT_COLOR: Record<string, string> = {
+  dark:  "text-on-surface",
+  muted: "text-on-surface-variant",
+  brand: "text-brand",
+  teal:  "text-tertiary",
+  light: "text-surface-lowest",
 };
 
 const SECTION_BG: Record<string, string> = {
@@ -103,8 +112,9 @@ function Column({ children, node, displaySettings }: StructureContainerProps) {
   const bg      = COL_BG[ds?.background as string] ?? "";
   const padding = PADDING[ds?.padding as string] ?? "";
   const rounded = ds?.rounded === true ? "rounded-2xl" : "";
+  const text    = TEXT_COLOR[ds?.textColor as string] ?? "";
 
-  const className = [bg, padding, rounded].filter(Boolean).join(" ");
+  const className = [bg, padding, rounded, text].filter(Boolean).join(" ");
 
   return (
     <div className={className || undefined} {...pa(node)}>
@@ -128,8 +138,9 @@ export default function BlankSection({
   const py      = SECTION_PY[ds?.paddingY as string] ?? "";
   const divider = SECTION_DIVIDER[ds?.divider as string] ?? "";
   const radius  = SECTION_RADIUS[ds?.cornerRadius as string] ?? "";
+  const text    = TEXT_COLOR[ds?.textColor as string] ?? "";
 
-  const className = [bg, py, divider, radius].filter(Boolean).join(" ");
+  const className = [bg, py, divider, radius, text].filter(Boolean).join(" ");
 
   return (
     <section data-component="BlankSection" className={className || undefined} {...pa(content)}>

@@ -630,7 +630,7 @@ export default function ContentModellingPage() {
                   </div>
                   <p className="text-on-surface-variant/50 text-sm leading-none">↓</p>
                   <div className="w-full rounded-lg border border-ghost-border bg-surface-low p-3 text-xs text-on-surface text-center min-h-[3.75rem] flex items-center justify-center gap-1">
-                    <span className="text-green-500">✓</span> Render each block&apos;s component
+                    <span className="text-brand">✓</span> Render each block&apos;s component
                   </div>
                   <p className="text-on-surface-variant/50 text-sm leading-none">↓</p>
                   <div className="w-full rounded-lg border border-ghost-border bg-surface-lowest p-2 text-xs text-on-surface-variant text-center">
@@ -650,7 +650,7 @@ export default function ContentModellingPage() {
                   </div>
                   <p className="text-on-surface-variant/50 text-sm leading-none">↓</p>
                   <div className="w-full rounded-lg border border-ghost-border bg-surface-low p-3 text-xs text-on-surface text-center min-h-[3.75rem] flex items-center justify-center gap-1">
-                    <span className="text-green-500">✓</span> Render the component from fields
+                    <span className="text-brand">✓</span> Render the component from fields
                   </div>
                   <p className="text-on-surface-variant/50 text-sm leading-none">↓</p>
                   <div className="w-full rounded-lg border border-ghost-border bg-surface-lowest p-2 text-xs text-on-surface-variant text-center">
@@ -1175,8 +1175,8 @@ export default function ContentModellingPage() {
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-surface-lowest border border-green-200 rounded-2xl p-6">
-              <p className="text-xs font-semibold text-green-700 mb-3">Referenced - single source of truth</p>
+            <div className="bg-surface-lowest border border-brand/30 rounded-2xl p-6">
+              <p className="text-xs font-semibold text-brand mb-3">Referenced - single source of truth</p>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
                 A promo block is referenced from 12 landing pages. The marketing team updates the
                 offer text once in the CMS. All 12 pages show the new text after the next publish and
@@ -1184,8 +1184,8 @@ export default function ContentModellingPage() {
               </p>
               <p className="text-xs text-on-surface-variant italic">Edit count: 1. Pages updated: 12.</p>
             </div>
-            <div className="bg-surface-lowest border border-orange-200 rounded-2xl p-6">
-              <p className="text-xs font-semibold text-orange-700 mb-3">Embedded - copied on save</p>
+            <div className="bg-surface-lowest border border-error/30 rounded-2xl p-6">
+              <p className="text-xs font-semibold text-error mb-3">Embedded - copied on save</p>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
                 The same promo is embedded as a <Code>type: &quot;component&quot;</Code> on each page.
                 To update the offer text, an editor must open and re-publish all 12 pages individually.
@@ -1217,8 +1217,8 @@ export default function ContentModellingPage() {
 
           <p className="text-sm font-semibold text-on-surface mb-4">When to reference vs embed</p>
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-surface-lowest border border-green-200 rounded-2xl p-6">
-              <p className="text-xs font-semibold text-green-700 mb-4">
+            <div className="bg-surface-lowest border border-brand/30 rounded-2xl p-6">
+              <p className="text-xs font-semibold text-brand mb-4">
                 Content Area (<Code>type: &quot;array&quot;</Code>) when:
               </p>
               <ul className="space-y-2 text-sm text-on-surface-variant">
@@ -1228,12 +1228,12 @@ export default function ContentModellingPage() {
                   "Each item has its own fields editors fill in",
                   "Examples: FAQ list, logo grid, feature items, team members",
                 ].map((item) => (
-                  <li key={item} className="flex gap-2"><span className="text-green-600 shrink-0">-</span>{item}</li>
+                  <li key={item} className="flex gap-2"><span className="text-brand shrink-0">-</span>{item}</li>
                 ))}
               </ul>
             </div>
-            <div className="bg-surface-lowest border border-green-200 rounded-2xl p-6">
-              <p className="text-xs font-semibold text-green-700 mb-4">
+            <div className="bg-surface-lowest border border-brand/30 rounded-2xl p-6">
+              <p className="text-xs font-semibold text-brand mb-4">
                 Reference (<Code>type: &quot;content&quot;</Code> / <Code>type: &quot;contentReference&quot;</Code>) when:
               </p>
               <ul className="space-y-2 text-sm text-on-surface-variant">
@@ -1243,7 +1243,7 @@ export default function ContentModellingPage() {
                   "The item has its own editorial lifecycle (draft, review, publish)",
                   "Examples: shared promo, legal disclaimer, author bio, featured FAQ",
                 ].map((item) => (
-                  <li key={item} className="flex gap-2"><span className="text-green-600 shrink-0">-</span>{item}</li>
+                  <li key={item} className="flex gap-2"><span className="text-brand shrink-0">-</span>{item}</li>
                 ))}
               </ul>
             </div>

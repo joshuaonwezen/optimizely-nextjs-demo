@@ -1,7 +1,8 @@
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { FaqItemBlockType } from "@/components/blocks/FaqItemBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const FaqContainerBlockType = contentType({
   key: "FaqContainerBlock",
@@ -12,6 +13,18 @@ export const FaqContainerBlockType = contentType({
     heading:    { type: "string",    displayName: "Heading",    indexingType: "searchable", isLocalized: true },
     subheading: { type: "string",    displayName: "Subheading", indexingType: "searchable", isLocalized: true },
     faqItems:   { type: "array", items: { type: "content", allowedTypes: [FaqItemBlockType] }, displayName: "FAQ Items" },
+  },
+});
+
+export const FaqContainerBlockDefaultTemplate = displayTemplate({
+  key: "FaqContainerBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "FaqContainerBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
   },
 });
 
@@ -36,13 +49,14 @@ type FaqContainerBlockProps = FaqContainerData & {
 export default function FaqContainerBlock(props: FaqContainerBlockProps) {
   const data: FaqContainerData = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
+  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   return (
     <div data-component="FaqContainerBlock" className="py-16 max-w-3xl mx-auto px-8">
       {data.heading && (
         <h2
           {...pa("heading")}
-          className="font-display text-3xl md:text-4xl font-extrabold mb-3 text-on-surface"
+          className={`${style.font} text-3xl md:text-4xl font-extrabold mb-3 ${style.text}`}
         >
           {data.heading}
         </h2>
@@ -50,7 +64,7 @@ export default function FaqContainerBlock(props: FaqContainerBlockProps) {
       {data.subheading && (
         <p
           {...pa("subheading")}
-          className="text-base text-on-surface-variant mb-8"
+          className={`text-base ${style.textMuted} mb-8`}
         >
           {data.subheading}
         </p>

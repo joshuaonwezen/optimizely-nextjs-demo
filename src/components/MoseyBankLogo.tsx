@@ -7,14 +7,14 @@ export default function MoseyBankLogo({ primary = "Mosey", secondary = "Bank" }:
   return (
     <span data-component="MoseyBankLogo" className="flex items-center gap-2.5" aria-label={`${primary} ${secondary}`}>
       <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" fill="none">
-        <rect width="30" height="30" rx="7" fill="#004be3" />
+        <rect width="30" height="30" rx="7" fill="#08251a" />
         <text
           x="15"
           y="22"
-          fill="#f2f1ff"
+          fill="#abff44"
           fontSize="18"
           fontWeight="800"
-          fontFamily="'Plus Jakarta Sans', sans-serif"
+          fontFamily="'VC Nudge', Tahoma, sans-serif"
           textAnchor="middle"
         >
           M

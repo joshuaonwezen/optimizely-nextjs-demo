@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import localFont from "next/font/local";
+import { Roboto_Mono } from "next/font/google";
 import NavigationHeader from "@/components/layout/NavigationHeader";
 import GlobalBanner from "@/components/layout/GlobalBanner";
 import Footer from "@/components/layout/Footer";
@@ -12,15 +13,37 @@ import RatesBar from "@/components/layout/RatesBar";
 import TrustSection from "@/components/layout/TrustSection";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+// Each family is ONE localFont() call with a src array, so font-weight resolves
+// to the real cut. Splitting these into a call per weight makes the browser
+// synthesise bold/italic and the headlines come out smeared.
+// Fallbacks are Optimizely's own documented web-experience stack.
+const vcNudge = localFont({
+  variable: "--font-display-local",
   display: "swap",
+  fallback: ["Tahoma", "sans-serif"],
+  src: [
+    { path: "../fonts/NudgeSemiNormal-SemiNormalRegular.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/NudgeSemiNormal-SemiNormalSemiBold.woff2", weight: "600", style: "normal" },
+    { path: "../fonts/NudgeSemiNormal-SemiNormalExtraBold.woff2", weight: "800", style: "normal" },
+  ],
 });
 
-const inter = Inter({
-  variable: "--font-body",
+const dieGrotesk = localFont({
+  variable: "--font-body-local",
+  display: "swap",
+  fallback: ["Arial", "sans-serif"],
+  src: [
+    { path: "../fonts/DieGrotesk-B-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/DieGrotesk-B-Italic.woff2", weight: "400", style: "italic" },
+    { path: "../fonts/DieGrotesk-B-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/DieGrotesk-B-MediumItalic.woff2", weight: "500", style: "italic" },
+    { path: "../fonts/DieGrotesk-B-Bold.woff2", weight: "700", style: "normal" },
+    { path: "../fonts/DieGrotesk-B-BoldItalic.woff2", weight: "700", style: "italic" },
+  ],
+});
+
+const robotoMono = Roboto_Mono({
+  variable: "--font-mono-local",
   subsets: ["latin"],
   display: "swap",
 });
@@ -75,7 +98,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: odpInitScript }} />
       </head>
       <body
-        className={`${plusJakarta.variable} ${inter.variable} min-h-screen bg-surface text-on-surface font-body antialiased overflow-x-clip`}
+        className={`${vcNudge.variable} ${dieGrotesk.variable} ${robotoMono.variable} min-h-screen bg-surface text-on-surface font-body antialiased overflow-x-clip`}
       >
         <noscript>
           <iframe

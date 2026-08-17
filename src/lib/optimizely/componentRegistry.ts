@@ -11,15 +11,23 @@ import type { ComponentType } from "react";
 
 import HeroBlock, { HeroBlockType, HeroBlockDefaultTemplate } from "@/components/blocks/HeroBlock";
 import CallToActionBlock, { CallToActionType, CallToActionOutlineTemplate, CallToActionSurfaceTemplate, CallToActionGhostTemplate } from "@/components/blocks/CallToActionBlock";
+import { CallToActionDefaultTemplate } from "@/components/blocks/CallToActionBlock";
 import TextBlock, { TextBlockType, TextBlockNarrowTemplate } from "@/components/blocks/RichTextBlock";
+import { TextBlockDefaultTemplate } from "@/components/blocks/RichTextBlock";
 import ProductCardBlock, { ProductCardBlockType, ProductCardDefaultTemplate, ProductCardFeaturedTemplate } from "@/components/blocks/ProductCardBlock";
 import ProductHeroBlock, { ProductHeroBlockType, ProductHeroCompactTemplate } from "@/components/blocks/ProductHeroBlock";
+import { ProductHeroBlockDefaultTemplate } from "@/components/blocks/ProductHeroBlock";
 import FeatureItemBlock, { FeatureItemBlockType, FeatureItemOutlinedTemplate, FeatureItemFlatTemplate, FeatureItemBrandTemplate } from "@/components/blocks/FeatureItemBlock";
+import { FeatureItemBlockDefaultTemplate } from "@/components/blocks/FeatureItemBlock";
 import SectionHeadingBlock, { SectionHeadingBlockType, SectionHeadingDefaultTemplate, SectionHeadingCenteredTemplate } from "@/components/blocks/SectionHeadingBlock";
 import TestimonialBlock, { TestimonialBlockType, TestimonialCardTemplate, TestimonialMinimalTemplate } from "@/components/blocks/TestimonialBlock";
+import { TestimonialBlockDefaultTemplate } from "@/components/blocks/TestimonialBlock";
 import StatsCounterBlock, { StatsCounterBlockType, StatsCounterAccentTemplate, StatsCounterHighlightTemplate } from "@/components/blocks/StatsCounterBlock";
+import { StatsCounterBlockDefaultTemplate } from "@/components/blocks/StatsCounterBlock";
 import ImageBlock, { ImageBlockType, ImageBlockRoundedTemplate } from "@/components/blocks/ImageBlock";
+import { ImageBlockDefaultTemplate } from "@/components/blocks/ImageBlock";
 import RenditionImageBlock, { RenditionImageBlockType } from "@/components/blocks/RenditionImageBlock";
+import { RenditionImageBlockDefaultTemplate } from "@/components/blocks/RenditionImageBlock";
 import OptiFormsContainer from "@/components/blocks/OptiFormsContainer";
 import OptiFormsTextbox from "@/components/blocks/OptiFormsTextbox";
 import OptiFormsTextarea from "@/components/blocks/OptiFormsTextarea";
@@ -30,20 +38,34 @@ import { FooterType, FooterPreview } from "@/components/layout/Footer";
 import { SiteSettingsType, SiteSettingsPreview } from "@/components/layout/SiteSettings";
 import { SiteBannerType, SiteBannerBlock } from "@/components/layout/GlobalBanner";
 import FaqItemBlock, { FaqItemBlockType, FaqItemFlatTemplate } from "@/components/blocks/FaqItemBlock";
+import { FaqItemBlockDefaultTemplate } from "@/components/blocks/FaqItemBlock";
 import FaqContainerBlock, { FaqContainerBlockType } from "@/components/blocks/FaqContainerBlock";
+import { FaqContainerBlockDefaultTemplate } from "@/components/blocks/FaqContainerBlock";
 import FeaturedContentBlock, { FeaturedContentBlockType, FeaturedContentCardTemplate } from "@/components/blocks/FeaturedContentBlock";
+import { FeaturedContentBlockDefaultTemplate } from "@/components/blocks/FeaturedContentBlock";
 import LogoGridBlock, { LogoGridBlockType, LogoGridColorTemplate } from "@/components/blocks/LogoGridBlock";
+import { LogoGridBlockDefaultTemplate } from "@/components/blocks/LogoGridBlock";
 import AuthorBlock, { AuthorBlockType, AuthorInlineTemplate, AuthorProfileTemplate } from "@/components/blocks/AuthorBlock";
+import { AuthorBlockDefaultTemplate } from "@/components/blocks/AuthorBlock";
 import OutcomeItemBlock, { OutcomeItemBlockType, OutcomeItemBrandTemplate, OutcomeItemInlineTemplate } from "@/components/blocks/OutcomeItemBlock";
+import { OutcomeItemBlockDefaultTemplate } from "@/components/blocks/OutcomeItemBlock";
 import PricingTierBlock, { PricingTierBlockType, PricingTierCompactTemplate } from "@/components/blocks/PricingTierBlock";
+import { PricingTierBlockDefaultTemplate } from "@/components/blocks/PricingTierBlock";
 import TimelineMilestoneBlock, { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
+import { TimelineMilestoneBlockDefaultTemplate } from "@/components/blocks/TimelineMilestoneBlock";
 import TimelineBlock, { TimelineBlockType } from "@/components/blocks/TimelineBlock";
+import { TimelineBlockDefaultTemplate } from "@/components/blocks/TimelineBlock";
 import TeamMemberBlock, { TeamMemberBlockType, TeamMemberHorizontalTemplate } from "@/components/blocks/TeamMemberBlock";
+import { TeamMemberBlockDefaultTemplate } from "@/components/blocks/TeamMemberBlock";
 import TeamGridBlock, { TeamGridBlockType } from "@/components/blocks/TeamGridBlock";
+import { TeamGridBlockDefaultTemplate } from "@/components/blocks/TeamGridBlock";
 import ComparisonTableBlock, { ComparisonTableBlockType } from "@/components/blocks/ComparisonTableBlock";
+import { ComparisonTableBlockDefaultTemplate } from "@/components/blocks/ComparisonTableBlock";
 import CalloutBlock, { CalloutBlockType } from "@/components/blocks/CalloutBlock";
+import { CalloutBlockDefaultTemplate } from "@/components/blocks/CalloutBlock";
 import RawHtmlBlock, { RawHtmlBlockType, RawHtmlBlockDefaultTemplate } from "@/components/blocks/RawHtmlBlock";
 import ContactFormBlock, { ContactFormBlockType } from "@/components/blocks/ContactFormBlock";
+import { ContactFormBlockDefaultTemplate } from "@/components/blocks/ContactFormBlock";
 import BranchFinderBlock, { BranchFinderBlockType, BranchFinderBlockDefaultTemplate } from "@/components/blocks/BranchFinderBlock";
 import QuoteBlock, { QuoteBlockType, QuoteBlockDefaultTemplate } from "@/components/blocks/QuoteBlock";
 import CustomerVoicesBlock, { CustomerVoicesBlockType, CustomerVoicesBlockDefaultTemplate } from "@/components/blocks/CustomerVoicesBlock";
@@ -239,6 +261,28 @@ export function initComponentRegistry() {
     FeaturedContentCardTemplate,
     RawHtmlBlockDefaultTemplate,
     SpotlightBlockDefaultTemplate,
+    AuthorBlockDefaultTemplate,
+    CallToActionDefaultTemplate,
+    CalloutBlockDefaultTemplate,
+    ComparisonTableBlockDefaultTemplate,
+    ContactFormBlockDefaultTemplate,
+    FaqContainerBlockDefaultTemplate,
+    FaqItemBlockDefaultTemplate,
+    FeatureItemBlockDefaultTemplate,
+    FeaturedContentBlockDefaultTemplate,
+    ImageBlockDefaultTemplate,
+    LogoGridBlockDefaultTemplate,
+    OutcomeItemBlockDefaultTemplate,
+    PricingTierBlockDefaultTemplate,
+    ProductHeroBlockDefaultTemplate,
+    RenditionImageBlockDefaultTemplate,
+    TextBlockDefaultTemplate,
+    StatsCounterBlockDefaultTemplate,
+    TeamGridBlockDefaultTemplate,
+    TeamMemberBlockDefaultTemplate,
+    TestimonialBlockDefaultTemplate,
+    TimelineBlockDefaultTemplate,
+    TimelineMilestoneBlockDefaultTemplate,
     DefaultRowTemplate,
     DefaultColumnTemplate,
     DefaultSectionTemplate,

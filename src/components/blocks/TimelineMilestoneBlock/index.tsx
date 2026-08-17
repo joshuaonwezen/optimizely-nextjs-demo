@@ -1,5 +1,6 @@
-import { contentType } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const TimelineMilestoneBlockType = contentType({
   key: "TimelineMilestoneBlock",
@@ -10,6 +11,18 @@ export const TimelineMilestoneBlockType = contentType({
     date:        { type: "string", displayName: "Date (e.g. 1998, Mar 2024)" },
     title:       { type: "string", displayName: "Title",       indexingType: "searchable", isLocalized: true },
     description: { type: "string", displayName: "Description", indexingType: "searchable", isLocalized: true },
+  },
+});
+
+export const TimelineMilestoneBlockDefaultTemplate = displayTemplate({
+  key: "TimelineMilestoneBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "TimelineMilestoneBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
   },
 });
 
@@ -28,10 +41,11 @@ type TimelineMilestoneBlockProps = TimelineMilestoneData & {
 export default function TimelineMilestoneBlock(props: TimelineMilestoneBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
+  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   return (
     <li data-component="TimelineMilestoneBlock" className="relative pl-10 pb-10 border-l-2 border-ghost-border last:pb-0">
-      <span className="absolute -left-2 top-1 w-4 h-4 rounded-full bg-brand border-4 border-surface" />
+      <span className="absolute -left-2 top-1 w-4 h-4 rounded-full bg-brand-fill border-4 border-surface" />
       {data.date && (
         <p
           {...pa("date")}
@@ -43,7 +57,7 @@ export default function TimelineMilestoneBlock(props: TimelineMilestoneBlockProp
       {data.title && (
         <h3
           {...pa("title")}
-          className="font-display text-xl font-bold text-on-surface mb-2"
+          className={`${style.font} text-xl font-bold ${style.text} mb-2`}
         >
           {data.title}
         </h3>
@@ -51,7 +65,7 @@ export default function TimelineMilestoneBlock(props: TimelineMilestoneBlockProp
       {data.description && (
         <p
           {...pa("description")}
-          className="text-base text-on-surface-variant leading-relaxed"
+          className={`text-base ${style.textMuted} leading-relaxed`}
         >
           {data.description}
         </p>

@@ -28,9 +28,9 @@ function getCookie(name: string): string {
 function AudienceRow({ name, mapped }: { name: string; mapped: boolean }) {
   return (
     <div className="flex items-center gap-2">
-      <span className={`inline-flex h-1.5 w-1.5 shrink-0 rounded-full ${mapped ? "bg-emerald-500" : "bg-outline-variant"}`} />
+      <span className={`inline-flex h-1.5 w-1.5 shrink-0 rounded-full ${mapped ? "bg-brand" : "bg-outline-variant"}`} />
       <span className={`text-xs font-mono truncate ${mapped ? "text-on-surface" : "text-on-surface-variant"}`}>{name}</span>
-      {mapped && <span className="text-xs text-emerald-600 shrink-0">mapped</span>}
+      {mapped && <span className="text-xs text-brand shrink-0">mapped</span>}
     </div>
   );
 }
@@ -302,7 +302,7 @@ export default function AudienceSwitcher() {
             </div>
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-xs font-mono text-on-surface-variant shrink-0">bucketing_id</span>
-              <span className={`text-xs font-mono truncate text-right ${bucketingId ? "text-emerald-600" : "text-on-surface-variant"}`}>{bucketingId ? `${bucketingId.slice(0, 8)}…` : "—"}</span>
+              <span className={`text-xs font-mono truncate text-right ${bucketingId ? "text-brand" : "text-on-surface-variant"}`}>{bucketingId ? `${bucketingId.slice(0, 8)}…` : "—"}</span>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFormTracking } from "@/lib/tracking/useFormTracking";
 import { identifyCustomer } from "@/lib/tracking/customer";
+import { resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 interface ContactFormBlockData {
   heading?: string | null;
@@ -13,11 +14,13 @@ interface ContactFormBlockData {
 }
 
 type ContactFormProps = ContactFormBlockData & {
+  displaySettings?: Record<string, string | boolean>;
   content?: ContactFormBlockData;
 };
 
 export default function ContactForm(props: ContactFormProps) {
   const data = props.content ?? props;
+  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
   const submitUrl = data.submitUrl?.default ?? "/api/form-submit";
   const successMessage = data.successMessage ?? "Thank you! We'll be in touch soon.";
 
@@ -65,7 +68,7 @@ export default function ContactForm(props: ContactFormProps) {
   if (status === "success") {
     return (
       <section data-component="ContactFormBlock" className="py-16">
-        <div className="max-w-2xl mx-auto px-8">
+        <div className={`max-w-2xl mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl p-8` : ""}`}>
           <p className="text-base font-semibold text-brand">{successMessage}</p>
         </div>
       </section>
@@ -74,14 +77,14 @@ export default function ContactForm(props: ContactFormProps) {
 
   return (
     <section data-component="ContactFormBlock" className="py-16">
-      <div className="max-w-2xl mx-auto px-8">
+      <div className={`max-w-2xl mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl p-8` : ""}`}>
         {data.heading && (
-          <h2 className="font-display text-3xl font-extrabold mb-4 text-on-surface">
+          <h2 className={`${style.font} text-3xl font-extrabold mb-4 ${style.text}`}>
             {data.heading}
           </h2>
         )}
         {data.intro && (
-          <p className="text-base mb-8 text-on-surface-variant">{data.intro}</p>
+          <p className={`text-base mb-8 ${style.textMuted}`}>{data.intro}</p>
         )}
 
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">

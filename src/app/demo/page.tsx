@@ -52,17 +52,17 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 const CATEGORY_COLORS: Record<string, string> = {
   CMS:                "bg-brand/5 text-brand border-brand/10",
   Integrations:       "bg-tertiary/5 text-tertiary border-tertiary/10",
-  "Graph & Queries":  "bg-cyan-50 text-cyan-700 border-cyan-100",
-  Architecture:       "bg-slate-100 text-slate-600 border-slate-200",
-  AI:                 "bg-violet-50 text-violet-700 border-violet-100",
+  "Graph & Queries":  "bg-tertiary/10 text-tertiary border-tertiary/30",
+  Architecture:       "bg-surface-low text-on-surface-variant border-outline-variant",
+  AI:                 "bg-tertiary/10 text-tertiary border-tertiary/30",
 };
 
 const LINK_HOVER: Record<string, string> = {
   CMS:                "hover:border-brand/30 hover:bg-brand/5",
   Integrations:       "hover:border-tertiary/30 hover:bg-tertiary/5",
-  "Graph & Queries":  "hover:border-cyan-200 hover:bg-cyan-50/50",
-  Architecture:       "hover:border-slate-300 hover:bg-slate-50/50",
-  AI:                 "hover:border-violet-200 hover:bg-violet-50/50",
+  "Graph & Queries":  "hover:border-tertiary/30 hover:bg-tertiary/10/50",
+  Architecture:       "hover:border-outline-variant hover:bg-surface-low/50",
+  AI:                 "hover:border-tertiary/30 hover:bg-tertiary/10/50",
 };
 
 export default async function DemoIndexPage({

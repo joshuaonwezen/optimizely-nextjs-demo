@@ -5,9 +5,9 @@ import { trackEvent, subscribe, type DispatchRecord } from "@/lib/tracking";
 const MAX_LOG_ENTRIES = 8;
 
 const STATUS_STYLES: Record<string, string> = {
-  sent:    "bg-green-50 text-green-700 border-green-200",
-  skipped: "bg-amber-50 text-amber-700 border-amber-200",
-  error:   "bg-red-50 text-red-700 border-red-200",
+  sent:    "bg-brand/10 text-brand border-brand/30",
+  skipped: "bg-error/10 text-error border-error/30",
+  error:   "bg-error/10 text-error border-error/30",
 };
 
 function readCookie(name: string): string {

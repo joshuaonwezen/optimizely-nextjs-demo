@@ -2,10 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import {
-  BACKGROUND, FONT_STYLE,
-  BG_CLASSES, FONT_CLASSES,
-} from "../_shared/displayTemplateSettings";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const TeamMemberBlockType = contentType({
   key: "TeamMemberBlock",
@@ -21,6 +18,18 @@ export const TeamMemberBlockType = contentType({
   },
 });
 
+export const TeamMemberBlockDefaultTemplate = displayTemplate({
+  key: "TeamMemberBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "TeamMemberBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 export const TeamMemberHorizontalTemplate = displayTemplate({
   key: "TeamMemberHorizontalTemplate",
   isDefault: false,
@@ -29,6 +38,7 @@ export const TeamMemberHorizontalTemplate = displayTemplate({
   tag: "Horizontal",
   settings: {
     ...BACKGROUND,
+    ...TEXT_COLOR,
     ...FONT_STYLE,
   },
 });
@@ -72,10 +82,10 @@ export default function TeamMemberBlock(props: TeamMemberBlockProps) {
 
   const isHorizontal = props.displayTemplateKey === "TeamMemberHorizontalTemplate";
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
+  const fallback = resolveStyleClasses(ds, { background: "white" });
 
   if (isHorizontal) {
-    const bgKey = (ds?.background as string) || "white";
-    const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
+    const bg = resolveStyleClasses(ds, { background: "white" });
     return (
       <div data-component="TeamMemberBlock" className={`flex items-center gap-5 p-5 rounded-2xl hover-ambient ${bg.wrapper || "bg-surface-lowest border border-ghost-border"}`}>
         <div className="relative w-16 h-16 rounded-full flex-shrink-0 overflow-hidden bg-surface-low">
@@ -114,7 +124,10 @@ export default function TeamMemberBlock(props: TeamMemberBlockProps) {
   }
 
   return (
-    <div data-component="TeamMemberBlock" className="rounded-2xl bg-surface-lowest border border-ghost-border p-6 text-center hover-ambient transition-shadow">
+    <div
+      data-component="TeamMemberBlock"
+      className={`rounded-2xl p-6 text-center hover-ambient transition-shadow ${fallback.wrapper || "bg-surface-lowest border border-ghost-border"}`}
+    >
       <div className="relative w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden bg-surface-low">
         {photoUrl ? (
           <Image
@@ -131,7 +144,7 @@ export default function TeamMemberBlock(props: TeamMemberBlockProps) {
         )}
       </div>
       {data.name && (
-        <h3 {...pa("name")} className={`${fontClass} text-lg font-bold text-on-surface`}>
+        <h3 {...pa("name")} className={`${fontClass} text-lg font-bold ${fallback.text}`}>
           {data.name}
         </h3>
       )}

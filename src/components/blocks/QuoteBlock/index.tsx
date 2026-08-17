@@ -1,6 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND, BG_CLASSES } from "../_shared/displayTemplateSettings";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const QuoteBlockType = contentType({
   key: "QuoteBlock",
@@ -21,6 +21,8 @@ export const QuoteBlockDefaultTemplate = displayTemplate({
   contentType: "QuoteBlock",
   settings: {
     ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
   },
 });
 
@@ -41,27 +43,26 @@ export default function QuoteBlock(props: QuoteBlockProps) {
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
 
-  const bgKey = (ds?.background as string) || "white";
-  const bg = BG_CLASSES[bgKey] ?? BG_CLASSES.white;
+  const s = resolveStyleClasses(ds, { background: "white", fontStyle: "classic" });
 
   return (
     <div
       data-component="QuoteBlock"
-      className={`${bg.wrapper} rounded-2xl p-5 flex flex-col gap-3`}
+      className={`${s.wrapper} ${s.font} rounded-2xl p-5 flex flex-col gap-3`}
     >
       {data.text && (
-        <p {...pa("text")} className={`text-sm ${bg.textMuted} leading-relaxed flex-1`}>
+        <p {...pa("text")} className={`text-sm ${s.textMuted} leading-relaxed flex-1`}>
           &ldquo;{data.text}&rdquo;
         </p>
       )}
       <div>
         {data.author && (
-          <p {...pa("author")} className={`text-sm font-semibold ${bg.text}`}>
+          <p {...pa("author")} className={`text-sm font-semibold ${s.text}`}>
             {data.author}
           </p>
         )}
         {data.role && (
-          <p {...pa("role")} className={`text-xs ${bg.textMuted}`}>
+          <p {...pa("role")} className={`text-xs ${s.textMuted}`}>
             {data.role}
           </p>
         )}

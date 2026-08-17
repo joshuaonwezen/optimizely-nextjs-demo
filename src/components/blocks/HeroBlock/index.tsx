@@ -1,7 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { HeroBlockClient } from "./HeroBlockClient";
-import { HEADING_SIZE, FONT_STYLE } from "../_shared/displayTemplateSettings";
+import { BACKGROUND, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const HeroBlockType = contentType({
   key: "HeroBlock",
@@ -39,7 +39,7 @@ export const HeroBlockDefaultTemplate = displayTemplate({
     alignment: {
       editor: "select",
       displayName: "Text alignment",
-      sortOrder: 0,
+      sortOrder: 10,
       choices: {
         left:   { displayName: "Left",   sortOrder: 0 },
         center: { displayName: "Center", sortOrder: 1 },
@@ -48,7 +48,7 @@ export const HeroBlockDefaultTemplate = displayTemplate({
     height: {
       editor: "select",
       displayName: "Height",
-      sortOrder: 1,
+      sortOrder: 11,
       choices: {
         default: { displayName: "Default",           sortOrder: 0 },
         tall:    { displayName: "Full screen height", sortOrder: 1 },
@@ -57,9 +57,11 @@ export const HeroBlockDefaultTemplate = displayTemplate({
     overlay: {
       editor: "checkbox",
       displayName: "Darken background image",
-      sortOrder: 2,
+      sortOrder: 12,
       choices: {},
     },
+    ...BACKGROUND,
+    ...TEXT_COLOR,
     ...HEADING_SIZE,
     ...FONT_STYLE,
   },
@@ -105,12 +107,16 @@ export default function HeroBlock(props: HeroBlockProps) {
   const showOverlay = ds?.overlay === true;
   const headingSize = (ds?.headingSize as string) ?? "xl";
   const fontStyle = (ds?.fontStyle as string) ?? "modern";
+  const style = resolveStyleClasses(ds, { background: "blueGrad", headingSize: "xl" });
 
   // CMS data is resolved server-side (ISR-cacheable); the four hero experiments are
   // decided client-side in HeroBlockClient so this stays out of the cookie path.
   // Preview attributes (empty in published mode) are passed through so edit mode works.
   return (
     <HeroBlockClient
+      surfaceClass={style.wrapper}
+      textClass={style.text}
+      textMutedClass={style.textMuted}
       title={title}
       subtitle={subtitle}
       bgUrl={bgUrl}

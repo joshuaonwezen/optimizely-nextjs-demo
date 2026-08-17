@@ -1,7 +1,9 @@
 import Image from "next/image";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { TEXT_ALIGN, TEXT_ALIGN_CLASSES } from "../_shared/displayTemplateSettings";
+import {
+  BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES, resolveStyleClasses,
+} from "../_shared/displayTemplateSettings";
 
 export const LogoGridBlockType = contentType({
   key: "LogoGridBlock",
@@ -20,6 +22,18 @@ export const LogoGridBlockType = contentType({
   },
 });
 
+export const LogoGridBlockDefaultTemplate = displayTemplate({
+  key: "LogoGridBlockDefaultTemplate",
+  isDefault: true,
+  displayName: "Default",
+  contentType: "LogoGridBlock",
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...FONT_STYLE,
+  },
+});
+
 export const LogoGridColorTemplate = displayTemplate({
   key: "LogoGridColorTemplate",
   isDefault: false,
@@ -30,7 +44,7 @@ export const LogoGridColorTemplate = displayTemplate({
     size: {
       editor: "select" as const,
       displayName: "Logo size",
-      sortOrder: 0,
+      sortOrder: 10,
       choices: {
         sm:      { displayName: "Small",    sortOrder: 0 },
         default: { displayName: "Standard", sortOrder: 1 },
@@ -40,10 +54,13 @@ export const LogoGridColorTemplate = displayTemplate({
     showNames: {
       editor: "checkbox" as const,
       displayName: "Show partner names",
-      sortOrder: 1,
+      sortOrder: 11,
       choices: {},
     },
+    ...BACKGROUND,
+    ...TEXT_COLOR,
     ...TEXT_ALIGN,
+    ...FONT_STYLE,
   },
 });
 
@@ -90,6 +107,7 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
   const sizeKey = (ds?.size as string) || "default";
   const { wrapper: logoWrapper, imgSizes } = LOGO_SIZES[sizeKey] ?? LOGO_SIZES["default"];
 
+  const style = resolveStyleClasses(ds, { background: "transparent" });
   const alignKey = (ds?.textAlign as string) || "center";
   const textAlignClass = TEXT_ALIGN_CLASSES[alignKey] ?? "text-center";
   const flexAlignClass = FLEX_ALIGN[alignKey] ?? "justify-center";
@@ -98,11 +116,14 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
   const showPlaceholders = logos.length === 0;
 
   return (
-    <section data-component="LogoGridBlock" className={`py-20 px-8 max-w-7xl mx-auto ${textAlignClass}`}>
+    <section
+      data-component="LogoGridBlock"
+      className={`py-20 px-8 max-w-7xl mx-auto ${textAlignClass} ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}
+    >
       {data.heading && (
         <h2
           {...pa("heading")}
-          className="font-display text-2xl md:text-3xl font-extrabold text-on-surface mb-3"
+          className={`${style.font} text-2xl md:text-3xl font-extrabold ${style.text} mb-3`}
         >
           {data.heading}
         </h2>
@@ -110,7 +131,7 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
       {data.subheading && (
         <p
           {...pa("subheading")}
-          className="text-sm text-on-surface-variant mb-12 max-w-xl mx-auto"
+          className={`text-sm ${style.textMuted} mb-12 max-w-xl mx-auto`}
         >
           {data.subheading}
         </p>
