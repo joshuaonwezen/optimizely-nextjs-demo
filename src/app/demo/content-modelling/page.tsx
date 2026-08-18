@@ -421,7 +421,7 @@ export default function ContentModellingPage() {
               },
             ].map((s) => (
               <div key={s.step} className="flex gap-4">
-                <div className="shrink-0 w-8 h-8 rounded-full bg-brand flex items-center justify-center text-on-brand text-sm font-bold font-display">
+                <div className="shrink-0 w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-sm font-bold font-display">
                   {s.step}
                 </div>
                 <div className="pt-1">
@@ -1365,7 +1365,7 @@ export default function ContentModellingPage() {
               },
             ].map((s) => (
               <div key={s.step} className="flex gap-4">
-                <div className="shrink-0 w-8 h-8 rounded-full bg-brand flex items-center justify-center text-on-brand text-sm font-bold font-display">
+                <div className="shrink-0 w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-sm font-bold font-display">
                   {s.step}
                 </div>
                 <div className="pt-1">

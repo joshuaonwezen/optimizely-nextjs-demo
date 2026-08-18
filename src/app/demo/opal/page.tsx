@@ -432,7 +432,7 @@ export default function OpalDemoPage() {
           <div className="space-y-6">
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">1</span>
+                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">1</span>
                 <h3 className="font-display font-semibold text-on-surface">Define a tool</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
@@ -474,7 +474,7 @@ export const productDataTool = new OpalTool({
 
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">2</span>
+                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">2</span>
                 <h3 className="font-display font-semibold text-on-surface">Expose the discovery and execution endpoints</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
@@ -516,7 +516,7 @@ app.listen(3001);`} />
 
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">3</span>
+                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">3</span>
                 <h3 className="font-display font-semibold text-on-surface">Register in Opal and attach to an agent</h3>
               </div>
               <div className="p-6">

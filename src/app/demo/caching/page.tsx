@@ -628,7 +628,7 @@ export default function CachingDemoPage() {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">1</span>
+                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">1</span>
                 <h3 className="font-display font-semibold text-on-surface">Next.js Fetch Cache</h3>
               </div>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
@@ -655,7 +655,7 @@ export default function CachingDemoPage() {
 
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">2</span>
+                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">2</span>
                 <h3 className="font-display font-semibold text-on-surface">Graph CDN Cache</h3>
               </div>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
@@ -990,7 +990,7 @@ export default function CachingDemoPage() {
               { n: 5, text: "To verify: note the 'Last rendered' timestamp on this page, trigger a revalidation from the CMS, then reload - the timestamp should update on the next request." },
             ].map(({ n, text }) => (
               <li key={n} className="flex gap-4">
-                <span className="shrink-0 w-7 h-7 rounded-full bg-brand text-on-brand text-xs font-bold flex items-center justify-center">{n}</span>
+                <span className="shrink-0 w-7 h-7 rounded-full bg-brand text-white dark:text-on-brand text-xs font-bold flex items-center justify-center">{n}</span>
                 <p className="text-sm text-on-surface-variant leading-relaxed pt-0.5">{text}</p>
               </li>
             ))}

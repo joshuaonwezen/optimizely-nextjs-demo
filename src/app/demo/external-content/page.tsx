@@ -404,7 +404,7 @@ export default async function ExternalContentPage() {
             {/* Path 1 */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">1</span>
+                <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">1</span>
                 <div>
                   <h3 className="font-display font-semibold text-on-surface">Direct to Graph</h3>
                   <p className="text-xs text-on-surface-variant">Content Source API - NdJSON over HTTP</p>
@@ -454,7 +454,7 @@ export default async function ExternalContentPage() {
             {/* Path 2 */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">2</span>
+                <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">2</span>
                 <div>
                   <h3 className="font-display font-semibold text-on-surface">OCP - Free Tier</h3>
                   <p className="text-xs text-on-surface-variant">Public apps + Custom Endpoints (real-time)</p>
@@ -502,7 +502,7 @@ export default async function ExternalContentPage() {
             {/* Path 3 */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">3</span>
+                <span className="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">3</span>
                 <div>
                   <h3 className="font-display font-semibold text-on-surface">OCP - Paid Tier</h3>
                   <p className="text-xs text-on-surface-variant">Managed staging DB + scheduled syncs</p>

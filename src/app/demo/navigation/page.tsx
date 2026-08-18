@@ -174,7 +174,7 @@ function TradeOffs({ pros, cons }: { pros: string[]; cons: string[] }) {
 function StrategyBadge({ n, label }: { n: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 mr-3">
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand text-on-brand text-xs font-bold shrink-0">
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand text-white dark:text-on-brand text-xs font-bold shrink-0">
         {n}
       </span>
       <span className="font-display font-bold text-on-surface">{label}</span>

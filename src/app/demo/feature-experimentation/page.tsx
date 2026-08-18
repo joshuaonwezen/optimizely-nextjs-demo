@@ -365,7 +365,7 @@ function HeroCopyDemo({ decision }: { decision: FxDecision | undefined }) {
 function Step({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-5">
-      <div className="shrink-0 w-8 h-8 rounded-full bg-brand flex items-center justify-center text-on-brand text-sm font-bold font-display">
+      <div className="shrink-0 w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-sm font-bold font-display">
         {number}
       </div>
       <div className="pt-1 flex-1">
