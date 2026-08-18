@@ -44,7 +44,7 @@ export function getDemoCategories(): DemoCategory[] {
     {
       label: "Architecture",
       links: [
-        { href: "/demo/architecture",    label: "System Overview",  description: "How CMS, Graph, and Next.js fit together" },
+        { href: "/demo/architecture",    label: "Architecture & CMS Editions",  description: "How CMS, Graph, and Next.js fit together - plus SaaS CMS vs CMS 13" },
         { href: "/demo/error-handling",  label: "Error Handling",   description: "notFound vs 500, error boundaries, fallbacks" },
       ],
     },

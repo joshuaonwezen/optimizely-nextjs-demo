@@ -54,12 +54,10 @@ function Box({
 
 // Box positions (x, y, w, h):
 //   Browser:          x=14,  y=185, w=130 → cx=79,  cy=222, right=144, bottom=259
-//   Edge Middleware:  x=176, y=185, w=162 → cx=257, cy=222, right=338, bottom=259
 //   Edge CDN:         x=370, y=185, w=148 → cx=444, cy=222, right=518, bottom=259
 //   Next.js:          x=550, y=185, w=152 → cx=626, cy=222, right=702, bottom=259
 //   Graph:            x=740, y=92,  w=158 → cx=819, cy=129, right=898, bottom=166
 //   CMS:              x=740, y=296, w=158 → cx=819, cy=333, right=898, top=296
-//   cdn.optimizely:   x=176, y=330, w=162 → cx=257, cy=367, right=338, top=330
 
 export default function ArchitecturePage() {
   return (
@@ -67,7 +65,7 @@ export default function ArchitecturePage() {
 
       <DemoHero
         title="System Architecture"
-        description="How Optimizely SaaS CMS, Graph, and Feature Experimentation connect to this Next.js app - request flow, flag evaluation at the edge, per-variation ISR caching, and cache invalidation on publish."
+        description="How Optimizely SaaS CMS, Graph, and this Next.js app connect - request flow, ISR caching, and cache invalidation on publish - plus how the managed SaaS CMS compares to self-run CMS 13."
       />
 
       <div className="max-w-6xl mx-auto px-8 py-16 space-y-20">
@@ -78,9 +76,9 @@ export default function ArchitecturePage() {
             <a href="#what-is-headless" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            A CMS (Content Management System) is where editors write, organise, and publish content. "Headless" describes how it connects to your website.
+            A CMS (Content Management System) is where editors write, organise, and publish content. "Headless" describes how it connects to your website. A CMS can be coupled (it renders the site itself), headless (it only serves content as data), or hybrid - one backend that does both. Optimizely CMS 13 enables that hybrid path.
           </p>
-          <div className="grid md:grid-cols-2 gap-5 mb-5">
+          <div className="grid md:grid-cols-3 gap-5 mb-5">
             {[
               {
                 title: "Traditional (coupled)",
@@ -89,6 +87,15 @@ export default function ArchitecturePage() {
                   { label: "Coupled CMS server", sub: "e.g. CMS 12 - .NET controller looks up content", amber: false },
                   { label: "Razor view (MVC)", sub: "renders the full HTML", amber: true },
                   { label: "Browser", sub: "shows the HTML page", amber: false },
+                ],
+              },
+              {
+                title: "Hybrid (CMS 13)",
+                steps: [
+                  { label: "Browser", sub: "GET /page", amber: false },
+                  { label: "CMS 13 backend", sub: "same content, two delivery modes", amber: false },
+                  { label: "Coupled: Razor view (MVC)", sub: "CMS 13 renders the HTML itself", amber: true },
+                  { label: "Headless: Optimizely Graph", sub: "frontend queries JSON, renders HTML", amber: false, sep: "or" },
                 ],
               },
               {
@@ -104,14 +111,16 @@ export default function ArchitecturePage() {
               <div key={title} className="rounded-2xl border border-ghost-border bg-surface-lowest p-5">
                 <h3 className="font-display font-bold text-sm text-on-surface text-center mb-4">{title}</h3>
                 <div className="flex flex-col items-stretch">
-                  {steps.map(({ label, sub, amber }, i) => (
+                  {steps.map((step, i) => (
                     <div key={i} className="flex flex-col items-stretch">
-                      {i > 0 && (
+                      {i > 0 && ("sep" in step && step.sep ? (
+                        <span className="self-center text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant/60 py-1.5">{step.sep}</span>
+                      ) : (
                         <span aria-hidden="true" className="self-center text-on-surface-variant/40 text-xs leading-none py-1.5">▼</span>
-                      )}
-                      <div className={`rounded-xl border p-3 text-center ${amber ? "border-error/30 bg-error/10" : "border-ghost-border bg-surface-low"}`}>
-                        <p className={`text-sm font-semibold ${amber ? "text-error" : "text-on-surface"}`}>{label}</p>
-                        <p className={`text-xs ${amber ? "text-error" : "text-on-surface-variant"}`}>{sub}</p>
+                      ))}
+                      <div className={`rounded-xl border p-3 text-center ${step.amber ? "border-error/30 bg-error/10" : "border-ghost-border bg-surface-low"}`}>
+                        <p className={`text-sm font-semibold ${step.amber ? "text-error" : "text-on-surface"}`}>{step.label}</p>
+                        <p className={`text-xs ${step.amber ? "text-error" : "text-on-surface-variant"}`}>{step.sub}</p>
                       </div>
                     </div>
                   ))}
@@ -121,9 +130,9 @@ export default function ArchitecturePage() {
           </div>
           <div className="mb-8 flex items-center gap-2 text-xs text-on-surface-variant">
             <span aria-hidden="true" className="shrink-0 w-4 h-4 rounded border border-error/30 bg-error/10" />
-            <span>Where the HTML is rendered - in a coupled CMS the CMS renders the page; in a headless setup your frontend does.</span>
+            <span>Where the HTML is rendered - in a coupled CMS the CMS renders the page; in a headless setup your frontend does; in a hybrid setup the CMS 13 backend can do both.</span>
           </div>
-          <div className="grid md:grid-cols-2 gap-5">
+          <div className="grid md:grid-cols-3 gap-5">
             <div className="rounded-2xl border border-ghost-border bg-surface-lowest p-5">
               <h3 className="font-display font-bold text-sm text-on-surface mb-1">Traditional ("coupled") CMS - e.g. CMS 12 / CMS 13</h3>
               <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
@@ -138,6 +147,25 @@ export default function ArchitecturePage() {
                 ].map((p, i) => (
                   <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
                     <span className="shrink-0 font-bold text-on-surface-variant">-</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-tertiary/20 bg-tertiary/5 p-5">
+              <h3 className="font-display font-bold text-sm text-tertiary mb-1">Hybrid CMS - Optimizely CMS 13</h3>
+              <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
+                One backend does double duty. CMS 13 can render its own pages (the head) and expose the same content as data through Optimizely Graph - so each application decides which model it consumes.
+              </p>
+              <ul className="space-y-1.5">
+                {[
+                  "One .NET backend both renders pages (MVC / Razor) and serves content as data via Optimizely Graph.",
+                  "CMS 13 can run fully coupled like CMS 12, or deliver headless through Graph - the same delivery layer this demo uses.",
+                  "Editors keep a single CMS; each application decides whether to consume rendered pages or content as data.",
+                  "Enables incremental migration - keep the existing server-rendered site while a new headless app is built alongside it.",
+                ].map((p, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                    <span className="shrink-0 font-bold text-tertiary">-</span>
                     <span>{p}</span>
                   </li>
                 ))}
@@ -164,6 +192,108 @@ export default function ArchitecturePage() {
               </ul>
             </div>
           </div>
+        </section>
+
+        {/* SaaS vs CMS 13 */}
+        <section id="saas-vs-cms13">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            SaaS CMS vs CMS 13 - who maintains what{" "}
+            <a href="#saas-vs-cms13" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-2xl">
+            SaaS CMS (what this demo runs) and CMS 13 are both Optimizely CMS with the same authoring experience. The choice between them is operational - who runs the backend, who owns versions and upgrades, and where the maintenance work lands.
+          </p>
+          <div className="mb-8 rounded-xl border border-ghost-border bg-surface-lowest p-4">
+            <p className="text-sm font-semibold text-on-surface mb-1">Same editor experience</p>
+            <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl">
+              CMS 13 and SaaS CMS share the same authoring UI and content modelling, so editors see no difference between them. Everything below is about operations, not authoring.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-ghost-border overflow-hidden">
+            <div className="hidden md:grid md:grid-cols-[200px_1fr_1fr] bg-surface-low">
+              <div className="p-3" />
+              <div className="p-3 font-display font-bold text-sm text-brand">SaaS CMS (headless, this demo)</div>
+              <div className="p-3 font-display font-bold text-sm text-on-surface">Optimizely CMS 13</div>
+            </div>
+            {[
+              {
+                dimension: "Hosting & backend ops",
+                saas: "Fully managed by Optimizely - no servers, runtime, or database for you to run.",
+                cms13: "You host and operate it (PaaS / DXP or self-managed) - infrastructure, runtime, and database are yours.",
+              },
+              {
+                dimension: "Version management",
+                saas: "Evergreen - there is no version to track; everyone is always on the current release.",
+                cms13: "Pinned to a CMS 13.x version; you track packages and decide when to move.",
+              },
+              {
+                dimension: "Upgrades & patching",
+                saas: "Automatic and continuous - features and fixes ship with no upgrade projects.",
+                cms13: "You plan, test, and run upgrades and security patches on your own schedule.",
+              },
+              {
+                dimension: "Scaling & availability",
+                saas: "Optimizely scales the backend and Graph; delivery scales at your hosting CDN.",
+                cms13: "You size, scale, and plan availability of the backend infrastructure.",
+              },
+              {
+                dimension: "What you build & maintain instead",
+                saas: "The whole delivery side - the Next.js frontend, hosting / CDN, Graph queries, ISR caching, publish webhooks, and search and other integrations.",
+                cms13: "Less delivery plumbing if you use the coupled head - MVC / Razor renders pages directly; stand up a separate headless app alongside it only when a channel needs one.",
+              },
+              {
+                dimension: "Extensibility & built-in features",
+                saas: "A managed, closed runtime with a fixed feature surface - you extend it through APIs, webhooks, apps, and your frontend, not by adding backend code. Capabilities beyond what it ships become extra dev you build and maintain outside the CMS.",
+                cms13: "Full .NET extensibility - custom editor UI, server-side logic, scheduled jobs, content providers, add-ons, and in-process integrations all run inside the app. More is built in and more can be added, but that code is yours to maintain through upgrades.",
+              },
+              {
+                dimension: "Rendering model",
+                saas: "Headless only - a separate frontend always renders.",
+                cms13: "Coupled, headless, or hybrid - render in the CMS, via a frontend, or both.",
+              },
+              {
+                dimension: "Best fit",
+                saas: "Teams wanting zero backend maintenance and ready to own a modern delivery stack (this demo).",
+                cms13: "Teams wanting control of the backend and version lifecycle, or needing coupled rendering alongside headless (incremental migration).",
+              },
+            ].map(({ dimension, saas, cms13 }) => (
+              <div key={dimension} className="grid md:grid-cols-[200px_1fr_1fr] border-t border-ghost-border">
+                <div className="p-3 text-sm font-semibold text-on-surface bg-surface-lowest md:bg-transparent">{dimension}</div>
+                <div className="p-3 text-xs text-on-surface-variant leading-relaxed border-t md:border-t-0 md:border-l border-ghost-border">
+                  <span className="md:hidden block text-[10px] font-semibold uppercase tracking-wider text-brand/70 mb-0.5">SaaS CMS</span>
+                  {saas}
+                </div>
+                <div className="p-3 text-xs text-on-surface-variant leading-relaxed border-t md:border-t-0 md:border-l border-ghost-border">
+                  <span className="md:hidden block text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant/60 mb-0.5">CMS 13</span>
+                  {cms13}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 rounded-xl border border-ghost-border bg-surface-lowest p-5">
+            <p className="text-sm font-semibold text-on-surface mb-2">Where the SaaS feature gap shows up</p>
+            <p className="text-xs text-on-surface-variant leading-relaxed mb-3 max-w-3xl">
+              CMS 13 can absorb these inside the .NET app; on SaaS CMS they usually become build-and-maintain work in your own services or frontend, because they cannot run inside the managed CMS:
+            </p>
+            <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5">
+              {[
+                "Server-side personalization and visitor targeting (on SaaS these run as separate experimentation / personalization services plus your frontend).",
+                "Custom editor UI - bespoke property editors, admin plugins, and dashboard widgets.",
+                "Custom server-side logic - publish-pipeline event handlers, scheduled jobs, and content providers.",
+                "Installable add-ons and the wider .NET / NuGet package ecosystem.",
+                "Integrations that run in-process rather than as separate services you host.",
+                "Direct database and schema access, plus custom indexing and search backends.",
+              ].map((p, i) => (
+                <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
+                  <span className="shrink-0 font-bold text-on-surface-variant">-</span>
+                  <span>{p}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <p className="mt-6 text-xs text-on-surface-variant leading-relaxed max-w-3xl">
+            The net: neither option removes the work, it moves it. SaaS hands backend hosting, versioning, and upgrades to Optimizely and keeps the CMS itself low-maintenance, in exchange for you owning the delivery stack and rebuilding anything beyond its feature surface outside the CMS. CMS 13 gives you a broader built-in feature set and a fully extensible backend, in exchange for you owning that code, the infrastructure, and the version and upgrade lifecycle.
+          </p>
         </section>
 
         <section id="building-blocks">
@@ -206,12 +336,6 @@ export default function ArchitecturePage() {
                 sub: "Optimizely Graph fires a POST to /api/webhooks",
                 detail: "When an editor publishes content, something needs to tell the frontend its cached pages are out of date. This is done via webhook - Optimizely Graph sends a POST request to the frontend's webhook endpoint, which marks the relevant cache entries as stale. The next visitor request triggers a background re-render with fresh content.",
               },
-              {
-                n: "6",
-                label: "Feature Experimentation (optional)",
-                sub: "Optimizely FX in this demo",
-                detail: "A separate service for A/B testing and feature flags. Delivers a datafile (a JSON config) that the frontend uses to decide which variation of content or UI to show each user. Optional - a headless CMS site does not require it, but when you want to run experiments or roll out features to a subset of users, this is the layer that handles it.",
-              },
             ].map(({ n, label, sub, detail }) => (
               <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
                 <div className="shrink-0 w-7 h-7 rounded-full bg-brand flex items-center justify-center">
@@ -233,9 +357,9 @@ export default function ArchitecturePage() {
             <a href="#diagram" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            Request flow left to right. Edge Middleware evaluates FX flags and rewrites the URL before
-            the CDN cache is checked - each variation gets its own ISR cache entry. CMS publishes sync
-            into Graph, which fires a webhook to invalidate the ISR cache.{" "}
+            Request flow left to right. The CDN serves pages from its ISR cache; on a miss it forwards to
+            Next.js, which renders from Optimizely Graph. CMS publishes sync into Graph, which fires a
+            webhook to invalidate the ISR cache.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/1-installation.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
@@ -267,21 +391,9 @@ export default function ArchitecturePage() {
               <line x1={444} y1={170} x2={144} y2={170}
                 stroke="#91dbda" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-lblue)" />
 
-              {/* Browser → Edge Middleware - HTTPS */}
-              <line x1={144} y1={222} x2={176} y2={222}
+              {/* Browser → Edge CDN - HTTPS */}
+              <line x1={144} y1={222} x2={370} y2={222}
                 stroke="#007b79" strokeWidth={2} markerEnd="url(#arr-blue)" />
-
-              {/* Edge Middleware → cdn.optimizely.com - datafile fetch (down) */}
-              <line x1={245} y1={259} x2={245} y2={330}
-                stroke="#197050" strokeWidth={2} markerEnd="url(#arr-teal)" />
-
-              {/* cdn.optimizely.com → Edge Middleware - cached datafile (up, dashed) */}
-              <line x1={269} y1={330} x2={269} y2={259}
-                stroke="#197050" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-teal)" />
-
-              {/* Edge Middleware → Edge CDN - rewritten __v_ URL */}
-              <line x1={338} y1={222} x2={370} y2={222}
-                stroke="#8f4764" strokeWidth={2} markerEnd="url(#arr-purple)" />
 
               {/* Edge CDN → Next.js - ISR miss */}
               <line x1={518} y1={222} x2={550} y2={222}
@@ -303,23 +415,16 @@ export default function ArchitecturePage() {
               <path d="M 898,132 L 926,132 L 926,412 L 626,412 L 626,259"
                 fill="none" stroke="#7ddd3d" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-red)" />
 
-              {/* Browser → cdn.optimizely.com - client-side bucketing event (teal dashed) */}
-              <path d="M 79,259 L 79,367 L 176,367"
-                fill="none" stroke="#197050" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-teal)" />
-
               {/* ── Boxes (drawn on top of arrows) ── */}
 
               <Box x={14}  y={185} w={130} hc="#007b79" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Browser" sub={["visitor · editor"]} />
 
-              <Box x={176} y={185} w={162} hc="#8f4764" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
-                title="Edge Middleware" sub={["FX flag eval · decideAll()", "__v_ URL rewrite"]} />
-
               <Box x={370} y={185} w={148} hc="#8f4764" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
-                title="Edge CDN" sub={["ISR cache", "per-variation entry"]} />
+                title="Edge CDN" sub={["ISR full-route cache", "one entry per page URL"]} />
 
               <Box x={550} y={185} w={152} hc="#197050" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
-                title="Next.js Server" sub={["App Router · RSC", "ISR · revalidate: 3600"]} />
+                title="Next.js Server" sub={["App Router · RSC", "ISR · revalidate"]} />
 
               <Box x={740} y={92}  w={158} hc="#ff99b6" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Optimizely Graph" sub={["cg.optimizely.com", "GraphQL delivery API"]} />
@@ -327,20 +432,14 @@ export default function ArchitecturePage() {
               <Box x={740} y={296} w={158} hc="#7ddd3d" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Optimizely CMS" sub={["authoring UI", "Visual Builder"]} />
 
-              <Box x={176} y={330} w={162} hc="#197050" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
-                title="cdn.optimizely.com" sub={["FX datafile · 60s cache", "bucketing events API"]} />
-
               {/* ── Arrow labels (drawn last, on top) ── */}
               <text x={294} y={163} textAnchor="middle" fill="#91dbda" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">HTML response</text>
-              <text x={160} y={215} textAnchor="middle" fill="#007b79" fontSize={9} fontFamily="system-ui,sans-serif">HTTPS</text>
-              <text x={210} y={297} textAnchor="end" fill="#197050" fontSize={9} fontFamily="system-ui,sans-serif">datafile</text>
-              <text x={354} y={215} textAnchor="middle" fill="#8f4764" fontSize={9} fontFamily="system-ui,sans-serif">__v_ URL</text>
+              <text x={257} y={215} textAnchor="middle" fill="#007b79" fontSize={9} fontFamily="system-ui,sans-serif">HTTPS</text>
               <text x={534} y={215} textAnchor="middle" fill="#8f4764" fontSize={9} fontFamily="system-ui,sans-serif">ISR miss</text>
               <text x={726} y={175} textAnchor="end" fill="#ff99b6" fontSize={9} fontFamily="system-ui,sans-serif">GraphQL</text>
               <text x={714} y={220} textAnchor="middle" fill="#ff99b6" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">content</text>
               <text x={858} y={232} textAnchor="start" fill="#3ab533" fontSize={9} fontFamily="system-ui,sans-serif">content sync</text>
               <text x={780} y={425} textAnchor="middle" fill="#7ddd3d" fontSize={9} fontFamily="system-ui,sans-serif">Graph webhook</text>
-              <text x={112} y={392} textAnchor="middle" fill="#197050" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">bucketing event</text>
 
             </svg>
           </div>
@@ -350,9 +449,8 @@ export default function ArchitecturePage() {
             {[
               { color: "#007b79", label: "HTTPS request",                              dashed: false },
               { color: "#91dbda", label: "HTML response",                               dashed: true  },
-              { color: "#8f4764", label: "Rewritten __v_ URL · CDN miss forward to Next.js", dashed: false },
+              { color: "#8f4764", label: "CDN miss forwarded to Next.js",               dashed: false },
               { color: "#ff99b6", label: "GraphQL query · content response",            dashed: true  },
-              { color: "#197050", label: "FX datafile · bucketing event",               dashed: true  },
               { color: "#3ab533", label: "CMS content sync on publish",                 dashed: false },
               { color: "#7ddd3d", label: "Graph webhook - ISR cache invalidation",      dashed: true  },
             ].map(({ color, label, dashed }) => (
@@ -381,25 +479,14 @@ export default function ArchitecturePage() {
           <div className="grid md:grid-cols-2 gap-5">
             {[
               {
-                label: "Edge Middleware",
-                color: "border-tertiary/30 bg-tertiary/10",
-                hcolor: "text-tertiary",
-                points: [
-                  "Runs at the CDN edge before the cache is checked - on Vercel this is the Edge Runtime (V8 isolate), on Cloudflare it would be a Worker, on Akamai an EdgeWorker.",
-                  "Fetches the Optimizely FX datafile (JSON) from cdn.optimizely.com. The fetch is edge-cached for 60s so each edge node only re-fetches the datafile once per minute.",
-                  "Creates a user context from cookies (optimizelyEndUserId, demo_persona, demo_bucketing_id) and runs decideAll() with DISABLE_DECISION_EVENT - flag decisions only, no impression tracking yet.",
-                  "Rewrites the URL with one path segment per active flag: /path/__v_flagKey--variationKey. Segments are sorted so the same set of active flags always maps to the same URL and the same CDN cache entry.",
-                ],
-              },
-              {
                 label: "Edge CDN / ISR Cache",
                 color: "border-tertiary/30 bg-tertiary/10",
                 hcolor: "text-tertiary",
                 points: [
-                  "Each __v_-rewritten URL is a separate CDN cache entry. Base users and each variation are cached independently at the same path hierarchy.",
-                  "TTL: 60 seconds (set by export const revalidate = 60 in the catch-all route). Any CDN that supports path-based caching can serve this - no custom cache configuration needed.",
-                  "Busted on publish: the Graph webhook calls revalidatePath(\"/\", \"layout\") + revalidateTag(\"page\") which marks all entries as stale.",
-                  "Warm cache hits are served in ~10-50ms from the edge - the Next.js server is not involved.",
+                  "Stores the fully rendered HTML of every page, one entry per page URL. Any CDN that supports path-based caching can serve this - no custom cache configuration needed.",
+                  "TTL is set by export const revalidate in the catch-all route. Warm cache hits are served in ~10-50ms from the nearest edge node - the Next.js server is not involved.",
+                  "Busted on publish: the Graph webhook calls revalidatePath(\"/\", \"layout\") + revalidateTag(\"page\") which marks entries as stale.",
+                  "This layer absorbs almost all visitor traffic; the server only runs on a cache miss.",
                 ],
               },
               {
@@ -408,9 +495,9 @@ export default function ArchitecturePage() {
                 hcolor: "text-brand",
                 points: [
                   "Renders CMS pages with ISR. No cookies() or headers() calls anywhere in the server render tree - these would force cache-control: no-store globally.",
-                  "Extracts variation keys from the URL slug via extractVariations(slug) - reads __v_ segments, no SDK call needed.",
-                  "Queries Optimizely Graph with a variation filter to get the correct CMS content variation.",
-                  "FX-driven UI (banner, CTA button colour) is handled by client components that read cookies after hydration.",
+                  "Runs only on an ISR cache miss - the first request for a URL, or after a webhook marks it stale.",
+                  "Queries Optimizely Graph for the page content and renders React Server Components to HTML.",
+                  "Writes the rendered output back to the CDN cache so subsequent requests skip the server.",
                 ],
               },
               {
@@ -419,7 +506,7 @@ export default function ArchitecturePage() {
                 hcolor: "text-error",
                 points: [
                   "GraphQL delivery API at cg.optimizely.com. Serves CMS content, navigation, and banners.",
-                  "Accepts a variation filter so a single query can return either the base content or a specific named variation.",
+                  "Read-optimized and globally distributed - built for high-traffic reads, not authoring operations.",
                   "Has its own CDN cache layer independent of Next.js. Bypass with ?cache=false for preview/seed scripts.",
                   "Fires a webhook to /api/webhooks on every content change: bulk.completed, doc.updated, doc.expired.",
                 ],
@@ -430,18 +517,8 @@ export default function ArchitecturePage() {
                 hcolor: "text-error",
                 points: [
                   "Authors create and manage pages, blocks, and navigation in Visual Builder.",
-                  "CMS Variation names must exactly match FX variation key strings (case-sensitive). A mismatch means the variation content is never served.",
+                  "Stores content as structured data and generates no HTML of its own.",
                   "On publish: content syncs to Optimizely Graph. Graph fires a webhook to trigger ISR invalidation.",
-                ],
-              },
-              {
-                label: "cdn.optimizely.com",
-                color: "border-teal-300 bg-teal-50",
-                hcolor: "text-teal-700",
-                points: [
-                  "Serves the FX SDK datafile (JSON) - fetched by Edge Middleware on every request that doesn't hit the 60s edge cache.",
-                  "Receives bucketing events from the browser SDK (FxBucketingEvent component). These events are what appear in Optimizely's Results tab.",
-                  "The split: middleware fetches the datafile and evaluates flags (no events), the browser fires the event for the specific flag that was active on the page.",
                 ],
               },
             ].map(({ label, color, hcolor, points }) => (
@@ -478,7 +555,6 @@ export default function ArchitecturePage() {
               <ul className="space-y-1.5">
                 {[
                   "Opens Visual Builder - edits page composition, block content, and navigation.",
-                  "Creates CMS Variations to match FX flag variation keys. The variation name must match exactly (case-sensitive).",
                   "Clicks Publish. The CMS syncs the change to Optimizely Graph, which fires a POST webhook to /api/webhooks.",
                   "The webhook marks the ISR cache as stale. The next visitor request triggers a background re-render. The editor does not wait for the CDN to clear.",
                   "Preview mode bypasses the ISR cache entirely - the editor sees draft content via a previewToken that the app reads from the URL.",
@@ -493,15 +569,14 @@ export default function ArchitecturePage() {
             <div className="rounded-2xl border border-tertiary/30 bg-tertiary/10 p-5">
               <h3 className="font-display font-bold text-sm text-tertiary mb-1">Visitor</h3>
               <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
-                Makes an HTTPS request. Three execution environments run on their behalf in sequence.
+                Makes an HTTPS request. The CDN answers it, falling back to the Next.js server only on a cache miss.
               </p>
               <ul className="space-y-1.5">
                 {[
-                  "Request hits Edge Middleware first. A UUID cookie (optimizelyEndUserId) is set on first visit and persists for one year - this is the stable bucketing ID.",
-                  "Middleware rewrites the URL with variation segments and the CDN is checked. A warm cache hit returns the page in ~10-50ms with no server involvement.",
+                  "The request hits the CDN edge. A warm ISR cache hit returns the page in ~10-50ms with no server involvement.",
                   "On a cache miss, the Next.js server renders the page from Graph data and caches the result. The visitor receives the same HTML either way.",
-                  "After the HTML arrives, React hydrates in the browser. Client components (banner, CTA button) read cookies and apply personalisation - no server round-trip.",
-                  "The browser SDK fires a bucketing event to cdn.optimizely.com for the active flag. This is the impression that appears in the FX Results tab.",
+                  "After the HTML arrives, React hydrates in the browser. Client components handle any interactivity - no server round-trip.",
+                  "Static assets (JS, CSS, images) are fetched from the CDN and cached in the browser.",
                 ].map((p, i) => (
                   <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
                     <span className="shrink-0 font-bold text-tertiary">-</span>
@@ -532,28 +607,18 @@ export default function ArchitecturePage() {
               },
               {
                 n: "2", color: "bg-tertiary",
-                label: "Edge Middleware evaluates FX flags",
-                detail: "Fetches the FX datafile from cdn.optimizely.com (edge-cached for 60s). Reads user context from cookies (optimizelyEndUserId, demo_persona, demo_bucketing_id). Calls decideAll([DISABLE_DECISION_EVENT]) - no bucketing events yet. Rewrites the URL with active variation segments sorted for a stable cache key, e.g. /en/investments/stocks-isa/__v_homepage--variation_1/__v_cta--on.",
-              },
-              {
-                n: "3", color: "bg-tertiary",
                 label: "Edge CDN checks the ISR cache",
-                detail: "The rewritten URL is looked up. Cache HIT: the ISR-cached page is returned to the browser in ~10-50ms. Cache MISS: the request is forwarded to the Next.js server.",
+                detail: "The requested URL is looked up. Cache HIT: the ISR-cached page is returned to the browser in ~10-50ms. Cache MISS: the request is forwarded to the Next.js server.",
               },
               {
-                n: "4", color: "bg-brand-fill",
+                n: "3", color: "bg-brand-fill",
                 label: "Next.js renders the page (ISR miss only)",
-                detail: "The catch-all route extracts variation info from the URL slug - no cookies() or headers() calls. Queries Optimizely Graph with a variation filter to fetch the matching CMS content variation. Renders the page with export const revalidate = 60. The rendered output is stored in the CDN cache.",
+                detail: "The catch-all route queries Optimizely Graph for the page content - no cookies() or headers() calls. Renders React Server Components to HTML with export const revalidate. The rendered output is stored in the CDN cache.",
               },
               {
-                n: "5", color: "bg-tertiary",
+                n: "4", color: "bg-tertiary",
                 label: "HTML returned to browser",
-                detail: "The response is served - from CDN on a hit, from Next.js on a miss. The browser receives identical HTML either way.",
-              },
-              {
-                n: "6", color: "bg-teal-600",
-                label: "Browser fires FX bucketing event",
-                detail: "After hydration, the FxBucketingEvent component runs decide(flagKey, []) via the browser SDK. The empty options array means the bucketing event is NOT suppressed - it is recorded in Optimizely's results. This is the one event per flag per page load that attributes the impression.",
+                detail: "The response is served - from CDN on a hit, from Next.js on a miss. The browser receives identical HTML either way, then React hydrates for any client-side interactivity.",
               },
             ].map(({ n, color, label, detail }) => (
               <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
@@ -644,7 +709,7 @@ export default function ArchitecturePage() {
                 n: "2",
                 label: "CDN edge / ISR full-route cache",
                 sub: "~10-50ms - invalidated by the Graph webhook",
-                detail: "Stores the fully rendered HTML of every page, one entry per __v_ variation URL, with a 60 second TTL. A warm hit is served from the nearest edge node without touching the Next.js server. This is the layer that absorbs almost all visitor traffic.",
+                detail: "Stores the fully rendered HTML of every page, one entry per page URL. A warm hit is served from the nearest edge node without touching the Next.js server. This is the layer that absorbs almost all visitor traffic.",
               },
               {
                 n: "3",
@@ -677,12 +742,6 @@ export default function ArchitecturePage() {
               </div>
             ))}
           </div>
-          <div className="mt-6 rounded-xl border border-ghost-border bg-surface-lowest p-5">
-            <h3 className="font-display font-semibold text-sm text-on-surface mb-2">One cache sits outside this stack</h3>
-            <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl">
-              The FX datafile edge cache. Edge Middleware fetches the flag configuration JSON from cdn.optimizely.com with a 60 second edge cache, so flag evaluation adds no measurable latency to the request path - it runs before the ISR cache lookup, not behind it.
-            </p>
-          </div>
         </section>
 
         {/* Failure modes */}
@@ -713,7 +772,7 @@ export default function ArchitecturePage() {
                 hcolor: "text-error",
                 points: [
                   "Warm pages keep serving from the CDN ISR cache - a cache hit never queries Graph.",
-                  "When a render does happen, query modules catch the failure and return static fallback data instead of throwing: GetNavigation.ts returns DEMO_NAV_DATA with fromCms: false, so the site chrome never disappears.",
+                  "When a render does happen, wrap each content query so a Graph failure returns static or cached fallback data instead of throwing - shared layout elements like navigation and footer keep rendering.",
                   "Page content queries without a fallback surface to Next.js error boundaries rather than crashing the whole site.",
                 ],
               },
@@ -722,19 +781,9 @@ export default function ArchitecturePage() {
                 color: "border-tertiary/30 bg-tertiary/10",
                 hcolor: "text-tertiary",
                 points: [
-                  "The revalidate TTL is the backstop: page caches expire after 60 seconds, navigation after 300.",
-                  "Worst case, visitors see content that is about a minute stale - then the next request triggers a background re-render with fresh Graph data.",
+                  "The revalidate TTL is the backstop: page caches expire after their TTL and re-render on the next request.",
+                  "Worst case, visitors briefly see slightly stale content - then the next request triggers a background re-render with fresh Graph data.",
                   "No manual intervention needed; the system self-heals on the next TTL expiry.",
-                ],
-              },
-              {
-                label: "FX datafile unreachable",
-                color: "border-teal-300 bg-teal-50",
-                hcolor: "text-teal-700",
-                points: [
-                  "Middleware fetches the datafile with a 3 second timeout and never fails the request - any FX error falls through to serving the page unmodified.",
-                  "No variation rewrite happens, so every visitor gets the original (base) content until the datafile is reachable again.",
-                  "Experiments pause gracefully: no impressions are recorded for the gap, but nothing breaks for visitors.",
                 ],
               },
             ].map(({ label, color, hcolor, points }) => (
@@ -781,203 +830,18 @@ export default function ArchitecturePage() {
           </div>
         </section>
 
-        <section id="experimentation-personalization">
+        {/* CDN compatibility */}
+        <section id="cdn-compatibility">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            A/B Testing, Experimentation & Personalization{" "}
-            <a href="#experimentation-personalization" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            CDN Compatibility{" "}
+            <a href="#cdn-compatibility" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            Three related concepts that all mean the same thing at a high level: different users see different content. They differ in how a user is assigned to a version.
+            The ISR full-route cache is the layer that absorbs visitor traffic. It relies only on standard, portable CDN behaviour.
           </p>
-          <div className="grid md:grid-cols-3 gap-5 mb-5">
-            {[
-              {
-                label: "A/B Testing",
-                color: "border-tertiary/30 bg-tertiary/10",
-                hcolor: "text-tertiary",
-                description: "The simplest form. Two versions of a page (A and B) are shown to two random groups of users. You measure which version results in more sign-ups, clicks, or purchases - then keep the winner.",
-                points: [
-                  "Purely random - no targeting logic.",
-                  "Users are split 50/50 (or any ratio you set).",
-                  "The goal is statistical evidence: does version B outperform A?",
-                  "Once you have a winner, you roll it out to everyone.",
-                ],
-              },
-              {
-                label: "Experimentation",
-                color: "border-tertiary/30 bg-tertiary/10",
-                hcolor: "text-tertiary",
-                description: "A more powerful form of A/B testing. Instead of just two versions, you can have multiple variations and control exactly who is eligible to see them.",
-                points: [
-                  "Multiple variations, not just A and B.",
-                  "Controlled rollout - show to 10% of users first, then expand.",
-                  "Target by attributes: device type, location, persona, plan tier.",
-                  "Optimizely Feature Experimentation (FX) is this layer in the demo.",
-                ],
-              },
-              {
-                label: "Personalization",
-                color: "border-teal-200 bg-teal-50",
-                hcolor: "text-teal-700",
-                description: "Not random at all. Content is shown to a specific user because of something you already know about them - not because they were randomly drawn into a group.",
-                points: [
-                  "A returning business customer sees business-focused content.",
-                  "A first-time visitor sees an introductory message.",
-                  "Assignment is deterministic: the same user always gets the same content.",
-                  "In this demo: the demo_persona cookie controls which CMS variation is served.",
-                ],
-              },
-            ].map(({ label, color, hcolor, description, points }) => (
-              <div key={label} className={`rounded-2xl border p-5 ${color}`}>
-                <h3 className={`font-display font-bold text-sm mb-2 ${hcolor}`}>{label}</h3>
-                <p className="text-xs text-on-surface-variant leading-relaxed mb-3">{description}</p>
-                <ul className="space-y-1.5">
-                  {points.map((p, i) => (
-                    <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
-                      <span className={`shrink-0 font-bold ${hcolor}`}>-</span>
-                      <span>{p}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
           <div className="rounded-xl border border-ghost-border bg-surface-lowest p-5">
-            <h3 className="font-display font-semibold text-sm text-on-surface mb-2">Same mechanism, different assignment logic</h3>
             <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl">
-              In this demo, both experimentation and personalization are served by the exact same technical mechanism: the Edge Middleware encodes a variation name into the URL (e.g.{" "}
-              <span className="font-mono text-[10px]">__v_homepage--variation_1</span>
-              ), the CDN caches each variation URL separately, and Next.js fetches the matching CMS Variation from Graph. The only difference is what drives the variation name. For FX flags it is a random bucket assignment based on the user&apos;s stable ID. For the demo_persona cookie it is the cookie value itself. Both paths produce a variation key that goes into the URL - the rest of the system is identical.
-            </p>
-          </div>
-        </section>
-
-        <section id="why-this-architecture">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Why this architecture?{" "}
-            <a href="#why-this-architecture" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            The design decisions behind how this system is built, and why they were made.
-          </p>
-          <div className="space-y-5">
-            <div className="rounded-xl border border-ghost-border bg-surface-lowest p-5">
-              <h3 className="font-display font-semibold text-sm text-on-surface mb-4">The core problem: caching pages that differ by user</h3>
-              <div className="grid md:grid-cols-2 gap-5">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-error mb-2">The naive approach - and why it fails</p>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">
-                    The obvious way to show different content to different users is to read a cookie on the server and render the appropriate version. The problem: CDNs cache by URL. Two users requesting the same URL get the same cached page regardless of their cookies. To fix this you would need to configure the CDN to vary its cache by cookie - which requires CDN-specific rules, disables most cache optimisations, and often results in every request hitting the server anyway.
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-brand mb-2">This architecture's solution</p>
-                  <ul className="space-y-1.5">
-                    {[
-                      "Evaluate which variation a user should see at the edge - before the CDN cache is checked.",
-                      "Encode the result in the URL: /savings/__v_homepage--variation_1",
-                      "The CDN caches by URL, so each variation gets its own independent cache entry.",
-                      "Next.js only renders a page on the FIRST request for each variation URL.",
-                      "All subsequent requests are served from CDN cache in ~10-50ms - no server involved.",
-                    ].map((p, i) => (
-                      <li key={i} className="flex gap-2 text-xs text-on-surface-variant leading-relaxed">
-                        <span className="shrink-0 font-bold text-brand">-</span>
-                        <span>{p}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-xl border border-ghost-border bg-surface-lowest p-5">
-              <h3 className="font-display font-semibold text-sm text-on-surface mb-2">Why Optimizely Graph is a separate layer</h3>
-              <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl">
-                The CMS authoring API is designed for editors - it is single-region, write-heavy, and not built to handle thousands of simultaneous visitors. Optimizely Graph is a separate globally-distributed GraphQL delivery layer. It indexes content from the CMS, adds its own CDN cache, supports filtering by variation and locale in a single query, and is purpose-built for read performance at scale. Think of the CMS as your database and Graph as the read replica optimized for your frontend queries. This also means the CMS can go into maintenance mode without affecting visitors - Graph keeps serving content from its own index.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Execution environments */}
-        <section id="execution-environments">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Execution Environments{" "}
-            <a href="#execution-environments" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            Three separate runtimes execute code on behalf of a visitor request. Each has a different set of APIs, a different view of the request, and a different relationship to the cache.
-          </p>
-          <div className="grid md:grid-cols-3 gap-5">
-            {[
-              {
-                label: "Middleware",
-                subtitle: "Edge Runtime - every request",
-                color: "border-tertiary/30 bg-tertiary/10",
-                hcolor: "text-tertiary",
-                rows: [
-                  { k: "When", v: "Every request, before the CDN cache is checked. Runs even on cache hits." },
-                  { k: "Where", v: "V8 isolate on CDN edge nodes. No Node.js APIs (no fs, no process.env at runtime). Cold starts in under 1ms." },
-                  { k: "Can read", v: "Cookies, User-Agent, full request URL. Cannot call cookies() or headers() from next/headers." },
-                  { k: "What it does", v: "Fetches the FX datafile, runs decideAll(), rewrites the URL with __v_ variation segments." },
-                  { k: "Optimizely SDK", v: "@optimizely/optimizely-sdk/universal - the Edge-compatible build with no Node.js dependencies." },
-                  { k: "Cache impact", v: "None. Middleware runs before the CDN cache lookup and does not write to it." },
-                ],
-              },
-              {
-                label: "Next.js Server",
-                subtitle: "Node.js - ISR miss only",
-                color: "border-brand/30 bg-brand/10",
-                hcolor: "text-brand",
-                rows: [
-                  { k: "When", v: "Only on an ISR cache miss: the first request to a URL, or after a webhook marks it stale." },
-                  { k: "Where", v: "Node.js process (serverless function or long-running server). Full Node.js APIs available." },
-                  { k: "Can read", v: "URL params (the slug including __v_ segments). Must NOT call cookies() or headers() - any use in the render tree forces cache-control: no-store on the whole response." },
-                  { k: "What it does", v: "Calls extractVariations(slug) to recover the variation keys. Queries Optimizely Graph with a variation filter. Renders React Server Components to HTML." },
-                  { k: "Optimizely SDK", v: "None. The variation is already encoded in the URL from middleware - no SDK call needed server-side." },
-                  { k: "Cache impact", v: "Writes the rendered HTML to the CDN cache with a 60s TTL. All subsequent requests for that URL are served from the CDN." },
-                ],
-              },
-              {
-                label: "Browser",
-                subtitle: "Client-Side - after hydration",
-                color: "border-tertiary/30 bg-tertiary/10",
-                hcolor: "text-tertiary",
-                rows: [
-                  { k: "When", v: "After the browser receives HTML and React hydrates. Runs on every page load, including cache hits." },
-                  { k: "Where", v: "Visitor's browser. Full Web APIs available (fetch, document.cookie, localStorage)." },
-                  { k: "Can read", v: "document.cookie (optimizelyEndUserId, demo_persona). The cookie is intentionally NOT httpOnly so the browser SDK can read it for stable bucketing." },
-                  { k: "What it does", v: "UI personalisation (banner copy, CTA button color) via client components that read cookies in useEffect. Fires the FX bucketing event via decide(flagKey, [])." },
-                  { k: "Optimizely SDK", v: "@optimizely/optimizely-sdk (browser build, resolved automatically by the bundler). A module-level singleton so the datafile is fetched once per page load." },
-                  { k: "Cache impact", v: "None. CSR runs in the browser and does not affect the CDN cache or ISR state." },
-                ],
-              },
-            ].map(({ label, subtitle, color, hcolor, rows }) => (
-              <div key={label} className={`rounded-2xl border p-5 ${color}`}>
-                <h3 className={`font-display font-bold text-sm ${hcolor}`}>{label}</h3>
-                <p className={`text-[10px] font-semibold uppercase tracking-wider ${hcolor} opacity-60 mb-3`}>{subtitle}</p>
-                <dl className="space-y-2">
-                  {rows.map(({ k, v }) => (
-                    <div key={k}>
-                      <dt className={`text-[10px] font-bold uppercase tracking-wider ${hcolor} mb-0.5`}>{k}</dt>
-                      <dd className="text-xs text-on-surface-variant leading-relaxed">{v}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-6 rounded-xl border border-ghost-border bg-surface-lowest p-5">
-            <h3 className="font-display font-semibold text-sm text-on-surface mb-2">CDN compatibility</h3>
-            <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl">
-              This demo deploys to Vercel, but the ISR-via-URL-rewrite pattern works with any CDN that supports path-based cache keys.
-              The constraint is simple: the CDN must treat{" "}
-              <span className="font-mono text-[10px]">/savings/__v_homepage--variation_1</span>{" "}
-              and{" "}
-              <span className="font-mono text-[10px]">/savings/</span>{" "}
-              as separate cache entries. That is standard behaviour - Netlify, AWS CloudFront, Cloudflare, Akamai, and Fastly all do this out of the box.
-              The reason the variation is encoded in the URL (not a cookie or a custom request header) is that most CDNs do not vary their cache by cookie or arbitrary header by default,
-              and configuring them to do so requires CDN-specific rules (e.g. Akamai vary-by-header, CloudFront cache policies). A URL-based key needs no CDN configuration at all.
+              This demo deploys to Vercel, but the ISR pattern works with any CDN that caches by URL path - which is the default everywhere. Netlify, AWS CloudFront, Cloudflare, Akamai, and Fastly all serve path-keyed cache entries out of the box, so no custom cache configuration is needed. Freshness is driven by the publish webhook (revalidatePath / revalidateTag), with the per-route revalidate TTL as a backstop.
             </p>
           </div>
         </section>
@@ -1015,22 +879,6 @@ export default function ArchitecturePage() {
                 def: "When something happens in one system, it automatically sends an HTTP POST request to notify another system. When an editor publishes in Optimizely CMS, Optimizely Graph fires a webhook to tell this Next.js app to invalidate its cache.",
               },
               {
-                term: "Feature Flag",
-                def: "A named switch in Optimizely Feature Experimentation that controls which variation of a feature or page a user sees. Flags can be simple on/off toggles or have multiple named variations with different rollout percentages.",
-              },
-              {
-                term: "Variation",
-                def: "One specific version of content. A homepage might have a control (original) and variation_1 (different hero image). Each CMS Variation maps to a separate CDN cache entry via the __v_ URL segment.",
-              },
-              {
-                term: "Bucketing",
-                def: "The process of assigning a user to a variation. Based on a stable user ID (the optimizelyEndUserId cookie) so the same user always sees the same variation. The assignment rules live in the FX datafile.",
-              },
-              {
-                term: "Datafile",
-                def: "A JSON file published by Optimizely FX containing all flag configurations and variation rules. Edge Middleware fetches this file (edge-cached for 60s) and evaluates flags locally - no remote API call needed on every request.",
-              },
-              {
                 term: "RSC",
                 full: "React Server Components",
                 def: "A Next.js and React feature where components render on the server and send HTML to the browser instead of JavaScript that runs client-side. Used for CMS content rendering so the page arrives pre-rendered and cacheable.",
@@ -1056,8 +904,8 @@ export default function ArchitecturePage() {
           <div className="grid md:grid-cols-3 gap-4">
             {[
               { href: "/demo/caching",                label: "ISR Caching",                description: "Cache layers, revalidation tags, webhooks, and what kills ISR." },
-              { href: "/demo/feature-experimentation", label: "Experimentation",    description: "Middleware FX evaluation, URL rewriting, and client-side bucketing events." },
-              { href: "/demo/personalization",         label: "Personalization",            description: "Audience targeting via CMS variation filter and the demo_persona cookie." },
+              { href: "/demo/feature-experimentation", label: "Experimentation",    description: "Feature flags, A/B tests, and how a variation is chosen and served." },
+              { href: "/demo/personalization",         label: "Personalization",            description: "Audience targeting and serving content per visitor persona." },
               { href: "/demo/error-handling",          label: "Error Handling",             description: "Graceful degradation: error boundaries, fallbacks, and not-found handling." },
               { href: "/demo/media",                   label: "Media & DAM",                description: "Asset workflow, image delivery, and next/image optimization." },
             ].map(({ href, label, description }) => (
