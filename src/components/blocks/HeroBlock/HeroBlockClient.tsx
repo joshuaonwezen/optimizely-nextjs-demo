@@ -77,7 +77,7 @@ export function HeroBlockClient({
     <section
       data-component="HeroBlock"
       data-track-view="HeroBlock"
-      className={`w-screen ml-[calc(50%-50vw)] ${surfaceClass} relative flex items-center overflow-hidden ${isTall ? "min-h-screen" : "min-h-[640px]"}`}
+      className={`w-screen ml-[calc(50%-50vw)] ${surfaceClass} relative flex items-center overflow-hidden ${isTall ? "min-h-screen" : "min-h-[480px]"}`}
     >
       {bgUrl && (
         <Image
@@ -90,7 +90,7 @@ export function HeroBlockClient({
         />
       )}
       <div
-        className={`relative z-10 max-w-7xl mx-auto px-8 py-32 w-full ${effectiveCentered ? "text-center" : ""}`}
+        className={`relative z-10 max-w-7xl mx-auto px-8 py-20 w-full ${effectiveCentered ? "text-center" : ""}`}
       >
         <div className={effectiveCentered ? "max-w-3xl mx-auto" : "max-w-3xl"}>
           {displayTitle && (
