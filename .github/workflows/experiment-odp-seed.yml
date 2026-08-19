@@ -1,0 +1,25 @@
+name: Seed Experimentation + ODP
+
+on:
+  schedule:
+    - cron: "27 6 * * *" # ~06:27 UTC daily (just after the GA4 job at 06:17)
+  workflow_dispatch: # allows manual runs from the Actions tab
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Send a day of fake FX + ODP traffic
+        run: npm run exp:seed -- --users=2026
+        env:
+          # FX SDK key -> datafile for real impression bucketing. ODP key -> the
+          # /v3/events + /v3/profiles REST API. Add these as repo secrets; they are
+          # the same trust level as the GA4 secret and safe to run in CI.
+          OPTIMIZELY_FX_SDK_KEY: ${{ secrets.OPTIMIZELY_FX_SDK_KEY }}
+          OPTIMIZELY_ODP_API_KEY: ${{ secrets.OPTIMIZELY_ODP_API_KEY }}
+          OPTIMIZELY_ODP_API_HOST: ${{ secrets.OPTIMIZELY_ODP_API_HOST }}
