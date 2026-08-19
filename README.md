@@ -1,46 +1,55 @@
 # Optimizely Next.js Demo - Mosey Bank
 
-A production-style reference implementation for Optimizely SaaS CMS + Feature Experimentation on Next.js 16. Built as a fictional retail banking brand (Mosey Bank), it demonstrates how the Optimizely platform fits together end-to-end: content editing, audience targeting, ISR caching, and more - with 22 annotated SDK demo pages developers can run locally against a real CMS instance.
+A production-style reference implementation for Optimizely SaaS CMS + Feature Experimentation on Next.js 16. Built as a fictional retail banking brand (Mosey Bank), it demonstrates how the Optimizely platform fits together end-to-end: content editing, audience targeting, ISR caching, and more - with 27 annotated SDK demo pages developers can run locally against a real CMS instance.
 
 ## What this demonstrates
 
 ### CMS
 | Demo page | What it covers |
 |-----------|---------------|
-| `/demo/visual-builder` | Visual Builder composition model, page routes, component registry, block authoring |
-| `/demo/content-modelling` | Content types, property types, display templates, fragment co-location |
-| `/demo/preview` | Draft vs published content, preview URL, Visual Builder iframe communication |
-| `/demo/forms` | Form blocks, submit handler, audience-aware personalization loop |
-| `/demo/navigation` | Graph-driven navigation tree, recursive GraphQL query, nested menu rendering |
-| `/demo/localization` | Locale as content dimension, Graph locale filter, multi-language routing |
-| `/demo/seo` | generateMetadata, sitemaps, JSON-LD, image optimization |
-| `/demo/management-api` | Programmatic content creation, seeding, migrations |
-| `/demo/rich-text` | richText property type, JSON vs HTML rendering, embedded blocks |
-| `/demo/content-reuse` | Referenced vs embedded content, single source of truth, content drift |
-| `/demo/media` | Image property modelling, Graph response shapes, next/image patterns, damAssets |
-| `/demo/global-settings` | Singleton content items, ISR cache strategy for layout components |
-| `/demo/content-lifecycle` | Editorial states, scheduled publishing, webhook events |
+| `/demo/visual-builder` | Blocks, compositions, and display templates |
+| `/demo/display-templates` | Every template variant and setting rendered side by side |
+| `/demo/content-modelling` | Content types and properties |
+| `/demo/contracts` | Shared contracts, mappings, and bindings |
+| `/demo/preview` | In-context editing and draft content |
+| `/demo/forms` | Form blocks and submissions |
+| `/demo/navigation` | Recursive nav trees |
+| `/demo/localization` | Multi-language content and routing |
+| `/demo/seo` | Metadata, sitemaps, and JSON-LD |
+| `/demo/redirects` | CMS-managed redirect rules and middleware |
+| `/demo/management-api` | Content creation, seeding, and migrations |
+| `/demo/rich-text` | JSON vs HTML rendering and embedded blocks |
+| `/demo/media` | DAM assets, renditions, and next/image |
+| `/demo/global-settings` | Singleton items for site-wide config |
+| `/demo/content-lifecycle` | Editorial states and scheduled publishing |
 
 ### Integrations
 | Demo page | What it covers |
 |-----------|---------------|
-| `/demo/feature-experimentation` | FX flags, A/B experiments, CMS Variations, feature variables, impression firing |
-| `/demo/personalization` | Audience attribute collection, visitor context, the Audience Switcher demo tool |
-| `/demo/external-content` | Graph Content Source API, `_Item`/`_AssetItem`/`_ImageItem` base types, sync paths |
+| `/demo/feature-experimentation` | A/B tests, flags, and bucketing |
+| `/demo/personalization` | Audiences, personas, and variation filter |
+| `/demo/event-tracking` | Global tracking layer and conversion events |
+| `/demo/external-content` | Third-party data via Content Source API |
 
 ### Graph & Queries
 | Demo page | What it covers |
 |-----------|---------------|
-| `/demo/caching` | Next.js ISR, Graph CDN cache, webhook-driven revalidation, two-layer cache architecture |
-| `/demo/graph-queries` | Efficient querying patterns, @recursive, avoiding N+1 |
-| `/demo/search` | Full-text and semantic search, cursor pagination, cache strategy |
-| `/demo/listing` | Paginated list pages, sorting, filtering |
+| `/demo/caching` | ISR, revalidation tags, and webhooks |
+| `/demo/graph-queries` | Querying patterns and @recursive |
+| `/demo/search` | Full-text search with Graph filtering |
+| `/demo/listing` | Lists, facets, autocomplete, and cursor pagination |
 
 ### Architecture
 | Demo page | What it covers |
 |-----------|---------------|
-| `/demo/architecture` | How SaaS CMS, Graph, Next.js, and Feature Experimentation fit together |
-| `/demo/error-handling` | Graceful degradation, notFound vs 500, error boundaries, fallback data |
+| `/demo/architecture` | How CMS, Graph, and Next.js fit together - plus SaaS CMS vs CMS 13 |
+| `/demo/error-handling` | notFound vs 500, error boundaries, fallbacks |
+
+### AI
+| Demo page | What it covers |
+|-----------|---------------|
+| `/demo/opal` | GEO, SEO, and content review agents |
+| `/demo/mcp-server` | Natural language content authoring via MCP |
 
 ## Tech stack
 
@@ -156,7 +165,7 @@ src/
       revalidate/        Manual ISR revalidation endpoint (path-specific or full-site)
       publish/           CMS publish event hook (full-site bust)
     preview/             Draft mode preview route
-    demo/                22 annotated SDK demo pages (read-only, do not edit content)
+    demo/                27 annotated SDK demo pages (read-only, do not edit content)
 
   components/
     blocks/              One directory per block - index.tsx (type + component) + *.fragment.ts
@@ -195,9 +204,9 @@ Two independent cache layers sit between a CMS publish and a user seeing fresh c
 | Next.js fetch cache (ISR) | `next.revalidate`, `tags`, `cache: "no-store"` in `graphqlFetch()` | `revalidatePath` / `revalidateTag` via webhooks |
 | Graph CDN cache | Optimizely infrastructure | `?cache=false` on the endpoint URL, or `{ cache: false }` in SDK methods |
 
-The catch-all CMS page route (`[[...slug]]`) is `force-dynamic` and uses `{ cache: false }` on all Graph requests so every request gets the absolute latest content from Graph's data store.
+The catch-all CMS page route (`[[...slug]]`) uses ISR: it exports `revalidate = 3600` and tags its Graph requests with `next: { revalidate: CACHE_TTL, tags: ["page"] }`. Pages serve from cache for up to an hour and revalidate immediately when the publish webhook calls `revalidateTag("page")`.
 
-ISR pages (navigation, banners, etc.) use tag-based revalidation via the `/api/webhooks` endpoint, which Optimizely Graph calls on every `bulk.completed`, `doc.updated`, and `doc.expired` event.
+Other ISR content (navigation, banners, etc.) uses the same tag-based revalidation via the `/api/webhooks` endpoint, which Optimizely Graph calls on every `bulk.completed`, `doc.updated`, and `doc.expired` event.
 
 ## Feature Experimentation + CMS Variations
 
