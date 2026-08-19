@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
+import { StepBadge } from "@/components/ui/StepBadge";
 
 export const metadata: Metadata = {
   title: "CMS MCP Server",
@@ -42,9 +43,7 @@ function ExampleCard({
         <ol className="space-y-1.5">
           {steps.map((step, i) => (
             <li key={i} className="flex gap-2.5 text-sm text-on-surface-variant">
-              <span className="shrink-0 w-5 h-5 rounded-full bg-brand/10 flex items-center justify-center text-brand font-bold text-[10px]">
-                {i + 1}
-              </span>
+              <StepBadge size="sm" variant="soft">{i + 1}</StepBadge>
               <span className="leading-relaxed">{step}</span>
             </li>
           ))}

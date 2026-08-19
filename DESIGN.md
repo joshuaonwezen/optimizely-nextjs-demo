@@ -104,7 +104,8 @@ Prioritize **tonal layering** over drop shadows.
 
 ### Cards & Lists
 - No divider lines. Separate with `spacing-8` (2rem) of vertical space or a background shift to `surface-low`.
-- Corner radius `rounded-module` (2rem) via the `.squircle` utility - a superellipse mask (~70% smoothing) approximating the guideline's "Opal pillow" shape, not a plain `border-radius`. See the `.squircle` comment in `globals.css` for the box-shadow caveat: masked surfaces need tonal layering for depth, not `--shadow-ambient`.
+- **Standard card/module radius is `rounded-2xl`** - a plain `border-radius`, applied to the vast majority of cards, panels, and modules across the site.
+- **The `.squircle` utility (`rounded-module`, 2rem) is a deliberate accent, not the default.** It is a superellipse mask (~70% smoothing) approximating the guideline's "Opal pillow" shape, reserved for a handful of hero/highlight surfaces (pricing tiers, stat highlights, featured content). It is intentionally NOT used on ordinary cards for two reasons documented in the `.squircle` comment in `globals.css`: the mask clips `box-shadow` (a squircle surface needs tonal layering for depth - a `surface-lowest` element over a `surface-container` background - not `--shadow-ambient`), and it distorts on very non-square boxes. Use it only where the pillow shape earns those constraints.
 - Small controls (inputs, chips-with-corners) use `rounded-control` (1rem) instead - the smoothing reads negligibly below ~16px, so a plain `border-radius` is enough. Pills and data chips keep `rounded-full`.
 
 ### Input Fields

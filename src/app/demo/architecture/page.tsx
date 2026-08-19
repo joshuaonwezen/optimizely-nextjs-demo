@@ -1,20 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import DemoHero from "@/components/demo/DemoHero";
+import { StepBadge } from "@/components/ui/StepBadge";
 
 export const metadata: Metadata = {
   title: "System Architecture",
 };
 
 const MARKERS = [
-  { id: "arr-blue",   color: "#007b79" },
-  { id: "arr-purple", color: "#8f4764" },
-  { id: "arr-orange", color: "#ff99b6" },
-  { id: "arr-teal",   color: "#197050" },
-  { id: "arr-red",    color: "#7ddd3d" },
-  { id: "arr-green",  color: "#3ab533" },
-  { id: "arr-lblue",  color: "#91dbda" },
+  { id: "arr-blue",   color: "var(--tertiary)" },
+  { id: "arr-purple", color: "var(--error)" },
+  { id: "arr-orange", color: "var(--error)" },
+  { id: "arr-teal",   color: "var(--primary)" },
+  { id: "arr-red",    color: "var(--primary-fill-dim)" },
+  { id: "arr-green",  color: "var(--primary)" },
+  { id: "arr-lblue",  color: "var(--secondary-container)" },
 ];
+
+// Maps a step badge's background token to its paired on-color, so white
+// text never lands on a light fill (which fails contrast in dark mode).
+const BADGE_ON_COLOR: Record<string, string> = {
+  "bg-tertiary": "text-on-tertiary",
+  "bg-error": "text-on-error",
+  "bg-brand-fill": "text-on-brand",
+};
 
 function Box({
   x, y, w = 152, h = 74,
@@ -33,7 +42,7 @@ function Box({
       <rect x={x} y={y + hh - 8} width={w} height={8} fill={hc} />
       <text
         x={x + w / 2} y={y + hh / 2 + 5}
-        textAnchor="middle" fill="white"
+        textAnchor="middle" fill="var(--surface-container-lowest)"
         fontSize={11} fontWeight="bold" fontFamily="system-ui,sans-serif"
       >
         {title}
@@ -338,9 +347,7 @@ export default function ArchitecturePage() {
               },
             ].map(({ n, label, sub, detail }) => (
               <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
-                <div className="shrink-0 w-7 h-7 rounded-full bg-brand flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">{n}</span>
-                </div>
+                <StepBadge size="lg">{n}</StepBadge>
                 <div>
                   <p className="text-sm font-semibold text-on-surface">{label}</p>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant/60 mb-0.5">{sub}</p>
@@ -363,7 +370,7 @@ export default function ArchitecturePage() {
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/1-installation.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
-          <div className="rounded-2xl border border-ghost-border bg-white p-4 overflow-x-auto">
+          <div className="rounded-2xl border border-ghost-border bg-surface-lowest p-4 overflow-x-auto">
             <svg
               viewBox="0 0 1060 450"
               width="100%"
@@ -389,57 +396,57 @@ export default function ArchitecturePage() {
                   actual responder in both cases (cache hit served directly;
                   cache miss forwarded from Next.js and then cached + served). */}
               <line x1={444} y1={170} x2={144} y2={170}
-                stroke="#91dbda" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-lblue)" />
+                stroke="var(--secondary-container)" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-lblue)" />
 
               {/* Browser → Edge CDN - HTTPS */}
               <line x1={144} y1={222} x2={370} y2={222}
-                stroke="#007b79" strokeWidth={2} markerEnd="url(#arr-blue)" />
+                stroke="var(--tertiary)" strokeWidth={2} markerEnd="url(#arr-blue)" />
 
               {/* Edge CDN → Next.js - ISR miss */}
               <line x1={518} y1={222} x2={550} y2={222}
-                stroke="#8f4764" strokeWidth={2} markerEnd="url(#arr-purple)" />
+                stroke="var(--error)" strokeWidth={2} markerEnd="url(#arr-purple)" />
 
               {/* Next.js → Graph - GraphQL query */}
               <path d="M 702,210 C 726,210 740,155 740,129"
-                fill="none" stroke="#ff99b6" strokeWidth={2} markerEnd="url(#arr-orange)" />
+                fill="none" stroke="var(--error)" strokeWidth={2} markerEnd="url(#arr-orange)" />
 
               {/* Graph → Next.js - content response (dashed) */}
               <path d="M 740,148 C 730,180 718,232 702,232"
-                fill="none" stroke="#ff99b6" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-orange)" />
+                fill="none" stroke="var(--error)" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-orange)" />
 
               {/* CMS → Graph - content sync on publish */}
               <line x1={819} y1={296} x2={819} y2={166}
-                stroke="#3ab533" strokeWidth={2} markerEnd="url(#arr-green)" />
+                stroke="var(--primary)" strokeWidth={2} markerEnd="url(#arr-green)" />
 
               {/* Graph → Next.js - webhook for ISR invalidation (red dashed, routes below) */}
               <path d="M 898,132 L 926,132 L 926,412 L 626,412 L 626,259"
-                fill="none" stroke="#7ddd3d" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-red)" />
+                fill="none" stroke="var(--primary-fill-dim)" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#arr-red)" />
 
               {/* ── Boxes (drawn on top of arrows) ── */}
 
-              <Box x={14}  y={185} w={130} hc="#007b79" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
+              <Box x={14}  y={185} w={130} hc="var(--tertiary)" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Browser" sub={["visitor · editor"]} />
 
-              <Box x={370} y={185} w={148} hc="#8f4764" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
+              <Box x={370} y={185} w={148} hc="var(--error)" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Edge CDN" sub={["ISR full-route cache", "one entry per page URL"]} />
 
-              <Box x={550} y={185} w={152} hc="#197050" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
+              <Box x={550} y={185} w={152} hc="var(--primary)" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Next.js Server" sub={["App Router · RSC", "ISR · revalidate"]} />
 
-              <Box x={740} y={92}  w={158} hc="#ff99b6" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
+              <Box x={740} y={92}  w={158} hc="var(--error)" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Optimizely Graph" sub={["cg.optimizely.com", "GraphQL delivery API"]} />
 
-              <Box x={740} y={296} w={158} hc="#7ddd3d" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
+              <Box x={740} y={296} w={158} hc="var(--primary-fill-dim)" bc="var(--surface-container-low)" stroke="var(--outline-variant)"
                 title="Optimizely CMS" sub={["authoring UI", "Visual Builder"]} />
 
               {/* ── Arrow labels (drawn last, on top) ── */}
-              <text x={294} y={163} textAnchor="middle" fill="#91dbda" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">HTML response</text>
-              <text x={257} y={215} textAnchor="middle" fill="#007b79" fontSize={9} fontFamily="system-ui,sans-serif">HTTPS</text>
-              <text x={534} y={215} textAnchor="middle" fill="#8f4764" fontSize={9} fontFamily="system-ui,sans-serif">ISR miss</text>
-              <text x={726} y={175} textAnchor="end" fill="#ff99b6" fontSize={9} fontFamily="system-ui,sans-serif">GraphQL</text>
-              <text x={714} y={220} textAnchor="middle" fill="#ff99b6" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">content</text>
-              <text x={858} y={232} textAnchor="start" fill="#3ab533" fontSize={9} fontFamily="system-ui,sans-serif">content sync</text>
-              <text x={780} y={425} textAnchor="middle" fill="#7ddd3d" fontSize={9} fontFamily="system-ui,sans-serif">Graph webhook</text>
+              <text x={294} y={163} textAnchor="middle" fill="var(--secondary-container)" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">HTML response</text>
+              <text x={257} y={215} textAnchor="middle" fill="var(--tertiary)" fontSize={9} fontFamily="system-ui,sans-serif">HTTPS</text>
+              <text x={534} y={215} textAnchor="middle" fill="var(--error)" fontSize={9} fontFamily="system-ui,sans-serif">ISR miss</text>
+              <text x={726} y={175} textAnchor="end" fill="var(--error)" fontSize={9} fontFamily="system-ui,sans-serif">GraphQL</text>
+              <text x={714} y={220} textAnchor="middle" fill="var(--error)" fontSize={9} fontFamily="system-ui,sans-serif" fontStyle="italic">content</text>
+              <text x={858} y={232} textAnchor="start" fill="var(--primary)" fontSize={9} fontFamily="system-ui,sans-serif">content sync</text>
+              <text x={780} y={425} textAnchor="middle" fill="var(--primary-fill-dim)" fontSize={9} fontFamily="system-ui,sans-serif">Graph webhook</text>
 
             </svg>
           </div>
@@ -447,12 +454,12 @@ export default function ArchitecturePage() {
           {/* Legend */}
           <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-xs text-on-surface-variant">
             {[
-              { color: "#007b79", label: "HTTPS request",                              dashed: false },
-              { color: "#91dbda", label: "HTML response",                               dashed: true  },
-              { color: "#8f4764", label: "CDN miss forwarded to Next.js",               dashed: false },
-              { color: "#ff99b6", label: "GraphQL query · content response",            dashed: true  },
-              { color: "#3ab533", label: "CMS content sync on publish",                 dashed: false },
-              { color: "#7ddd3d", label: "Graph webhook - ISR cache invalidation",      dashed: true  },
+              { color: "var(--tertiary)", label: "HTTPS request",                              dashed: false },
+              { color: "var(--secondary-container)", label: "HTML response",                               dashed: true  },
+              { color: "var(--error)", label: "CDN miss forwarded to Next.js",               dashed: false },
+              { color: "var(--error)", label: "GraphQL query · content response",            dashed: true  },
+              { color: "var(--primary)", label: "CMS content sync on publish",                 dashed: false },
+              { color: "var(--primary-fill-dim)", label: "Graph webhook - ISR cache invalidation",      dashed: true  },
             ].map(({ color, label, dashed }) => (
               <div key={label} className="flex items-center gap-2">
                 <svg width={30} height={10} aria-hidden="true">
@@ -622,9 +629,7 @@ export default function ArchitecturePage() {
               },
             ].map(({ n, color, label, detail }) => (
               <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
-                <div className={`shrink-0 w-7 h-7 rounded-full ${color} flex items-center justify-center`}>
-                  <span className="text-white text-xs font-bold">{n}</span>
-                </div>
+                <StepBadge size="lg" variant="custom" className={`${color} ${BADGE_ON_COLOR[color]}`}>{n}</StepBadge>
                 <div>
                   <p className="text-sm font-semibold text-on-surface mb-0.5">{label}</p>
                   <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
@@ -674,9 +679,7 @@ export default function ArchitecturePage() {
               },
             ].map(({ n, color, label, detail }) => (
               <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
-                <div className={`shrink-0 w-7 h-7 rounded-full ${color} flex items-center justify-center`}>
-                  <span className="text-white text-xs font-bold">{n}</span>
-                </div>
+                <StepBadge size="lg" variant="custom" className={`${color} ${BADGE_ON_COLOR[color]}`}>{n}</StepBadge>
                 <div>
                   <p className="text-sm font-semibold text-on-surface mb-0.5">{label}</p>
                   <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
@@ -731,9 +734,7 @@ export default function ArchitecturePage() {
               },
             ].map(({ n, label, sub, detail }) => (
               <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
-                <div className="shrink-0 w-7 h-7 rounded-full bg-brand flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">{n}</span>
-                </div>
+                <StepBadge size="lg">{n}</StepBadge>
                 <div>
                   <p className="text-sm font-semibold text-on-surface">{label}</p>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant/60 mb-0.5">{sub}</p>

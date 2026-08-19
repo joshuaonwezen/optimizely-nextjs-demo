@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
+import { StepBadge } from "@/components/ui/StepBadge";
 
 export const metadata: Metadata = { title: "Draft Mode & Preview Demo" };
 
@@ -323,7 +324,7 @@ export default function PreviewDemoPage() {
                   "For Visual Builder in-context editing: set NEXT_PUBLIC_OPTIMIZELY_CMS_URL so the /preview route can build the communicationinjector.js URL. No additional env var needed.",
                 ].map((step, i) => (
                   <li key={i} className="flex gap-3">
-                    <span className="shrink-0 w-6 h-6 rounded-full bg-brand text-white dark:text-on-brand text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                    <StepBadge>{i + 1}</StepBadge>
                     <p className="text-sm text-on-surface-variant leading-relaxed pt-0.5">{step}</p>
                   </li>
                 ))}

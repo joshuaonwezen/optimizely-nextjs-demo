@@ -6,6 +6,7 @@ import { type FxDecision } from "@/lib/optimizely/experimentation";
 import { getOptimizelyUser } from "@/lib/optimizely/user";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
 import DemoHero from "@/components/demo/DemoHero";
+import { StepBadge } from "@/components/ui/StepBadge";
 import CodeBlock from "@/components/demo/CodeBlock";
 import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
@@ -365,9 +366,7 @@ function HeroCopyDemo({ decision }: { decision: FxDecision | undefined }) {
 function Step({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-5">
-      <div className="shrink-0 w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-sm font-bold font-display">
-        {number}
-      </div>
+      <StepBadge size="xl">{number}</StepBadge>
       <div className="pt-1 flex-1">
         <h3 className="font-display font-semibold text-on-surface mb-1">{title}</h3>
         <div className="text-sm text-on-surface-variant leading-relaxed">{children}</div>

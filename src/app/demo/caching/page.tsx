@@ -5,6 +5,7 @@ import SourcePanel from "@/components/demo/SourcePanel";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
+import { StepBadge } from "@/components/ui/StepBadge";
 import Link from "next/link";
 
 export const metadata: Metadata = { title: "ISR Caching & Webhooks Demo" };
@@ -392,38 +393,36 @@ export default function CachingDemoPage() {
           <div className="space-y-2 mb-8">
             {[
               {
-                n: "1", color: "bg-error", label: "Editor hits Publish in the CMS",
+                n: "1", color: "bg-error", onColor: "text-on-error", label: "Editor hits Publish in the CMS",
                 detail: "Content is saved and the CMS begins syncing it to Optimizely Graph.",
               },
               {
-                n: "2", color: "bg-error", label: "Graph indexes the updated content",
+                n: "2", color: "bg-error", onColor: "text-on-error", label: "Graph indexes the updated content",
                 detail: "Optimizely Graph processes the change and makes the new content queryable via its GraphQL API.",
               },
               {
-                n: "3", color: "bg-error", label: "Graph sends a POST webhook to /api/webhooks",
+                n: "3", color: "bg-error", onColor: "text-on-error", label: "Graph sends a POST webhook to /api/webhooks",
                 detail: "Just a signal - a small JSON payload saying \"content changed\" (type: bulk.completed or doc.updated). No content is sent in the webhook itself.",
               },
               {
-                n: "4", color: "bg-brand-fill", label: "Next.js marks cached items as stale",
+                n: "4", color: "bg-brand-fill", onColor: "text-on-brand", label: "Next.js marks cached items as stale",
                 detail: "The webhook handler calls revalidatePath(\"/\", \"layout\") and revalidateTag() for navigation, banner, and quotes. Nothing is deleted or re-rendered yet - just flagged as stale.",
               },
               {
-                n: "5", color: "bg-tertiary", label: "Next visitor arrives - gets the old cached version instantly",
+                n: "5", color: "bg-tertiary", onColor: "text-on-tertiary", label: "Next visitor arrives - gets the old cached version instantly",
                 detail: "ISR always serves the existing cached version first, no matter what. The visitor doesn't wait for a re-render. This is what makes ISR fast.",
               },
               {
-                n: "6", color: "bg-tertiary", label: "Next.js re-renders in the background",
+                n: "6", color: "bg-tertiary", onColor: "text-on-tertiary", label: "Next.js re-renders in the background",
                 detail: "After serving the stale version, Next.js fetches fresh data from Graph and rebuilds the affected pages and layout components behind the scenes.",
               },
               {
-                n: "7", color: "bg-tertiary", label: "Every request after that gets the updated version",
+                n: "7", color: "bg-tertiary", onColor: "text-on-tertiary", label: "Every request after that gets the updated version",
                 detail: "The freshly rendered output is cached. Done - no redeploy needed.",
               },
-            ].map(({ n, color, label, detail }) => (
+            ].map(({ n, color, onColor, label, detail }) => (
               <div key={n} className="flex gap-4 p-4 rounded-xl bg-surface-lowest border border-ghost-border">
-                <div className={`shrink-0 w-7 h-7 rounded-full ${color} flex items-center justify-center`}>
-                  <span className="text-white text-xs font-bold">{n}</span>
-                </div>
+                <StepBadge size="lg" variant="custom" className={`${color} ${onColor}`}>{n}</StepBadge>
                 <div>
                   <p className="text-sm font-semibold text-on-surface mb-0.5">{label}</p>
                   <p className="text-xs text-on-surface-variant leading-relaxed">{detail}</p>
@@ -628,7 +627,7 @@ export default function CachingDemoPage() {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">1</span>
+                <StepBadge>1</StepBadge>
                 <h3 className="font-display font-semibold text-on-surface">Next.js Fetch Cache</h3>
               </div>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
@@ -655,7 +654,7 @@ export default function CachingDemoPage() {
 
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">2</span>
+                <StepBadge>2</StepBadge>
                 <h3 className="font-display font-semibold text-on-surface">Graph CDN Cache</h3>
               </div>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
@@ -990,7 +989,7 @@ export default function CachingDemoPage() {
               { n: 5, text: "To verify: note the 'Last rendered' timestamp on this page, trigger a revalidation from the CMS, then reload - the timestamp should update on the next request." },
             ].map(({ n, text }) => (
               <li key={n} className="flex gap-4">
-                <span className="shrink-0 w-7 h-7 rounded-full bg-brand text-white dark:text-on-brand text-xs font-bold flex items-center justify-center">{n}</span>
+                <StepBadge size="lg">{n}</StepBadge>
                 <p className="text-sm text-on-surface-variant leading-relaxed pt-0.5">{text}</p>
               </li>
             ))}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
+import { StepBadge } from "@/components/ui/StepBadge";
 
 export const metadata: Metadata = {
   title: "Content Modelling Demo",
@@ -421,9 +422,7 @@ export default function ContentModellingPage() {
               },
             ].map((s) => (
               <div key={s.step} className="flex gap-4">
-                <div className="shrink-0 w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-sm font-bold font-display">
-                  {s.step}
-                </div>
+                <StepBadge size="xl">{s.step}</StepBadge>
                 <div className="pt-1">
                   <p className="text-sm font-semibold text-on-surface mb-1">{s.title}</p>
                   <p className="text-xs text-on-surface-variant leading-relaxed">{s.body}</p>
@@ -1365,9 +1364,7 @@ export default function ContentModellingPage() {
               },
             ].map((s) => (
               <div key={s.step} className="flex gap-4">
-                <div className="shrink-0 w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-sm font-bold font-display">
-                  {s.step}
-                </div>
+                <StepBadge size="xl">{s.step}</StepBadge>
                 <div className="pt-1">
                   <p className="text-sm font-semibold text-on-surface mb-1">{s.title}</p>
                   <p className="text-xs text-on-surface-variant leading-relaxed">{s.body}</p>

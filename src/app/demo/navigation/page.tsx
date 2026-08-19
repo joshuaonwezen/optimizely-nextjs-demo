@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
 import NestedNavMenu from "@/components/demo/NestedNavMenu";
+import { StepBadge } from "@/components/ui/StepBadge";
 import FlatNavList from "@/components/demo/FlatNavList";
 import { getNavigation, GET_NAVIGATION_QUERY } from "@/lib/graphql/queries/GetNavigation";
 import { getNavigationFromFlags, GET_NAVIGATION_FROM_FLAGS_QUERY } from "@/lib/graphql/queries/GetNavigationFromFlags";
@@ -174,9 +175,7 @@ function TradeOffs({ pros, cons }: { pros: string[]; cons: string[] }) {
 function StrategyBadge({ n, label }: { n: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 mr-3">
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand text-white dark:text-on-brand text-xs font-bold shrink-0">
-        {n}
-      </span>
+      <StepBadge>{n}</StepBadge>
       <span className="font-display font-bold text-on-surface">{label}</span>
     </span>
   );

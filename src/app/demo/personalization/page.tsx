@@ -8,6 +8,7 @@ import SourcePanel from "@/components/demo/SourcePanel";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
+import { StepBadge } from "@/components/ui/StepBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -138,9 +139,7 @@ function Step({
 }) {
   return (
     <div className="flex gap-5">
-      <div className="shrink-0 w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-sm font-bold font-display">
-        {number}
-      </div>
+      <StepBadge size="xl">{number}</StepBadge>
       <div className="pt-1">
         <h3 className="font-display font-semibold text-on-surface mb-1">{title}</h3>
         <div className="text-sm text-on-surface-variant leading-relaxed">{children}</div>
@@ -497,7 +496,7 @@ export default async function PersonalizationDemoPage() {
             {/* 1 - Device / UA */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">1</span>
+                <StepBadge>1</StepBadge>
                 <h3 className="font-display font-semibold text-on-surface">Device &amp; User-Agent</h3>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium shrink-0">already live</span>
               </div>
@@ -529,7 +528,7 @@ const device = /mobile|android|iphone|ipad/i.test(ua)
             {/* 2 - Persona / audience switcher */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">2</span>
+                <StepBadge>2</StepBadge>
                 <h3 className="font-display font-semibold text-on-surface">Persona</h3>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium shrink-0">already live</span>
               </div>
@@ -569,7 +568,7 @@ const persona = cookieStore.get("demo_persona")?.value;
             {/* 3 - Auth / logged-in state */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">3</span>
+                <StepBadge>3</StepBadge>
                 <h3 className="font-display font-semibold text-on-surface">Auth session</h3>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium shrink-0">already live</span>
               </div>
@@ -611,7 +610,7 @@ const decision = userCtx.decide("premium_feature", [DISABLE_DECISION_EVENT]);
             {/* 4 - Geo */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">4</span>
+                <StepBadge>4</StepBadge>
                 <h3 className="font-display font-semibold text-on-surface">Geo / Country (request headers)</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
@@ -647,7 +646,7 @@ return {
             {/* 5 - URL / query params */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">5</span>
+                <StepBadge>5</StepBadge>
                 <h3 className="font-display font-semibold text-on-surface">URL &amp; query parameters (UTM, campaign, force-bucket)</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
@@ -685,7 +684,7 @@ export default async function CmsPage({
             {/* 6 - Combining attributes */}
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">6</span>
+                <StepBadge>6</StepBadge>
                 <h3 className="font-display font-semibold text-on-surface">Combining attributes - audience conditions in FX</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">

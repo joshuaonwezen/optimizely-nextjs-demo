@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
+import { StepBadge } from "@/components/ui/StepBadge";
 
 export const metadata: Metadata = {
   title: "Opal AI Agents",
@@ -36,9 +37,7 @@ function AgentCard({
         <ol className="space-y-1.5">
           {steps.map((step, i) => (
             <li key={i} className="flex gap-2.5 text-sm text-on-surface-variant">
-              <span className="shrink-0 w-5 h-5 rounded-full bg-brand/10 flex items-center justify-center text-brand font-bold text-[10px]">
-                {i + 1}
-              </span>
+              <StepBadge size="sm" variant="soft">{i + 1}</StepBadge>
               <span className="leading-relaxed">{step}</span>
             </li>
           ))}
@@ -432,7 +431,7 @@ export default function OpalDemoPage() {
           <div className="space-y-6">
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">1</span>
+                <StepBadge>1</StepBadge>
                 <h3 className="font-display font-semibold text-on-surface">Define a tool</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
@@ -474,7 +473,7 @@ export const productDataTool = new OpalTool({
 
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">2</span>
+                <StepBadge>2</StepBadge>
                 <h3 className="font-display font-semibold text-on-surface">Expose the discovery and execution endpoints</h3>
               </div>
               <div className="p-6 grid md:grid-cols-2 gap-6">
@@ -516,7 +515,7 @@ app.listen(3001);`} />
 
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-brand flex items-center justify-center text-white dark:text-on-brand text-xs font-bold shrink-0">3</span>
+                <StepBadge>3</StepBadge>
                 <h3 className="font-display font-semibold text-on-surface">Register in Opal and attach to an agent</h3>
               </div>
               <div className="p-6">
