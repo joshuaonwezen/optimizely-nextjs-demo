@@ -77,18 +77,21 @@ export function HeroBlockClient({
     <section
       data-component="HeroBlock"
       data-track-view="HeroBlock"
-      className={`w-screen ml-[calc(50%-50vw)] ${surfaceClass} relative flex items-center overflow-hidden ${isTall ? "min-h-screen" : "min-h-[480px]"}`}
+      className={`relative flex items-center ${isTall ? "min-h-screen" : ""}`}
     >
-      {bgUrl && (
-        <Image
-          src={bgUrl}
-          alt={title ?? ""}
-          fill
-          sizes="100vw"
-          className={`object-cover ${showOverlay ? "opacity-10" : "opacity-50"}`}
-          priority
-        />
-      )}
+      {/* Full-bleed background — absolutely positioned so it doesn't affect document scrollWidth */}
+      <div className={`absolute inset-y-0 w-screen ml-[calc(50%-50vw)] ${surfaceClass} overflow-hidden`}>
+        {bgUrl && (
+          <Image
+            src={bgUrl}
+            alt={title ?? ""}
+            fill
+            sizes="100vw"
+            className={`object-cover ${showOverlay ? "opacity-10" : "opacity-50"}`}
+            priority
+          />
+        )}
+      </div>
       <div
         className={`relative z-10 max-w-7xl mx-auto px-8 py-20 w-full ${effectiveCentered ? "text-center" : ""}`}
       >
