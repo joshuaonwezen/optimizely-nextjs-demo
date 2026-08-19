@@ -322,6 +322,54 @@ const srcSet = buildDamSrcset(image.item.Url, [400, 800, 1200, 1600], {
 <img src={damImageUrl(image.item.Url, { width: 1280 })} srcSet={srcSet}
      sizes="(max-width: 1280px) 100vw, 1280px" alt={alt} />`;
 
+// The "CDN resize" above is not a native loader - it is these two custom helpers
+// that hand-build the query-param URLs the CMP host understands. isDamUrl is the
+// host-gate (full source in the "Source files" panel below).
+const DAM_IMAGE_IMPL_SNIPPET = `// src/lib/optimizely/damImage.ts
+
+// Returns the URL unchanged if it is not a CMP DAM URL; otherwise merges the
+// resize params via the WHATWG URL API so any existing query string (e.g. a
+// preview token) is preserved rather than clobbered.
+export function damImageUrl(url: string, opts: DamResizeOpts): string {
+  if (!isDamUrl(url)) return url;
+
+  const u = new URL(url);
+  const set = (key: string, value: number | string | undefined) => {
+    if (value !== undefined && value !== null && value !== "") {
+      u.searchParams.set(key, String(value));
+    }
+  };
+
+  set("width", opts.width);
+  set("height", opts.height);
+  set("action", opts.action);
+  set("center_width", opts.centerWidth);
+  set("center_height", opts.centerHeight);
+
+  return u.toString();
+}
+
+// Builds a "url 400w, url 800w, ..." srcSet by requesting each width from the
+// CDN. Returns undefined for non-DAM URLs so callers can fall back to the SDK's
+// rendition-based getSrcset().
+export function buildDamSrcset(
+  url: string,
+  widths: number[] = DEFAULT_DAM_WIDTHS,
+  opts: DamSrcsetOpts = {},
+): string | undefined {
+  if (!isDamUrl(url)) return undefined;
+
+  const { aspectRatio, ...resize } = opts;
+
+  return widths
+    .map((w) => {
+      const height =
+        aspectRatio !== undefined ? Math.round(w * aspectRatio) : undefined;
+      return \`\${damImageUrl(url, { ...resize, width: w, height })} \${w}w\`;
+    })
+    .join(", ");
+}`;
+
 const AUTHOR_RENDITION_SETUP_SNIPPET = `// Add a rendition enum alongside the image field.
 // Enum values must match rendition names in your DAM instance exactly -
 // these are the names shown in the DAM, not file names or URLs.
@@ -629,7 +677,11 @@ export default function MediaDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">height</code>,{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">action=Crop</code>, and{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">center_width/center_height</code>{" "}
-            (a 0-100 focal point) and the CDN resizes on the fly. The{" "}
+            (a 0-100 focal point) and the CMP host resizes on the fly. There is no native
+            image loader doing this - the URLs are built by two small custom helpers,{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">damImageUrl</code> and{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">buildDamSrcset</code>{" "}
+            (shown below), that just append the query params the host understands. The{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">ImageBlock</code> and{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">RenditionImageBlock</code>{" "}
             build their srcset this way, cropping server-side so no downloaded pixels are thrown
@@ -645,7 +697,10 @@ export default function MediaDemoPage() {
             </ul>
           </div>
 
-          <CodeBlock code={CDN_RESIZE_SNIPPET} label="damImageUrl / buildDamSrcset - host-gated resize helpers" />
+          <div className="grid md:grid-cols-2 gap-6">
+            <CodeBlock code={CDN_RESIZE_SNIPPET} label="Usage - calling the custom helpers" />
+            <CodeBlock code={DAM_IMAGE_IMPL_SNIPPET} label="damImage.ts - the custom helper implementation" />
+          </div>
 
           <div className="mt-8">
             <p className="text-xs font-semibold text-on-surface mb-4">Live example - same asset, different CDN params</p>
