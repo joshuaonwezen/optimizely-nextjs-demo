@@ -295,6 +295,10 @@ export function initComponentRegistry() {
   // than row/column, and the object-map path crashes on undefined
   // (getEntryWithFallback calls contentType.endsWith). The function path
   // lets us guard and restore 2.0.0's silent-fallback behavior.
+  // Re-verified against cms-sdk 2.2.0: getComponent now short-circuits to the
+  // function resolver before reaching getEntryWithFallback (and that method also
+  // guards `typeof resolver === 'function'`), so the crash path is bypassed and the
+  // `if (!name)` guard below still absorbs the getComponent(undefined) call — keep.
   const componentMap: Record<string, unknown> = {
       // Experience / page types
       DynamicExperience,

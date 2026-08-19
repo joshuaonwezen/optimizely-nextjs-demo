@@ -15,6 +15,10 @@ export function getPreviewClient(): GraphClient {
   });
   // getContentMetaData is TS-private; patch the instance so getPreviewContent's
   // internal `this.getContentMetaData(...)` call resolves to our corrected version.
+  // Re-verified against cms-sdk 2.2.0 internals: getContentMetaData is still private,
+  // still called via `this.` in getPreviewContent, same 4-arg signature, and the
+  // base-cmp_Asset-vs-concrete-type DAM mismatch this corrects is unchanged — patch
+  // still required and still effective.
   const orig = (client as unknown as { getContentMetaData: (...a: unknown[]) => Promise<{ damEnabled: boolean }> })
     .getContentMetaData.bind(client);
   (client as unknown as { getContentMetaData: (...a: unknown[]) => Promise<{ damEnabled: boolean }> })

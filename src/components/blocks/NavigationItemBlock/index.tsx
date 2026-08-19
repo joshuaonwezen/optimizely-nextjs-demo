@@ -7,7 +7,11 @@ export const NavigationItemType = contentType({
   baseType: "_component",
   properties: {
     label: { type: "string", displayName: "Label", isLocalized: true },
-    href: { type: "contentReference", displayName: "URL" },
+    // cms-sdk 2.2.0 (CMS-54088) made contentReference a union requiring allowedTypes|
+    // restrictedTypes at the type level. href is an unconstrained ref (any page is a valid
+    // nav target), so `restrictedTypes: []` satisfies the type and round-trips through the
+    // CMS server as unconstrained — same effective schema as before, no allowlist narrowing.
+    href: { type: "contentReference", displayName: "URL", restrictedTypes: [] },
     description: { type: "string", displayName: "Description", isLocalized: true },
     openInNewTab: { type: "boolean", displayName: "Open in New Tab" },
     // Content area — editors drop child NavigationItems here
