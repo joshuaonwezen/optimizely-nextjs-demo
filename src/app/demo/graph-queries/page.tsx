@@ -164,51 +164,53 @@ async function CmsPage() {
 // layout components are NOT affected by force-dynamic on the page -
 // they run in their own render scope with their own cached fetches.`;
 
-const CONTENT_AREA_SNIPPET = `# type: "array" content area → Graph inline-expands all items.
-# FaqContainerBlock.faqItems is type: "array", so its children arrive in
-# the page response with full typed fields - no extra fetch needed.
-
-... on FaqContainerBlock {
-  heading
-  subheading
-  faqItems {
-    __typename
-    ... on FaqItemBlock {
-      question   # ← full field data, inline-expanded by Graph
-      answer
-    }
-  }
-}`;
-
-const SINGLE_REF_SNIPPET = `# type: "content" single reference → Graph returns metadata only.
-# TraditionalPage.featuredBlock is type: "content" (a single reference).
-# Graph never inline-expands it - you only get the key and URL back.
+const CONTENT_AREA_SNIPPET = `# type: "content" is inline-expanded whether SINGLE or in an ARRAY.
+# The SDK generates a fragment per allowed type, so full typed fields
+# arrive in the page response either way - no extra fetch needed.
 
 ... on TraditionalPage {
-  headline
+  # single type: "content" reference - fully expanded in ONE query
   featuredBlock {
     __typename
-    _metadata { key url { default } version }
-    # No typed fields here - Graph doesn't resolve the reference inline.
-    # The component must self-fetch using the key.
+    ... on FaqContainerBlock {
+      heading      # ← full field data, resolved inline by Graph
+      subheading
+    }
+  }
+  # type: "array" of content - SAME expansion, per item
+  mainContent {
+    __typename
+    ... on StatsCounterBlock { label value }
   }
 }`;
 
-const SELF_FETCH_SNIPPET = `// src/components/blocks/FaqContainerBlock/index.tsx
-// FaqContainerBlock placed as a single reference on TraditionalPage
-// receives only { __typename, _metadata } from the page query.
-// The guard clause detects this and fetches the real data from Graph.
+const SINGLE_REF_SNIPPET = `# type: "contentReference" → Graph returns { key, url } ONLY.
+# ArticlePage.author is a contentReference. Graph types the field as
+# "ContentReference"; inline fragments are rejected by the schema
+# ("objects of type ContentReference can never be of type AuthorBlock").
 
-export default async function FaqContainerBlock(props) {
-  let data = props.content ?? props;
-
-  if (!data.heading) {
-    // Self-fetch: data arrived as a generic reference, not inline-expanded.
-    const res = await graphqlFetch(FETCH_QUERY, {}, { next: { revalidate: 60 } });
-    data = res.data?.FaqContainerBlock?.items?.[0] ?? data;
+... on ArticlePage {
+  title
+  author {
+    key
+    url { default }
+    # No typed fields available - resolve the full item by key.
+    # The component self-fetches: getClient().getContent({ key }).
   }
+}`;
 
-  return <div>...</div>;
+const SELF_FETCH_SNIPPET = `// src/components/pages/ArticlePage.tsx
+// author is a type: "contentReference" - the page query returns only
+// { key, url }, so the page resolves the full AuthorBlock by key.
+
+export default async function ArticlePage({ content }) {
+  const author = content.author?._metadata?.key
+    ? await getClient()
+        .getContent({ key: content.author._metadata.key }, { next: { revalidate: 300 } })
+        .catch(() => null)
+    : null;
+
+  return <article>{author && <OptimizelyComponent content={author} />}</article>;
 }`;
 
 const BATCH_KEY_SNIPPET = `// src/components/blocks/TeamGridBlock/index.tsx
@@ -343,7 +345,7 @@ export default function GraphQueriesDemoPage() {
                 },
                 {
                   label: "Self-fetching components",
-                  desc: "Blocks placed as single content references (not content area items) are not inline-expanded by the SDK. They detect missing data and self-fetch with a guard clause.",
+                  desc: "type: \"contentReference\" fields (e.g. ArticlePage.author, images) return only { key, url } - the SDK cannot inline-expand them. The parent resolves the full item by key.",
                 },
                 {
                   label: "Batch reference resolution",
@@ -447,43 +449,45 @@ export default function GraphQueriesDemoPage() {
         {/* ── Content areas vs references ── */}
         <section id="content-areas">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Content areas vs. single references
+            content vs. contentReference
             <SectionAnchor id="content-areas" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-2 max-w-3xl leading-relaxed">
-            How a property is declared in the content type definition determines whether Graph returns its
-            data inline or just returns metadata.
+            Whether Graph inline-expands a reference depends on the property type, not on whether it is a
+            single value or an array. <code className="bg-surface-low px-1 rounded font-mono text-xs">type: &quot;content&quot;</code> is inline-expanded either way;{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">type: &quot;contentReference&quot;</code> returns only <code className="bg-surface-low px-1 rounded font-mono text-xs">{"{ key, url }"}</code> either way.
           </p>
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div className="bg-surface-lowest border border-brand/30 rounded-2xl p-5">
               <p className="text-xs font-semibold text-brand mb-3">
-                type: &quot;array&quot; - content area
+                type: &quot;content&quot; - single reference or array
               </p>
               <p className="text-sm text-on-surface-variant mb-3 leading-relaxed">
-                Graph inline-expands all items. Typed field data arrives with the page response - no extra
-                fetch needed. Use for lists of blocks on a page.
+                Graph inline-expands it - the SDK generates a fragment per allowed type, so full typed field
+                data arrives with the page response. Same behaviour whether it is a single value or a content area.
               </p>
               <CodeBlock code={CONTENT_AREA_SNIPPET} />
             </div>
             <div className="bg-surface-lowest border border-error/30 rounded-2xl p-5">
               <p className="text-xs font-semibold text-error mb-3">
-                type: &quot;content&quot; - single reference
+                type: &quot;contentReference&quot;
               </p>
               <p className="text-sm text-on-surface-variant mb-3 leading-relaxed">
-                Graph returns only base metadata (key, url, version) - never the referenced item&apos;s
-                fields. The component must self-fetch if it needs real data.
+                Graph returns only <code className="bg-surface-low px-1 rounded font-mono text-xs">{"{ key, url }"}</code> - never the target&apos;s
+                fields, and the schema rejects inline fragments. The component self-fetches by key if it needs real data.
               </p>
               <CodeBlock code={SINGLE_REF_SNIPPET} />
             </div>
           </div>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
-            This is why <code className="bg-surface-low px-1 rounded font-mono text-xs">FaqContainerBlock</code>{" "}
-            self-fetches when placed as a single reference on{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">TraditionalPage</code>. The guard
-            clause <code className="bg-surface-low px-1 rounded font-mono text-xs">{"if (!data.heading)"}</code>{" "}
-            detects that the page query only returned metadata and triggers a direct fetch.
+            This is why <code className="bg-surface-low px-1 rounded font-mono text-xs">ArticlePage</code>{" "}
+            self-fetches its <code className="bg-surface-low px-1 rounded font-mono text-xs">author</code> - a{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">contentReference</code>. The page query
+            returns only <code className="bg-surface-low px-1 rounded font-mono text-xs">{"{ key, url }"}</code>,
+            so the page resolves the full item with{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">getClient().getContent({"{ key }"})</code>.
           </p>
-          <CodeBlock code={SELF_FETCH_SNIPPET} label="src/components/blocks/FaqContainerBlock/index.tsx" />
+          <CodeBlock code={SELF_FETCH_SNIPPET} label="src/components/pages/ArticlePage.tsx" />
         </section>
 
         {/* ── Predictable queries ── */}
@@ -591,7 +595,7 @@ export default function GraphQueriesDemoPage() {
           <><strong className="text-on-surface">Put static data in layout components with ISR.</strong> force-dynamic on the page route does not affect layout-level fetches - nav and banner stay cached.</>,
           <><strong className="text-on-surface">Predictable query strings are Graph CDN-cacheable.</strong> Embedding per-user variables (userId, sessionId) makes every request a cache miss at the Graph layer.</>,
           <><strong className="text-on-surface">@recursive(depth: N)</strong> fetches arbitrary tree depth in one round-trip. The depth cap prevents unbounded traversal.</>,
-          <><strong className="text-on-surface">type: &quot;array&quot; content areas inline-expand;</strong> type: &quot;content&quot; single references return metadata only - self-fetch if you need the data.</>,
+          <><strong className="text-on-surface">type: &quot;content&quot; inline-expands (single or array);</strong> type: &quot;contentReference&quot; returns only {"{ key, url }"} - self-fetch by key if you need the data.</>,
           <><strong className="text-on-surface">indexingType: &quot;disabled&quot; fields return null in Graph.</strong> Do not try to read them from <code className="bg-surface-low px-1 rounded font-mono text-xs">getContent()</code> - the value only exists in composition snapshots when the block is placed inline.</>,
         ]} />
 

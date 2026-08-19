@@ -90,28 +90,24 @@ export const ProductHeroBlockType = contentType({
   },
 });`;
 
-const REFERENCE_SNIPPET = `// Referenced content - block exists independently, linked from many pages.
-// Graph returns only base metadata (_Content) for type:"content" single references.
-// Resolve the full item in the PARENT PAGE before passing it down.
+const REFERENCE_SNIPPET = `// type: "contentReference" - the one type Graph does NOT inline-expand.
+// The field is typed "ContentReference" in Graph: you get { key, url } only,
+// and inline fragments are rejected. Resolve the full item in the PARENT.
 
-// src/components/pages/TraditionalPage.tsx
-export default async function TraditionalPage({ content }) {
-  let featuredBlock = content.featuredBlock ?? null;
-
-  // featuredBlock came back as _Content (base metadata only) - fetch the full item
-  if (featuredBlock?.__typename === "_Content" && featuredBlock?._metadata?.key) {
-    featuredBlock = await getClient()
-      .getContent({ key: featuredBlock._metadata.key }, { next: { revalidate: 60 } })
-      .catch(() => null);
-  }
+// src/components/pages/ArticlePage.tsx
+export default async function ArticlePage({ content }) {
+  // content.author is a type:"contentReference" - only { key, url } arrived
+  const author = content.author?._metadata?.key
+    ? await getClient()
+        .getContent({ key: content.author._metadata.key }, { next: { revalidate: 300 } })
+        .catch(() => null)
+    : null;
 
   return (
-    // featuredBlock is now fully resolved - OptimizelyComponent can dispatch it
-    <div>
-      {featuredBlock && featuredBlock.__typename !== "_Content" && (
-        <OptimizelyComponent content={featuredBlock} />
-      )}
-    </div>
+    // author is now the full AuthorBlock - render its name, bio, avatar
+    <article>
+      {author && <OptimizelyComponent content={author} />}
+    </article>
   );
 }`;
 
@@ -215,7 +211,8 @@ cta: {
 
 const SPECTRUM_CONTENT = `// type: "content" - Content Area Item (single slot)
 // The parent stores a pointer to an independent content item.
-// Graph returns only _metadata (key, url) - fields are NOT inline-expanded.
+// Graph DOES inline-expand it - the SDK generates a fragment per allowed
+// type, so all fields arrive in the page query. No self-fetch needed.
 featuredBlock: {
   type: "content",
   allowedTypes: [FaqContainerBlockType],
@@ -583,7 +580,7 @@ export default function ContentModellingPage() {
                 <li>The React component defines the layout. The editor only fills in content fields (headline, body, heroImage, etc.).</li>
                 <li>Properties are defined with <Code>contentType()</Code> just like any block - Graph returns them as typed fields.</li>
                 <li>Best for structured content with a consistent layout: article pages, team profiles, case studies.</li>
-                <li><Code>type: &quot;content&quot;</Code> single-reference fields return just the basics from Graph (like the item&apos;s ID) - fetch the full item in the page component using <Code>getClient().getContent()</Code>.</li>
+                <li><Code>type: &quot;contentReference&quot;</Code> fields (e.g. <Code>author</Code>, images) return just <Code>{"{ key, url }"}</Code> from Graph - fetch the full item in the page component using <Code>getClient().getContent()</Code>. <Code>type: &quot;content&quot;</Code> fields, by contrast, arrive fully expanded.</li>
               </ul>
               <div className="mt-4 pt-4 border-t border-tertiary/10">
                 <p className="text-[10px] font-mono text-tertiary/60 mb-1">Examples in this repo</p>
@@ -956,25 +953,28 @@ export default function ContentModellingPage() {
               <ul className="text-xs text-on-surface-variant space-y-2 leading-relaxed">
                 <li>Block exists as its own CMS item - editing it once updates everywhere it&apos;s used</li>
                 <li>Best for shared content: author bios, legal disclaimers, global FAQs</li>
-                <li>Graph returns just the basics for single references - fetch the full data in the parent page component using <Code>getClient().getContent()</Code></li>
-                <li>Examples: <Pill>AuthorBlock</Pill> linked from 10 articles, <Pill>FaqContainerBlock</Pill> on the FAQ page</li>
+                <li>Graph returns just <Code>{"{ key, url }"}</Code> for a <Code>contentReference</Code> - fetch the full data in the parent page component using <Code>getClient().getContent()</Code></li>
+                <li>Examples: <Pill>AuthorBlock</Pill> linked from 10 articles via <Code>author</Code>, a hero image reused across pages</li>
               </ul>
             </Callout>
           </div>
 
           <Callout variant="warning" label="Gotcha">
-            <strong><Code>type: &quot;content&quot;</Code> single references return just the basics from Graph (like the item&apos;s ID)</strong>{" "}
-            - even when the field is set. Graph only includes the full data for{" "}
-            <Code>type: &quot;array&quot;</Code> content areas. For referenced blocks
-            that need their own field data, fetch them in the{" "}
+            <strong>The type that returns only the basics is <Code>type: &quot;contentReference&quot;</Code>, not <Code>type: &quot;content&quot;</Code>.</strong>{" "}
+            A <Code>type: &quot;content&quot;</Code> reference is inline-expanded by Graph -
+            the SDK auto-generates a fragment for every allowed component type, so the
+            block arrives fully typed in the page query with no extra fetch, whether it is a
+            single reference or a <Code>type: &quot;array&quot;</Code> content area. Only{" "}
+            <Code>type: &quot;contentReference&quot;</Code> comes back as just{" "}
+            <Code>{"{ key, url }"}</Code> - for those, resolve the full item in the{" "}
             <strong>parent page component</strong> using{" "}
-            <Code>getClient().getContent({"{ key }"})</Code> before passing the
-            block down. Never add self-fetch logic inside the block itself.
+            <Code>getClient().getContent({"{ key }"})</Code> before passing it
+            down. Never add self-fetch logic inside the block itself.
           </Callout>
 
           <div className="grid md:grid-cols-2 gap-4 mt-4">
-            <CodeBlock code={INLINE_SNIPPET} label="inline - array content area (Graph auto-expands)" />
-            <CodeBlock code={REFERENCE_SNIPPET} label="referenced - parent resolves via getClient().getContent()" />
+            <CodeBlock code={INLINE_SNIPPET} label="type: content / array - Graph inline-expands, no fetch" />
+            <CodeBlock code={REFERENCE_SNIPPET} label="type: contentReference - parent resolves via getClient().getContent()" />
           </div>
 
           <div className="mt-6 grid md:grid-cols-2 gap-5">
@@ -1142,7 +1142,7 @@ export default function ContentModellingPage() {
               <tbody>
                 {[
                   { term: "Content Area", sdk: 'array (items: { type: "content" })', graph: "Always - all items inlined", inline: "Yes" },
-                  { term: "Content Area Item (standalone)", sdk: "content", graph: "Never - _metadata only", inline: "Yes" },
+                  { term: "Content Area Item (standalone)", sdk: "content", graph: "Always - fully inlined via fragment", inline: "Yes" },
                   { term: "Content Reference", sdk: "contentReference", graph: "Only with specific contentType", inline: "No" },
                   { term: "Component / Block (in UI)", sdk: "component", graph: "Always (no _metadata wrapper)", inline: "Stored inside parent" },
                 ].map((row, i) => (
