@@ -134,7 +134,7 @@ export default function ImageBlock(props: ImageBlockProps) {
     imageUrl,
     undefined,
     cropRatio
-      ? { action: "Crop", aspectRatio: cropRatio, ...focalPercent(data.image) }
+      ? { action: "crop", aspectRatio: cropRatio, ...focalPercent(data.image) }
       : {},
   );
   const srcSet = cdnSrcSet ?? getSrcset(data.image as any);

@@ -9,7 +9,10 @@ const DAM_HOSTS = [".cmp.optimizely.com"];
 export interface DamResizeOpts {
   width?: number;
   height?: number;
-  action?: "Crop" | "Padding" | "Border";
+  // The CMP CDN only accepts these lowercase action values (see the error
+  // "Invalid action. Allowed: padding, crop, border, crop+rescale"). The support
+  // article's prose spells them title-case, but that casing is rejected by the API.
+  action?: "crop" | "padding" | "border" | "crop+rescale";
   centerWidth?: number; // 0-100 focal point %
   centerHeight?: number;
 }
@@ -42,7 +45,7 @@ export function damImageUrl(url: string, opts: DamResizeOpts): string {
 
   set("width", opts.width);
   set("height", opts.height);
-  set("action", opts.action);
+  set("action", opts.action?.toLowerCase());
   set("center_width", opts.centerWidth);
   set("center_height", opts.centerHeight);
 
@@ -50,7 +53,7 @@ export function damImageUrl(url: string, opts: DamResizeOpts): string {
 }
 
 export interface DamSrcsetOpts extends Omit<DamResizeOpts, "width" | "height"> {
-  // Height / width. When set (together with action: "Crop"), each srcset
+  // Height / width. When set (together with action: "crop"), each srcset
   // candidate gets a height scaled from its width so every size is the same
   // shape. Example: 16:9 -> 9/16 = 0.5625.
   aspectRatio?: number;

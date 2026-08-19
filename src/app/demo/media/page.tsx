@@ -88,12 +88,12 @@ const cdnThumbUrl = damImageUrl(PANDAS_IMAGE_REF.item.Url, { width: 300 });
 const cdnSquareUrl = damImageUrl(PANDAS_IMAGE_REF.item.Url, {
   width: 400,
   height: 400,
-  action: "Crop",
+  action: "crop",
   centerHeight: 40,
 });
 const cdnSrcsetExample =
   buildDamSrcset(PANDAS_IMAGE_REF.item.Url, [400, 800, 1200], {
-    action: "Crop",
+    action: "crop",
     aspectRatio: 9 / 16,
   }) ?? "";
 
@@ -298,7 +298,7 @@ const CDN_RESIZE_SNIPPET = `// CMP public asset URLs support on-the-fly resizing
 // can request any width/crop without a pre-generated rendition existing.
 // Params (from the Optimizely support article):
 //   width, height        - target pixels
-//   action               - Crop | Padding | Border
+//   action               - crop | padding | border | crop+rescale (lowercase)
 //   center_width/_height - focal point 0-100 (%) so the crop keeps the subject
 // Note: params work ONLY on *.cmp.optimizely.com. There is no format/quality
 // param, so this reduces bytes via dimensions, not by forcing WebP/AVIF.
@@ -310,12 +310,12 @@ const thumb = damImageUrl(image.item.Url, { width: 300 });
 
 // 16:9 crop with a lower focal point:
 const hero = damImageUrl(image.item.Url, {
-  width: 1600, height: 900, action: "Crop", centerHeight: 40,
+  width: 1600, height: 900, action: "crop", centerHeight: 40,
 });
 
 // A full responsive srcset at real display widths, independent of renditions:
 const srcSet = buildDamSrcset(image.item.Url, [400, 800, 1200, 1600], {
-  action: "Crop",
+  action: "crop",
   aspectRatio: 9 / 16,   // height / width
 });
 
@@ -675,7 +675,7 @@ export default function MediaDemoPage() {
             CMP public asset URLs avoid that: append{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">?width=</code>,{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">height</code>,{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">action=Crop</code>, and{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">action=crop</code>, and{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">center_width/center_height</code>{" "}
             (a 0-100 focal point) and the CMP host resizes on the fly. There is no native
             image loader doing this - the URLs are built by two small custom helpers,{" "}
@@ -871,7 +871,7 @@ export default function MediaDemoPage() {
           <><strong className="text-on-surface">Always pair srcSet with a sizes attribute.</strong> Without sizes the browser assumes 100vw and downloads the largest srcset candidate on every viewport. Use <code className="bg-surface-low px-1 rounded font-mono text-xs">damAssets().getSrcset()</code> to build the srcset string from the asset&apos;s pre-generated DAM renditions automatically, or build it manually from the <code className="bg-surface-low px-1 rounded font-mono text-xs">Renditions</code> array when you need custom filtering.</>,
           <><strong className="text-on-surface">Image arrays use type: &quot;array&quot; with items: type: &quot;content&quot;.</strong> Graph inline-expands these automatically - all <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata</code> fields arrive with the page query, no extra fetch needed.</>,
           <><strong className="text-on-surface">damAssets() handles preview token injection automatically.</strong> If you pass a DAM image ref through <code className="bg-surface-low px-1 rounded font-mono text-xs">getSrcset()</code> in edit mode, the helper appends the preview token so the image loads correctly in Visual Builder.</>,
-          <><strong className="text-on-surface">CMP public URLs resize on the fly - no rendition required.</strong> Append <code className="bg-surface-low px-1 rounded font-mono text-xs">width</code>/<code className="bg-surface-low px-1 rounded font-mono text-xs">height</code>/<code className="bg-surface-low px-1 rounded font-mono text-xs">action=Crop</code>/<code className="bg-surface-low px-1 rounded font-mono text-xs">center_width</code> params to any <code className="bg-surface-low px-1 rounded font-mono text-xs">*.cmp.optimizely.com</code> URL and the CDN returns that size. Use it (host-gated) to build a responsive srcset independent of pre-made renditions. There is no format/quality param, so it saves bytes by dimensions only.</>,
+          <><strong className="text-on-surface">CMP public URLs resize on the fly - no rendition required.</strong> Append <code className="bg-surface-low px-1 rounded font-mono text-xs">width</code>/<code className="bg-surface-low px-1 rounded font-mono text-xs">height</code>/<code className="bg-surface-low px-1 rounded font-mono text-xs">action=crop</code>/<code className="bg-surface-low px-1 rounded font-mono text-xs">center_width</code> params to any <code className="bg-surface-low px-1 rounded font-mono text-xs">*.cmp.optimizely.com</code> URL and the CDN returns that size. Use it (host-gated) to build a responsive srcset independent of pre-made renditions. There is no format/quality param, so it saves bytes by dimensions only.</>,
           <><strong className="text-on-surface">The content picker cannot select a DAM rendition - serve it from code.</strong> All rendition data is available in Graph under <code className="bg-surface-low px-1 rounded font-mono text-xs">cmp_PublicImageAsset.Renditions</code>. Default to building a srcset so the browser picks by viewport width. Expose a rendition dropdown to authors only when renditions represent different crops or formats rather than size variants of the same image.</>,
         ]} />
 

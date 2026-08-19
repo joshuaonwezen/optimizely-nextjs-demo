@@ -232,33 +232,29 @@ All seed scripts use `https://api.cms.optimizely.com/v1/content`.
 
 ## Optimizely Graph — Critical Gotchas
 
-### Single content references are NOT inline-expanded
-`type: "content"` single reference properties on pages return only base metadata from Graph — regardless of whether the field is set. Graph only inline-expands `type: "array"` content areas.
+### `type: "content"` refs ARE inline-expanded - only `type: "contentReference"` is not
+The axis is the property type, not single vs array. `type: "content"` reference properties are inline-expanded by Graph whether they are a single value or a `type: "array"` content area. The SDK's generated page query includes an inline fragment for every allowed component type (`handleContentProperty` in [queryUtils.js](node_modules/@optimizely/cms-sdk/dist/esm/util/queryUtils.js) expands `_component` into each concrete type via `resolveAllowedTypes`), so the block arrives fully typed in one `getContentByPath()` request - no self-fetch needed.
 
-The base metadata does include `_metadata.key`. Use `getClient().getContent({ key })` in the **parent** component (the page that received the reference) to resolve the full item before passing it down — do not add self-fetching logic inside the child component:
+The type that returns only `{ key, url }` is `type: "contentReference"`. Graph types that field as `ContentReference`; inline fragments are rejected by the schema (`"objects of type ContentReference can never be of type AuthorBlock"`). Resolve the full item in the **parent** component with `getClient().getContent({ key })` - do not add self-fetching logic inside the child component:
 
 ```tsx
-// src/components/pages/TraditionalPage.tsx
-export default async function TraditionalPage({ content }) {
-  let featuredBlock = content.featuredBlock ?? null;
-
-  // Graph returned base metadata only (_Content) — resolve to full item
-  if (featuredBlock?.__typename === "_Content" && featuredBlock?._metadata?.key) {
-    featuredBlock = await getClient()
-      .getContent({ key: featuredBlock._metadata.key }, { next: { revalidate: 60 } })
-      .catch(() => null);
-  }
+// src/components/pages/ArticlePage.tsx
+export default async function ArticlePage({ content }) {
+  // content.author is a type:"contentReference" - Graph returned only { key, url }
+  const author = content.author?._metadata?.key
+    ? await getClient()
+        .getContent({ key: content.author._metadata.key }, { next: { revalidate: 300 } })
+        .catch(() => null)
+    : null;
 
   return (
-    // featuredBlock is now the full item — OptimizelyComponent can dispatch it
-    {featuredBlock && featuredBlock.__typename !== "_Content" && (
-      <OptimizelyComponent content={featuredBlock} />
-    )}
+    // author is now the full AuthorBlock - OptimizelyComponent can dispatch it
+    <article>{author && <OptimizelyComponent content={author} />}</article>
   );
 }
 ```
 
-`getContent()` also accepts a `graph://` string from `_metadata.url.graph`, and an optional `{ previewToken }` option for preview mode.
+Verified against Graph: querying a single `type:"content"` `featuredBlock` with an inline fragment returns the concrete type and its fields in one query; the same inline-fragment attempt on a `contentReference` is rejected by the schema. `getContent()` also accepts a `graph://` string from `_metadata.url.graph`, and an optional `{ previewToken }` option for preview mode.
 
 ### `graphqlFetch` vs `getClient().request()` — when to use each
 The SDK exposes `getClient().request(query, variables, previewToken?, cache?)` for raw GraphQL queries. The `cache` parameter is a boolean — it does not support Next.js `next: { revalidate, tags }` fetch options.
@@ -273,8 +269,8 @@ The SDK exposes `getClient().request(query, variables, previewToken?, cache?)` f
 | Custom query, no ISR tags needed | Either works; `getClient().request()` avoids the extra wrapper |
 | Preview/draft content | Either — both accept `previewToken`; `graphqlFetch` sets `cache: "no-store"` automatically when a token is present |
 
-### Content area arrays ARE inline-expanded
-`type: "array"` content areas (e.g., `faqItems`, `navItems`) return full typed fields from Graph. Use arrays when you need Graph to resolve referenced content.
+### What Graph inline-expands vs. what needs a self-fetch
+`type: "content"` (single or `type: "array"`, e.g. `featuredBlock`, `faqItems`, `navItems`, `mainContent`) returns full typed fields from Graph in the page query. `type: "contentReference"` (single or array, e.g. `author`, `members`, `milestones`, and image fields) returns only `{ key, url }` and must be resolved by key in the parent. So: reach for `type: "content"` when you want Graph to inline the referenced block; expect a self-fetch only for `contentReference`.
 
 ### Navigation query strategies — one production, three demo-only
 `src/lib/graphql/queries/` contains four navigation queries. Only one is used by the site chrome:
@@ -585,6 +581,9 @@ const { getSrcset, getAlt, isDamImageAsset } = damAssets(content);
 // getAlt(content.image, "fallback") → AltText from DAM or fallback
 // isDamImageAsset / isDamVideoAsset / isDamRawFileAsset → TypeScript type guards
 ```
+
+### CMP CDN resize `action` must be lowercase
+The on-the-fly resize params on `*.cmp.optimizely.com` URLs (via `damImageUrl` / `buildDamSrcset` in `src/lib/optimizely/damImage.ts`) require the `action` value to be **lowercase**: `crop | padding | border | crop+rescale`. Title-case (`action=Crop`) returns `400 Invalid action. Allowed: padding, crop, border, crop+rescale`. Optimizely's support article spells them title-case in prose — that casing is wrong vs. the live API. `damImageUrl` lowercases the value defensively, but always pass lowercase in code. `center_width`/`center_height` (0-100 % focal point) are unaffected; there is no format/quality param.
 
 `getPreviewUtils` also now returns a `src(contentRef)` helper that appends the preview token to a single DAM image URL. Destructure it alongside `pa`:
 ```ts

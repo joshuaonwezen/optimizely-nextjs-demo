@@ -85,7 +85,7 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
   const cdnSrcSet = buildDamSrcset(
     imageUrl,
     undefined,
-    cropRatio ? { action: "Crop", aspectRatio: cropRatio } : {},
+    cropRatio ? { action: "crop", aspectRatio: cropRatio } : {},
   );
   const srcSet = cdnSrcSet ?? getSrcset(data.image as any);
   const baseSrc = damImageUrl(imageUrl, { width: 1280 });
