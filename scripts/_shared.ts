@@ -1052,6 +1052,19 @@ export async function findPageKeyByUrl(urls: string[]): Promise<string | null> {
 }
 
 /**
+ * Resolve an internal page URL to a `cms://content/{key}` reference for seeding
+ * type:"url" link fields. Tries trailing-slash variants (Graph stores defaults
+ * with a trailing slash); findPageKeyByUrl adds the /en <-> / variants. Falls
+ * back to the original URL string if no page is found, so seeding still
+ * succeeds (resolveLinkHref handles a bare path at render time).
+ */
+export async function pageRefForUrl(url: string): Promise<string> {
+  const variants = url.endsWith("/") ? [url, url.slice(0, -1)] : [url, `${url}/`];
+  const key = await findPageKeyByUrl(variants);
+  return key ? `cms://content/${key}` : url;
+}
+
+/**
  * If a page exists at any of the given URLs, delete it.
  */
 export async function deletePageByUrlIfExists(urls: string[]): Promise<void> {

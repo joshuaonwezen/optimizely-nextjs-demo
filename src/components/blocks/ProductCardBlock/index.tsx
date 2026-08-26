@@ -3,8 +3,19 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import type { ReactNode } from "react";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, FONT_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
+
+// Product-card titles sit in a narrow column, so they render one step smaller than
+// the shared HEADING_CLASSES scale — otherwise a long word ("Current Account")
+// overflows and clips at the card edge. Keyed by the same headingSize choices so
+// the display-template option still works if an editor picks a size.
+const CARD_HEADING_CLASSES: Record<string, string> = {
+  xl: "text-3xl md:text-4xl",
+  lg: "text-2xl md:text-3xl",
+  md: "text-xl md:text-2xl",
+  sm: "text-lg md:text-xl",
+};
 
 export const ProductCardBlockType = contentType({
   key: "ProductCardBlock",
@@ -111,7 +122,7 @@ export default async function ProductCardBlock(props: ProductCardBlockProps) {
 
   const featuredClass = isFeatured ? "ring-2 ring-brand/30 shadow-ambient" : "";
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
-  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "md"];
+  const headingClass = CARD_HEADING_CLASSES[(ds?.headingSize as string) ?? "md"] ?? CARD_HEADING_CLASSES.md;
 
   const iconBgClass = isInverted ? "bg-on-brand/10 text-on-brand" : "bg-brand/10 text-brand";
   const linkClass   = isInverted ? bg.text : "text-brand";
@@ -132,7 +143,7 @@ export default async function ProductCardBlock(props: ProductCardBlockProps) {
       {data.title && (
         <h3
           {...pa("title")}
-          className={`${fontClass} ${headingClass} font-bold mb-3 ${bg.text}`}
+          className={`${fontClass} ${headingClass} font-bold mb-3 break-words hyphens-auto ${bg.text}`}
         >
           {data.title}
         </h3>

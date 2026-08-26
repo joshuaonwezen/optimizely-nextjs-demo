@@ -26,7 +26,7 @@
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
-import { discoverRootContainer, wrapProps } from "./_shared";
+import { discoverRootContainer, wrapProps, pageRefForUrl } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -173,7 +173,8 @@ async function detectHeroType(token: string): Promise<"Hero" | "HeroBlock"> {
 
 // Variation compositions
 
-function buildPersonalVariation(): CompNode[] {
+async function buildPersonalVariation(): Promise<CompNode[]> {
+  const ctaRef = await pageRefForUrl("/en/personal/current-account");
   return [
     heroComponent("Personal Hero", {
       headline: "Banking built around you",
@@ -255,12 +256,13 @@ function buildPersonalVariation(): CompNode[] {
     }),
     sectionComponent("CallToAction", "Personal CTA", {
       label: "Open a personal account today",
-      link: "/en/current-account",
+      link: ctaRef,
     }),
   ];
 }
 
-function buildBusinessVariation(): CompNode[] {
+async function buildBusinessVariation(): Promise<CompNode[]> {
+  const ctaRef = await pageRefForUrl("/en/business/business-banking");
   return [
     heroComponent("Business Hero", {
       headline: "Banking built for business",
@@ -342,12 +344,13 @@ function buildBusinessVariation(): CompNode[] {
     }),
     sectionComponent("CallToAction", "Business CTA", {
       label: "Open a business account today",
-      link: "/en/business-banking",
+      link: ctaRef,
     }),
   ];
 }
 
-function buildNewVisitorVariation(): CompNode[] {
+async function buildNewVisitorVariation(): Promise<CompNode[]> {
+  const ctaRef = await pageRefForUrl("/en/personal/current-account");
   return [
     heroComponent("New Visitor Hero", {
       headline: "See what everyone's banking on",
@@ -429,12 +432,13 @@ function buildNewVisitorVariation(): CompNode[] {
     }),
     sectionComponent("CallToAction", "New Visitor CTA", {
       label: "Open a free account today",
-      link: "/en/current-account",
+      link: ctaRef,
     }),
   ];
 }
 
-function buildMortgagesVariation(): CompNode[] {
+async function buildMortgagesVariation(): Promise<CompNode[]> {
+  const ctaRef = await pageRefForUrl("/en/mortgage");
   return [
     heroComponent("Mortgages Hero", {
       headline: "A mortgage that moves at your pace",
@@ -516,12 +520,13 @@ function buildMortgagesVariation(): CompNode[] {
     }),
     sectionComponent("CallToAction", "Mortgages CTA", {
       label: "Get a decision in principle",
-      link: "/en/mortgage",
+      link: ctaRef,
     }),
   ];
 }
 
-function buildInvestmentsVariation(): CompNode[] {
+async function buildInvestmentsVariation(): Promise<CompNode[]> {
+  const ctaRef = await pageRefForUrl("/en/investments");
   return [
     heroComponent("Investments Hero", {
       headline: "Investing, made straightforward",
@@ -603,7 +608,7 @@ function buildInvestmentsVariation(): CompNode[] {
     }),
     sectionComponent("CallToAction", "Investments CTA", {
       label: "Start investing today",
-      link: "/en/investments",
+      link: ctaRef,
     }),
   ];
 }
@@ -770,22 +775,22 @@ async function main() {
     {
       variationKey: "personal",
       displayName: "Homepage – Personal",
-      nodes: buildPersonalVariation(),
+      nodes: await buildPersonalVariation(),
     },
     {
       variationKey: "business",
       displayName: "Homepage – Business",
-      nodes: buildBusinessVariation(),
+      nodes: await buildBusinessVariation(),
     },
     {
       variationKey: "mortgages",
       displayName: "Homepage – Mortgages",
-      nodes: buildMortgagesVariation(),
+      nodes: await buildMortgagesVariation(),
     },
     {
       variationKey: "investments",
       displayName: "Homepage – Investments",
-      nodes: buildInvestmentsVariation(),
+      nodes: await buildInvestmentsVariation(),
     },
   ];
 
