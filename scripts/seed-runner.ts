@@ -79,6 +79,10 @@ async function main() {
     ["npx", ["tsx", "scripts/seed-locations.ts"]],
     ["npx", ["tsx", "scripts/seed-consultants.ts"]],
     ["npx", ["tsx", "scripts/seed-homepage-variations.ts"]],
+    // BlogExperience pages under an empty /blogs/ hub. Needs the AuthorBlocks
+    // from seed-modeling to be indexed in Graph (~60s lag), so it's optional and
+    // self-polls; re-run individually if authors weren't indexed yet.
+    ["npx", ["tsx", "scripts/seed-blogs.ts"]],
     ["npx", ["tsx", "scripts/seed-nav-strategy-demo.ts"]],
     // Geo branch-finder shared block on /en/help/branches. seed-locations (above)
     // has already run, so BankLocation data exists; needs the branches page in Graph.

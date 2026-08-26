@@ -29,6 +29,7 @@ export const DynamicExperienceType = contentType({
   mayContainTypes: [
     "_self",
     "TraditionalPage", "ArticlePage", "CaseStudyPage", "ConsultantPage",
+    "BlogExperience",
     "AuthorBlock", "OutcomeItemBlock", "TestimonialBlock",
     "FaqItemBlock", "FaqContainerBlock",
     "TimelineMilestoneBlock", "TeamMemberBlock",
