@@ -7,7 +7,7 @@ export const ProductHeroBlockType = contentType({
   key: "ProductHeroBlock",
   displayName: "Product Hero",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
+  compositionBehaviors: ["sectionEnabled"],
   properties: {
     badge: { type: "string", displayName: "Badge Text", isLocalized: true },
     title: { type: "string", displayName: "Title", indexingType: "searchable", isLocalized: true },

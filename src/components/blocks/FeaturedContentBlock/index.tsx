@@ -11,7 +11,9 @@ export const FeaturedContentBlockType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    featuredPage: { type: "contentReference", displayName: "Featured Page", allowedTypes: ["_page"], indexingType: "disabled" },
+    // Omit indexingType: "disabled" drops the ref from the SDK query, so the page
+    // never arrives at render (see CLAUDE.md). Omit it so Graph returns { _metadata: { url } }.
+    featuredPage: { type: "contentReference", displayName: "Featured Page", allowedTypes: ["_page"] },
   },
 });
 

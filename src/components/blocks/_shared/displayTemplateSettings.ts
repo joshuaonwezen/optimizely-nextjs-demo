@@ -64,6 +64,24 @@ export const HEADING_SIZE: { headingSize: SelectSetting } = {
   },
 };
 
+// Heading size with a Medium (H3) default — for compact blocks (e.g. product
+// cards) where an Extra large (H1) default is too big and overflows. Same choices
+// as HEADING_SIZE, reordered so "Medium (H3)" sits at sortOrder 0 and becomes the
+// display-template default the CMS applies when the editor hasn't picked a size.
+export const HEADING_SIZE_CARD: { headingSize: SelectSetting } = {
+  headingSize: {
+    editor: "select",
+    displayName: "Heading size",
+    sortOrder: 2,
+    choices: {
+      md: { displayName: "Medium (H3)",      sortOrder: 0 },
+      lg: { displayName: "Large (H2)",       sortOrder: 1 },
+      sm: { displayName: "Small (H4)",       sortOrder: 2 },
+      xl: { displayName: "Extra large (H1)", sortOrder: 3 },
+    },
+  },
+};
+
 // Text alignment — for blocks where centering or right-alignment is meaningful
 export const TEXT_ALIGN: { textAlign: SelectSetting } = {
   textAlign: {

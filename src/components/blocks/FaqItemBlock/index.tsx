@@ -8,7 +8,7 @@ export const FaqItemBlockType = contentType({
   key: "FaqItemBlock",
   displayName: "FAQ Item",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
+  compositionBehaviors: ["elementEnabled"],
   properties: {
     question: { type: "string", displayName: "Question", indexingType: "searchable", isLocalized: true },
     answer:   { type: "string", displayName: "Answer",   indexingType: "searchable", isLocalized: true },

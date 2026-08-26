@@ -14,7 +14,7 @@ export interface HeroBlockClientProps {
   subtitle?: string | null;
   bgUrl?: string | null;
   ctaText?: string | null;
-  ctaLink?: string | null;
+  ctaHref?: string | null;
   isCentered: boolean;
   isTall: boolean;
   showOverlay: boolean;
@@ -35,7 +35,7 @@ export function HeroBlockClient({
   subtitle,
   bgUrl,
   ctaText,
-  ctaLink,
+  ctaHref,
   isCentered,
   isTall,
   showOverlay,
@@ -112,11 +112,11 @@ export function HeroBlockClient({
               {displaySubtitle}
             </p>
           )}
-          {(ctaLink || edit || secondaryLabel) && (
+          {(ctaHref || edit || secondaryLabel) && (
             <div className={`flex gap-4 flex-wrap ${effectiveCentered ? "justify-center" : ""}`}>
-              {(ctaLink || edit) && (
+              {(ctaHref || edit) && (
                 <Button
-                  href={edit ? undefined : (ctaLink ?? undefined)}
+                  href={edit ? undefined : (ctaHref ?? undefined)}
                   variant="surface"
                   size="large"
                   data-track-event="mb_hero_cta_click"
@@ -138,12 +138,17 @@ export function HeroBlockClient({
                 </Button>
               )}
               {edit && (
-                <p
-                  {...paCtaLink}
-                  className="mt-2 text-xs font-mono text-on-brand-subtle/70 cursor-pointer hover:text-on-brand-subtle transition-colors"
-                >
-                  {ctaLink || "Click to set CTA link…"}
-                </p>
+                <div className="mt-2 flex w-full flex-wrap items-center gap-2">
+                  <span
+                    {...paCtaLink}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-on-brand/10 backdrop-blur-sm px-3 py-1 text-xs text-on-brand-subtle cursor-pointer hover:bg-on-brand/20 transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
+                      <path d="M6.5 9.5L9.5 6.5M7 4l.5-.5a3 3 0 0 1 4.2 4.2l-.5.5M9 12l-.5.5a3 3 0 0 1-4.2-4.2l.5-.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                    </svg>
+                    {ctaHref ? `→ ${ctaHref}` : "Set a link"}
+                  </span>
+                </div>
               )}
             </div>
           )}

@@ -13,7 +13,7 @@ import {
   GRAPH_ENDPOINT,
   SINGLE_KEY,
   createContent,
-  discoverGlobalRoot,
+  ensureSubfolder,
   discoverRootContainer,
   sweepMisplacedSharedBlocks,
   sweepSeededBlocks,
@@ -164,7 +164,7 @@ async function wireFaqsPage(): Promise<void> {
 async function main() {
   console.log("=== FAQ Content Area Seed Script ===\n");
   CONTAINER = await discoverRootContainer();
-  BLOCKS_CONTAINER = await discoverGlobalRoot();
+  BLOCKS_CONTAINER = await ensureSubfolder("faqs");
   console.log(`  container: ${CONTAINER}`);
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}\n`);
 

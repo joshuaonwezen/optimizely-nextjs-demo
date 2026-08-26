@@ -8,7 +8,7 @@ export const TeamMemberBlockType = contentType({
   key: "TeamMemberBlock",
   displayName: "Team Member",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
+  compositionBehaviors: ["elementEnabled"],
   properties: {
     name:        { type: "string",           displayName: "Name",      indexingType: "searchable", isLocalized: true },
     role:        { type: "string",           displayName: "Role",      isLocalized: true },

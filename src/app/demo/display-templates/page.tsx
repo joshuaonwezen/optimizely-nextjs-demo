@@ -69,7 +69,7 @@ const PRICING = {
   period: "/month",
   features: ["Free instant transfers", "Round-up savings", "Spending insights", "24/7 chat support"],
   ctaText: "Open an account",
-  ctaLink: "#",
+  ctaLink: { default: "#" },
 };
 
 const FAQ = {
@@ -282,16 +282,16 @@ export default function DisplayTemplatesDemoPage() {
         >
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Variant label="No template (brand button)">
-              <CallToActionBlock label="Open an account" link="#" />
+              <CallToActionBlock label="Open an account" link={{ default: "#" }} />
             </Variant>
             <Variant label="Outlined button">
-              <CallToActionBlock label="Open an account" link="#" displayTemplateKey="CallToActionOutlineTemplate" />
+              <CallToActionBlock label="Open an account" link={{ default: "#" }} displayTemplateKey="CallToActionOutlineTemplate" />
             </Variant>
             <Variant label="White background button">
-              <CallToActionBlock label="Open an account" link="#" displayTemplateKey="CallToActionSurfaceTemplate" />
+              <CallToActionBlock label="Open an account" link={{ default: "#" }} displayTemplateKey="CallToActionSurfaceTemplate" />
             </Variant>
             <Variant label="Text link with arrow">
-              <CallToActionBlock label="Open an account" link="#" displayTemplateKey="CallToActionGhostTemplate" />
+              <CallToActionBlock label="Open an account" link={{ default: "#" }} displayTemplateKey="CallToActionGhostTemplate" />
             </Variant>
           </div>
         </Section>
@@ -514,7 +514,7 @@ export default function DisplayTemplatesDemoPage() {
           headline="Money, made simple"
           subheadline="Join two million customers who switched to smarter everyday banking."
           ctaText="Get started"
-          ctaLink="#"
+          ctaLink={{ default: "#" }}
           displayTemplateKey="HeroBlockDefaultTemplate"
           displaySettings={{ alignment: "center", headingSize: "lg" }}
         />

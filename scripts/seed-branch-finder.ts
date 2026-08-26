@@ -16,7 +16,7 @@ import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import {
   createContent,
-  discoverGlobalRoot,
+  ensureSubfolder,
   discoverRootContainer,
   findPageKeyByUrl,
   patchPublishedPageProperties,
@@ -66,7 +66,7 @@ async function main() {
   await discoverRootContainer();
   // BranchFinderBlock is a shared block — it must live in the shared-blocks folder
   // ("Shared Blocks → For All Applications") to show up in that tab.
-  const blocksContainer = await discoverGlobalRoot();
+  const blocksContainer = await ensureSubfolder("formsTools");
 
   // Remove blocks stranded at the top-level root by earlier runs and stale copies
   // in the folder (keys are random per run). The page is re-pointed below.

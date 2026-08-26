@@ -1,13 +1,14 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { HeroBlockClient } from "./HeroBlockClient";
+import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { BACKGROUND, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const HeroBlockType = contentType({
   key: "HeroBlock",
   displayName: "Hero Block",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
+  compositionBehaviors: ["sectionEnabled"],
   properties: {
     headline: { type: "string", displayName: "Headline", indexingType: "searchable", isLocalized: true },
     subheadline: { type: "string", displayName: "Subheadline", indexingType: "searchable", isLocalized: true },
@@ -25,8 +26,10 @@ export const HeroBlockType = contentType({
         { value: "square",      displayName: "Square" },
       ],
     },
-    ctaText: { type: "string", displayName: "CTA Text", isLocalized: true },
-    ctaLink: { type: "string", displayName: "CTA Link" },
+    ctaText: { type: "string", displayName: "CTA Text", isLocalized: true, sortOrder: 100 },
+    // Native link picker: internal page selection + external/anchor/email URLs.
+    // Resolve at render with resolveLinkHref() (internal refs come back as cms://).
+    ctaLink: { type: "url", displayName: "Link", sortOrder: 110 },
   },
 });
 
@@ -80,7 +83,8 @@ interface HeroBlockData {
   } | null;
   rendition?: string | null;
   ctaText?: string | null;
-  ctaLink?: string | null;
+  // type:"url" link — Graph returns { default, hierarchical }.
+  ctaLink?: { default?: string | null; hierarchical?: string | null } | null;
   __context?: { edit?: boolean } | null;
 }
 
@@ -90,7 +94,7 @@ type HeroBlockProps = HeroBlockData & {
   displayTemplateKey?: string;
 };
 
-export default function HeroBlock(props: HeroBlockProps) {
+export default async function HeroBlock(props: HeroBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa, src } = getPreviewUtils(data as any);
@@ -108,6 +112,8 @@ export default function HeroBlock(props: HeroBlockProps) {
   const headingSize = (ds?.headingSize as string) ?? "xl";
   const fontStyle = (ds?.fontStyle as string) ?? "modern";
   const style = resolveStyleClasses(ds, { background: "blueGrad", headingSize: "xl" });
+  // Resolve the link picker (internal refs come back as cms://content/{key}).
+  const ctaHref = await resolveLinkHref(data.ctaLink);
 
   // CMS data is resolved server-side (ISR-cacheable); the four hero experiments are
   // decided client-side in HeroBlockClient so this stays out of the cookie path.
@@ -121,7 +127,7 @@ export default function HeroBlock(props: HeroBlockProps) {
       subtitle={subtitle}
       bgUrl={bgUrl}
       ctaText={data.ctaText}
-      ctaLink={data.ctaLink}
+      ctaHref={ctaHref}
       isCentered={isCentered}
       isTall={isTall}
       showOverlay={showOverlay}

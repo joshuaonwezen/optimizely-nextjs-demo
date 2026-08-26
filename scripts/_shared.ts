@@ -258,6 +258,161 @@ export async function discoverTopLevelRoot(): Promise<string> {
 }
 
 /**
+ * Organizing subfolders under the "For All Applications" shared-blocks folder.
+ * Each seeded shared block lives in one of these instead of flat in the folder
+ * root. Keys are fixed (hyphen-less UUIDs, like RECOVERY_ANCHORS) so re-seeds
+ * reuse the same folders rather than creating duplicates.
+ */
+export const SHARED_BLOCK_SUBFOLDERS = {
+  navFooter:    { key: "fb510000000000000000000000000001", displayName: "Navigation & Footer" },
+  siteSettings: { key: "fb510000000000000000000000000002", displayName: "Site Settings" },
+  faqs:         { key: "fb510000000000000000000000000003", displayName: "FAQs" },
+  quotes:       { key: "fb510000000000000000000000000004", displayName: "Quotes" },
+  editorial:    { key: "fb510000000000000000000000000005", displayName: "Editorial" },
+  formsTools:   { key: "fb510000000000000000000000000006", displayName: "Forms & Tools" },
+} as const;
+
+export type SharedBlockSubfolder = keyof typeof SHARED_BLOCK_SUBFOLDERS;
+
+const ensuredSubfolders = new Set<string>();
+
+/**
+ * Ensure the named SysContentFolder exists directly under the "For All
+ * Applications" shared-blocks folder, and return its key. Idempotent: a 409
+ * (folder already exists) is treated as success. The folder key is fixed per
+ * subfolder, so every instance and every re-seed converge on the same folders.
+ *
+ * Seed scripts pass the returned key as the `container` for their blocks - a
+ * block nested here still shows in the Shared Blocks tab, and Graph fetches it
+ * by type regardless of which folder it lives in.
+ */
+export async function ensureSubfolder(id: SharedBlockSubfolder): Promise<string> {
+  const { key, displayName } = SHARED_BLOCK_SUBFOLDERS[id];
+  if (ensuredSubfolders.has(key)) return key;
+
+  const token = await getManagementToken();
+  const parent = await discoverGlobalRoot();
+
+  const res = await fetch(CONTENT_ENDPOINT, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    // SysContentFolder is non-localized: the CMS rejects initialVersion.locale
+    // ("A locale should not be provided when creating content of a
+    // non-localized content type"), so omit it.
+    body: JSON.stringify({
+      key,
+      contentType: "SysContentFolder",
+      container: parent,
+      initialVersion: { displayName },
+    }),
+  });
+  const text = await res.text();
+
+  if (res.ok) {
+    // Best-effort publish so the folder is live; folders that reject publish
+    // still function as containers, so a publish failure is not fatal.
+    let versionId: string | undefined;
+    if (text.trim()) {
+      versionId = ((JSON.parse(text) as Record<string, unknown>).initialVersion as
+        Record<string, unknown> | undefined)?.version as string | undefined;
+    }
+    if (!versionId) {
+      const vRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=1`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (vRes.ok) {
+        versionId = ((await vRes.json()) as { items?: Array<{ version?: string }> })
+          .items?.[0]?.version;
+      }
+    }
+    if (versionId) {
+      await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${versionId}:publish`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+    console.log(`  [subfolder] ensured "${displayName}" (${key}) under ${parent}`);
+  } else if (res.status === 409) {
+    console.log(`  [subfolder] "${displayName}" (${key}) already exists`);
+  } else {
+    throw new Error(`Create subfolder "${displayName}": ${res.status} ${text.slice(0, 300)}`);
+  }
+
+  ensuredSubfolders.add(key);
+  return key;
+}
+
+/**
+ * Seed-owned shared-block types that were historically created flat in the
+ * "For All Applications" folder and now live in organizing subfolders. The
+ * migration below deletes ONLY these types from the folder root - so native
+ * form containers (OptiFormsContainerData), media, editor-created blocks of
+ * other types, and the reusable fixed-key utility blocks (CalloutBlock,
+ * CallToAction, ProductHeroBlock) sitting at the root are left untouched.
+ */
+const RELOCATED_BLOCK_TYPES = new Set([
+  "Navigation", "NavigationItem", "Footer",
+  "FaqItemBlock", "FaqContainerBlock", "QuoteBlock",
+  "AuthorBlock", "OutcomeItemBlock", "TestimonialBlock",
+  "TimelineMilestoneBlock", "TeamMemberBlock",
+  "ContactFormBlock", "BranchFinderBlock",
+  "SiteSettings", "SiteBanner",
+  "CalloutBlock", "CallToAction",
+]);
+
+/**
+ * One-time migration: delete seed-owned shared blocks that earlier seed
+ * versions created flat in the "For All Applications" folder root, so the
+ * per-script seeds can recreate them inside their subfolders without colliding
+ * (fixed-key blocks would otherwise 409-skip and never move; random-key blocks
+ * would duplicate). Type-scoped and flat-only (subfolder contents are not
+ * listed), so it is idempotent - once the root is clear, later runs are no-ops.
+ */
+export async function migrateFlatSharedBlocksToSubfolders(): Promise<void> {
+  const token = await getManagementToken();
+  const blocksFolder = await discoverGlobalRoot();
+
+  const items: Array<{ key: string; contentType?: string }> = [];
+  for (let pageIndex = 0; ; pageIndex++) {
+    const res = await fetch(`${CONTENT_ENDPOINT}/${blocksFolder}/items?pageSize=100&pageIndex=${pageIndex}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) break;
+    const batch = ((await res.json()) as { items?: Array<{ key: string; contentType?: string }> }).items ?? [];
+    items.push(...batch);
+    if (batch.length < 100) break;
+  }
+
+  let deleted = 0;
+  for (const item of items) {
+    if (!RELOCATED_BLOCK_TYPES.has(item.contentType ?? "")) continue;
+    const del = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
+    });
+    deleted++;
+    console.log(`  [migrate] moved-out ${item.contentType} ${item.key} from folder root (${del.status})`);
+  }
+  console.log(`  [migrate] flat "For All Applications" root: removed ${deleted} legacy shared block(s)`);
+}
+
+/**
+ * List the keys of every SysContentFolder directly under `parent` (used to
+ * sweep shared blocks that live inside the organizing subfolders, not just at
+ * the folder root).
+ */
+async function listSubfolderKeys(token: string, parent: string): Promise<string[]> {
+  const res = await fetch(`${CONTENT_ENDPOINT}/${parent}/items?pageSize=100`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as { items?: Array<{ key: string; contentType?: string }> };
+  return (data.items ?? [])
+    .filter((i) => i.contentType === "SysContentFolder")
+    .map((i) => i.key.replace(/-/g, ""));
+}
+
+/**
  * Migration + idempotency sweep for seeded shared blocks. Permanently deletes
  * items of the given content types found (a) directly under the top-level root,
  * where earlier seed versions created them as plain content items (the UI never
@@ -275,7 +430,13 @@ export async function sweepMisplacedSharedBlocks(
   const topRoot = await discoverTopLevelRoot();
   const blocksFolder = await discoverGlobalRoot();
   const wanted = new Set(contentTypes);
-  const containers = options.includeBlocksFolder === false ? [topRoot] : [topRoot, blocksFolder];
+  // Sweep the folder root AND its organizing subfolders, so blocks are removed
+  // wherever they sit under "For All Applications" - legacy flat copies and the
+  // new subfolder copies alike.
+  const subfolders = options.includeBlocksFolder === false ? [] : await listSubfolderKeys(token, blocksFolder);
+  const containers = options.includeBlocksFolder === false
+    ? [topRoot]
+    : [topRoot, blocksFolder, ...subfolders];
 
   for (const container of containers) {
     // Page through the full listing so items past the first page aren't missed.
@@ -318,7 +479,11 @@ export async function sweepSeededBlocks(
   const blocksFolder = await discoverGlobalRoot();
   const wantedTypes = new Set(contentTypes);
   const wantedNames = new Set(ownedNames);
-  const containers = options.includeBlocksFolder === false ? [topRoot] : [topRoot, blocksFolder];
+  // Sweep the folder root AND its organizing subfolders (see sweepMisplacedSharedBlocks).
+  const subfolders = options.includeBlocksFolder === false ? [] : await listSubfolderKeys(token, blocksFolder);
+  const containers = options.includeBlocksFolder === false
+    ? [topRoot]
+    : [topRoot, blocksFolder, ...subfolders];
 
   for (const container of containers) {
     // The blocks folder can hold >100 items, so page through the full listing -

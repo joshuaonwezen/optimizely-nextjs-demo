@@ -21,7 +21,8 @@ import {
   CONTENT_ENDPOINT,
   createContent,
   isApprovalRequired,
-  discoverGlobalRoot,
+  ensureSubfolder,
+  migrateFlatSharedBlocksToSubfolders,
   discoverTopLevelRoot,
   ensureExperienceStartPage,
   wrapProps,
@@ -42,6 +43,11 @@ let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 // Global content root - where standalone/shared blocks live so they appear in
 // the CMS "Shared Blocks → For All Applications" picker. Set in main().
 let BLOCKS_CONTAINER = "";
+// Shared blocks seed-content creates that belong in other subfolders (the
+// homepage binds them by key, so seed-content must create them before its
+// pages - hence they live here rather than in seed-quote-blocks/seed-modeling).
+let QUOTES_CONTAINER = "";
+let EDITORIAL_CONTAINER = "";
 
 // Standalone block types created across the seed scripts. cleanSharedBlocks()
 // only ever deletes these types under the global root, so pages (DynamicExperience,
@@ -120,7 +126,7 @@ function buildPersonalPage(): CompNode[] {
       subheadline:
         "Fee-free current accounts, market-leading savings, and mortgages that move at your pace - all from one app.",
       ctaText: "Open an account",
-      ctaLink: "/en/personal/current-account",
+      ctaLink: `cms://content/${PAGE_KEYS.currentAccount}`,
     }),
     sectionComponent("SectionHeadingBlock", "Personal Products Heading", {
       heading: "Everyday banking, sorted",
@@ -133,7 +139,7 @@ function buildPersonalPage(): CompNode[] {
         title: "Current Account",
         description:
           "A fee-free everyday account with instant notifications, budgeting tools, and no hidden charges.",
-        linkUrl: "/en/personal/current-account",
+        linkUrl: `cms://content/${PAGE_KEYS.currentAccount}`,
         linkText: "Open an account →",
       }),
       elementComponent("ProductCardBlock", "Savings Card", {
@@ -141,7 +147,7 @@ function buildPersonalPage(): CompNode[] {
         title: "Savings",
         description:
           "Easy-access and fixed-rate accounts with rates up to 5.1% AER. FSCS protected up to £85,000.",
-        linkUrl: "/en/personal/savings",
+        linkUrl: `cms://content/${PAGE_KEYS.savings}`,
         linkText: "View savings rates →",
       }),
       elementComponent("ProductCardBlock", "Mortgage Card", {
@@ -149,7 +155,7 @@ function buildPersonalPage(): CompNode[] {
         title: "Mortgage",
         description:
           "A decision in principle in 10 minutes and a dedicated advisor from first click to key handover.",
-        linkUrl: "/en/mortgage",
+        linkUrl: `cms://content/${PAGE_KEYS.mortgage}`,
         linkText: "Get a mortgage →",
       }),
       elementComponent("ProductCardBlock", "Compare Accounts Card", {
@@ -175,7 +181,7 @@ function buildPersonalPage(): CompNode[] {
     }),
     sectionComponent("CallToAction", "Personal CTA", {
       label: "Open a current account today",
-      link: "/en/personal/current-account",
+      link: `cms://content/${PAGE_KEYS.currentAccount}`,
     }),
   ];
 }
@@ -187,7 +193,7 @@ function buildBusinessPage(): CompNode[] {
       subheadline:
         "Current accounts, lending, and payment tools for UK businesses of every size. Free for your first 12 months.",
       ctaText: "Open a business account",
-      ctaLink: "/en/business/business-banking",
+      ctaLink: `cms://content/${PAGE_KEYS.businessBanking}`,
     }),
     sectionComponent("SectionHeadingBlock", "Business Products Heading", {
       heading: "Everything your business needs",
@@ -199,7 +205,7 @@ function buildBusinessPage(): CompNode[] {
         title: "Business Banking",
         description:
           "Fee-free for 12 months, with accounting integrations, instant invoicing, and real-time notifications.",
-        linkUrl: "/en/business/business-banking",
+        linkUrl: `cms://content/${PAGE_KEYS.businessBanking}`,
         linkText: "Explore business banking →",
       }),
       elementComponent("ProductCardBlock", "Business Lending Card", {
@@ -207,7 +213,7 @@ function buildBusinessPage(): CompNode[] {
         title: "Business Lending",
         description:
           "Flexible loans from £10,000 to £500,000 and overdraft facilities. Decisions in 48 hours.",
-        linkUrl: "/en/business/business-banking/business-lending",
+        linkUrl: `cms://content/${PAGE_KEYS.businessLending}`,
         linkText: "See lending options →",
       }),
       elementComponent("ProductCardBlock", "Business Current Account Card", {
@@ -215,7 +221,7 @@ function buildBusinessPage(): CompNode[] {
         title: "Business Current Account",
         description:
           "A full-featured account with multi-user access, audit trails, and one-click accounting sync.",
-        linkUrl: "/en/business/business-banking/business-current-account",
+        linkUrl: `cms://content/${PAGE_KEYS.businessCurrentAccount}`,
         linkText: "Open an account →",
       }),
       elementComponent("ProductCardBlock", "Business Pricing Card", {
@@ -241,7 +247,7 @@ function buildBusinessPage(): CompNode[] {
     }),
     sectionComponent("CallToAction", "Business CTA", {
       label: "Open a business account",
-      link: "/en/business/business-banking",
+      link: `cms://content/${PAGE_KEYS.businessBanking}`,
     }),
   ];
 }
@@ -253,7 +259,7 @@ function buildInvestmentsPage(): CompNode[] {
       subheadline:
         "Stocks & Shares ISAs, pensions, and long-term savings products. Start investing from £25 a month.",
       ctaText: "Start investing",
-      ctaLink: "/en/investments",
+      ctaLink: `cms://content/${PAGE_KEYS.investments}`,
     }),
     sectionComponent("SectionHeadingBlock", "Investments Products Heading", {
       heading: "Ways to invest",
@@ -265,7 +271,7 @@ function buildInvestmentsPage(): CompNode[] {
         title: "Stocks & Shares ISA",
         description:
           "Invest up to £20,000 a year with all growth free of UK income and capital gains tax.",
-        linkUrl: "/en/investments",
+        linkUrl: `cms://content/${PAGE_KEYS.investments}`,
         linkText: "Open an ISA →",
       }),
       elementComponent("ProductCardBlock", "Pension Card", {
@@ -273,7 +279,7 @@ function buildInvestmentsPage(): CompNode[] {
         title: "Personal Pension",
         description:
           "Save for retirement with tax relief on your contributions and a choice of ready-made portfolios.",
-        linkUrl: "/en/investments",
+        linkUrl: `cms://content/${PAGE_KEYS.investments}`,
         linkText: "Plan your pension →",
       }),
       elementComponent("ProductCardBlock", "GIA Card", {
@@ -281,7 +287,7 @@ function buildInvestmentsPage(): CompNode[] {
         title: "General Investment Account",
         description:
           "No annual limit. Ideal once you have used your ISA allowance and want to keep investing.",
-        linkUrl: "/en/investments",
+        linkUrl: `cms://content/${PAGE_KEYS.investments}`,
         linkText: "Learn more →",
       }),
       elementComponent("ProductCardBlock", "Junior ISA Card", {
@@ -289,7 +295,7 @@ function buildInvestmentsPage(): CompNode[] {
         title: "Junior ISA",
         description:
           "Give a child a head start. Invest up to £9,000 a year, tax-free, until they turn 18.",
-        linkUrl: "/en/investments",
+        linkUrl: `cms://content/${PAGE_KEYS.investments}`,
         linkText: "Open a Junior ISA →",
       }),
     ]),
@@ -310,7 +316,7 @@ function buildInvestmentsPage(): CompNode[] {
           "In-app guidance",
         ],
         ctaText: "Get started",
-        ctaLink: "/en/investments",
+        ctaLink: `cms://content/${PAGE_KEYS.investments}`,
       }),
       elementComponent("PricingTierBlock", "Standard Plan", {
         name: "Standard",
@@ -324,7 +330,7 @@ function buildInvestmentsPage(): CompNode[] {
           "Priority in-app support",
         ],
         ctaText: "Choose Standard",
-        ctaLink: "/en/investments",
+        ctaLink: `cms://content/${PAGE_KEYS.investments}`,
       }),
       elementComponent("PricingTierBlock", "Premium Plan", {
         name: "Premium",
@@ -338,7 +344,7 @@ function buildInvestmentsPage(): CompNode[] {
           "Platform fee capped at £250/yr",
         ],
         ctaText: "Choose Premium",
-        ctaLink: "/en/investments",
+        ctaLink: `cms://content/${PAGE_KEYS.investments}`,
       }),
     ]),
     gridSection("Investment Stats", [
@@ -361,7 +367,7 @@ function buildInvestmentsPage(): CompNode[] {
     }),
     sectionComponent("CallToAction", "Investments CTA", {
       label: "Start investing from £25 a month",
-      link: "/en/investments",
+      link: `cms://content/${PAGE_KEYS.investments}`,
     }),
   ];
 }
@@ -373,7 +379,7 @@ function buildHelpPage(): CompNode[] {
       subheadline:
         "Speak to a real person seven days a week via in-app chat or phone, or find answers in seconds below.",
       ctaText: "Contact us",
-      ctaLink: "/en/help/contact",
+      ctaLink: `cms://content/${PAGE_KEYS.contact}`,
     }),
     sectionComponent("SectionHeadingBlock", "Help Channels Heading", {
       heading: "How can we help?",
@@ -385,7 +391,7 @@ function buildHelpPage(): CompNode[] {
         title: "Contact us",
         description:
           "Send us a message and we will get back to you within one business day, or start an in-app chat right now.",
-        linkUrl: "/en/help/contact",
+        linkUrl: `cms://content/${PAGE_KEYS.contact}`,
         linkText: "Get in touch →",
       }),
       elementComponent("ProductCardBlock", "Branch Finder Card", {
@@ -401,7 +407,7 @@ function buildHelpPage(): CompNode[] {
         title: "FAQs",
         description:
           "Browse answers to the questions we hear most about accounts, payments, security, and switching.",
-        linkUrl: "/en/help",
+        linkUrl: `cms://content/${PAGE_KEYS.help}`,
         linkText: "Read FAQs →",
       }),
       elementComponent("ProductCardBlock", "App Support Card", {
@@ -409,7 +415,7 @@ function buildHelpPage(): CompNode[] {
         title: "App support",
         description:
           "Trouble signing in or setting up your device? Step-by-step help to get the Mosey app working for you.",
-        linkUrl: "/en/personal/current-account/mobile-app",
+        linkUrl: `cms://content/${PAGE_KEYS.mobileApp}`,
         linkText: "Get app help →",
       }),
     ]),
@@ -420,7 +426,7 @@ function buildHelpPage(): CompNode[] {
     }),
     sectionComponent("CallToAction", "Help CTA", {
       label: "Still need help? Contact us",
-      link: "/en/help/contact",
+      link: `cms://content/${PAGE_KEYS.contact}`,
     }),
   ];
 }
@@ -475,7 +481,7 @@ function buildAboutPage(): CompNode[] {
         title: "Careers",
         description:
           "We are always looking for people who want to change banking for the better. See open roles.",
-        linkUrl: "/en/about",
+        linkUrl: `cms://content/${PAGE_KEYS.about}`,
         linkText: "View careers →",
       }),
       elementComponent("ProductCardBlock", "Press Card", {
@@ -483,7 +489,7 @@ function buildAboutPage(): CompNode[] {
         title: "Press",
         description:
           "News, announcements, and media resources from the Mosey Bank press office.",
-        linkUrl: "/en/about",
+        linkUrl: `cms://content/${PAGE_KEYS.about}`,
         linkText: "Visit press room →",
       }),
     ]),
@@ -495,7 +501,7 @@ function buildAboutPage(): CompNode[] {
     }),
     sectionComponent("CallToAction", "About CTA", {
       label: "Join two million customers",
-      link: "/en/personal/current-account",
+      link: `cms://content/${PAGE_KEYS.currentAccount}`,
     }),
   ];
 }
@@ -604,7 +610,7 @@ function buildHomepage(savingsKey: string | null): CompNode[] {
     }),
     sectionComponent("CallToAction", "Home CTA", {
       label: "Open an account today",
-      link: "/en/personal/current-account",
+      link: `cms://content/${PAGE_KEYS.currentAccount}`,
     }),
   ];
 }
@@ -1725,7 +1731,9 @@ async function main() {
   // the app at it if the entry point is missing or a BlankExperience folder), so the
   // homepage can be seeded onto it and renders at /.
   CONTAINER = await ensureExperienceStartPage();
-  BLOCKS_CONTAINER = await discoverGlobalRoot();
+  BLOCKS_CONTAINER = await ensureSubfolder("faqs");
+  QUOTES_CONTAINER = await ensureSubfolder("quotes");
+  EDITORIAL_CONTAINER = await ensureSubfolder("editorial");
   console.log(`  container: ${CONTAINER}`);
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}`);
 
@@ -1738,6 +1746,12 @@ async function main() {
   // cleans its own types (seed-nav/seed-faqs by type, seed-modeling by
   // sentinel), so manually created blocks of managed types survive.
   await cleanSharedBlocks(await discoverTopLevelRoot());
+  // Migrate legacy shared blocks that older seeds created flat in the "For All
+  // Applications" folder root into the organizing subfolders: delete the flat
+  // copies here so every seed script recreates them inside its subfolder
+  // without a 409 collision (fixed-key blocks) or a duplicate (random-key
+  // blocks). Runs first (this is the runner's first script); idempotent.
+  await migrateFlatSharedBlocksToSubfolders();
 
   // Wait for CMS to free up routeSegments from deleted pages before re-creating
   console.log("\n  Waiting 8s for routeSegments to be released...");
@@ -1779,7 +1793,7 @@ async function main() {
     await createContent({
       key: card.key,
       contentType: "QuoteBlock",
-      container: BLOCKS_CONTAINER,
+      container: QUOTES_CONTAINER,
       locale: "en",
       displayName: `Quote - ${card.author}`,
       properties: { author: card.author, role: card.role ?? "", text: card.text },
@@ -1794,7 +1808,7 @@ async function main() {
   await createContent({
     key: SHARED_CALLOUT_KEY,
     contentType: "CalloutBlock",
-    container: BLOCKS_CONTAINER,
+    container: EDITORIAL_CONTAINER,
     locale: "en",
     displayName: "Shared - Not sure which is right",
     properties: {
@@ -1806,12 +1820,12 @@ async function main() {
   await createContent({
     key: SHARED_CTA_KEY,
     contentType: "CallToAction",
-    container: BLOCKS_CONTAINER,
+    container: EDITORIAL_CONTAINER,
     locale: "en",
     displayName: "Shared - Open an account CTA",
     properties: {
       label: "Open an account today",
-      link: "/en/personal/current-account",
+      link: `cms://content/${PAGE_KEYS.currentAccount}`,
     },
   }, "Shared CTA", { skipPublish: true });
   await ensurePublished(SHARED_CALLOUT_KEY);

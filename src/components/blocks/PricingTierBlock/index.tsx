@@ -1,13 +1,14 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { Button } from "@/components/ui/Button";
 
 export const PricingTierBlockType = contentType({
   key: "PricingTierBlock",
   displayName: "Pricing Tier",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
+  compositionBehaviors: ["elementEnabled"],
   properties: {
     name:        { type: "string",  displayName: "Tier name",                  isLocalized: true },
     price:       { type: "string",  displayName: "Price (e.g. £0, £9)" },
@@ -19,8 +20,10 @@ export const PricingTierBlockType = contentType({
       isLocalized: true,
       items: { type: "string" },
     },
-    ctaText:     { type: "string", displayName: "CTA text", isLocalized: true },
-    ctaLink:     { type: "string", displayName: "CTA link" },
+    ctaText:     { type: "string", displayName: "CTA text", isLocalized: true, sortOrder: 100 },
+    // Native link picker: internal page selection + external/anchor/email URLs.
+    // Resolve at render with resolveLinkHref() (internal refs come back as cms://).
+    ctaLink:     { type: "url", displayName: "Link", sortOrder: 110 },
   },
 });
 
@@ -56,7 +59,8 @@ interface PricingTierData {
   highlighted?: boolean | null;
   features?:    Array<string | null> | null;
   ctaText?:     string | null;
-  ctaLink?:     string | null;
+  // type:"url" link — Graph returns { default, hierarchical }.
+  ctaLink?:     { default?: string | null; hierarchical?: string | null } | null;
   __context?: { edit?: boolean } | null;
 }
 
@@ -66,7 +70,7 @@ type PricingTierBlockProps = PricingTierData & {
   displayTemplateKey?: string;
 };
 
-export default function PricingTierBlock(props: PricingTierBlockProps) {
+export default async function PricingTierBlock(props: PricingTierBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
@@ -94,6 +98,24 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
   const textColor = bg ? bg.text : (data.highlighted ? "text-on-brand" : "text-on-surface");
   const mutedColor = bg ? bg.textMuted : (data.highlighted ? "opacity-80" : "text-on-surface-variant");
   const ctaIsDarkChip = bg?.wrapper?.includes("gradient") || (data.highlighted && !bg);
+
+  // Resolve the link picker (internal refs come back as cms://content/{key}).
+  const resolved = await resolveLinkHref(data.ctaLink);
+  const isEdit = !!data.__context?.edit;
+  const href = isEdit ? undefined : resolved;
+  const editChips = (
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <span
+        {...pa("ctaLink")}
+        className={`inline-flex items-center gap-1.5 rounded-full border border-current/20 px-3 py-1 text-xs opacity-70 cursor-pointer hover:opacity-100 transition-opacity ${textColor}`}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
+          <path d="M6.5 9.5L9.5 6.5M7 4l.5-.5a3 3 0 0 1 4.2 4.2l-.5.5M9 12l-.5.5a3 3 0 0 1-4.2-4.2l.5-.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+        {resolved ? `→ ${resolved}` : "Set a link"}
+      </span>
+    </div>
+  );
 
   return (
     <div data-component="PricingTierBlock" className={wrapperStyle}>
@@ -147,9 +169,9 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
         </ul>
       )}
 
-      {data.ctaText && data.ctaLink && (
+      {data.ctaText && (href || isEdit) && (
         <Button
-          href={data.ctaLink}
+          href={isEdit ? undefined : href}
           size="compact"
           fontClassName=""
           variant={ctaIsDarkChip ? "custom" : "primary"}
@@ -160,6 +182,7 @@ export default function PricingTierBlock(props: PricingTierBlockProps) {
           <span {...pa("ctaText")}>{data.ctaText}</span>
         </Button>
       )}
+      {isEdit && editChips}
     </div>
   );
 }

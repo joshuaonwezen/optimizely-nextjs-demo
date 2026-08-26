@@ -1,6 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { Button } from "@/components/ui/Button";
 
 export const CallToActionType = contentType({
@@ -9,8 +10,10 @@ export const CallToActionType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    label: { type: "string", displayName: "Label", isLocalized: true },
-    link: { type: "string", displayName: "Link" },
+    label: { type: "string", displayName: "Label", isLocalized: true, sortOrder: 10 },
+    // Native link picker: internal page selection + external/anchor/email URLs.
+    // Resolve at render with resolveLinkHref() (internal refs come back as cms://).
+    link: { type: "url", displayName: "Link", sortOrder: 20 },
   },
 });
 
@@ -81,7 +84,8 @@ export const CallToActionGhostTemplate = displayTemplate({
 
 interface CallToActionData {
   label?: string | null;
-  link?: string | null;
+  // type:"url" link — Graph returns { default, hierarchical }.
+  link?: { default?: string | null; hierarchical?: string | null } | null;
   __context?: any;
 }
 
@@ -100,12 +104,17 @@ const VARIANT_CLASSES: Record<string, string> = {
   surface: "bg-surface-lowest text-brand border-2 border-outline-variant",
 };
 
-export default function CallToActionBlock(props: CallToActionProps) {
+export default async function CallToActionBlock(props: CallToActionProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const style = resolveStyleClasses(ds, { background: "transparent", textColor: "brand" });
+
+  // Resolve the link picker (internal refs come back as cms://content/{key}).
+  const resolved = await resolveLinkHref(data.link);
+  const isEdit = !!data.__context?.edit;
+  const href = isEdit ? undefined : resolved;
 
   const isGhost = props.displayTemplateKey === "CallToActionGhostTemplate";
   const variant =
@@ -114,12 +123,27 @@ export default function CallToActionBlock(props: CallToActionProps) {
     "brand";
   const isLarge = ds?.size === "large";
 
+  // Edit-mode affordance: a tidy chip instead of a raw mono URL string.
+  const editChips = (
+    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+      <span
+        {...pa("link")}
+        className="inline-flex items-center gap-1.5 rounded-full bg-on-surface/5 px-3 py-1 text-xs text-on-surface-variant cursor-pointer hover:bg-on-surface/10 transition-colors"
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
+          <path d="M6.5 9.5L9.5 6.5M7 4l.5-.5a3 3 0 0 1 4.2 4.2l-.5.5M9 12l-.5.5a3 3 0 0 1-4.2-4.2l.5-.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+        {resolved ? `→ ${resolved}` : "Set a link"}
+      </span>
+    </div>
+  );
+
   if (isGhost) {
     return (
       <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className="py-12 text-center">
-        {(data.link || data.__context?.edit) && (
+        {(href || isEdit) && (
           <a
-            href={data.__context?.edit ? undefined : (data.link ?? undefined)}
+            href={isEdit ? undefined : href}
             data-track-event="mb_cta_click"
             data-track-tags={JSON.stringify({ label: data.label ?? "", variant: "ghost" })}
             className={`${fontClass} inline-flex items-center gap-2 font-semibold ${style.text} hover:underline underline-offset-4 ${isLarge ? "text-lg" : "text-base"}`}
@@ -128,14 +152,7 @@ export default function CallToActionBlock(props: CallToActionProps) {
             <span aria-hidden>→</span>
           </a>
         )}
-        {data.__context?.edit && (
-          <p
-            {...pa("link")}
-            className="mt-3 text-xs font-mono text-on-surface-variant/60 cursor-pointer hover:text-on-surface-variant transition-colors"
-          >
-            {data.link || "Click to set link URL…"}
-          </p>
-        )}
+        {isEdit && editChips}
       </div>
     );
   }
@@ -144,9 +161,9 @@ export default function CallToActionBlock(props: CallToActionProps) {
 
   return (
     <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className="py-12 text-center">
-      {(data.link || data.__context?.edit) && (
+      {(href || isEdit) && (
         <Button
-          href={data.__context?.edit ? undefined : (data.link ?? undefined)}
+          href={isEdit ? undefined : href}
           variant={customClass ? "custom" : "primary"}
           size={isLarge ? "large" : "default"}
           fontClassName={fontClass}
@@ -157,14 +174,7 @@ export default function CallToActionBlock(props: CallToActionProps) {
           <span {...pa("label")}>{data.label ?? "Get Started"}</span>
         </Button>
       )}
-      {data.__context?.edit && (
-        <p
-          {...pa("link")}
-          className="mt-3 text-xs font-mono text-on-surface-variant/60 cursor-pointer hover:text-on-surface-variant transition-colors"
-        >
-          {data.link || "Click to set link URL…"}
-        </p>
-      )}
+      {isEdit && editChips}
     </div>
   );
 }

@@ -76,6 +76,23 @@ export const BlogExperienceType = contentType({
   },
 });
 
+// Blocks excluded from open page content areas (featuredBlock, mainContent).
+// Kept alongside the "_component" wildcard so new section blocks still auto-appear,
+// but these never make sense as top-level page content. Plain string keys are fine
+// here: this is a .mjs file (no TS PermittedTypes check) and the SDK's buildSkipSet
+// resolves entries via getKeyName(), which accepts concrete key strings.
+const CONTENT_AREA_EXCLUDES = [
+  // Site chrome - never page content
+  "Navigation", "NavigationItem", "Footer", "SiteSettings", "SiteBanner",
+  // Native form elements - only valid inside a form container
+  "OptiFormsTextboxElement", "OptiFormsTextareaElement",
+  "OptiFormsSelectionElement", "OptiFormsSubmitElement",
+  // Child-only items - belong inside their container/parent block, not standalone
+  "FaqItemBlock", "TimelineMilestoneBlock", "OutcomeItemBlock",
+  "TeamMemberBlock", "ProductCardBlock", "FeatureItemBlock",
+  "QuoteBlock", "PricingTierBlock", "AuthorBlock",
+];
+
 export const LandingPageType = contentType({
   key: "TraditionalPage",
   displayName: "Traditional Page",
@@ -90,7 +107,7 @@ export const LandingPageType = contentType({
     // content: references a single reusable block from the shared content library.
     // The SDK auto-generates inline fragments for every registered component type,
     // so the full block data (all properties) is fetched and rendered directly.
-    featuredBlock: { type: "content", displayName: "Featured Block", allowedTypes: ["_component"] },
+    featuredBlock: { type: "content", displayName: "Featured Block", allowedTypes: ["_component"], restrictedTypes: CONTENT_AREA_EXCLUDES },
     // Free content area: an open list of blocks editors can drop anything into.
     // items.type "content" (not "contentReference") makes Graph inline-expand each
     // block, so TraditionalPage.tsx renders them directly with no secondary fetch.
@@ -98,7 +115,7 @@ export const LandingPageType = contentType({
     mainContent: {
       type: "array",
       displayName: "Main Content",
-      items: { type: "content", allowedTypes: ["_component"] },
+      items: { type: "content", allowedTypes: ["_component"], restrictedTypes: CONTENT_AREA_EXCLUDES },
     },
     includeInNavigation: { type: "boolean", displayName: "Include in Navigation", indexingType: "queryable" },
     navLabel:            { type: "string",  displayName: "Navigation Label", indexingType: "queryable", isLocalized: true },

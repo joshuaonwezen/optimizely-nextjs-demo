@@ -18,7 +18,7 @@ import { config } from "dotenv";
 import {
   createContent,
   deleteContentByKey,
-  discoverGlobalRoot,
+  ensureSubfolder,
   findItemsInContainerByName,
   noHyphens,
   sweepSeededBlocks,
@@ -56,7 +56,7 @@ async function main() {
   console.log("=== Footer Seeding Script ===\n");
 
   console.log("--- Discovering shared-blocks container ---");
-  BLOCKS_CONTAINER = await discoverGlobalRoot();
+  BLOCKS_CONTAINER = await ensureSubfolder("navFooter");
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}`);
 
   await cleanupFooterItems();

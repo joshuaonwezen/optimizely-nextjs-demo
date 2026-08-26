@@ -1,5 +1,5 @@
 import { config } from "dotenv";
-import { createContent, discoverGlobalRoot } from "./_shared";
+import { createContent, ensureSubfolder } from "./_shared";
 import { QUOTE_CARDS } from "./quote-card-data";
 
 config({ path: ".env.local" });
@@ -10,7 +10,7 @@ config({ path: ".env.local" });
 async function main() {
   console.log("=== seed-quote-blocks.ts ===\n");
 
-  const container = await discoverGlobalRoot();
+  const container = await ensureSubfolder("quotes");
   console.log(`  Creating ${QUOTE_CARDS.length} QuoteBlock shared blocks under ${container}\n`);
 
   for (const card of QUOTE_CARDS) {

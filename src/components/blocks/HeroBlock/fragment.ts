@@ -16,6 +16,9 @@ export const HERO_BLOCK_FRAGMENT = /* GraphQL */ `
     }
     rendition
     ctaText
-    ctaLink
+    ctaLink {
+      default
+      hierarchical
+    }
   }
 `;

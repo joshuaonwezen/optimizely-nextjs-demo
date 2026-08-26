@@ -57,9 +57,12 @@ export const NavigationRootType = contentType({
 });`;
 
 const S1_CMS_SETUP = `1. Create one "Navigation Root" as a SHARED BLOCK: open the Shared Blocks
-   tab, select "For All Applications", and create the block there (e.g.
-   "Main Nav"). Blocks created elsewhere are plain content items and will
-   not appear in the Shared Blocks tab or in content-area pickers.
+   tab, select "For All Applications" (or its "Navigation & Footer"
+   subfolder, where the seed keeps nav blocks), and create the block there
+   (e.g. "Main Nav"). Anywhere inside "For All Applications" works - the block
+   shows in the Shared Blocks tab either way. Blocks created outside it are
+   plain content items and will not appear in the tab or in content-area
+   pickers.
 
 2. Open it and add NavigationItem entries to the "Top-level Items" content
    area. Content areas bind shared blocks; each NavigationItem's "URL" is a

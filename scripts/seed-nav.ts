@@ -18,7 +18,7 @@ import {
   GRAPH_ENDPOINT,
   SINGLE_KEY,
   deleteContentByKey,
-  discoverGlobalRoot,
+  ensureSubfolder,
   discoverRootContainer,
   findItemsInContainerByName,
   sweepMisplacedSharedBlocks,
@@ -516,7 +516,7 @@ async function main() {
 
   console.log("--- Discovering root container ---");
   CONTAINER = await discoverRootContainer();
-  BLOCKS_CONTAINER = await discoverGlobalRoot();
+  BLOCKS_CONTAINER = await ensureSubfolder("navFooter");
   console.log(`  container: ${CONTAINER}`);
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}`);
 

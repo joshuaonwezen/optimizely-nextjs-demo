@@ -15,7 +15,7 @@ import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import {
   createContent,
-  discoverGlobalRoot,
+  ensureSubfolder,
   discoverRootContainer,
   findPageKeyByUrl,
   patchPublishedPageProperties,
@@ -79,7 +79,7 @@ async function main() {
   await discoverRootContainer();
   // ContactFormBlock is a shared block — it must live inside the shared-blocks
   // folder ("Shared Blocks → For All Applications") to show up in that tab.
-  const blocksContainer = await discoverGlobalRoot();
+  const blocksContainer = await ensureSubfolder("formsTools");
 
   // Remove blocks stranded at the top-level root by earlier seed versions and
   // stale copies in the folder (keys are random per run). The existing

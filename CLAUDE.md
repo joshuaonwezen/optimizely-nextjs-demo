@@ -157,7 +157,27 @@ The seed script handles both setups automatically: it always tries to patch the 
 
 **Container key format** — the `OPTIMIZELY_ROOT_CONTAINER` value must be a UUID without hyphens (e.g. `bac6997fb4594e9ebcd93349de583fee`), not the hyphenated form from the CMS UI URL.
 
-**Shared blocks vs content items — two different kinds of CMS items**. *Shared blocks* live inside the "For All Applications" system folder (`SysContentFolder`, well-known key `e56f85d0e8334e02976a2d11fe4d598c`, a child of the top-level content root), show up in the **Shared Blocks** tab, and are what editors bind into **content areas** (`type: "array"` of `content`). *Content items* live elsewhere in the tree, show up in the **Content Manager** tab, and are the targets of **contentReference** properties. A block created directly under the top-level root is a plain content item — it never appears in the Shared Blocks tab. `discoverGlobalRoot()` in `scripts/_shared.ts` resolves the shared-blocks folder; every seed script uses it as the container for shared blocks, and `sweepMisplacedSharedBlocks()` migrates blocks stranded at the root by older seeds.
+**Shared blocks vs content items — two different kinds of CMS items**. *Shared blocks* live inside the "For All Applications" system folder (`SysContentFolder`, well-known key `e56f85d0e8334e02976a2d11fe4d598c`, a child of the top-level content root), show up in the **Shared Blocks** tab, and are what editors bind into **content areas** (`type: "array"` of `content`). *Content items* live elsewhere in the tree, show up in the **Content Manager** tab, and are the targets of **contentReference** properties. A block created directly under the top-level root is a plain content item - it never appears in the Shared Blocks tab. `discoverGlobalRoot()` in `scripts/_shared.ts` resolves the shared-blocks folder; `sweepMisplacedSharedBlocks()` migrates blocks stranded at the root by older seeds.
+
+**Seeded shared blocks are organized into subfolders under "For All Applications"**, not created flat in the folder root. `ensureSubfolder(id)` in `scripts/_shared.ts` creates (idempotently, with fixed keys) and returns the container for each; every seed script passes that as the block's `container`. The six subfolders and their owners:
+
+| Subfolder | Blocks | Seed scripts |
+|---|---|---|
+| Navigation & Footer | `Navigation`, `NavigationItem`, `Footer` | seed-nav, seed-footer |
+| Site Settings | `SiteSettings`, `SiteBanner` | seed-settings |
+| FAQs | `FaqItemBlock`, `FaqContainerBlock` | seed-faqs, seed-content |
+| Quotes | `QuoteBlock` | seed-content (creates first), seed-quote-blocks |
+| Editorial | modeling blocks, `CalloutBlock`, `CallToAction` | seed-modeling, seed-content |
+| Forms & Tools | `ContactFormBlock`, `BranchFinderBlock` | seed-contact-pages, seed-branch-finder |
+
+Because seed-content must create the homepage's bound blocks (Quote cards, the shared Callout/CTA) before its pages, it writes them straight into the Quotes / Editorial subfolders (via `ensureSubfolder("quotes")` / `ensureSubfolder("editorial")`), not its own FAQs container - whichever of seed-content / seed-quote-blocks runs second 409-skips.
+
+Notes on how the reorg stays safe and idempotent:
+- Nesting is safe: the app fetches blocks **by type** (`Navigation(limit: 1)`, `Footer(limit: 1)`) and binds them by `cms://content/{key}` reference, so neither depends on the container. Blocks only need to stay **descendants of** "For All Applications" to remain in the Shared Blocks tab.
+- **`SysContentFolder` is non-localized** - creating one must NOT send `initialVersion.locale` (400 otherwise). `ensureSubfolder()` handles this.
+- **One-time migration**: `migrateFlatSharedBlocksToSubfolders()` (called first, in seed-content) deletes seed-owned block types that older seeds left flat in the folder root, so the per-script creates land in subfolders without a 409 collision (fixed-key blocks) or a duplicate (random-key blocks). It is type-scoped (`RELOCATED_BLOCK_TYPES` in `_shared.ts`) and flat-only, so native form containers, media, and editor blocks at the root are left alone, and it is a no-op once the root is clear.
+- **Singletons use fixed keys**: `SiteSettings` / `SiteBanner` (and the FAQ items, quote cards, shared Callout/CTA) have stable keys, so re-seeds 409-skip and can never duplicate - independent of the display-name sweep, which had a flaky per-item version fetch.
+- `sweepMisplacedSharedBlocks()` / `sweepSeededBlocks()` recurse into every `SysContentFolder` under the blocks folder, so re-seeds clean the seed's own copies inside subfolders too.
 
 **Navigation is a shared block, not a composition node** — `NavigationItem` and `Navigation` blocks live in the shared-blocks folder (see above). The `Navigation` block is named `"Navigation Menu"` and is fetched by the Next.js app via a Graph query (by type, `Navigation(limit: 1)` — the display name is not used for filtering), not embedded in any page composition. `DynamicExperienceType.mayContainTypes` must include `NavigationItem` and `Navigation` for this to work when the root container is a DynamicExperience.
 

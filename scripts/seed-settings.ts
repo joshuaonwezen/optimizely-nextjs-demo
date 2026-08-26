@@ -17,14 +17,20 @@
 import { config } from "dotenv";
 import {
   createContent,
-  discoverGlobalRoot,
-  noHyphens,
+  ensureSubfolder,
   sweepSeededBlocks,
 } from "./_shared";
 
 config({ path: ".env.local" });
 
 let BLOCKS_CONTAINER = "";
+
+// SiteSettings and SiteBanner are singletons - fixed keys make re-seeds
+// idempotent (the re-create 409-skips) so they can never accumulate duplicates,
+// independent of the display-name sweep. The app fetches both by type, so the
+// stable key is invisible to it.
+const SETTINGS_KEY = "5e770000000000000000000000000001";
+const BANNER_KEY = "5e770000000000000000000000000002";
 
 // Values mirror DEFAULT_SITE_SETTINGS in src/lib/siteSettings.ts — the seeded
 // block starts identical to the hardcoded fallbacks, so editors see the live
@@ -50,7 +56,7 @@ async function main() {
   console.log("=== Site Settings Seeding Script ===\n");
 
   console.log("--- Discovering shared-blocks container ---");
-  BLOCKS_CONTAINER = await discoverGlobalRoot();
+  BLOCKS_CONTAINER = await ensureSubfolder("siteSettings");
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}`);
 
   console.log("--- Cleaning up our SiteSettings / SiteBanner blocks ---");
@@ -59,28 +65,26 @@ async function main() {
   await new Promise((r) => setTimeout(r, 3000));
 
   console.log("--- Creating SiteSettings block ---");
-  const settingsKey = noHyphens();
   await createContent({
-    key: settingsKey,
+    key: SETTINGS_KEY,
     contentType: "SiteSettings",
     container: BLOCKS_CONTAINER,
     locale: "en",
     displayName: "Site Settings",
     properties: SITE_SETTINGS,
   }, "SiteSettings block");
-  console.log(`  [settings] Created "Site Settings" (key ${settingsKey})`);
+  console.log(`  [settings] Created "Site Settings" (key ${SETTINGS_KEY})`);
 
   console.log("--- Creating SiteBanner block ---");
-  const bannerKey = noHyphens();
   await createContent({
-    key: bannerKey,
+    key: BANNER_KEY,
     contentType: "SiteBanner",
     container: BLOCKS_CONTAINER,
     locale: "en",
     displayName: "Site Banner",
     properties: SITE_BANNER,
   }, "SiteBanner block");
-  console.log(`  [banner] Created "Site Banner" (key ${bannerKey}, enabled)`);
+  console.log(`  [banner] Created "Site Banner" (key ${BANNER_KEY}, enabled)`);
 
   console.log("\n=== Done ===");
   console.log("Wait 30-60 s for Graph to index, then reload any page: the banner strip");

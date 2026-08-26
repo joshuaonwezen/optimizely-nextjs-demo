@@ -20,7 +20,7 @@ import {
   createContent,
   deleteContentByKey,
   deletePageByUrlIfExists,
-  discoverGlobalRoot,
+  ensureSubfolder,
   discoverRootContainer,
   sweepMisplacedSharedBlocks,
   findItemsInContainerByName,
@@ -1152,7 +1152,7 @@ async function main(): Promise<void> {
   console.log("=== Content Modeling Demo Seeding ===\n");
 
   CONTAINER = await discoverRootContainer();
-  BLOCKS_CONTAINER = await discoverGlobalRoot();
+  BLOCKS_CONTAINER = await ensureSubfolder("editorial");
   console.log(`  container: ${CONTAINER}`);
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}\n`);
 

@@ -7,7 +7,7 @@ export const BranchFinderBlockType = contentType({
   key: "BranchFinderBlock",
   displayName: "Branch Finder",
   baseType: "_component",
-  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
+  compositionBehaviors: ["sectionEnabled"],
   properties: {
     heading:     { type: "string",  displayName: "Heading",            indexingType: "searchable", isLocalized: true },
     intro:       { type: "string",  displayName: "Intro",              indexingType: "searchable", isLocalized: true },
