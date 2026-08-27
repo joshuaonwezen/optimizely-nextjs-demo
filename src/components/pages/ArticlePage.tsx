@@ -141,7 +141,7 @@ export default async function ArticlePage({ content }: { content: ArticleContent
       </header>
 
       {heroUrl && (
-        <div {...pa("heroImage")} className="relative w-full aspect-[16/9] mb-12 rounded-2xl overflow-hidden">
+        <div {...pa("heroImage")} className="relative w-full aspect-[21/9] mb-12 rounded-2xl overflow-hidden">
           <Image
             src={heroUrl}
             alt={content.title ?? ""}

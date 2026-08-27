@@ -55,7 +55,7 @@ export default async function BlogExperience({ content }: { content: any }) {
       {heroUrl && (
         <div
           {...pa("heroImage")}
-          className="relative w-full max-w-4xl mx-auto aspect-[16/9] mt-8 mb-4 rounded-2xl overflow-hidden"
+          className="relative w-full max-w-4xl mx-auto aspect-[21/9] mt-8 mb-4 rounded-2xl overflow-hidden"
         >
           <Image
             src={heroUrl}
