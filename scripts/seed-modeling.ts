@@ -25,6 +25,7 @@ import {
   sweepMisplacedSharedBlocks,
   findItemsInContainerByName,
   findPageKeyByUrl,
+  pageRefForUrl,
   noHyphens,
   patchContentProperties,
   wrapProps,
@@ -369,6 +370,9 @@ function singleSectionHeading(heading: string, subheading: string): CompNode[] {
 async function seedHubPages(): Promise<void> {
   console.log("\n--- Seeding hub pages (Insights URL hierarchy) ---");
 
+  // Resolve internal link targets to cms://content refs (falls back to the URL).
+  const articlesRef = await pageRefForUrl("/en/insights/articles/");
+
   await createContent(
     {
       key: HUB_KEYS.insights,
@@ -458,7 +462,7 @@ async function seedHubPages(): Promise<void> {
             nodeType: "component",
             component: {
               contentType: "CallToAction",
-              properties: wrapProps({ label: "Browse all articles", link: "/en/insights/articles/" }),
+              properties: wrapProps({ label: "Browse all articles", link: articlesRef }),
             },
           },
         ],
@@ -923,6 +927,9 @@ async function seedTeamPage(parentKey: string): Promise<void> {
 async function seedPricingPage(parentKey: string): Promise<void> {
   console.log("\n--- Seeding /en/business/pricing/ (PricingTier + ComparisonTable demo) ---");
 
+  // Resolve internal link target to a cms://content ref (falls back to the URL).
+  const businessBankingRef = await pageRefForUrl("/en/business/business-banking");
+
   const pricingRow = {
     id: uid(),
     displayName: "Pricing Row",
@@ -959,7 +966,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
                       "Xero and QuickBooks integration",
                     ],
                     ctaText: "Open a Starter account",
-                    ctaLink: "/en/business/business-banking",
+                    ctaLink: businessBankingRef,
                   }),
                 },
               },
@@ -990,7 +997,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
                       "Cashflow forecasting tools",
                     ],
                     ctaText: "Try Plus free for 30 days",
-                    ctaLink: "/en/business/business-banking",
+                    ctaLink: businessBankingRef,
                   }),
                 },
               },
@@ -1021,7 +1028,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
                       "API access for custom workflows",
                     ],
                     ctaText: "Talk to our team",
-                    ctaLink: "/en/business/business-banking",
+                    ctaLink: businessBankingRef,
                   }),
                 },
               },

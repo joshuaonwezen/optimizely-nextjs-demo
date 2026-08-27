@@ -1630,6 +1630,94 @@ async function createPage(page: PageDef): Promise<void> {
   console.log(`  [created] ${page.displayName} → key=${contentKey} route=${page.routeSegment ?? "/"}`);
 }
 
+/**
+ * Pass 1 of page creation: create a DynamicExperience page with an EMPTY (but
+ * valid, outline) composition, so its key and route exist before any other
+ * page's composition references it. Some CMS instances validate the internal
+ * `cms://content/{key}` links (ctaLink/linkUrl on Hero/ProductCard blocks) at
+ * create time and 400 with "unresolved reference" when a level-1 page's CTA
+ * points at a level-2 page that has not been created yet. Creating every page
+ * as a stub first, then applying the real composition in pass 2 (applyComposition),
+ * guarantees every referenced page key resolves. TraditionalPages carry no
+ * forward references, so they are created normally here; the homepage (no route
+ * segment) is created last by main() via createPage.
+ */
+async function createPageStub(page: PageDef): Promise<void> {
+  if (page.traditional) return createTraditionalPage(page);
+  if (!page.routeSegment) return; // homepage - created last, separately
+
+  const token = await getManagementToken();
+  const emptyComposition = {
+    id: uid(),
+    displayName: page.displayName,
+    nodeType: "experience",
+    layoutType: "outline",
+    nodes: [] as CompNode[],
+  };
+  const res = await fetchRetry(CONTENT_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      key: page.key,
+      contentType: "DynamicExperience",
+      container: page.container ?? CONTAINER,
+      initialVersion: {
+        locale: "en",
+        displayName: page.displayName,
+        routeSegment: page.routeSegment,
+        ...(page.properties ? { properties: wrapProps(page.properties) } : {}),
+        composition: emptyComposition,
+      },
+    }),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    if (res.status === 409) { console.log(`  [stub-skip] ${page.displayName} - already exists`); return; }
+    if (res.status === 400 && text.includes("is already in use")) { console.log(`  [stub-skip] ${page.displayName} - route in use`); return; }
+    console.error(`  [ERROR] stub ${page.displayName}: ${res.status} ${text.slice(0, 300)}`);
+    throw new Error(`Create page stub failed: ${res.status}`);
+  }
+  // Publish the empty stub so its key resolves as published content for the
+  // cross-page references applied in pass 2.
+  let version: string | undefined = text.trim()
+    ? ((JSON.parse(text) as Record<string, unknown>).initialVersion as Record<string, unknown> | undefined)?.version as string | undefined
+    : undefined;
+  if (!version) {
+    const vRes = await fetchRetry(`${CONTENT_ENDPOINT}/${page.key}/versions?pageSize=1`, { headers: { Authorization: `Bearer ${token}` } });
+    if (vRes.ok) version = ((await vRes.json()) as { items?: Array<{ version?: string }> }).items?.[0]?.version;
+  }
+  if (version) {
+    const pub = await fetchRetry(`${CONTENT_ENDPOINT}/${page.key}/versions/${version}:publish`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+    if (!pub.ok) {
+      const pt = await pub.text();
+      if (!isApprovalRequired(pub.status, pt)) console.warn(`  [warn] publish stub ${page.displayName}: ${pub.status} ${pt.slice(0, 200)}`);
+    }
+  }
+  console.log(`  [stub] ${page.displayName} → key=${page.key} route=${page.routeSegment}`);
+}
+
+/**
+ * Pass 2 of page creation: apply the real composition to a page created as a
+ * stub in pass 1, now that every referenced page key exists. Reuses
+ * updateStartPageComposition (POST a fresh draft with the composition, PATCH it,
+ * publish) - the same flow that sets the homepage/start-page composition.
+ * No-op for TraditionalPages and the homepage.
+ */
+async function applyComposition(page: PageDef): Promise<void> {
+  if (page.traditional || !page.routeSegment) return;
+  const token = await getManagementToken();
+  const composition = {
+    id: uid(),
+    displayName: page.displayName,
+    nodeType: "experience",
+    layoutType: "outline",
+    nodes: page.nodes ?? [],
+  };
+  const ok = await updateStartPageComposition(page.key, page, composition, token);
+  if (ok === true) console.log(`  [composed] ${page.displayName}`);
+  else console.warn(`  [warn] Could not apply composition for ${page.displayName} (${ok})`);
+}
+
 /** Permanently delete one content item, retrying on 429 rate-limit bursts. */
 async function permanentDelete(key: string): Promise<boolean> {
   const token = await getManagementToken();
@@ -1848,14 +1936,21 @@ async function main() {
   const level2 = pages.filter((p) => level2Keys.has(p.key));
   const level3 = pages.filter((p) => !level1Keys.has(p.key) && !level2Keys.has(p.key) && p.key !== PAGE_KEYS.homepage);
 
-  console.log(`\n--- Creating ${level1.length} level-1 pages ---`);
-  for (const page of level1) await createPage(page);
+  // Two-pass page creation. Pass 1 creates every page (stubs for the
+  // DynamicExperience pages, full create for TraditionalPages) so all keys and
+  // routes exist; pass 2 applies the real compositions once every internal
+  // `cms://content/{key}` link resolves. This avoids the "unresolved reference"
+  // 400 that instances which validate links at create time raise when a level-1
+  // page's CTA points at a not-yet-created level-2 page.
+  console.log(`\n--- Pass 1: creating pages (stubs for DynamicExperience, full for TraditionalPage) ---`);
+  for (const page of level1) await createPageStub(page);
+  for (const page of level2) await createPageStub(page);
+  for (const page of level3) await createPageStub(page);
 
-  console.log(`\n--- Creating ${level2.length} level-2 pages ---`);
-  for (const page of level2) await createPage(page);
-
-  console.log(`\n--- Creating ${level3.length} level-3 pages ---`);
-  for (const page of level3) await createPage(page);
+  console.log(`\n--- Pass 2: applying compositions ---`);
+  for (const page of level1) await applyComposition(page);
+  for (const page of level2) await applyComposition(page);
+  for (const page of level3) await applyComposition(page);
 
   // Look up the actual savings key (might differ if savings was skipped)
   const savingsKey = await findSavingsKey() ?? PAGE_KEYS.savings;
