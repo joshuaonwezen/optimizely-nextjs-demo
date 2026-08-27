@@ -1,7 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, HEADING_CLASSES, TEXT_ALIGN_CLASSES, resolveStyleClasses,
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, HEADING_CLASSES, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const OutcomeItemBlockType = contentType({
@@ -22,7 +22,7 @@ export const OutcomeItemBlockDefaultTemplate = displayTemplate({
   displayName: "Default",
   contentType: "OutcomeItemBlock",
   settings: {
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },
@@ -36,7 +36,7 @@ export const OutcomeItemInlineTemplate = displayTemplate({
   tag: "Inline",
   settings: {
     ...HEADING_SIZE,
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...TEXT_ALIGN,
   },
@@ -49,7 +49,7 @@ export const OutcomeItemBrandTemplate = displayTemplate({
   contentType: "OutcomeItemBlock",
   tag: "Brand",
   settings: {
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...HEADING_SIZE,
     ...TEXT_ALIGN,

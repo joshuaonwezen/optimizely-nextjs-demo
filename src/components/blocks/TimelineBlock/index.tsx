@@ -3,7 +3,7 @@ import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/
 import { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { CACHE_TTL } from "@/lib/optimizely/client";
-import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const TimelineBlockType = contentType({
   key: "TimelineBlock",
@@ -27,7 +27,7 @@ export const TimelineBlockDefaultTemplate = displayTemplate({
   displayName: "Default",
   contentType: "TimelineBlock",
   settings: {
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },

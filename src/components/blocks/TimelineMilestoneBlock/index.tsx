@@ -1,6 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const TimelineMilestoneBlockType = contentType({
   key: "TimelineMilestoneBlock",
@@ -20,7 +20,7 @@ export const TimelineMilestoneBlockDefaultTemplate = displayTemplate({
   displayName: "Default",
   contentType: "TimelineMilestoneBlock",
   settings: {
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },

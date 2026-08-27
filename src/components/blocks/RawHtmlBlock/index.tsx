@@ -1,6 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const RawHtmlBlockType = contentType({
   key: "RawHtmlBlock",
@@ -42,7 +42,7 @@ export const RawHtmlBlockDefaultTemplate = displayTemplate({
         spacious: { displayName: "Spacious", sortOrder: 2 },
       },
     },
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },

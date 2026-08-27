@@ -485,6 +485,8 @@ Any `opti:push` of content-type definitions must land on **every** CMS instance,
 
 The canonical instance list lives in `src/lib/optimizely/seedInstances.ts`. A schema that exists on some instances but not others breaks Graph queries on the un-pushed ones (see the `indexingType` deploy-ordering note below) — allow for the ~10 min Graph schema-sync lag before deploying code that relies on the new schema.
 
+**Do NOT pass `--host <app-url>` to `opti:push` on SaaS.** The credentials alone select the tenant: the CLI sends the token request and all API calls through the default SaaS gateway `https://api.cms.optimizely.com`, and the tenant is derived from the client credentials in the token. Passing `--host https://app-<slug>.cms.optimizely.com` makes the CLI classify it as a **PaaS** host (`isSaasApiGateway()` fails the `api*.cms.optimizely.com` regex) and POST `/oauth/token` to the app host, which fails with a misleading `Error: Something went wrong when trying to fetch token. Please try again` even though the same client_id/secret authenticates fine against `api.cms.optimizely.com/oauth/token` directly. So inject only `OPTIMIZELY_CMS_CLIENT_ID` / `OPTIMIZELY_CMS_CLIENT_SECRET` (as the examples above do) and omit `--host`. Reordering choices within an existing setting (e.g. `BACKGROUND` vs `BACKGROUND_NONE_DEFAULT`) is **not** a breaking change — it pushes without `--force`.
+
 ### New blocks are auto-discovered
 `optimizely.config.mjs` globs `./src/components/**/*.tsx` — no manual config edit needed when adding a new block.
 
@@ -819,13 +821,23 @@ export const MyBlockCardTemplate = displayTemplate({
 });
 ```
 
-Available shared constants: `BACKGROUND`, `HEADING_SIZE`, `TEXT_ALIGN`, `FONT_STYLE`, `TEXT_SIZE`.
+Available shared constants: `BACKGROUND`, `BACKGROUND_NONE_DEFAULT`, `HEADING_SIZE`, `TEXT_ALIGN`, `FONT_STYLE`, `TEXT_SIZE`.
 Tailwind class lookup maps: `BG_CLASSES`, `HEADING_CLASSES`, `FONT_CLASSES`, `TEXT_SIZE_CLASSES`, `TEXT_ALIGN_CLASSES`.
+
+### `BACKGROUND` vs `BACKGROUND_NONE_DEFAULT` — which background default
+
+Both expose the same eight color choices; they differ only in which one sits at `sortOrder: 0`, and **the `sortOrder: 0` choice is the default the CMS materializes into `displaySettings` when the editor never touches the control** (same mechanic as `HEADING_SIZE_CARD`). That materialized value wins in `resolveStyleClasses`'s `pick()` over the block's own code fallback, so the `sortOrder: 0` choice — not the code fallback — is what an untouched block actually renders.
+
+- `BACKGROUND` — **White** is the default. Use on **card / solid blocks** that should paint their own surface when unset: ProductCard, Quote, Testimonial, TeamMember, Author, Spotlight, Callout, FeatureItem, FaqItem, PricingTier, StatsCounter, CustomerVoices, Hero, ProductHero, FeaturedContent.
+- `BACKGROUND_NONE_DEFAULT` — **None** (transparent, `BG_CLASSES.transparent` emits an empty wrapper) is the default, so an untouched block inherits the parent section's background instead of a white card. Use on **flat / content blocks** that should blend into their section: SectionHeading, RichText, LogoGrid, TeamGrid, Timeline, TimelineMilestone, Image, RenditionImage, ComparisonTable, ContactForm, BranchFinder, FaqContainer, RawHtml, CallToAction, OutcomeItem.
+
+Rule of thumb: if the block's `resolveStyleClasses(ds, { background: "transparent" })` code fallback is already `transparent`, spread `BACKGROUND_NONE_DEFAULT` so the CMS default agrees with the code. Both templates keep every color selectable — this only changes the untouched default. Changing which constant a block spreads is a display-template change → `opti:push` to every instance (see below).
 
 ### Choosing which settings to include per block
 
 - Any block with a visible heading or title - add `HEADING_SIZE` and `FONT_STYLE`
-- Any block that renders with a card or section background - add `BACKGROUND`
+- Any card / solid block that paints its own surface - add `BACKGROUND` (White default)
+- Any flat / content block that should inherit its section's background - add `BACKGROUND_NONE_DEFAULT` (None default)
 - Any block with multi-line text content - add `TEXT_ALIGN`
 - Any block with prose or body text - add `TEXT_SIZE`
 

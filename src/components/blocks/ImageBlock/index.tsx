@@ -1,6 +1,6 @@
 import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
 
 export const ImageBlockType = contentType({
@@ -32,7 +32,7 @@ export const ImageBlockDefaultTemplate = displayTemplate({
   displayName: "Default",
   contentType: "ImageBlock",
   settings: {
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },
@@ -56,7 +56,7 @@ export const ImageBlockRoundedTemplate = displayTemplate({
         r1x1:  { displayName: "1:1 Square",      sortOrder: 3 },
       },
     },
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },

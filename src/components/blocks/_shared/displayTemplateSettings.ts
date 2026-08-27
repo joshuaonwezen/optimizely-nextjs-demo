@@ -30,6 +30,28 @@ export const BACKGROUND: { background: SelectSetting } = {
   },
 };
 
+// Same choices as BACKGROUND, reordered so "None" (transparent) sits at sortOrder 0
+// and becomes the display-template default the CMS applies when the editor hasn't
+// picked a background. For flat/content blocks that should inherit the parent's
+// background rather than paint a white card. Card blocks keep BACKGROUND (White default).
+export const BACKGROUND_NONE_DEFAULT: { background: SelectSetting } = {
+  background: {
+    editor: "select",
+    displayName: "Background color",
+    sortOrder: 0,
+    choices: {
+      transparent: { displayName: "None",             sortOrder: 0 },
+      white:       { displayName: "White",            sortOrder: 1 },
+      offWhite:    { displayName: "Off-white",        sortOrder: 2 },
+      blue:        { displayName: "Green",            sortOrder: 3 },
+      blueGrad:    { displayName: "Bright green",     sortOrder: 4 },
+      purple:      { displayName: "Teal",             sortOrder: 5 },
+      dark:        { displayName: "Dark",             sortOrder: 6 },
+      opal:        { displayName: "Expressive (Opal)", sortOrder: 7 },
+    },
+  },
+};
+
 // Text color — for any block with visible text. "auto" keeps the historic
 // behaviour of deriving text color from the chosen background, so unset content
 // renders exactly as it did before this setting existed.

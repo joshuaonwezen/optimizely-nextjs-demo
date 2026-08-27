@@ -1,7 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES, resolveStyleClasses,
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const SectionHeadingBlockType = contentType({
@@ -22,7 +22,7 @@ const HEADING_BLOCK_SETTINGS = {
     sortOrder: 10,
     choices: {},
   },
-  ...BACKGROUND,
+  ...BACKGROUND_NONE_DEFAULT,
   ...TEXT_COLOR,
   ...HEADING_SIZE,
   ...TEXT_ALIGN,

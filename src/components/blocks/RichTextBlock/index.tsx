@@ -2,7 +2,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, FONT_CLASSES, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES, resolveStyleClasses,
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, FONT_CLASSES, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const TextBlockType = contentType({
@@ -21,7 +21,7 @@ export const TextBlockDefaultTemplate = displayTemplate({
   displayName: "Default",
   contentType: "TextBlock",
   settings: {
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },
@@ -34,7 +34,7 @@ export const TextBlockNarrowTemplate = displayTemplate({
   contentType: "TextBlock",
   tag: "Narrow",
   settings: {
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...TEXT_SIZE,
     ...TEXT_ALIGN,

@@ -2,7 +2,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { FaqItemBlockType } from "@/components/blocks/FaqItemBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
-import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const FaqContainerBlockType = contentType({
   key: "FaqContainerBlock",
@@ -22,7 +22,7 @@ export const FaqContainerBlockDefaultTemplate = displayTemplate({
   displayName: "Default",
   contentType: "FaqContainerBlock",
   settings: {
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },

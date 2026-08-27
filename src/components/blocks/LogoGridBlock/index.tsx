@@ -2,7 +2,7 @@ import Image from "next/image";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES, resolveStyleClasses,
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const LogoGridBlockType = contentType({
@@ -28,7 +28,7 @@ export const LogoGridBlockDefaultTemplate = displayTemplate({
   displayName: "Default",
   contentType: "LogoGridBlock",
   settings: {
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },
@@ -57,7 +57,7 @@ export const LogoGridColorTemplate = displayTemplate({
       sortOrder: 11,
       choices: {},
     },
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...TEXT_ALIGN,
     ...FONT_STYLE,
