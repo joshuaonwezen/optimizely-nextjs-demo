@@ -70,6 +70,8 @@ import BranchFinderBlock, { BranchFinderBlockType, BranchFinderBlockDefaultTempl
 import QuoteBlock, { QuoteBlockType, QuoteBlockDefaultTemplate } from "@/components/blocks/QuoteBlock";
 import CustomerVoicesBlock, { CustomerVoicesBlockType, CustomerVoicesBlockDefaultTemplate } from "@/components/blocks/CustomerVoicesBlock";
 import SpotlightBlock, { SpotlightBlockType, SpotlightBlockDefaultTemplate } from "@/components/blocks/SpotlightBlock";
+import RedirectRule, { RedirectRuleType } from "@/components/blocks/RedirectRule";
+import RedirectConfig, { RedirectConfigType } from "@/components/blocks/RedirectConfig";
 
 import DynamicExperience from "@/components/experience/DynamicExperience";
 import BlogExperience from "@/components/experience/BlogExperience";
@@ -222,6 +224,8 @@ export function initComponentRegistry() {
     QuoteBlockType,
     CustomerVoicesBlockType,
     SpotlightBlockType,
+    RedirectRuleType,
+    RedirectConfigType,
     ArticlePageType,
     CaseStudyPageType,
     ConsultantPageType,
@@ -409,6 +413,9 @@ export function initComponentRegistry() {
       Footer: FooterPreview,
       SiteSettings: SiteSettingsPreview,
       SiteBanner: SiteBannerBlock,
+      // Data-only redirect types — render nothing (consumed by src/middleware.ts).
+      RedirectRule,
+      RedirectConfig,
       // Fallback: unknown types from the CMS (stale seeds, deleted types) — render nothing
       _Component: () => null,
   };

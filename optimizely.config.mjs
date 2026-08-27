@@ -85,6 +85,8 @@ export const BlogExperienceType = contentType({
 const CONTENT_AREA_EXCLUDES = [
   // Site chrome - never page content
   "Navigation", "NavigationItem", "Footer", "SiteSettings", "SiteBanner",
+  // Redirect config - data-only, managed from the Shared Blocks tab
+  "RedirectConfig", "RedirectRule",
   // Native form elements - only valid inside a form container
   "OptiFormsTextboxElement", "OptiFormsTextareaElement",
   "OptiFormsSelectionElement", "OptiFormsSubmitElement",

@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     revalidateTag("settings");
     revalidateTag("quotes");
     revalidateTag("quote-blocks");
+    revalidateTag("redirects");
 
     return NextResponse.json({ received: true, timestamp: Date.now() });
   } catch (error) {

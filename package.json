@@ -16,6 +16,7 @@
     "seed:all": "npx tsx scripts/seed-runner.ts",
     "seed:instances": "npx tsx scripts/seed-all-instances.ts",
     "seed:locations": "npx tsx scripts/seed-locations.ts",
+    "seed:redirects": "npx tsx scripts/seed-redirects.ts",
     "seed:search-config": "npx tsx scripts/seed-search-config.ts",
     "cleanup:types": "npx tsx scripts/cleanup-types.ts",
     "webhook:register": "node scripts/register-webhook.mjs",

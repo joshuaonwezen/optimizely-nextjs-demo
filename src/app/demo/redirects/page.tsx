@@ -10,8 +10,7 @@ export const metadata: Metadata = {
 };
 
 const CONTENT_TYPE_SNIPPET = `// src/components/blocks/RedirectRule/index.tsx
-// A data-only content type - no visual rendering.
-// Editors create one item per redirect rule in the CMS.
+// One row per redirect. Data-only - renders nothing.
 
 import { contentType } from "@optimizely/cms-sdk";
 
@@ -20,71 +19,117 @@ export const RedirectRuleType = contentType({
   baseType: "_component",
   compositionBehaviors: ["elementEnabled"],
   displayName: "Redirect Rule",
-  description: "Maps an old URL path to a new destination. Consumed by Next.js middleware.",
   properties: {
-    fromPath:   { type: "string",  displayName: "From path",   indexingType: "queryable" },
-    toPath:     { type: "string",  displayName: "To path",     indexingType: "queryable" },
-    statusCode: {
-      type: "string",
-      displayName: "Status code",
-      description: "301/308 = permanent. 302/307 = temporary. 307/308 preserve the HTTP method.",
-      format: "select",
-      enumValues: ["301", "302", "307", "308"],
-      indexingType: "queryable",
-    },
-    isActive: { type: "boolean", displayName: "Active" },
+    fromPath:      { type: "string",  displayName: "From path (old URL)",  indexingType: "queryable" },
+    toPath:        { type: "string",  displayName: "To path (new URL)",    indexingType: "queryable" },
+    permanent:     { type: "boolean", displayName: "Permanent (308). Off = temporary (307).", indexingType: "queryable" },
+    matchSubpaths: { type: "boolean", displayName: "Also redirect everything under this path" },
+    enabled:       { type: "boolean", displayName: "Enabled", indexingType: "queryable" },
+    note:          { type: "string",  displayName: "Internal note" },
   },
 });
 
-export default function RedirectRule() {
-  return null;
-}`;
+export default function RedirectRule() { return null; }
+
+
+// src/components/blocks/RedirectConfig/index.tsx
+// The singleton every editor opens - a content area of RedirectRule rows.
+// sectionEnabled (not elementEnabled) because it owns a content area.
+
+export const RedirectConfigType = contentType({
+  key: "RedirectConfig",
+  baseType: "_component",
+  compositionBehaviors: ["sectionEnabled"],
+  displayName: "Redirect Config",
+  properties: {
+    rules: { type: "array", displayName: "Redirect rules",
+             items: { type: "content", allowedTypes: [RedirectRuleType] } },
+    notes: { type: "string", displayName: "Notes for editors" },
+  },
+});
+
+export default function RedirectConfig() { return null; }`;
 
 const GRAPH_QUERY_SNIPPET = `// src/lib/graphql/queries/GetRedirectRules.ts
 
-export const GET_REDIRECT_RULES_QUERY = /* GraphQL */ \`
+// Fetch the singleton by type, newest first. No where-clause on 'enabled' -
+// filtering a field the Graph schema has not synced as queryable errors the
+// whole query, so the enabled check happens in JS (same as GetSiteBanner).
+const GET_REDIRECT_RULES_QUERY = /* GraphQL */ \`
   query GetRedirectRules {
-    RedirectRule(
-      where: { isActive: { eq: true } }
-      limit: 500
-    ) {
+    RedirectConfig(orderBy: { _metadata: { lastModified: DESC } }, limit: 10) {
       items {
-        fromPath
-        toPath
-        statusCode
+        rules {
+          ... on RedirectRule { fromPath toPath permanent matchSubpaths enabled }
+        }
       }
     }
   }
-\`;`;
+\`;
 
-const MIDDLEWARE_SNIPPET = `// src/middleware.ts (additions)
-// Check redirect rules before the Feature Experimentation rewrite so the
-// plain path is always what gets matched (no variation segment appended yet).
+export async function getRedirectRules() {
+  const result = await graphqlFetch(GET_REDIRECT_RULES_QUERY, {},
+    { next: { revalidate: 3600, tags: ["redirects"] } });
+  return (result.data?.RedirectConfig?.items?.[0]?.rules ?? [])
+    .filter((r) => r && r.enabled !== false && r.fromPath && r.toPath)
+    .sort((a, b) => b.fromPath.length - a.fromPath.length); // exact beats prefix
+}`;
 
-import { GET_REDIRECT_RULES_QUERY } from "@/lib/graphql/queries/GetRedirectRules";
-import { graphqlFetch } from "@/lib/optimizely/client";
+const ROUTE_HANDLER_SNIPPET = `// src/app/api/redirects/route.ts
+// Middleware has no Data Cache. This route does: the Graph call is cached with
+// tags: ["redirects"], and the publish webhook busts it with
+// revalidateTag("redirects"). Middleware reads this small JSON instead of Graph.
 
-export async function middleware(request: NextRequest) {
+import { NextResponse } from "next/server";
+import { getRedirectRules } from "@/lib/graphql/queries/GetRedirectRules";
+
+export const revalidate = 3600;
+
+export async function GET() {
+  return NextResponse.json({ rules: await getRedirectRules() });
+}`;
+
+const MIDDLEWARE_SNIPPET = `// src/lib/redirects.ts - edge-safe, mirrors datafile.ts
+
+const TTL_MS = 30_000;
+let cache = null; // best-effort: a cold worker just does the subrequest
+
+export async function loadRedirectRules(origin) {
+  if (cache && Date.now() - cache.at < TTL_MS) return cache.rules;
+  try {
+    const res = await fetch(\`\${origin}/api/redirects\`, { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return cache?.rules ?? [];
+    cache = { at: Date.now(), rules: (await res.json()).rules ?? [] };
+    return cache.rules;
+  } catch { return cache?.rules ?? []; }
+}
+
+
+// src/middleware.ts - after the /api, /preview, /demo, __v_ and .segments/
+// guards, BEFORE the Feature Experimentation rewrite (which would append a
+// /__v_ segment and break the plain-path match).
+
+import { loadRedirectRules, matchRedirect } from "@/lib/redirects";
+
+export async function middleware(request) {
   const response = NextResponse.next();
   // ... existing userId cookie logic ...
 
   if (request.nextUrl.pathname.startsWith("/api/")) return response;
   if (request.nextUrl.pathname.startsWith("/preview")) return response;
   if (/^\\/demo(\\/|$)/.test(request.nextUrl.pathname)) return response;
+  if (request.nextUrl.pathname.includes("__v_")) return response;
+  if (request.nextUrl.pathname.includes(".segments/")) return response;
 
   try {
-    const rulesRes = await graphqlFetch(
-      GET_REDIRECT_RULES_QUERY,
-      {},
-      { next: { revalidate: 3600, tags: ["redirects"] } }
-    );
-    const rules    = rulesRes.data?.RedirectRule?.items ?? [];
-    const match    = rules.find((r) => r.fromPath === request.nextUrl.pathname);
-
-    if (match?.toPath) {
-      const destination = new URL(match.toPath, request.nextUrl.origin);
-      const status      = parseInt(match.statusCode ?? "301", 10);
-      return NextResponse.redirect(destination, { status });
+    const rules = await loadRedirectRules(request.nextUrl.origin);
+    const hit = rules.length ? matchRedirect(request.nextUrl.pathname, rules) : null;
+    if (hit) {
+      const dest = /^https?:\\/\\//i.test(hit.toPath)
+        ? new URL(hit.toPath)
+        : new URL(hit.toPath, request.nextUrl.origin);
+      if (!dest.search && request.nextUrl.search) dest.search = request.nextUrl.search;
+      return NextResponse.redirect(dest, hit.status); // 308 permanent, 307 temporary
     }
   } catch {
     // Never fail a request due to redirect lookup errors.
@@ -93,15 +138,14 @@ export async function middleware(request: NextRequest) {
   // ... existing Feature Experimentation variation rewrite logic ...
 }
 
-// Cache strategy: 3600s revalidate keeps the lookup in Next.js's fetch cache.
-// Add "redirects" to the publish webhook handler so new rules go live instantly:
+// Add "redirects" to the publish webhook handler (src/app/api/webhooks/route.ts):
 //   revalidateTag("redirects");  // alongside "page" and "navigation"`;
 
-const STATIC_SNIPPET = `// next.config.mjs
+const STATIC_SNIPPET = `// next.config.ts
 // Resolved before middleware - zero latency. Supports wildcards and regex.
 // Trade-off: every new redirect requires a code change and a deployment.
 
-export default {
+const nextConfig = {
   async redirects() {
     return [
       { source: "/savings-accounts", destination: "/savings",      permanent: true  },  // 301
@@ -111,8 +155,8 @@ export default {
   },
 };
 
-// next.config only supports 301/302 (permanent: true/false).
-// For 307/308 (method-preserving), use the CMS-managed approach via middleware.`;
+// next.config only emits 301/302 (permanent: true/false). The CMS-managed
+// middleware path emits 308/307, which Google treats as the SEO equivalents.`;
 
 const SITEMAP_SNIPPET = `// No changes needed to src/app/sitemap.ts.
 //
@@ -120,11 +164,11 @@ const SITEMAP_SNIPPET = `// No changes needed to src/app/sitemap.ts.
 // When an editor unpublishes or renames the old page, Graph stops
 // returning its URL - it disappears from the sitemap automatically.
 //
-// redirect rule  →  handles the HTTP 301 for browsers and crawlers
-// sitemap        →  only lists the new canonical URL
+// redirect rule  ->  handles the HTTP 308 for browsers and crawlers
+// sitemap        ->  only lists the new canonical URL
 //
-// If the old page stays published (intentionally), add a canonical tag
-// in generateMetadata pointing to the new URL:
+// If the old page stays published (a vanity URL pointing at a live page),
+// add a canonical tag in generateMetadata pointing at the real URL:
 alternates: { canonical: \`\${siteUrl}/savings\` }`;
 
 export default function RedirectsDemoPage() {
@@ -132,7 +176,7 @@ export default function RedirectsDemoPage() {
     <>
       <DemoHero
         title="URL Redirects"
-        description="In a traditional CMS, the platform creates 301 redirects automatically when a page moves. In a headless setup that responsibility shifts to the app layer - here are two ways to handle it."
+        description="In a traditional CMS, the platform creates 301 redirects automatically when a page moves. In a headless setup that responsibility shifts to the app layer - here is how this project handles it."
       />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
@@ -147,7 +191,8 @@ export default function RedirectsDemoPage() {
             a page and the CMS creates a redirect automatically. In a headless setup the CMS only
             provides content data via API; Next.js owns routing. Change a{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">routeSegment</code>{" "}
-            and the old URL silently 404s - breaking bookmarks, backlinks, and SEO equity.
+            and the old URL silently 404s - breaking bookmarks, backlinks, and SEO equity. There is
+            also no built-in way to point a short marketing URL at an existing page.
           </p>
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -190,18 +235,33 @@ export default function RedirectsDemoPage() {
             <SectionAnchor id="cms-managed" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            Store redirect rules as content in the CMS. A{" "}
+            Store redirect rules as content. A single{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">RedirectConfig</code>{" "}
+            shared block holds a list of{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">RedirectRule</code>{" "}
-            content type gives editors a form-based UI to add rules directly - no developer
-            involvement, no deployments. Next.js middleware queries the rules from Graph
-            (cached at 3600s) and issues the redirect before the request reaches the page router.
+            rows - editors see and edit every redirect on one screen, no developer involvement, no
+            deployments. Middleware issues the redirect before the request reaches the page router,
+            so it works for still-published pages (vanity URLs) as well as 404 recovery.
           </p>
 
           <div className="space-y-6">
-            <CodeBlock code={CONTENT_TYPE_SNIPPET} label="RedirectRule content type" />
-            <CodeBlock code={GRAPH_QUERY_SNIPPET} label="Graph query - fetch active rules" />
-            <CodeBlock code={MIDDLEWARE_SNIPPET} label="src/middleware.ts - redirect check + cache strategy" />
+            <CodeBlock code={CONTENT_TYPE_SNIPPET} label="RedirectRule + RedirectConfig content types" />
+            <CodeBlock code={GRAPH_QUERY_SNIPPET} label="Graph query - fetch the singleton, inline-expand the rows" />
+            <CodeBlock code={ROUTE_HANDLER_SNIPPET} label="src/app/api/redirects/route.ts - the cached source of truth" />
+            <CodeBlock code={MIDDLEWARE_SNIPPET} label="src/lib/redirects.ts + src/middleware.ts - the redirect check" />
           </div>
+
+          <Callout variant="note">
+            <strong>Why the route handler.</strong>{" "}
+            Middleware has no Data Cache and the proxy docs warn against relying on globals, so a
+            direct Graph call there would run on every request and the publish webhook could never
+            bust it. The{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">/api/redirects</code>{" "}
+            route handler caches the Graph call and is busted instantly by{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">revalidateTag(&quot;redirects&quot;)</code>;
+            middleware reads that small JSON through a ~30s in-memory guard, so the hot path does
+            zero I/O.
+          </Callout>
 
           <Callout variant="note">
             <strong>Run the redirect check before the FX variation rewrite.</strong>{" "}
@@ -217,15 +277,20 @@ export default function RedirectsDemoPage() {
             <SectionAnchor id="status-codes" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            For content pages 301 and 302 cover almost every case. Use 307/308 only when redirecting
-            API endpoints or form actions where the HTTP method must not change to a GET.
+            The CMS-managed path exposes one checkbox - <em>Permanent</em> - and emits{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">308</code> when it is on,{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">307</code> when it is off.
+            Google treats 308 as 301 and 307 as 302 for SEO, and both preserve the HTTP method.
+            Emitting a literal 301/302 would need a route-level{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">Response</code>{" "}
+            rather than{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">NextResponse.redirect</code>;
+            for content pages it is not worth the extra surface.
           </p>
           <div className="grid md:grid-cols-2 gap-4">
             {[
-              { code: "301", label: "Permanent", method: "May change to GET", seo: "Transfers equity", use: "Page renames, URL restructuring" },
-              { code: "302", label: "Temporary", method: "May change to GET", seo: "Does not transfer", use: "Promos, maintenance pages" },
-              { code: "307", label: "Temporary", method: "Preserved", seo: "Does not transfer", use: "Temporary API or form endpoint moves" },
-              { code: "308", label: "Permanent", method: "Preserved", seo: "Transfers equity", use: "Permanent API endpoint migrations" },
+              { code: "308", label: "Permanent - checkbox on", method: "Preserved", seo: "Transfers equity (like 301)", use: "Page renames, URL restructuring, vanity URLs" },
+              { code: "307", label: "Temporary - checkbox off", method: "Preserved", seo: "Does not transfer (like 302)", use: "Promos, campaigns, maintenance pages" },
             ].map(({ code, label, method, seo, use }) => (
               <div key={code} className="bg-surface-lowest border border-ghost-border rounded-2xl p-4">
                 <div className="flex items-center gap-3 mb-2">
@@ -247,7 +312,7 @@ export default function RedirectsDemoPage() {
 
         <section id="static">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Option B: static redirects in <code className="font-mono text-xl">next.config.mjs</code>
+            Option B: static redirects in <code className="font-mono text-xl">next.config.ts</code>
             <SectionAnchor id="static" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
@@ -256,7 +321,7 @@ export default function RedirectsDemoPage() {
             (a rebrand, a URL cleanup pass). Use both together: static for known legacy redirects,
             CMS-managed for anything editors need to control going forward.
           </p>
-          <CodeBlock code={STATIC_SNIPPET} label="next.config.mjs - zero-latency, deployment required" />
+          <CodeBlock code={STATIC_SNIPPET} label="next.config.ts - zero-latency, deployment required" />
         </section>
 
         <section id="sitemap">
@@ -266,7 +331,7 @@ export default function RedirectsDemoPage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Redirects and the sitemap are complementary - not redundant. The redirect handles
-            the HTTP 301; the sitemap handles canonicality. When the old page is unpublished,
+            the HTTP 308; the sitemap handles canonicality. When the old page is unpublished,
             Graph stops returning its URL and it drops out of the sitemap automatically.
             No changes to <code className="bg-surface-low px-1 rounded font-mono text-xs">sitemap.ts</code> needed.
           </p>
@@ -275,10 +340,10 @@ export default function RedirectsDemoPage() {
 
         <KeyPoints points={[
           <><strong className="text-on-surface">Headless CMSes don&apos;t create redirects automatically.</strong> The CMS provides content data only - the app layer must manage redirects explicitly.</>,
-          <><strong className="text-on-surface">CMS-managed rules give editors self-service control.</strong> A <code className="bg-surface-low px-1 rounded font-mono text-xs">RedirectRule</code> content type means no deployments needed for new redirects.</>,
+          <><strong className="text-on-surface">One <code className="bg-surface-low px-1 rounded font-mono text-xs">RedirectConfig</code> block, edited on one screen.</strong> A content area of <code className="bg-surface-low px-1 rounded font-mono text-xs">RedirectRule</code> rows means no deployments for new redirects, and it covers live URLs, not just 404s.</>,
+          <><strong className="text-on-surface">Middleware reads a cached route handler, not Graph.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">/api/redirects</code> caches the query and the <code className="bg-surface-low px-1 rounded font-mono text-xs">&quot;redirects&quot;</code> webhook tag activates new rules in seconds; a ~30s in-memory guard keeps the hot path I/O-free.</>,
           <><strong className="text-on-surface">Run the redirect check before the FX rewrite in middleware.</strong> Otherwise variation segments in the URL break the path match.</>,
-          <><strong className="text-on-surface">Cache at 3600s, flush with a webhook tag.</strong> Redirect rules are stable - long TTL keeps middleware fast, the <code className="bg-surface-low px-1 rounded font-mono text-xs">&quot;redirects&quot;</code> tag activates new rules in seconds without busting page cache.</>,
-          <><strong className="text-on-surface">Use 301/302 for content pages, 307/308 for API endpoints.</strong> Method-preserving codes only matter when clients must retry a POST against the new URL.</>,
+          <><strong className="text-on-surface">The checkbox picks 308 or 307.</strong> Google treats them as 301/302 for SEO; both preserve the HTTP method.</>,
         ]} />
 
       </div>

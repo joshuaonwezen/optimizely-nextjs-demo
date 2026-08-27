@@ -270,6 +270,7 @@ export const SHARED_BLOCK_SUBFOLDERS = {
   quotes:       { key: "fb510000000000000000000000000004", displayName: "Quotes" },
   editorial:    { key: "fb510000000000000000000000000005", displayName: "Editorial" },
   formsTools:   { key: "fb510000000000000000000000000006", displayName: "Forms & Tools" },
+  redirects:    { key: "fb510000000000000000000000000007", displayName: "Redirects" },
 } as const;
 
 export type SharedBlockSubfolder = keyof typeof SHARED_BLOCK_SUBFOLDERS;

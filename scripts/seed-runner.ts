@@ -98,6 +98,10 @@ async function main() {
     // are missing). Must run before seed-localization so nl versions cover it.
     ["npx", ["tsx", "scripts/seed-footer.ts"]],
     ["npx", ["tsx", "scripts/seed-settings.ts"]],
+    // CMS-controlled redirect rules (RedirectConfig singleton). Pure Management
+    // API, no Graph dependency, but optional so a missing type on an un-pushed
+    // instance warns instead of aborting the run.
+    ["npx", ["tsx", "scripts/seed-redirects.ts"]],
     // Search relevance (pinned results + synonyms). Resolves pin targets by URL
     // from Graph, so it needs the pages above indexed (~60s lag on a fresh seed;
     // re-run individually if pins are skipped). Cleans up old config each run.

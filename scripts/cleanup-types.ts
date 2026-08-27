@@ -58,6 +58,8 @@ const KEEP = new Set([
   "QuoteBlock",
   "CustomerVoicesBlock",
   "spotlightBlock",
+  "RedirectRule",
+  "RedirectConfig",
   // Optimizely Forms native types (activated via CMS Settings → Forms)
   "OptiFormsContainerData",
   "OptiFormsTextboxElement",

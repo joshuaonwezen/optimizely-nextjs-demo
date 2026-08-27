@@ -7,6 +7,7 @@ import {
 } from "@optimizely/optimizely-sdk/universal";
 import { fetchDatafile } from "@/lib/optimizely/datafile";
 import { appendVisitorCookie } from "@/lib/optimizely/visitorCookie";
+import { loadRedirectRules, matchRedirect } from "@/lib/redirects";
 
 export const VARIATION_MARKER = "__v_";
 export const FLAG_VAR_SEP = "--";
@@ -64,6 +65,29 @@ export async function middleware(request: NextRequest) {
   if (/^\/demo(\/|$)/.test(request.nextUrl.pathname)) return response;
   if (request.nextUrl.pathname.includes(VARIATION_MARKER)) return response;
   if (request.nextUrl.pathname.includes(".segments/")) return response;
+
+  // CMS-driven redirects. Runs on the clean path, BEFORE the FX rewrite appends
+  // any /__v_ segment (which would break plain-path matching). The /api/ guard
+  // above returns first, so the /api/redirects lookup can't recurse.
+  try {
+    const rules = await loadRedirectRules(request.nextUrl.origin);
+    const hit = rules.length ? matchRedirect(request.nextUrl.pathname, rules) : null;
+    if (hit) {
+      const dest = /^https?:\/\//i.test(hit.toPath)
+        ? new URL(hit.toPath)
+        : new URL(hit.toPath, request.nextUrl.origin);
+      if (!dest.search && request.nextUrl.search) dest.search = request.nextUrl.search;
+      const redirect = NextResponse.redirect(dest, hit.status);
+      appendVisitorCookie(
+        redirect.headers,
+        userId,
+        request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? ""
+      );
+      return redirect;
+    }
+  } catch {
+    // Never fail a request because of the redirect lookup.
+  }
 
   try {
     const datafile = await fetchDatafile(3000);
