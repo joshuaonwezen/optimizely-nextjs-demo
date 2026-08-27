@@ -33,9 +33,9 @@ async function listAllAudiences() {
   for (const e of edges) console.log(`  ${e.node.name}\n      ${e.node.description ?? ""}`);
 }
 
-// Per-visitor membership. `subset` is REQUIRED by ODP — pass the audience names you care about.
+// Per-visitor membership. `subset` is REQUIRED by ODP - pass the audience names you care about.
 // `idType` is the ODP identifier the value is looked up under. The app stitches the FX id as
-// `fs_user_id` (OdpSetup) but historically queried `vuid` — pass both to compare.
+// `fs_user_id` (OdpSetup) but historically queried `vuid` - pass both to compare.
 async function testVisitor(userId: string, subset: string[], idType: "vuid" | "fs_user_id" = "vuid") {
   console.log(`\nMembership for ${idType} "${userId}" against [${subset.join(", ")}]:\n`);
   const data = await odp<{ customer?: { audiences?: { edges?: Array<{ node: { name: string; state: string } }> } } }>(
@@ -46,7 +46,7 @@ async function testVisitor(userId: string, subset: string[], idType: "vuid" | "f
   );
   const edges = data?.customer?.audiences?.edges ?? [];
   if (!edges.length) {
-    console.log(`  (no data — ${idType} unknown to ODP, or none of the subset applies)`);
+    console.log(`  (no data - ${idType} unknown to ODP, or none of the subset applies)`);
     return;
   }
   for (const e of edges) console.log(`  ${e.node.name}  →  ${e.node.state}`);

@@ -1,7 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const FeatureItemBlockType = contentType({
@@ -18,13 +18,13 @@ export const FeatureItemBlockType = contentType({
 const FEATURE_SETTINGS = {
   ...BACKGROUND,
   ...TEXT_COLOR,
-  ...HEADING_SIZE,
+  ...HEADING_SIZE_CARD,
   ...FONT_STYLE,
 };
 
 // Flat renders without a background wrapper, so the background setting is omitted
 const FLAT_SETTINGS = {
-  ...HEADING_SIZE,
+  ...HEADING_SIZE_CARD,
   ...FONT_STYLE,
 };
 

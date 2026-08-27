@@ -33,7 +33,7 @@ function noHyphens(): string {
 
 /**
  * Fetch the current mainContent references of a TraditionalPage, excluding any
- * BranchFinderBlock (a prior run's finder — it was just swept, so re-adding it
+ * BranchFinderBlock (a prior run's finder - it was just swept, so re-adding it
  * would leave a dangling reference).
  */
 async function getMainContentKeys(pageKey: string): Promise<string[]> {
@@ -64,7 +64,7 @@ async function main() {
   console.log("=== Seeding BranchFinderBlock onto /en/help/branches ===\n");
 
   await discoverRootContainer();
-  // BranchFinderBlock is a shared block — it must live in the shared-blocks folder
+  // BranchFinderBlock is a shared block - it must live in the shared-blocks folder
   // ("Shared Blocks → For All Applications") to show up in that tab.
   const blocksContainer = await ensureSubfolder("formsTools");
 
@@ -98,7 +98,7 @@ async function main() {
   const pageKey = await findPageKeyByUrl(["/en/help/branches", "/en/help/branches/"]);
   if (!pageKey) {
     console.warn(
-      "  [warn] Find a Branch page not found in Graph — run seed-content first, then re-run this script"
+      "  [warn] Find a Branch page not found in Graph - run seed-content first, then re-run this script"
     );
     return;
   }
@@ -115,7 +115,7 @@ async function main() {
   await patchPublishedPageProperties(pageKey, { mainContent });
   console.log(`  [patched] Find a Branch mainContent → BranchFinderBlock + ${existing.length} existing block(s)`);
 
-  console.log("\nDone — BranchFinderBlock seeded and placed. Allow ~30-60s for Graph reindex, then reload /en/help/branches.");
+  console.log("\nDone - BranchFinderBlock seeded and placed. Allow ~30-60s for Graph reindex, then reload /en/help/branches.");
 }
 
 main().catch((err) => {

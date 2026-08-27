@@ -93,7 +93,7 @@ async function main() {
     // Build out the block's elements first, then place it on the contact page.
     ["npx", ["tsx", "scripts/seed-form-block.ts"]],
     ["npx", ["tsx", "scripts/seed-contact-form.ts"]],
-    // Footer links point at pages from seed-content/seed-nav — needs Graph to
+    // Footer links point at pages from seed-content/seed-nav - needs Graph to
     // have indexed them (~60s lag on a fresh seed; re-run individually if links
     // are missing). Must run before seed-localization so nl versions cover it.
     ["npx", ["tsx", "scripts/seed-footer.ts"]],

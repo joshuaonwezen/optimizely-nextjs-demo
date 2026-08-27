@@ -1,5 +1,5 @@
 /**
- * Nav seeding script — creates:
+ * Nav seeding script - creates:
  *   1. LandingPage content items for each nav destination lacking a real page
  *   2. NavigationItem content items (leaf-first, href = cms://content/<page-key>)
  *   3. Navigation block pointing to the top-level NavigationItems
@@ -29,7 +29,7 @@ import {
 config({ path: ".env.local" });
 
 let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
-// Global content root — the Navigation block + NavigationItems are shared blocks
+// Global content root - the Navigation block + NavigationItems are shared blocks
 // and live here so they appear in "Shared Blocks → For All Applications". Set in main().
 let BLOCKS_CONTAINER = "";
 // Optional: when set, seed-nav will delete this specific Navigation block and
@@ -37,7 +37,7 @@ let BLOCKS_CONTAINER = "";
 // the script searches CONTAINER for an existing Navigation block or creates a
 // new one there.
 const NAV_BLOCK_KEY = (process.env.OPTIMIZELY_NAV_BLOCK_KEY ?? "").replace(/-/g, "");
-// Display name for the seeded Navigation block — what editors see in the
+// Display name for the seeded Navigation block - what editors see in the
 // Shared Blocks tab. The app's Graph query fetches by type (Navigation, limit 1),
 // not by name, so re-runs can delete the old block and POST a fresh one with a
 // new random key without conflicting with the Recycle Bin.
@@ -50,11 +50,11 @@ const PAGE_CONTENT: Record<string, { heading: string; subheading: string; ctaLab
   "merchant-services": { heading: "Merchant Services",         subheading: "Accept card payments in-store and online. Competitive rates, next-day settlement, and 24/7 support.",      ctaLabel: "Get Started",             ctaLink: "/en/business/merchant-services" },
   "stocks-isa":        { heading: "Stocks & Shares ISA",       subheading: "Invest up to £20,000 tax-free each year. Choose from thousands of funds, shares, and ETFs.",               ctaLabel: "Open an ISA",             ctaLink: "/en/investments/stocks-isa" },
   pensions:            { heading: "Pensions",                  subheading: "A self-invested personal pension (SIPP) that puts you in control. Start with as little as £50 a month.",   ctaLabel: "Plan My Retirement",      ctaLink: "/en/investments/pensions" },
-  faqs:                { heading: "Frequently Asked Questions", subheading: "Quick answers to the questions we hear most — from opening an account to reporting a lost card.",           ctaLabel: "Browse FAQs",             ctaLink: "/en/help/faqs" },
+  faqs:                { heading: "Frequently Asked Questions", subheading: "Quick answers to the questions we hear most - from opening an account to reporting a lost card.",           ctaLabel: "Browse FAQs",             ctaLink: "/en/help/faqs" },
   branches:            { heading: "Find a Branch",             subheading: "With over 140 branches across the UK, expert advice is never far away. Find your nearest location.",        ctaLabel: "Find a Branch",           ctaLink: "/en/help/branches" },
   "buy-to-let":        { heading: "Buy-to-Let Mortgages",      subheading: "Competitive buy-to-let rates for individual landlords and portfolio investors. Free valuation included.",    ctaLabel: "See BTL Rates",           ctaLink: "/en/mortgage/buy-to-let" },
   "about-us":          { heading: "About Us",                  subheading: "Founded in 1998, Mosey Bank has grown from a single branch in Leeds to a national bank serving 2 million customers.", ctaLabel: "Meet the Team", ctaLink: "/en/about/about-us" },
-  careers:             { heading: "Careers",                   subheading: "Join a team that puts people first — customers and colleagues. We're always looking for exceptional people.", ctaLabel: "See Open Roles",         ctaLink: "/en/about/careers" },
+  careers:             { heading: "Careers",                   subheading: "Join a team that puts people first - customers and colleagues. We're always looking for exceptional people.", ctaLabel: "See Open Roles",         ctaLink: "/en/about/careers" },
   press:               { heading: "Press & Media",             subheading: "Latest news, press releases, and media resources from Mosey Bank.",                                         ctaLabel: "View Press Releases",     ctaLink: "/en/about/press" },
 };
 
@@ -63,7 +63,7 @@ const PAGE_CONTENT: Record<string, { heading: string; subheading: string; ctaLab
 interface NavDef {
   key: string;            // CMS key for the NavigationItem (no-hyphens UUID, pre-assigned)
   label: string;
-  href: string;           // intended URL — used to look up the target page's CMS key
+  href: string;           // intended URL - used to look up the target page's CMS key
   description?: string;
   openInNewTab?: boolean;
   routeSegment?: string;  // defined → create a new LandingPage with this slug
@@ -270,7 +270,7 @@ async function cleanupNavItems(): Promise<void> {
   console.log("--- Cleaning up existing Navigation / NavigationItem items ---");
   const { ok, body } = await apiFetch(`/${CONTAINER}/items`);
   if (!ok) { console.log("  [skip] Could not list container items"); return; }
-  // v1 GET /items returns ContentNode — has contentType directly (no locales wrapper)
+  // v1 GET /items returns ContentNode - has contentType directly (no locales wrapper)
   const items = (body as { items?: Array<{ key: string; contentType?: string }> }).items ?? [];
   for (const item of items) {
     const ct = item.contentType ?? "";
@@ -286,7 +286,7 @@ async function cleanupNavItems(): Promise<void> {
   }
 }
 
-// Create a LandingPage — returns its CMS key
+// Create a LandingPage - returns its CMS key
 
 async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>, parentKey = CONTAINER): Promise<string | undefined> {
   // Page already in Graph → reuse its key
@@ -355,13 +355,13 @@ async function resolvePageKeys(nodes: NavDef[], pageKeyMap: Map<string, string>,
     if (node.external) {
       // no content reference for external links
     } else if (node.existing) {
-      // must already exist in Graph — look up only, never create
+      // must already exist in Graph - look up only, never create
       const key = pageKeyMap.get(node.href);
       if (key) {
         node.pageKey = key;
         console.log(`  [page (existing)] ${node.label} → ${node.href}`);
       } else {
-        console.warn(`  [warn] ${node.label}: not found in Graph at ${node.href} — href reference will be omitted`);
+        console.warn(`  [warn] ${node.label}: not found in Graph at ${node.href} - href reference will be omitted`);
       }
     } else if (node.routeSegment) {
       node.pageKey = await createNavPage(node, pageKeyMap, parentKey);
@@ -379,7 +379,7 @@ async function resolvePageKeys(nodes: NavDef[], pageKeyMap: Map<string, string>,
 async function createNavItem(node: NavDef, ancestors: string[]): Promise<void> {
   const childRefs = node.children.map((c) => ({ reference: `cms://content/${c.key}` }));
   const hrefRef = node.pageKey ? `cms://content/${node.pageKey}` : null;
-  // Shared Blocks is a flat list — encode the type and the tree position in the
+  // Shared Blocks is a flat list - encode the type and the tree position in the
   // display name so editors can tell "Navigation Item - Personal / Savings"
   // from a page or another item with the same label.
   const displayName = `Navigation Item - ${[...ancestors, node.label].join(" / ")}`;
@@ -405,7 +405,7 @@ async function createNavItem(node: NavDef, ancestors: string[]): Promise<void> {
 
   // If the href reference isn't committed yet, retry once without it
   if (!ok && hrefRef && JSON.stringify(resp).includes("does not exist")) {
-    console.warn(`  [retry] ${node.label} — href not committed yet, creating without href`);
+    console.warn(`  [retry] ${node.label} - href not committed yet, creating without href`);
     ({ ok, status, body: resp } = await apiFetch("", { method: "POST", body: JSON.stringify(makeBody(false)) }));
   }
 
@@ -476,7 +476,7 @@ async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
     }
   }
 
-  // PATCH silently ignores content-area property updates — DELETE + POST is the reliable pattern.
+  // PATCH silently ignores content-area property updates - DELETE + POST is the reliable pattern.
   const { ok, status, body: resp } = await apiFetch("", {
     method: "POST",
     body: JSON.stringify({

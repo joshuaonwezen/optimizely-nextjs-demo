@@ -179,19 +179,19 @@ async function buildPersonalVariation(): Promise<CompNode[]> {
     heroComponent("Personal Hero", {
       headline: "Banking built around you",
       subheadline:
-        "Your salary, your savings goals, your mortgage — all in one app, with the rates and tools to make each one work harder for you.",
+        "Your salary, your savings goals, your mortgage - all in one app, with the rates and tools to make each one work harder for you.",
     }),
     sectionComponent("SectionHeadingBlock", "Products Heading", {
       heading: "Your money, your milestones",
       subheading:
-        "Whether you're saving for a house deposit, paying off your mortgage early, or building a nest egg — Mosey keeps up with you.",
+        "Whether you're saving for a house deposit, paying off your mortgage early, or building a nest egg - Mosey keeps up with you.",
     }),
     gridSection("Personal Product Cards", [
       elementComponent("ProductCardBlock", "Current Account Card", {
         icon: "account",
         title: "Current Account",
         description:
-          "Fee-free with instant spending notifications, smart round-ups into savings, and no surprise charges — ever.",
+          "Fee-free with instant spending notifications, smart round-ups into savings, and no surprise charges - ever.",
         linkUrl: "/en/current-account",
         linkText: "Open an account →",
       }),
@@ -207,7 +207,7 @@ async function buildPersonalVariation(): Promise<CompNode[]> {
         icon: "mortgage",
         title: "Mortgage",
         description:
-          "Decision in principle in 10 minutes. One advisor from application to key handover — no being passed around.",
+          "Decision in principle in 10 minutes. One advisor from application to key handover - no being passed around.",
         linkUrl: "/en/mortgage",
         linkText: "Check your rate →",
       }),
@@ -215,7 +215,7 @@ async function buildPersonalVariation(): Promise<CompNode[]> {
         icon: "savings",
         title: "Stocks & Shares ISA",
         description:
-          "Put up to £20,000 a year to work tax-free. Ready-made portfolios or self-select — start from £25 a month.",
+          "Put up to £20,000 a year to work tax-free. Ready-made portfolios or self-select - start from £25 a month.",
         linkUrl: "/en/investments",
         linkText: "Start investing →",
       }),
@@ -251,7 +251,7 @@ async function buildPersonalVariation(): Promise<CompNode[]> {
     rootComponent("LogoGridBlock", "Trusted By", {
       heading: "2 million people manage their whole financial life with Mosey",
       subheading:
-        "Current accounts, savings, mortgages, and investments — one app, one login, one place to see it all.",
+        "Current accounts, savings, mortgages, and investments - one app, one login, one place to see it all.",
       logos: [],
     }),
     sectionComponent("CallToAction", "Personal CTA", {
@@ -267,12 +267,12 @@ async function buildBusinessVariation(): Promise<CompNode[]> {
     heroComponent("Business Hero", {
       headline: "Banking built for business",
       subheadline:
-        "Multi-user access, instant reconciliation with Xero and QuickBooks, and lending decisions in 48 hours — built for businesses that can't afford friction.",
+        "Multi-user access, instant reconciliation with Xero and QuickBooks, and lending decisions in 48 hours - built for businesses that can't afford friction.",
     }),
     sectionComponent("SectionHeadingBlock", "Products Heading", {
       heading: "Every financial tool your business needs",
       subheading:
-        "From day-one fee-free banking to £500K lending — Mosey Business scales with you without adding complexity.",
+        "From day-one fee-free banking to £500K lending - Mosey Business scales with you without adding complexity.",
     }),
     gridSection("Business Product Cards", [
       elementComponent("ProductCardBlock", "Business Account Card", {
@@ -332,14 +332,14 @@ async function buildBusinessVariation(): Promise<CompNode[]> {
     ]),
     sectionComponent("TestimonialBlock", "Business Testimonial", {
       quote:
-        "Switching took 20 minutes. Our invoices now reconcile automatically with Xero and our accountant stopped chasing us for bank statements — that alone saved us hours a month.",
+        "Switching took 20 minutes. Our invoices now reconcile automatically with Xero and our accountant stopped chasing us for bank statements - that alone saved us hours a month.",
       authorName: "Tom Hartley",
       authorRole: "Director, Hartley & Co.",
     }),
     rootComponent("LogoGridBlock", "Trusted By", {
       heading: "120,000 UK businesses run their finances through Mosey",
       subheading:
-        "Sole traders, growing SMEs, and multi-location operations — Mosey Business adapts to how you work, not the other way around.",
+        "Sole traders, growing SMEs, and multi-location operations - Mosey Business adapts to how you work, not the other way around.",
       logos: [],
     }),
     sectionComponent("CallToAction", "Business CTA", {
@@ -360,7 +360,7 @@ async function buildNewVisitorVariation(): Promise<CompNode[]> {
     sectionComponent("SectionHeadingBlock", "Products Heading", {
       heading: "Everything you need in one place",
       subheading:
-        "Whether you're opening your first account or switching from another bank — we make it straightforward.",
+        "Whether you're opening your first account or switching from another bank - we make it straightforward.",
     }),
     gridSection("New Visitor Product Cards", [
       elementComponent("ProductCardBlock", "Get Started Card", {
@@ -383,7 +383,7 @@ async function buildNewVisitorVariation(): Promise<CompNode[]> {
         icon: "mortgage",
         title: "Get a Mortgage",
         description:
-          "Decision in principle in 10 minutes. Our advisors handle the rest — from application to key handover.",
+          "Decision in principle in 10 minutes. Our advisors handle the rest - from application to key handover.",
         linkUrl: "/en/mortgage",
         linkText: "Check your rate →",
       }),
@@ -427,7 +427,7 @@ async function buildNewVisitorVariation(): Promise<CompNode[]> {
     rootComponent("LogoGridBlock", "Trusted By", {
       heading: "2 million people already made the switch",
       subheading:
-        "Personal, business, savings, mortgages — all in one app, all with the same straightforward approach.",
+        "Personal, business, savings, mortgages - all in one app, all with the same straightforward approach.",
       logos: [],
     }),
     sectionComponent("CallToAction", "New Visitor CTA", {
@@ -613,7 +613,7 @@ async function buildInvestmentsVariation(): Promise<CompNode[]> {
   ];
 }
 
-// Graph — find homepage key
+// Graph - find homepage key
 
 async function findHomepageKey(): Promise<string | null> {
   if (!SINGLE_KEY) return null;
@@ -811,52 +811,52 @@ async function main() {
     console.log('  { _Page(where:{_metadata:{url:{default:{eq:"/en/"}}}},variation:{include:SOME,value:["personal"],includeOriginal:true}) { items { __typename _metadata { key } } } }');
     console.log("\nThen test the audience switcher at http://localhost:3000");
   } else {
-    console.log("\n=== Some variations failed — see fallback instructions below ===\n");
+    console.log("\n=== Some variations failed - see fallback instructions below ===\n");
     printFallbackInstructions();
   }
 }
 
 function printFallbackInstructions(): void {
   console.log("\n--- Manual Variation Setup (Visual Builder) ---");
-  console.log("\nThe Management API does not support creating CMS variations — use the Visual Builder UI:\n");
+  console.log("\nThe Management API does not support creating CMS variations - use the Visual Builder UI:\n");
   console.log("1. Open the CMS: https://app.cms.optimizely.com");
   console.log("2. Navigate to the Homepage → open in Visual Builder");
   console.log("3. Click the experience root → 'Add variation'");
   console.log("");
-  console.log("Variation 1 — name exactly: new_visitor  ← default experience (no cookie)");
+  console.log("Variation 1 - name exactly: new_visitor  ← default experience (no cookie)");
   console.log("   Hero: 'See what everyone\\'s banking on'");
   console.log("   Summary: 'Join 2 million people who switched to Mosey for fee-free accounts, market-leading savings rates, and a mortgage experience that doesn\\'t feel like hard work.'");
   console.log("   Products: Open an Account, Start Saving, Get a Mortgage, Business Banking");
   console.log("   Stats: 2M+ Customers, 10 min to open, 4.8★ App, £85K FSCS");
-  console.log("   Testimonial: Priya Sharma — 'I opened my Mosey account on a lunch break...'");
+  console.log("   Testimonial: Priya Sharma - 'I opened my Mosey account on a lunch break...'");
   console.log("");
-  console.log("Variation 2 — name exactly: personal");
+  console.log("Variation 2 - name exactly: personal");
   console.log("   Hero: 'Banking built around you'");
-  console.log("   Summary: 'A fee-free current account, savings rates up to 5.1% AER, and mortgages that move at your pace — all in one app.'");
+  console.log("   Summary: 'A fee-free current account, savings rates up to 5.1% AER, and mortgages that move at your pace - all in one app.'");
   console.log("   Products: Current Account, Savings, Mortgage, Mobile App");
   console.log("   Stats: 2M+ Customers, 5.1% AER, 4.8★ App, 99.9% Uptime");
-  console.log("   Testimonial: Sarah Chen — 'I moved my savings to Mosey after seeing the 5.1% fixed rate...'");
+  console.log("   Testimonial: Sarah Chen - 'I moved my savings to Mosey after seeing the 5.1% fixed rate...'");
   console.log("");
-  console.log("Variation 3 — name exactly: business");
+  console.log("Variation 3 - name exactly: business");
   console.log("   Hero: 'Banking built for business'");
   console.log("   Summary: 'Fee-free business current accounts, competitive lending rates, and payment solutions that scale with you.'");
   console.log("   Products: Business Account, Business Lending, Merchant Services, Business Payroll");
   console.log("   Stats: 120K+ Businesses, £8B+ Lending, 99.9% Uptime, 24/7 Support");
-  console.log("   Testimonial: Tom Hartley — 'Opened a business current account in under 15 minutes...'");
+  console.log("   Testimonial: Tom Hartley - 'Opened a business current account in under 15 minutes...'");
   console.log("");
-  console.log("Variation 4 — name exactly: mortgages");
+  console.log("Variation 4 - name exactly: mortgages");
   console.log("   Hero: 'A mortgage that moves at your pace'");
   console.log("   Summary: 'Decision in principle in 10 minutes, rates from 4.19% fixed, and an advisor by your side from application to key handover.'");
   console.log("   Products: First-Time Buyers, Remortgaging, Buy-to-Let, Overpayments");
   console.log("   Stats: 4.19% Fixed rate from, 10 min Decision, 5% Min deposit, 50K+ Approved");
-  console.log("   Testimonial: James & Amelia Okafor — 'We got our decision in principle before we'd finished our coffee...'");
+  console.log("   Testimonial: James & Amelia Okafor - 'We got our decision in principle before we'd finished our coffee...'");
   console.log("");
-  console.log("Variation 5 — name exactly: investments");
+  console.log("Variation 5 - name exactly: investments");
   console.log("   Hero: 'Investing, made straightforward'");
   console.log("   Summary: 'Stocks & Shares ISAs, pensions, and ready-made portfolios - low fees, tax-efficient, and built for the long term.'");
   console.log("   Products: Stocks & Shares ISA, Pensions, Junior ISA, General Investment");
   console.log("   Stats: 0.25% Fee, 20K ISA allowance, £25/mo start, 300K+ Investors");
-  console.log("   Testimonial: Elena Rossi — 'I moved three old pensions into one Mosey plan in an afternoon...'");
+  console.log("   Testimonial: Elena Rossi - 'I moved three old pensions into one Mosey plan in an afternoon...'");
   console.log("");
   console.log("Variation names are case-sensitive and must match FX variation keys exactly.");
   console.log("Publish each variation, wait 30-60s for Graph to index, then test the audience switcher.");

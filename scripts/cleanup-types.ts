@@ -1,5 +1,5 @@
 /**
- * CMS cleanup script — two jobs:
+ * CMS cleanup script - two jobs:
  *   1. Delete CMS content types that are no longer used by this app
  *   2. Delete orphaned NavigationItems left behind from manual CMS editing
  *
@@ -16,17 +16,17 @@ const API_BASE = "https://api.cms.optimizely.com";
 const TYPES_ENDPOINT = `${API_BASE}/v1/contenttypes`;
 const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 
-// Content types actively used by this application — keep all of these.
+// Content types actively used by this application - keep all of these.
 
 const KEEP = new Set([
-  // Experience / page types — use the content type KEY, not the variable name
+  // Experience / page types - use the content type KEY, not the variable name
   "DynamicExperience",
   "BlogExperience",
   "TraditionalPage",   // LandingPageType.key in optimizely.config.mjs
   "ArticlePage",
   "CaseStudyPage",
   "ConsultantPage",
-  // Block types (src/components/blocks/) — all registered in componentRegistry.ts
+  // Block types (src/components/blocks/) - all registered in componentRegistry.ts
   "HeroBlock",
   "Hero",              // legacy key still referenced by some CMS entries
   "CallToAction",
@@ -73,7 +73,7 @@ const KEEP = new Set([
   "SiteBanner",
   "Footer",
   "SiteSettings",
-  // Built-in Optimizely system types — never delete these
+  // Built-in Optimizely system types - never delete these
   "BlankExperience",
   "BlankSection",
   "_Component",
@@ -104,7 +104,7 @@ const ORPHANED_NAV_ITEM_KEYS = [
   "4f044c56bbde4ca1a8c558c32d73fe26", // 2nd Level Navigation - Experimentation
 ];
 
-// Display templates actively used by this application — keep all of these.
+// Display templates actively used by this application - keep all of these.
 
 const KEEP_TEMPLATES = new Set([
   "HeroBlockDefaultTemplate",
@@ -169,7 +169,7 @@ const KEEP_TEMPLATES = new Set([
 /**
  * Returns true if the given key appears as a string literal anywhere in src/.
  * Used as a last-resort safety net before deleting a type or template that is
- * absent from the KEEP / KEEP_TEMPLATES set — prevents accidental deletion when
+ * absent from the KEEP / KEEP_TEMPLATES set - prevents accidental deletion when
  * those sets fall out of sync with the codebase.
  */
 function isKeyInSource(key: string): boolean {
@@ -203,7 +203,7 @@ async function deleteItem(token: string, key: string, label: string): Promise<"d
   return "error";
 }
 
-// Part 1 — Content type cleanup
+// Part 1 - Content type cleanup
 
 async function cleanupContentTypes(token: string): Promise<void> {
   console.log("--- Part 1: Content type audit ---");
@@ -233,7 +233,7 @@ async function cleanupContentTypes(token: string): Promise<void> {
   );
 
   if (toDelete.length === 0) {
-    console.log("  All types are in use — nothing to remove.\n");
+    console.log("  All types are in use - nothing to remove.\n");
     return;
   }
 
@@ -242,14 +242,14 @@ async function cleanupContentTypes(token: string): Promise<void> {
   const safeToDelete: typeof toDelete = [];
   for (const type of toDelete) {
     if (isKeyInSource(type.key)) {
-      console.log(`    [skip-safe] ${type.key} — found in src/ (add to KEEP set)`);
+      console.log(`    [skip-safe] ${type.key} - found in src/ (add to KEEP set)`);
     } else {
       safeToDelete.push(type);
     }
   }
 
   if (safeToDelete.length === 0) {
-    console.log("  All remaining types are protected by source-grep — nothing to remove.\n");
+    console.log("  All remaining types are protected by source-grep - nothing to remove.\n");
     return;
   }
 
@@ -267,7 +267,7 @@ async function cleanupContentTypes(token: string): Promise<void> {
       let parsed: Record<string, unknown> = {};
       try { parsed = JSON.parse(body); } catch { /* ignore */ }
       if (res.status === 409) {
-        console.warn(`    [blocked] ${type.key} — content instances exist in the Recycle Bin (must be purged first)`);
+        console.warn(`    [blocked] ${type.key} - content instances exist in the Recycle Bin (must be purged first)`);
         needsRecycleBinClear.push(type.key);
       } else {
         console.warn(`    [skip]    ${type.key}: ${res.status} ${(parsed.detail as string ?? body).slice(0, 120)}`);
@@ -289,7 +289,7 @@ async function cleanupContentTypes(token: string): Promise<void> {
   console.log();
 }
 
-// Part 2 — Orphaned NavigationItem cleanup
+// Part 2 - Orphaned NavigationItem cleanup
 
 async function cleanupOrphanedNavItems(token: string): Promise<void> {
   console.log("--- Part 2: Orphaned NavigationItems ---");
@@ -305,7 +305,7 @@ async function cleanupOrphanedNavItems(token: string): Promise<void> {
   console.log(`  Summary: ${deleted} deleted, ${gone} already gone, ${errors} errors.\n`);
 }
 
-// Part 3 — Display template cleanup
+// Part 3 - Display template cleanup
 
 async function cleanupDisplayTemplates(token: string): Promise<void> {
   console.log("--- Part 3: Display template audit ---");
@@ -333,21 +333,21 @@ async function cleanupDisplayTemplates(token: string): Promise<void> {
   const stale = allTemplates.filter((t) => !KEEP_TEMPLATES.has(t.key));
 
   if (stale.length === 0) {
-    console.log("  All display templates are in use — nothing to remove.\n");
+    console.log("  All display templates are in use - nothing to remove.\n");
     return;
   }
 
   // Safety net: skip any template whose key still appears in source.
   const safeStale = stale.filter((t) => {
     if (isKeyInSource(t.key)) {
-      console.log(`    [skip-safe] ${t.key} — found in src/ (add to KEEP_TEMPLATES set)`);
+      console.log(`    [skip-safe] ${t.key} - found in src/ (add to KEEP_TEMPLATES set)`);
       return false;
     }
     return true;
   });
 
   if (safeStale.length === 0) {
-    console.log("  All remaining templates are protected by source-grep — nothing to remove.\n");
+    console.log("  All remaining templates are protected by source-grep - nothing to remove.\n");
     return;
   }
 

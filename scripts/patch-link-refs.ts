@@ -149,7 +149,7 @@ async function graphKeys(query: string, pick: (d: any) => string[]): Promise<str
   return pick(await res.json());
 }
 
-// Every page key (compositions live here). Paginated — Graph caps limit/cost,
+// Every page key (compositions live here). Paginated - Graph caps limit/cost,
 // so a single large limit errors and returns nothing.
 async function allPageKeys(): Promise<string[]> {
   const out: string[] = [];

@@ -1,5 +1,5 @@
 /**
- * Footer seeding script — creates a single Footer shared block ("Site Footer")
+ * Footer seeding script - creates a single Footer shared block ("Site Footer")
  * with the tagline. The block's "Link Columns" content area is left empty:
  * editors add NavigationItem blocks there manually if they want footer links.
  *
@@ -28,7 +28,7 @@ config({ path: ".env.local" });
 
 let BLOCKS_CONTAINER = "";
 
-// Display name for the seeded Footer block — what editors see in the Shared
+// Display name for the seeded Footer block - what editors see in the Shared
 // Blocks tab. The app's Graph query fetches by type (Footer, limit 1), not by
 // name. Keep in sync with FOOTER_BLOCK_NAME in src/lib/graphql/queries/GetFooter.ts.
 const FOOTER_BLOCK_NAME = "Site Footer";

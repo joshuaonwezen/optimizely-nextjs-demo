@@ -2,7 +2,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { HeroBlockClient } from "./HeroBlockClient";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
-import { BACKGROUND, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const HeroBlockType = contentType({
   key: "HeroBlock",
@@ -63,7 +63,7 @@ export const HeroBlockDefaultTemplate = displayTemplate({
       sortOrder: 12,
       choices: {},
     },
-    ...BACKGROUND,
+    ...BACKGROUND_BRAND_DEFAULT,
     ...TEXT_COLOR,
     ...HEADING_SIZE,
     ...FONT_STYLE,

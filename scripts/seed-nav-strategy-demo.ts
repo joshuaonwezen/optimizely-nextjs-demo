@@ -65,7 +65,7 @@ async function createItem(body: Record<string, unknown>, token: string, label: s
   let versionId: string | undefined;
 
   if (!text.trim()) {
-    // v1 API returns 201 with no body — look up the version separately
+    // v1 API returns 201 with no body - look up the version separately
     if (!inferredKey) return null;
     contentKey = inferredKey;
     const vRes = await fetch(`${CONTENT_ENDPOINT}/${contentKey}/versions?pageSize=1`, {
@@ -99,7 +99,10 @@ async function main() {
 
   const token = await getManagementToken();
 
-  const S2_URLS = [
+  // Legacy top-level paths from before these fixtures were nested under the
+  // "Demo Fixtures" parent - kept so a previously-seeded instance migrates cleanly
+  // (the old flat pages are deleted on re-run).
+  const LEGACY_URLS = [
     "/en/nav-flag-home/",
     "/en/nav-flag-personal/",
     "/en/nav-flag-personal/current-account/",
@@ -108,16 +111,31 @@ async function main() {
     "/en/nav-flag-business/business-banking/",
     "/en/nav-flag-mortgages/",
     "/en/nav-flag-about/",
-  ];
-  const S4_URLS = [
     "/en/articles-demo/",
     "/en/articles-demo/guide-to-isas/",
     "/en/articles-demo/business-banking-basics/",
     "/en/articles-demo/savings-tips-2025/",
   ];
+  // Current (nested) paths under the Demo Fixtures parent - ordered deepest-first so
+  // children are removed before their parents, then the parent container last.
+  const NESTED_URLS = [
+    "/en/demo-fixtures/nav-flag-personal/current-account/",
+    "/en/demo-fixtures/nav-flag-personal/savings/",
+    "/en/demo-fixtures/nav-flag-business/business-banking/",
+    "/en/demo-fixtures/articles-demo/guide-to-isas/",
+    "/en/demo-fixtures/articles-demo/business-banking-basics/",
+    "/en/demo-fixtures/articles-demo/savings-tips-2025/",
+    "/en/demo-fixtures/nav-flag-home/",
+    "/en/demo-fixtures/nav-flag-personal/",
+    "/en/demo-fixtures/nav-flag-business/",
+    "/en/demo-fixtures/nav-flag-mortgages/",
+    "/en/demo-fixtures/nav-flag-about/",
+    "/en/demo-fixtures/articles-demo/",
+    "/en/demo-fixtures/",
+  ];
 
   console.log("--- Looking up and removing existing demo items ---");
-  const allUrls = [...S2_URLS, ...S4_URLS];
+  const allUrls = [...LEGACY_URLS, ...NESTED_URLS];
   let deletedCount = 0;
   for (const url of allUrls) {
     const key = await findKeyByUrl(url);
@@ -130,6 +148,38 @@ async function main() {
   if (deletedCount > 0) {
     console.log(`\n  Waiting 8s for routeSegments to be released...`);
     await new Promise((r) => setTimeout(r, 8000));
+  }
+
+  // Parent container that holds every fixture this script creates, so they sit under
+  // one clearly-labelled node in the CMS tree instead of cluttering the site root.
+  // A DynamicExperience (not a TraditionalPage) because it must contain both the
+  // nav-flag TraditionalPages and the Insights DynamicExperience. It has no
+  // includeInNavigation flag, so it never enters the flags-based nav demo itself -
+  // the nav-flag children keep their flag, and the demo builds the same tree from
+  // their URL hierarchy (now prefixed with /demo-fixtures/).
+  console.log("\n--- Creating \"Demo Fixtures\" parent container ---");
+  const demoFixturesCreated = await createItem({
+    key: noHyphens(),
+    contentType: "DynamicExperience",
+    locale: "en",
+    container: CONTAINER,
+    routeSegment: "demo-fixtures",
+    status: "published",
+    displayName: "Demo Fixtures",
+    composition: {
+      id: noHyphens(),
+      displayName: "Demo Fixtures",
+      nodeType: "experience",
+      layoutType: "outline",
+      nodes: [],
+    },
+  }, token, "Demo Fixtures (parent)");
+  // Fall back to the root container if the parent couldn't be created, so the fixtures
+  // still seed (flat) rather than failing outright.
+  const fixturesParent = demoFixturesCreated ?? CONTAINER;
+  if (demoFixturesCreated) {
+    console.log("  Waiting 3s for the parent to register...");
+    await new Promise((r) => setTimeout(r, 3000));
   }
 
   console.log("\n--- Strategy 2: include-in-navigation pages ---");
@@ -148,7 +198,7 @@ async function main() {
       key: noHyphens(),
       contentType: "TraditionalPage",
       locale: "en",
-      container: CONTAINER,
+      container: fixturesParent,
       routeSegment: p.routeSegment,
       status: "published",
       displayName: p.label,
@@ -162,7 +212,7 @@ async function main() {
     if (key) createdKeys[p.routeSegment] = key;
   }
 
-  // Child pages — nested under Personal Banking and Business.
+  // Child pages - nested under Personal Banking and Business.
   // Both have includeInNavigation: true so the tree builder will nest them.
   const s2Children = [
     { label: "Current Account",  routeSegment: "current-account",   order: 1, parent: "nav-flag-personal" },
@@ -198,7 +248,7 @@ async function main() {
     key: insightsKey,
     contentType: "DynamicExperience",
     locale: "en",
-    container: CONTAINER,
+    container: fixturesParent,
     routeSegment: "articles-demo",
     status: "published",
     displayName: "Insights",
@@ -218,7 +268,7 @@ async function main() {
     const articles = [
       {
         title: "Guide to ISAs",
-        summary: "Everything you need to know about Individual Savings Accounts — from annual limits to tax-free growth.",
+        summary: "Everything you need to know about Individual Savings Accounts - from annual limits to tax-free growth.",
         category: "personal-finance",
         routeSegment: "guide-to-isas",
         publishDate: "2025-03-15T09:00:00Z",

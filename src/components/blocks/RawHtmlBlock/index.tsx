@@ -6,12 +6,12 @@ export const RawHtmlBlockType = contentType({
   key: "RawHtmlBlock",
   displayName: "Raw HTML",
   baseType: "_component",
-  compositionBehaviors: ["elementEnabled"],
+  compositionBehaviors: ["elementEnabled", "sectionEnabled"],
   properties: {
     html: {
       type: "string",
       displayName: "HTML",
-      description: "Paste raw HTML here — it is rendered exactly as entered.",
+      description: "Paste raw HTML here - it is rendered exactly as entered.",
       isLocalized: true,
     },
   },

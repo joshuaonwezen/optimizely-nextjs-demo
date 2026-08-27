@@ -314,7 +314,7 @@ function localizationEnabled(): boolean {
 async function main() {
   if (!localizationEnabled()) {
     console.log(
-      "seed-localization skipped — localization is opt-in.\n" +
+      "seed-localization skipped - localization is opt-in.\n" +
       "  Enable it with:  SEED_LOCALIZE=1 npx tsx scripts/seed-localization.ts\n" +
       "  or pass --localize, or tick 'Localize content' in the /demo/management-api seed tool."
     );

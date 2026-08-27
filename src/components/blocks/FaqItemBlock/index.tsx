@@ -1,7 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const FaqItemBlockType = contentType({
@@ -36,7 +36,7 @@ export const FaqItemFlatTemplate = displayTemplate({
   settings: {
     ...BACKGROUND,
     ...TEXT_COLOR,
-    ...HEADING_SIZE,
+    ...HEADING_SIZE_CARD,
     ...FONT_STYLE,
   },
 });

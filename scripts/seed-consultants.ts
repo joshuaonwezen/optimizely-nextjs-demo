@@ -3,7 +3,7 @@ import { createContent, discoverRootContainer, getManagementToken, CONTENT_ENDPO
 
 config({ path: ".env.local" });
 
-// Stable 32-hex-char keys — idempotent re-runs.
+// Stable 32-hex-char keys - idempotent re-runs.
 const HUB_KEY = "cc000000000000000000000000000000";
 
 const CONSULTANTS = [
@@ -286,7 +286,7 @@ async function main() {
   ];
 
   for (const c of PUBLISHED_CONSULTANTS_2) {
-    // Create as draft (skipPublish) — approval workflow blocks direct publishing
+    // Create as draft (skipPublish) - approval workflow blocks direct publishing
     await createContent(
       {
         key:          c.key,
@@ -307,7 +307,7 @@ async function main() {
       c.name,
       { skipPublish: true },
     );
-    // Submit for approval — triggers the CMS workflow and sends the notification email
+    // Submit for approval - triggers the CMS workflow and sends the notification email
     await requestApproval(c.key, c.name);
   }
 

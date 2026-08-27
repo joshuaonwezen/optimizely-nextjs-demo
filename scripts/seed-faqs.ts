@@ -25,7 +25,7 @@ import { FAQ_ITEMS } from "./faq-data";
 config({ path: ".env.local" });
 
 let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
-// Global content root — shared blocks (FAQ items + container) live here so they
+// Global content root - shared blocks (FAQ items + container) live here so they
 // appear in the "Shared Blocks → For All Applications" picker. Set in main().
 let BLOCKS_CONTAINER = "";
 
@@ -52,7 +52,7 @@ async function apiFetch(
   return { ok: res.ok, status: res.status, text, json };
 }
 
-// Part 1 — Create standalone FaqItemBlock content items
+// Part 1 - Create standalone FaqItemBlock content items
 
 async function createFaqItems(): Promise<void> {
   console.log("--- Part 1: Creating standalone FaqItemBlock content items ---");
@@ -72,7 +72,7 @@ async function createFaqItems(): Promise<void> {
   }
 }
 
-// Part 2 — Create FaqContainerBlock referencing all FAQ items
+// Part 2 - Create FaqContainerBlock referencing all FAQ items
 
 const CONTAINER_KEY = noHyphens();
 
@@ -97,7 +97,7 @@ async function createFaqContainer(): Promise<void> {
   console.log(`  [linked] ${FAQ_ITEMS.length} FAQ items via content area`);
 }
 
-// Part 3 — Find the FAQs TraditionalPage and set featuredBlock
+// Part 3 - Find the FAQs TraditionalPage and set featuredBlock
 
 async function wireFaqsPage(): Promise<void> {
   console.log("\n--- Part 3: Wiring FaqContainerBlock to FAQs page ---");
@@ -114,14 +114,14 @@ async function wireFaqsPage(): Promise<void> {
   const faqsName = graphData.data?._Page?.items?.[0]?._metadata?.displayName;
 
   if (!faqsKey) {
-    console.warn("  [warn] FAQs page not found in Graph — run seed:nav first, then re-run this script.");
+    console.warn("  [warn] FAQs page not found in Graph - run seed:nav first, then re-run this script.");
     return;
   }
   console.log(`  [found] FAQs page: "${faqsName}" (key=${faqsKey})`);
 
   // Create a fresh draft (copying the published page), patch featuredBlock onto
   // it, then publish. The page's latest version is usually already published,
-  // and a published version cannot be patched directly — so we make a new draft.
+  // and a published version cannot be patched directly - so we make a new draft.
   const { ok: newOk, status: newStatus, text: newText, json: newVer } = await apiFetch(
     `/${faqsKey}/versions?locale=en`,
     { method: "POST", body: JSON.stringify({ displayName: faqsName ?? "FAQs" }) }

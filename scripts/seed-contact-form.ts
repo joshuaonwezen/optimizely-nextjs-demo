@@ -6,10 +6,10 @@
  * This is the native-forms counterpart to the main /en/help/contact TraditionalPage
  * (which carries the custom ContactFormBlock, seeded by seed-contact-pages.ts).
  * Native OptiForms can only render inside a DynamicExperience composition, never on
- * a TraditionalPage — hence a separate experience page here.
+ * a TraditionalPage - hence a separate experience page here.
  *
  * Native forms must be authored in the CMS UI as a shared block (Visual Builder:
- * new shared block > Form Container) — they cannot be created or embedded inline
+ * new shared block > Form Container) - they cannot be created or embedded inline
  * via the Management API. The CMS rejects an inline form section in an experience
  * ("A section with layout type 'form' cannot be embedded in an experience, it must
  * be referenced"). This script wires the reference, which IS supported:
@@ -83,7 +83,7 @@ async function ensureContactFormPage(): Promise<string> {
   const helpKey = await findPageKeyByUrl(["/en/help", "/en/help/"]);
   const container = helpKey ?? (await discoverRootContainer());
   if (!helpKey) {
-    console.warn("  [warn] /en/help not found in Graph — creating Contact (Form) under the root container instead");
+    console.warn("  [warn] /en/help not found in Graph - creating Contact (Form) under the root container instead");
   }
 
   const key = noHyphens();
@@ -101,7 +101,7 @@ async function ensureContactFormPage(): Promise<string> {
     "Contact (Form) page"
   );
   if (created === null) {
-    // 409 / route-in-use: it already exists — re-resolve.
+    // 409 / route-in-use: it already exists - re-resolve.
     const again = await findPageKeyByUrl([`/en/help/${PAGE_ROUTE}`, `/en/help/${PAGE_ROUTE}/`, `/en/${PAGE_ROUTE}`, `/en/${PAGE_ROUTE}/`]);
     if (again) return again;
   }
@@ -125,7 +125,7 @@ async function main() {
 
   const token = await getManagementToken();
 
-  // The published version can't be patched — create a fresh draft, patch it, publish.
+  // The published version can't be patched - create a fresh draft, patch it, publish.
   // routeSegment MUST be included: POST /versions without it makes the CMS re-derive
   // the segment from displayName, silently breaking the URL.
   await fetch(`${CONTENT_ENDPOINT}/${pageKey}/versions`, {
@@ -168,7 +168,7 @@ async function main() {
   if (!pubRes.ok) throw new Error(`Publish: ${pubRes.status} ${(await pubRes.text()).slice(0, 300)}`);
   console.log(`  published version ${version}`);
 
-  console.log(`\nDone — native form referenced on /en/help/${PAGE_ROUTE}. Allow ~30-60s for Graph reindex, then reload.`);
+  console.log(`\nDone - native form referenced on /en/help/${PAGE_ROUTE}. Allow ~30-60s for Graph reindex, then reload.`);
 }
 
 main().catch((err) => {

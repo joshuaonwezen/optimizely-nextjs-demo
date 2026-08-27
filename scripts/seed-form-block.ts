@@ -4,7 +4,7 @@
  * block's own composition.
  *
  * The native form container itself must already exist as a published shared block
- * (Visual Builder > new shared block > Form Container) — the Management API cannot
+ * (Visual Builder > new shared block > Form Container) - the Management API cannot
  * create OptiFormsContainerData. But once it exists, its composition (the form's
  * steps/rows/columns/elements) CAN be authored via the API: the elements are inline
  * component nodes (contentType + properties) inside a section with layoutType "form".
@@ -157,7 +157,7 @@ async function main() {
   if (!pubRes.ok) throw new Error(`Publish: ${pubRes.status} ${(await pubRes.text()).slice(0, 300)}`);
   console.log(`  published version ${version}`);
 
-  console.log("\nDone — form block built out. The /en/help/contact reference picks it up after ~30-60s Graph reindex.");
+  console.log("\nDone - form block built out. The /en/help/contact reference picks it up after ~30-60s Graph reindex.");
 }
 
 main().catch((err) => {

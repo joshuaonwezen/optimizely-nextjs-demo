@@ -6,7 +6,7 @@
  * a DynamicExperience composition), so the traditional contact page uses the
  * custom ContactFormBlock instead.
  *
- * Depends on seed-content having been indexed by Graph — the new page nests under
+ * Depends on seed-content having been indexed by Graph - the new page nests under
  * the /help page, whose key is resolved at runtime via findPageKeyByUrl. Run after
  * the main seed completes (~30-60s Graph lag). Run: npx tsx scripts/seed-contact-pages.ts
  */
@@ -32,7 +32,7 @@ function noHyphens(): string {
 
 /**
  * Fetch the current mainContent references of a TraditionalPage, excluding any
- * ContactFormBlock (a prior run's form — it was just swept, so re-adding it would
+ * ContactFormBlock (a prior run's form - it was just swept, so re-adding it would
  * leave a dangling reference).
  */
 async function getMainContentKeys(pageKey: string): Promise<string[]> {
@@ -63,7 +63,7 @@ async function getMainContentKeys(pageKey: string): Promise<string[]> {
 async function wireContactPage(blockKey: string): Promise<void> {
   const contactKey = await findPageKeyByUrl(["/en/help/contact", "/en/help/contact/"]);
   if (!contactKey) {
-    console.warn("  [warn] Contact page (/en/help/contact) not found in Graph — re-run after seed-content indexes");
+    console.warn("  [warn] Contact page (/en/help/contact) not found in Graph - re-run after seed-content indexes");
     return;
   }
   const existing = (await getMainContentKeys(contactKey)).filter((k) => k !== blockKey);
@@ -77,7 +77,7 @@ async function wireContactPage(blockKey: string): Promise<void> {
 
 async function main() {
   await discoverRootContainer();
-  // ContactFormBlock is a shared block — it must live inside the shared-blocks
+  // ContactFormBlock is a shared block - it must live inside the shared-blocks
   // folder ("Shared Blocks → For All Applications") to show up in that tab.
   const blocksContainer = await ensureSubfolder("formsTools");
 
@@ -115,21 +115,21 @@ async function main() {
 
   // Step 3: create the TraditionalPage under /help, referencing the block via featuredBlock.
   // On re-runs the page already exists (routeSegment in use → create skips), but its
-  // old block was just swept — re-point featuredBlock at the fresh block instead.
+  // old block was just swept - re-point featuredBlock at the fresh block instead.
   const existingPageKey = await findPageKeyByUrl(["/en/help/contact-classic", "/en/help/contact-classic/"]);
   if (existingPageKey) {
     await patchPublishedPageProperties(existingPageKey, {
       featuredBlock: { reference: `cms://content/${blockKey}` },
     });
     console.log("  [patched] existing Contact (Classic) page → new ContactFormBlock");
-    console.log("\nDone — ContactFormBlock reseeded and re-linked.");
+    console.log("\nDone - ContactFormBlock reseeded and re-linked.");
     return;
   }
 
   const helpKey = await findPageKeyByUrl(["/en/help", "/en/help/"]);
   if (!helpKey) {
     console.warn(
-      "  [warn] /help page not found in Graph — run seed-content + seed-nav first, then re-run this script"
+      "  [warn] /help page not found in Graph - run seed-content + seed-nav first, then re-run this script"
     );
     return;
   }
@@ -155,7 +155,7 @@ async function main() {
     "Contact (Classic) page"
   );
 
-  console.log("\nDone — ContactFormBlock + Contact (Classic) page seeded.");
+  console.log("\nDone - ContactFormBlock + Contact (Classic) page seeded.");
 }
 
 main().catch((err) => {

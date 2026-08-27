@@ -1,6 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { ProductHeroCtaClient } from "./ProductHeroCtaClient";
 
 export const ProductHeroBlockType = contentType({
@@ -23,7 +23,7 @@ export const ProductHeroBlockDefaultTemplate = displayTemplate({
   displayName: "Default",
   contentType: "ProductHeroBlock",
   settings: {
-    ...BACKGROUND,
+    ...BACKGROUND_BRAND_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },
@@ -45,7 +45,7 @@ export const ProductHeroCompactTemplate = displayTemplate({
         center: { displayName: "Center", sortOrder: 1 },
       },
     },
-    ...BACKGROUND,
+    ...BACKGROUND_BRAND_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },

@@ -8,7 +8,7 @@ import { config as loadEnv } from "dotenv";
 import { getManagementToken } from "../src/lib/optimizely/auth";
 
 // Load .env.local before anyone reads env-derived constants below.
-// Safe to call multiple times — dotenv is a no-op once vars are set.
+// Safe to call multiple times - dotenv is a no-op once vars are set.
 loadEnv({ path: ".env.local" });
 
 export { getManagementToken };
@@ -25,12 +25,12 @@ export const CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 
 // ID helpers
 
-/** UUID with hyphens — the composition API expects this format for node IDs. */
+/** UUID with hyphens - the composition API expects this format for node IDs. */
 export function uid(): string {
   return randomUUID();
 }
 
-/** UUID without hyphens — used as content keys. */
+/** UUID without hyphens - used as content keys. */
 export function noHyphens(): string {
   return randomUUID().replace(/-/g, "");
 }
@@ -156,7 +156,7 @@ export async function discoverRootContainer(): Promise<string> {
   const app = items.find((a) => a.isDefault) ?? items[0];
   if (!app.entryPoint) throw new Error("CMS application has no entryPoint URI");
 
-  // entryPoint format: "cms://content/{key}" — extract the last path segment.
+  // entryPoint format: "cms://content/{key}" - extract the last path segment.
   const raw = app.entryPoint.split("/").pop() ?? "";
   const key = raw.replace(/-/g, "");
   if (!key) throw new Error(`Could not extract key from entryPoint: ${app.entryPoint}`);
@@ -167,7 +167,7 @@ export async function discoverRootContainer(): Promise<string> {
 
 let cachedGlobalRoot = "";
 
-// Well-known key of the "For All Applications" SysContentFolder — used as a
+// Well-known key of the "For All Applications" SysContentFolder - used as a
 // fallback when the top-level root's children cannot be listed.
 const FOR_ALL_APPLICATIONS_KEY = "e56f85d0e8334e02976a2d11fe4d598c";
 
@@ -180,7 +180,7 @@ const FOR_ALL_APPLICATIONS_KEY = "e56f85d0e8334e02976a2d11fe4d598c";
  * them into content areas (`type: "array"` of `content`). CONTENT ITEMS live
  * anywhere else in the tree, show up in the Content Manager tab, and are the
  * targets of `contentReference` properties. Blocks created directly under the
- * top-level root are plain content items — they never appear in the Shared
+ * top-level root are plain content items - they never appear in the Shared
  * Blocks tab, so every seeded shared block must use this folder as container.
  *
  * Discovered by walking up the container chain from the entry point to the
@@ -215,7 +215,7 @@ export async function discoverGlobalRoot(): Promise<string> {
 }
 
 /**
- * Returns the key of the SysContentFolder child of the top-level root — the
+ * Returns the key of the SysContentFolder child of the top-level root - the
  * folder the Shared Blocks tab renders as "For All Applications". Falls back
  * to the well-known key when the listing fails.
  */
@@ -229,14 +229,14 @@ async function findSharedBlocksFolder(token: string, topRoot: string): Promise<s
     if (folder) return folder.key.replace(/-/g, "");
   }
   console.warn(
-    `  [warn] Could not find a SysContentFolder under root ${topRoot} — falling back to well-known key`,
+    `  [warn] Could not find a SysContentFolder under root ${topRoot} - falling back to well-known key`,
   );
   return FOR_ALL_APPLICATIONS_KEY;
 }
 
 /**
  * Returns the top-level content root key (the item with no container). This is
- * NOT where shared blocks belong — see discoverGlobalRoot — but earlier seed
+ * NOT where shared blocks belong - see discoverGlobalRoot - but earlier seed
  * versions created blocks here, so migration sweeps need it.
  */
 export async function discoverTopLevelRoot(): Promise<string> {
@@ -420,7 +420,7 @@ async function listSubfolderKeys(token: string, parent: string): Promise<string[
  * creates blocks there, so everything of these types at the root is seed
  * legacy), and (b) inside the shared-blocks folder, so re-runs don't pile up
  * duplicates. Pass `includeBlocksFolder: false` when the folder may hold
- * manually created blocks of the same types that must survive — the caller is
+ * manually created blocks of the same types that must survive - the caller is
  * then responsible for folder-side cleanup (e.g. by display-name sentinel).
  */
 export async function sweepMisplacedSharedBlocks(
@@ -747,7 +747,7 @@ export async function createContent(
     key, contentType, container, owner,
     locale, displayName, routeSegment, simpleRoute,
     variation, properties, composition, media, binding,
-    // status is readOnly in v1 — ignored here, published via :publish below
+    // status is readOnly in v1 - ignored here, published via :publish below
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     status: _status,
     // Catch-all: any remaining fields are dropped (v1 additionalProperties: false)
@@ -785,17 +785,17 @@ export async function createContent(
 
   if (!res.ok) {
     if (res.status === 409) {
-      console.log(`  [skipped] ${context} — key already exists (409)`);
+      console.log(`  [skipped] ${context} - key already exists (409)`);
       return null;
     }
     if (res.status === 400 && text.includes("is already in use")) {
-      console.log(`  [skipped] ${context} — routeSegment already in use`);
+      console.log(`  [skipped] ${context} - routeSegment already in use`);
       return null;
     }
     throw new Error(`POST ${context}: ${res.status} ${text.slice(0, 300)}`);
   }
 
-  // v1 API sometimes returns 201 with no body — look up the version separately.
+  // v1 API sometimes returns 201 with no body - look up the version separately.
   let result: Record<string, unknown>;
   let contentKey: string;
   let versionId: string | undefined;
@@ -922,7 +922,7 @@ export async function patchPublishedPageProperties(
     body: JSON.stringify(draftBody),
   }).then((r) => r.text());
 
-  // Find the newest draft version FOR THIS LOCALE. Must scope by locale — the
+  // Find the newest draft version FOR THIS LOCALE. Must scope by locale - the
   // global /versions list mixes locales, so picking the highest-numbered draft
   // there can grab a different language's version and patch the wrong content.
   const vd = (await (

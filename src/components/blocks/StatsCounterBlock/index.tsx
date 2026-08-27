@@ -1,7 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, HEADING_CLASSES, TEXT_ALIGN_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, TEXT_ALIGN, FONT_STYLE, HEADING_CLASSES, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const StatsCounterBlockType = contentType({
@@ -35,7 +35,7 @@ export const StatsCounterAccentTemplate = displayTemplate({
   contentType: "StatsCounterBlock",
   tag: "Accent",
   settings: {
-    ...HEADING_SIZE,
+    ...HEADING_SIZE_CARD,
     ...TEXT_ALIGN,
     accentColor: {
       editor: "select" as const,
@@ -59,7 +59,7 @@ export const StatsCounterHighlightTemplate = displayTemplate({
   settings: {
     ...BACKGROUND,
     ...TEXT_COLOR,
-    ...HEADING_SIZE,
+    ...HEADING_SIZE_CARD,
     ...TEXT_ALIGN,
     size: {
       editor: "select" as const,
@@ -135,29 +135,31 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
   const suffixClass = HEADING_CLASSES[suffixSizeKey] ?? "text-3xl md:text-4xl";
 
   const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "center"];
-  const boxClass = isHighlight ? `${bg.wrapper} squircle` : "";
 
   return (
-    <div
-      data-component="StatsCounterBlock"
-      className={`p-8 ${alignClass} ${boxClass}`}
-    >
-      {data.value && (
-        <p className={`type-h1 ${baseValueClass} mb-2 ${bg.text || "text-brand"}`}>
-          <span {...pa("value")}>{data.value}</span>
-          {data.suffix && (
-            <span {...pa("suffix")} className={suffixClass}>{data.suffix}</span>
-          )}
-        </p>
+    <div data-component="StatsCounterBlock" className="relative">
+      {isHighlight && (
+        // Squircle surface sits on a background layer so it can't clip the content.
+        <div aria-hidden className={`squircle-bg absolute inset-0 ${bg.wrapper}`} />
       )}
-      {data.label && (
-        <p
-          {...pa("label")}
-          className={`text-sm font-medium uppercase tracking-wider ${bg.textMuted || "text-on-surface-variant"}`}
-        >
-          {data.label}
-        </p>
-      )}
+      <div className={`relative p-8 ${alignClass}`}>
+        {data.value && (
+          <p className={`type-h1 ${baseValueClass} mb-2 ${bg.text || "text-brand"}`}>
+            <span {...pa("value")}>{data.value}</span>
+            {data.suffix && (
+              <span {...pa("suffix")} className={suffixClass}>{data.suffix}</span>
+            )}
+          </p>
+        )}
+        {data.label && (
+          <p
+            {...pa("label")}
+            className={`text-sm font-medium uppercase tracking-wider ${bg.textMuted || "text-on-surface-variant"}`}
+          >
+            {data.label}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

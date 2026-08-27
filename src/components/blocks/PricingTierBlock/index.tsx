@@ -84,15 +84,20 @@ export default async function PricingTierBlock(props: PricingTierBlockProps) {
   const featureSpacing = isCompact ? "space-y-1.5 mb-5" : "space-y-3 mb-8";
 
   const bgKey = (ds?.background as string) || "";
-  const bg = bgKey ? resolveStyleClasses(ds, { background: bgKey }) : null;
+  // Highlighted (recommended) tiers always take the brand treatment, even when a
+  // background is set — the CMS materializes "White" as the default background, which
+  // would otherwise silently override the highlight and flatten the recommended tier.
+  const bg = !data.highlighted && bgKey ? resolveStyleClasses(ds, { background: bgKey }) : null;
 
-  let wrapperStyle: string;
+  // Surface classes live on an absolute background layer (`.squircle-bg`) so the
+  // superellipse mask shapes the card without clipping the content above it.
+  let surfaceClass: string;
   if (bg) {
-    wrapperStyle = `squircle ${padding} border h-full flex flex-col transition-shadow ${bg.wrapper}`;
+    surfaceClass = `border transition-shadow ${bg.wrapper}`;
   } else {
-    wrapperStyle = data.highlighted
-      ? `squircle ${padding} border h-full flex flex-col transition-shadow bg-brand-fill text-on-brand border-brand`
-      : `squircle ${padding} border h-full flex flex-col transition-shadow bg-surface-lowest border-ghost-border`;
+    surfaceClass = data.highlighted
+      ? "border transition-shadow bg-brand-fill border-brand"
+      : "border transition-shadow bg-surface-lowest border-ghost-border";
   }
 
   const textColor = bg ? bg.text : (data.highlighted ? "text-on-brand" : "text-on-surface");
@@ -105,7 +110,9 @@ export default async function PricingTierBlock(props: PricingTierBlockProps) {
   const href = isEdit ? undefined : resolved;
 
   return (
-    <div data-component="PricingTierBlock" className={wrapperStyle}>
+    <div data-component="PricingTierBlock" className="relative h-full">
+      <div aria-hidden className={`squircle-bg absolute inset-0 ${surfaceClass}`} />
+      <div className={`relative ${padding} h-full flex flex-col`}>
       {data.highlighted && !bg && (
         <span className="inline-block text-xs font-bold uppercase tracking-widest opacity-80 mb-3">
           Recommended
@@ -170,6 +177,7 @@ export default async function PricingTierBlock(props: PricingTierBlockProps) {
           <span {...pa("ctaText")}>{data.ctaText}</span>
         </Button>
       )}
+      </div>
     </div>
   );
 }

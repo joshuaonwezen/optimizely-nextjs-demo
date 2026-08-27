@@ -216,7 +216,12 @@ html[data-theme="dark"] .code-block-body .shiki span {
    tonal layering for depth (a surface-lowest element over a
    surface-container background, see DESIGN.md §4) rather than
    --shadow-ambient. */
-.squircle {
+/* .squircle masks the element it sits on, which also clips any content that
+   overflows it. Prefer .squircle-bg on an absolutely-positioned background layer
+   (behind the content) so the superellipse shapes the surface without ever
+   clipping text/buttons. .squircle stays for cases where nothing can overflow. */
+.squircle,
+.squircle-bg {
   --squircle-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M100.0 50.0 L99.83 72.14 L99.31 79.12 L98.44 84.05 L97.2 87.89 L95.58 91.0 L93.53 93.53 L91.0 95.58 L87.89 97.2 L84.05 98.44 L79.12 99.31 L72.14 99.83 L50.0 100.0 L27.86 99.83 L20.88 99.31 L15.95 98.44 L12.11 97.2 L9.0 95.58 L6.47 93.53 L4.42 91.0 L2.8 87.89 L1.56 84.05 L0.69 79.12 L0.17 72.14 L0.0 50.0 L0.17 27.86 L0.69 20.88 L1.56 15.95 L2.8 12.11 L4.42 9.0 L6.47 6.47 L9.0 4.42 L12.11 2.8 L15.95 1.56 L20.88 0.69 L27.86 0.17 L50.0 0.0 L72.14 0.17 L79.12 0.69 L84.05 1.56 L87.89 2.8 L91.0 4.42 L93.53 6.47 L95.58 9.0 L97.2 12.11 L98.44 15.95 L99.31 20.88 L99.83 27.86 Z'/%3E%3C/svg%3E");
   -webkit-mask-image: var(--squircle-svg);
   mask-image: var(--squircle-svg);

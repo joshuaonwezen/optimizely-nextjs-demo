@@ -4,7 +4,7 @@
  *   - sticky_offer_bar   Bottom sticky bar (message, linkText, linkUrl, expiryLabel variables)
  *   - hero_copy          Hero headline A/B (headline, subheadline variables)
  *
- * Prerequisites — add to .env.local:
+ * Prerequisites - add to .env.local:
  *   OPTIMIZELY_FX_API_TOKEN=<personal access token>
  *   OPTIMIZELY_FX_PROJECT_ID=23385830076
  *
@@ -186,7 +186,7 @@ async function seedFlag(spec: FlagSpec) {
 
   // 2. Create any extra variations beyond the auto-created "off"/"on"
   //    (off and on are auto-created at flag creation time; their values
-  //    come from variable_definitions default_value — no update needed)
+  //    come from variable_definitions default_value - no update needed)
   for (const v of spec.variations) {
     if (v.key === "off" || v.key === "on") continue;
 

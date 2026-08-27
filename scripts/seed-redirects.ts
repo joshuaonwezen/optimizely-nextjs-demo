@@ -1,5 +1,5 @@
 /**
- * Redirect seeding script — creates:
+ * Redirect seeding script - creates:
  *   1. A handful of example RedirectRule blocks (vanity / renamed / prefix /
  *      external), each a shared block with a fixed key
  *   2. A RedirectConfig singleton ("Redirect Config") referencing all of them
@@ -11,7 +11,7 @@
  * Prerequisites:
  *   - `npm run opti:push` must have run (RedirectRule / RedirectConfig registered)
  *
- * No Graph lookups — safe to run immediately after the type push.
+ * No Graph lookups - safe to run immediately after the type push.
  *
  * Run: npx tsx scripts/seed-redirects.ts
  */
@@ -21,7 +21,7 @@ import { createContent, ensureSubfolder, sweepSeededBlocks } from "./_shared";
 
 config({ path: ".env.local" });
 
-// Singleton — fixed key after SiteSettings (0001) / SiteBanner (0002).
+// Singleton - fixed key after SiteSettings (0001) / SiteBanner (0002).
 const CONFIG_KEY = "5e770000000000000000000000000003";
 
 interface SeedRule {
@@ -47,7 +47,7 @@ const RULES: SeedRule[] = [
       permanent: true,
       matchSubpaths: false,
       enabled: true,
-      note: "Vanity URL. The destination page is still published — proves the check beats the router.",
+      note: "Vanity URL. The destination page is still published - proves the check beats the router.",
     },
   },
   {

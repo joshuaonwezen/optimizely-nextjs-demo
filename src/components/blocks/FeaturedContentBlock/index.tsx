@@ -1,7 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, TEXT_ALIGN, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
 } from "../_shared/displayTemplateSettings";
 import { Button } from "@/components/ui/Button";
 
@@ -46,7 +46,7 @@ export const FeaturedContentCardTemplate = displayTemplate({
       },
     },
     ...TEXT_COLOR,
-    ...HEADING_SIZE,
+    ...HEADING_SIZE_CARD,
     ...TEXT_ALIGN,
     ...FONT_STYLE,
   },
@@ -88,15 +88,18 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
 
-  const sectionClass = isCard
-    ? `squircle p-10 ${isBrand ? "bg-gradient-brand" : "bg-surface-lowest border border-outline-variant"}`
-    : "py-20";
+  // Card surface goes on an absolute `.squircle-bg` layer so the mask shapes the
+  // card without clipping the heading/button above it.
+  const surfaceClass = isBrand ? "bg-gradient-brand" : "bg-surface-lowest border border-outline-variant";
   const innerClass   = isBrand ? "max-w-2xl" : "insight-rail max-w-2xl";
   const headingColor = isBrand ? "text-on-brand" : "text-on-surface";
 
   return (
-    <section data-component="FeaturedContentBlock" className={`${sectionClass} ${alignClass}`}>
-      <div className={innerClass}>
+    <section data-component="FeaturedContentBlock" className={`relative ${isCard ? "" : "py-20"} ${alignClass}`}>
+      {isCard && (
+        <div aria-hidden className={`squircle-bg absolute inset-0 ${surfaceClass}`} />
+      )}
+      <div className={`relative ${isCard ? "p-10" : ""} ${innerClass}`}>
         <h2
           {...pa("featuredPage")}
           className={`${fontClass} ${headingClass} font-extrabold ${headingColor} mb-4`}

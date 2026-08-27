@@ -28,7 +28,7 @@ const BLOGS_HUB_KEY = "b1049a5f7c6d4e0a9f2b1c3d4e5f6a70";
 const HERO_IMAGE_KEY = "b10a55e7000000000000000000000001";
 const HERO_IMAGE_FILE = "public/demo/optimizely_logo.png";
 const HERO_IMAGE_REF = `cms://content/${HERO_IMAGE_KEY}`;
-// "For All Applications" global assets folder — the same well-known key on every
+// "For All Applications" global assets folder - the same well-known key on every
 // instance; existing media live here too.
 const GLOBAL_ASSETS_FOLDER = "e56f85d0e8334e02976a2d11fe4d598c";
 
@@ -49,7 +49,7 @@ const BLOGS: BlogDef[] = [
   {
     key: "b1a01c000000000000000000000000a1",
     routeSegment: "smarter-saving-habits",
-    displayName: "Blog — Smarter saving habits",
+    displayName: "Blog - Smarter saving habits",
     heading: "Smarter saving habits that actually stick",
     subheading: "Small, automatic changes beat willpower every time. Here's where to start.",
     publishedDate: "2026-04-03T09:00:00.000Z",
@@ -57,7 +57,7 @@ const BLOGS: BlogDef[] = [
   {
     key: "b1a02c000000000000000000000000a2",
     routeSegment: "understanding-your-credit-score",
-    displayName: "Blog — Understanding your credit score",
+    displayName: "Blog - Understanding your credit score",
     heading: "Understanding your credit score",
     subheading: "What moves it, what doesn't, and the three things worth doing this month.",
     publishedDate: "2026-04-17T09:00:00.000Z",
@@ -65,7 +65,7 @@ const BLOGS: BlogDef[] = [
   {
     key: "b1a03c000000000000000000000000a3",
     routeSegment: "budgeting-for-a-first-home",
-    displayName: "Blog — Budgeting for a first home",
+    displayName: "Blog - Budgeting for a first home",
     heading: "Budgeting for a first home without the stress",
     subheading: "A realistic month-by-month plan for turning a deposit goal into a moving date.",
     publishedDate: "2026-05-08T09:00:00.000Z",
@@ -73,7 +73,7 @@ const BLOGS: BlogDef[] = [
   {
     key: "b1a04c000000000000000000000000a4",
     routeSegment: "everyday-fraud-protection",
-    displayName: "Blog — Everyday fraud protection",
+    displayName: "Blog - Everyday fraud protection",
     heading: "Everyday fraud protection you can set up in an hour",
     subheading: "Simple defences that stop the most common scams before they reach you.",
     publishedDate: "2026-05-29T09:00:00.000Z",
@@ -81,7 +81,7 @@ const BLOGS: BlogDef[] = [
   {
     key: "b1a05c000000000000000000000000a5",
     routeSegment: "making-the-most-of-a-lifetime-isa",
-    displayName: "Blog — Making the most of a Lifetime ISA",
+    displayName: "Blog - Making the most of a Lifetime ISA",
     heading: "Making the most of a Lifetime ISA",
     subheading: "How the 25% government bonus works and who it's genuinely worth it for.",
     publishedDate: "2026-06-12T09:00:00.000Z",
@@ -89,7 +89,7 @@ const BLOGS: BlogDef[] = [
   {
     key: "b1a06c000000000000000000000000a6",
     routeSegment: "planning-for-the-unexpected",
-    displayName: "Blog — Planning for the unexpected",
+    displayName: "Blog - Planning for the unexpected",
     heading: "Planning for the unexpected: your emergency fund",
     subheading: "How much to keep, where to keep it, and how to rebuild it after you dip in.",
     publishedDate: "2026-06-26T09:00:00.000Z",
@@ -144,11 +144,11 @@ async function resolveAuthorKey(attempts = 8, delayMs = 15000): Promise<string |
       const keys = (data.data?.AuthorBlock?.items ?? []).map((x) => x._metadata?.key).filter(Boolean) as string[];
       for (const key of keys) {
         const chk = await fetch(`${CONTENT_ENDPOINT}/${key}`, { headers: { Authorization: `Bearer ${token}` } });
-        if (chk.ok) return key; // exists in the CMS — not a stale Graph doc
+        if (chk.ok) return key; // exists in the CMS - not a stale Graph doc
       }
     }
     if (i < attempts - 1) {
-      console.log(`  [waiting] no live AuthorBlock indexed yet — retrying in ${delayMs / 1000}s (${i + 1}/${attempts})`);
+      console.log(`  [waiting] no live AuthorBlock indexed yet - retrying in ${delayMs / 1000}s (${i + 1}/${attempts})`);
       await new Promise((r) => setTimeout(r, delayMs));
     }
   }
@@ -169,7 +169,7 @@ async function pickImageContentType(token: string): Promise<string | null> {
 /**
  * Upload the shared hero image under the fixed key if this instance doesn't have
  * it yet. Media is created with a single multipart POST (a JSON `content` part +
- * the binary `file` part) — the SaaS CMS REST API's only media path — then the
+ * the binary `file` part) - the SaaS CMS REST API's only media path - then the
  * draft version is published. Idempotent: the fixed key 409-skips on re-run.
  */
 async function ensureHeroImage(): Promise<boolean> {
@@ -185,7 +185,7 @@ async function ensureHeroImage(): Promise<boolean> {
 
   const contentType = await pickImageContentType(token);
   if (!contentType) {
-    console.warn("  [warn] No _image content type on this instance — cannot upload the hero image.");
+    console.warn("  [warn] No _image content type on this instance - cannot upload the hero image.");
     return false;
   }
 
@@ -305,10 +305,10 @@ async function main(): Promise<void> {
   console.log("  [created] Blogs Hub → /blogs/");
 
   // BlogExperience requires both a hero image and an author, enforced by the CMS
-  // at POST time. Without either, every page POST would 400 — so skip the pages
+  // at POST time. Without either, every page POST would 400 - so skip the pages
   // (the empty hub is still useful) and say what to fix. Keeps this runner-safe.
   if (!haveImage || !authorKey) {
-    console.warn(`  [warn] Skipping blog pages — missing ${!haveImage ? "hero image" : "author"}. Run seed-modeling (authors) and ensure an image can be uploaded, then re-run.`);
+    console.warn(`  [warn] Skipping blog pages - missing ${!haveImage ? "hero image" : "author"}. Run seed-modeling (authors) and ensure an image can be uploaded, then re-run.`);
     console.log("\nDone. Created the /blogs/ hub only.");
     return;
   }
@@ -342,7 +342,7 @@ async function main(): Promise<void> {
       );
 
       if (res === null) {
-        // Page already existed (409/route in use) — refresh its version so it
+        // Page already existed (409/route in use) - refresh its version so it
         // carries the shared hero image and the rich-text section.
         await updateBlogVersion(blog, authorKey, composition);
         console.log(`  [updated] ${blog.displayName}`);
@@ -354,9 +354,9 @@ async function main(): Promise<void> {
     } catch (err) {
       // A stale Graph index can hand back an author key that no longer exists in
       // the CMS ("Referenced content ... does not exist"). Every page shares that
-      // ref, so the rest would fail identically — warn and stop.
+      // ref, so the rest would fail identically - warn and stop.
       console.warn(`  [warn] ${blog.displayName}: ${(err as Error).message.slice(0, 200)}`);
-      console.warn("  [warn] Stopping — the shared author reference is not accepted by this instance (likely a stale Graph result). Re-run once the referenced author exists.");
+      console.warn("  [warn] Stopping - the shared author reference is not accepted by this instance (likely a stale Graph result). Re-run once the referenced author exists.");
       break;
     }
   }

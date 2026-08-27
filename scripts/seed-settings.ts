@@ -1,15 +1,15 @@
 /**
- * Site settings seeding script — creates:
+ * Site settings seeding script - creates:
  *   1. A SiteSettings shared block ("Site Settings") with the chrome's UI
  *      strings (search overlay text + logo wordmark)
  *   2. A SiteBanner shared block ("Site Banner"), enabled. The banner is not
- *      rendered site-wide — editors place it on specific pages via Visual
+ *      rendered site-wide - editors place it on specific pages via Visual
  *      Builder (rendered by SiteBannerBlock); the Enabled toggle hides it.
  *
  * Prerequisites:
  *   - `npm run opti:push` must have run (SiteSettings type registered)
  *
- * No Graph lookups — safe to run immediately after the type push.
+ * No Graph lookups - safe to run immediately after the type push.
  *
  * Run: npx tsx scripts/seed-settings.ts
  */
@@ -32,7 +32,7 @@ let BLOCKS_CONTAINER = "";
 const SETTINGS_KEY = "5e770000000000000000000000000001";
 const BANNER_KEY = "5e770000000000000000000000000002";
 
-// Values mirror DEFAULT_SITE_SETTINGS in src/lib/siteSettings.ts — the seeded
+// Values mirror DEFAULT_SITE_SETTINGS in src/lib/siteSettings.ts - the seeded
 // block starts identical to the hardcoded fallbacks, so editors see the live
 // strings and can change them from a familiar baseline.
 const SITE_SETTINGS = {

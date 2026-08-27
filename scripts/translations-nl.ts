@@ -23,8 +23,8 @@ export const NL: Record<string, string> = {
   "Stocks & Shares ISAs, pensions, and long-term savings products.":
     "Beleggings-ISA's, pensioenen en spaarproducten voor de lange termijn.",
   "Help & Support": "Hulp & ondersteuning",
-  "FAQs, contact us, and branch finder — we're here when you need us.":
-    "Veelgestelde vragen, contact en filialen — we zijn er wanneer je ons nodig hebt.",
+  "FAQs, contact us, and branch finder - we're here when you need us.":
+    "Veelgestelde vragen, contact en filialen - we zijn er wanneer je ons nodig hebt.",
   "About Mosey Bank": "Over Mosey Bank",
   "Our story, values, team, careers, and press.":
     "Ons verhaal, onze waarden, ons team, vacatures en pers.",
@@ -55,15 +55,15 @@ export const NL: Record<string, string> = {
     "Mosey maakte mijn hypotheek zó eenvoudig. Het hele proces verliep online en ik had binnen 48 uur een offerte. Ik kon niet geloven hoe pijnloos het was.",
   "Homeowner, Leeds": "Huiseigenaar, Leeds",
   "Trusted by 2 million customers across the UK": "Vertrouwd door 2 miljoen klanten in het hele VK",
-  "From first current accounts to business banking — Mosey customers bank with confidence.":
-    "Van een eerste betaalrekening tot zakelijk bankieren — Mosey-klanten bankieren met vertrouwen.",
+  "From first current accounts to business banking - Mosey customers bank with confidence.":
+    "Van een eerste betaalrekening tot zakelijk bankieren - Mosey-klanten bankieren met vertrouwen.",
   "Customers": "Klanten",
   "Assets under management": "Beheerd vermogen",
   "App uptime": "App-uptime",
   "UK branches": "Filialen in het VK",
   "Our best rate": "Onze beste rente",
-  "Our fixed-rate savings account now offers 5.1% AER. Lock in your rate today and watch your money grow — FSCS protected up to £85,000.":
-    "Onze spaarrekening met vaste rente biedt nu 5,1% AER. Leg je rente vandaag vast en zie je geld groeien — FSCS-beschermd tot £85.000.",
+  "Our fixed-rate savings account now offers 5.1% AER. Lock in your rate today and watch your money grow - FSCS protected up to £85,000.":
+    "Onze spaarrekening met vaste rente biedt nu 5,1% AER. Leg je rente vandaag vast en zie je geld groeien - FSCS-beschermd tot £85.000.",
   "See savings rates": "Bekijk spaarrentes",
   "Frequently asked questions": "Veelgestelde vragen",
   "Quick answers to the things we hear most.": "Snelle antwoorden op de vragen die we het vaakst horen.",
@@ -88,13 +88,13 @@ export const NL: Record<string, string> = {
   "Choose the certainty of a 2 or 5 year fixed rate, or take advantage of falling rates with a tracker mortgage.":
     "Kies de zekerheid van een vaste rente voor 2 of 5 jaar, of profiteer van dalende rentes met een variabele hypotheek.",
   "No arrangement fee options": "Opties zonder afsluitkosten",
-  "Pick a mortgage with no upfront arrangement fee — ideal if you want to keep costs down when buying.":
-    "Kies een hypotheek zonder afsluitkosten vooraf — ideaal als je de kosten bij aankoop laag wilt houden.",
-  "Buying a home is the biggest financial decision most people make. Mosey's mortgage team is here to make it as straightforward as possible — from the first online check to the day you get your keys.":
-    "Een huis kopen is voor de meeste mensen de grootste financiële beslissing. Het hypotheekteam van Mosey maakt het zo eenvoudig mogelijk — van de eerste online check tot de dag dat je de sleutels krijgt.",
+  "Pick a mortgage with no upfront arrangement fee - ideal if you want to keep costs down when buying.":
+    "Kies een hypotheek zonder afsluitkosten vooraf - ideaal als je de kosten bij aankoop laag wilt houden.",
+  "Buying a home is the biggest financial decision most people make. Mosey's mortgage team is here to make it as straightforward as possible - from the first online check to the day you get your keys.":
+    "Een huis kopen is voor de meeste mensen de grootste financiële beslissing. Het hypotheekteam van Mosey maakt het zo eenvoudig mogelijk - van de eerste online check tot de dag dat je de sleutels krijgt.",
   "Get Started": "Aan de slag",
-  "Applied for a mortgage online on a Sunday. Had a decision in principle by Monday morning. The advisor called to walk me through the full offer — never felt rushed.":
-    "Op zondag online een hypotheek aangevraagd. Maandagochtend had ik een voorlopig akkoord. De adviseur belde om de offerte door te nemen — ik voelde me nooit opgejaagd.",
+  "Applied for a mortgage online on a Sunday. Had a decision in principle by Monday morning. The advisor called to walk me through the full offer - never felt rushed.":
+    "Op zondag online een hypotheek aangevraagd. Maandagochtend had ik een voorlopig akkoord. De adviseur belde om de offerte door te nemen - ik voelde me nooit opgejaagd.",
   "First-time buyer, Bristol": "Starter, Bristol",
   "Important": "Belangrijk",
   "Your home may be repossessed if you do not keep up repayments on your mortgage. Make sure you can afford the repayments before you apply.":
@@ -117,8 +117,8 @@ export const NL: Record<string, string> = {
   "Smart spending insights": "Slim inzicht in je uitgaven",
   "See exactly where your money goes each month, automatically categorised. Set spending limits and watch your savings grow.":
     "Zie precies waar je geld elke maand naartoe gaat, automatisch gecategoriseerd. Stel bestedingslimieten in en zie je spaargeld groeien.",
-  "The Mosey current account is designed for modern life. Open in 10 minutes with just your phone and a valid ID — no branch visit required. Manage everything from the app: move money, set up direct debits, pay bills, and speak to a real person via in-app chat seven days a week.":
-    "De Mosey-betaalrekening is ontworpen voor het moderne leven. Open hem in 10 minuten met alleen je telefoon en een geldig ID — geen filiaalbezoek nodig. Regel alles vanuit de app: geld overmaken, incasso's instellen, rekeningen betalen en zeven dagen per week chatten met een echt mens.",
+  "The Mosey current account is designed for modern life. Open in 10 minutes with just your phone and a valid ID - no branch visit required. Manage everything from the app: move money, set up direct debits, pay bills, and speak to a real person via in-app chat seven days a week.":
+    "De Mosey-betaalrekening is ontworpen voor het moderne leven. Open hem in 10 minuten met alleen je telefoon en een geldig ID - geen filiaalbezoek nodig. Regel alles vanuit de app: geld overmaken, incasso's instellen, rekeningen betalen en zeven dagen per week chatten met een echt mens.",
 
   // Savings page
   "Save Smarter": "Slimmer sparen",
@@ -167,10 +167,10 @@ export const NL: Record<string, string> = {
   "Business lending": "Zakelijke kredieten",
   "Flexible loans from £10,000 to £500,000 and overdraft facilities to smooth out cash flow. Decisions in 48 hours.":
     "Flexibele leningen van £10.000 tot £500.000 en kredietfaciliteiten om je cashflow te stabiliseren. Beslissing binnen 48 uur.",
-  "Mosey Business Banking is designed for the way modern businesses actually work — online, mobile-first, and integrated with the tools you already use.":
-    "Mosey Zakelijk is ontworpen voor hoe moderne bedrijven écht werken — online, mobile-first en geïntegreerd met de tools die je al gebruikt.",
-  "Opened a business current account in under 15 minutes. The integration with our accounting software was seamless — invoices reconcile automatically.":
-    "In minder dan 15 minuten een zakelijke betaalrekening geopend. De koppeling met onze boekhoudsoftware was naadloos — facturen worden automatisch afgeletterd.",
+  "Mosey Business Banking is designed for the way modern businesses actually work - online, mobile-first, and integrated with the tools you already use.":
+    "Mosey Zakelijk is ontworpen voor hoe moderne bedrijven écht werken - online, mobile-first en geïntegreerd met de tools die je al gebruikt.",
+  "Opened a business current account in under 15 minutes. The integration with our accounting software was seamless - invoices reconcile automatically.":
+    "In minder dan 15 minuten een zakelijke betaalrekening geopend. De koppeling met onze boekhoudsoftware was naadloos - facturen worden automatisch afgeletterd.",
   "Director, Hartley & Co.": "Directeur, Hartley & Co.",
 
   // Contact page
@@ -205,8 +205,8 @@ export const NL: Record<string, string> = {
   "Our advisors are experts in Help to Buy, Shared Ownership, and the Lifetime ISA. We'll help you use every available scheme.":
     "Onze adviseurs zijn expert in Help to Buy, Shared Ownership en de Lifetime ISA. We helpen je elke beschikbare regeling te benutten.",
   "No arrangement fee": "Geen afsluitkosten",
-  "Choose a mortgage with no upfront arrangement fee — keeping your costs down when every pound counts.":
-    "Kies een hypotheek zonder afsluitkosten vooraf — zo houd je de kosten laag wanneer elke pond telt.",
+  "Choose a mortgage with no upfront arrangement fee - keeping your costs down when every pound counts.":
+    "Kies een hypotheek zonder afsluitkosten vooraf - zo houd je de kosten laag wanneer elke pond telt.",
   "Step-by-step guidance": "Stap-voor-stap begeleiding",
   "From offer accepted to keys in hand, your dedicated advisor walks you through every stage of the process.":
     "Van geaccepteerd bod tot sleutels in de hand: je persoonlijke adviseur loodst je door elke fase van het proces.",
@@ -245,16 +245,16 @@ export const NL: Record<string, string> = {
   "Send money to any UK bank account in seconds via the Faster Payments network. Available around the clock.":
     "Stuur binnen seconden geld naar elke Britse bankrekening via het Faster Payments-netwerk. Dag en nacht beschikbaar.",
   "Standing orders": "Periodieke overboekingen",
-  "Set up regular payments on any schedule — weekly, monthly, or on a custom date — and manage them entirely in the app.":
-    "Stel terugkerende betalingen in op elk schema — wekelijks, maandelijks of op een eigen datum — en beheer ze volledig in de app.",
+  "Set up regular payments on any schedule - weekly, monthly, or on a custom date - and manage them entirely in the app.":
+    "Stel terugkerende betalingen in op elk schema - wekelijks, maandelijks of op een eigen datum - en beheer ze volledig in de app.",
   "Direct debits": "Incasso's",
   "Authorise and cancel direct debits in the app. See what's due before it leaves your account.":
     "Machtig en annuleer incasso's in de app. Zie wat eraan komt voordat het van je rekening gaat.",
   "International transfers": "Internationale overboekingen",
   "Send money abroad with real exchange rates and low fees. Track your transfer every step of the way.":
     "Stuur geld naar het buitenland tegen echte wisselkoersen en lage kosten. Volg je overboeking bij elke stap.",
-  "Modern banking means money moves at your speed — not the bank's. Mosey uses the UK Faster Payments network so transfers reach their destination in seconds, not hours.":
-    "Modern bankieren betekent dat geld beweegt op jouw snelheid — niet die van de bank. Mosey gebruikt het Britse Faster Payments-netwerk, zodat overboekingen binnen seconden aankomen, niet binnen uren.",
+  "Modern banking means money moves at your speed - not the bank's. Mosey uses the UK Faster Payments network so transfers reach their destination in seconds, not hours.":
+    "Modern bankieren betekent dat geld beweegt op jouw snelheid - niet die van de bank. Mosey gebruikt het Britse Faster Payments-netwerk, zodat overboekingen binnen seconden aankomen, niet binnen uren.",
 
   // Mobile App page
   "Banking on the Go": "Bankieren onderweg",
@@ -288,16 +288,16 @@ export const NL: Record<string, string> = {
   "Use your Mosey card anywhere in the world and we'll never add a foreign transaction or currency conversion fee.":
     "Gebruik je Mosey-pas overal ter wereld; wij rekenen nooit transactie- of omrekenkosten.",
   "Real exchange rates": "Echte wisselkoersen",
-  "We use the mid-market exchange rate — the same one you see on Google. No hidden markup.":
-    "Wij gebruiken de mid-market wisselkoers — dezelfde die je op Google ziet. Geen verborgen opslag.",
+  "We use the mid-market exchange rate - the same one you see on Google. No hidden markup.":
+    "Wij gebruiken de mid-market wisselkoers - dezelfde die je op Google ziet. Geen verborgen opslag.",
   "Worldwide ATM withdrawals": "Wereldwijd geld opnemen",
-  "Withdraw up to £200 abroad per month for free. After that, a flat £1 fee per withdrawal — never a percentage.":
-    "Neem in het buitenland tot £200 per maand gratis op. Daarna een vast tarief van £1 per opname — nooit een percentage.",
+  "Withdraw up to £200 abroad per month for free. After that, a flat £1 fee per withdrawal - never a percentage.":
+    "Neem in het buitenland tot £200 per maand gratis op. Daarna een vast tarief van £1 per opname - nooit een percentage.",
   "Instant notifications abroad": "Directe meldingen in het buitenland",
   "Get notified the moment your card is used abroad. Spot unauthorised transactions immediately and freeze your card in one tap.":
     "Krijg een melding zodra je pas in het buitenland wordt gebruikt. Herken onbevoegde transacties direct en blokkeer je pas met één tik.",
-  "Mosey current account holders get excellent foreign exchange as standard — no add-on needed. Whether you're travelling for a weekend or living abroad, your card works the same way it does at home.":
-    "Mosey-rekeninghouders krijgen standaard uitstekende wisselkoersen — geen extra product nodig. Of je nu een weekend weg bent of in het buitenland woont, je pas werkt precies zoals thuis.",
+  "Mosey current account holders get excellent foreign exchange as standard - no add-on needed. Whether you're travelling for a weekend or living abroad, your card works the same way it does at home.":
+    "Mosey-rekeninghouders krijgen standaard uitstekende wisselkoersen - geen extra product nodig. Of je nu een weekend weg bent of in het buitenland woont, je pas werkt precies zoals thuis.",
 
   // Easy Access Savings page
   "Flexible Savings": "Flexibel sparen",
@@ -412,8 +412,8 @@ export const NL: Record<string, string> = {
     "Een zelfbeheerd persoonlijk pensioen (SIPP) waarmee jij de controle hebt. Begin al vanaf £50 per maand.",
   "Plan My Retirement": "Plan mijn pensioen",
   "Frequently Asked Questions": "Veelgestelde vragen",
-  "Quick answers to the questions we hear most — from opening an account to reporting a lost card.":
-    "Snelle antwoorden op de vragen die we het vaakst horen — van een rekening openen tot een verloren pas melden.",
+  "Quick answers to the questions we hear most - from opening an account to reporting a lost card.":
+    "Snelle antwoorden op de vragen die we het vaakst horen - van een rekening openen tot een verloren pas melden.",
   "Browse FAQs": "Bekijk veelgestelde vragen",
   "With over 140 branches across the UK, expert advice is never far away. Find your nearest location.":
     "Met meer dan 140 filialen in het VK is deskundig advies nooit ver weg. Vind je dichtstbijzijnde locatie.",
@@ -425,8 +425,8 @@ export const NL: Record<string, string> = {
   "Founded in 1998, Mosey Bank has grown from a single branch in Leeds to a national bank serving 2 million customers.":
     "Opgericht in 1998 is Mosey Bank uitgegroeid van één filiaal in Leeds tot een landelijke bank met 2 miljoen klanten.",
   "Meet the Team": "Ontmoet het team",
-  "Join a team that puts people first — customers and colleagues. We're always looking for exceptional people.":
-    "Kom werken bij een team dat mensen vooropstelt — klanten én collega's. We zijn altijd op zoek naar uitzonderlijke mensen.",
+  "Join a team that puts people first - customers and colleagues. We're always looking for exceptional people.":
+    "Kom werken bij een team dat mensen vooropstelt - klanten én collega's. We zijn altijd op zoek naar uitzonderlijke mensen.",
   "See Open Roles": "Bekijk vacatures",
   "Press & Media": "Pers & media",
   "Latest news, press releases, and media resources from Mosey Bank.":
@@ -442,8 +442,8 @@ export const NL: Record<string, string> = {
   "We currently offer an easy-access savings account at 4.6% AER and a 1-year fixed-rate account at 5.1% AER. Rates are variable on easy-access accounts and fixed for the term on fixed-rate accounts.":
     "We bieden momenteel een direct opneembare spaarrekening tegen 4,6% AER en een 1-jarige vasterente-rekening tegen 5,1% AER. De rente is variabel op direct opneembare rekeningen en vast gedurende de looptijd op vasterente-rekeningen.",
   "How does the mortgage application work?": "Hoe werkt de hypotheekaanvraag?",
-  "Start by getting a decision in principle online — it takes around 10 minutes and won't affect your credit score. One of our advisors will then call you to discuss your options and guide you through the full application.":
-    "Begin met een voorlopig akkoord online — het duurt ongeveer 10 minuten en beïnvloedt je kredietscore niet. Een van onze adviseurs belt je daarna om je opties te bespreken en je door de volledige aanvraag te begeleiden.",
+  "Start by getting a decision in principle online - it takes around 10 minutes and won't affect your credit score. One of our advisors will then call you to discuss your options and guide you through the full application.":
+    "Begin met een voorlopig akkoord online - het duurt ongeveer 10 minuten en beïnvloedt je kredietscore niet. Een van onze adviseurs belt je daarna om je opties te bespreken en je door de volledige aanvraag te begeleiden.",
   "Is my money protected?": "Is mijn geld beschermd?",
   "Yes. Mosey Bank is authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority. Eligible deposits are protected by the FSCS up to £85,000 per person.":
     "Ja. Mosey Bank heeft een vergunning van de Prudential Regulation Authority en staat onder toezicht van de Financial Conduct Authority. In aanmerking komende tegoeden zijn beschermd door het FSCS tot £85.000 per persoon.",

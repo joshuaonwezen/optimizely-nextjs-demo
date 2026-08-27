@@ -52,6 +52,49 @@ export const BACKGROUND_NONE_DEFAULT: { background: SelectSetting } = {
   },
 };
 
+// Same choices as BACKGROUND, reordered so "Bright green" (blueGrad, the green
+// gradient) sits at sortOrder 0 and becomes the display-template default the CMS
+// applies when the editor hasn't picked a background. For hero blocks whose code
+// intends a brand-green gradient (a plain White default would flatten them).
+export const BACKGROUND_BRAND_DEFAULT: { background: SelectSetting } = {
+  background: {
+    editor: "select",
+    displayName: "Background color",
+    sortOrder: 0,
+    choices: {
+      blueGrad:    { displayName: "Bright green",      sortOrder: 0 },
+      white:       { displayName: "White",             sortOrder: 1 },
+      offWhite:    { displayName: "Off-white",         sortOrder: 2 },
+      blue:        { displayName: "Green",             sortOrder: 3 },
+      purple:      { displayName: "Teal",              sortOrder: 4 },
+      dark:        { displayName: "Dark",              sortOrder: 5 },
+      transparent: { displayName: "None",              sortOrder: 6 },
+      opal:        { displayName: "Expressive (Opal)", sortOrder: 7 },
+    },
+  },
+};
+
+// Same choices as BACKGROUND, reordered so "Off-white" sits at sortOrder 0 and
+// becomes the display-template default the CMS applies when the editor hasn't
+// picked a background. For blocks whose code intends an off-white surface.
+export const BACKGROUND_OFFWHITE_DEFAULT: { background: SelectSetting } = {
+  background: {
+    editor: "select",
+    displayName: "Background color",
+    sortOrder: 0,
+    choices: {
+      offWhite:    { displayName: "Off-white",         sortOrder: 0 },
+      white:       { displayName: "White",             sortOrder: 1 },
+      blue:        { displayName: "Green",             sortOrder: 2 },
+      blueGrad:    { displayName: "Bright green",      sortOrder: 3 },
+      purple:      { displayName: "Teal",              sortOrder: 4 },
+      dark:        { displayName: "Dark",              sortOrder: 5 },
+      transparent: { displayName: "None",              sortOrder: 6 },
+      opal:        { displayName: "Expressive (Opal)", sortOrder: 7 },
+    },
+  },
+};
+
 // Text color — for any block with visible text. "auto" keeps the historic
 // behaviour of deriving text color from the chosen background, so unset content
 // renders exactly as it did before this setting existed.

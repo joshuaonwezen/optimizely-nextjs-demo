@@ -6,12 +6,12 @@
  *   - ArticlePage and CaseStudyPage TraditionalPage subtypes (Phase C)
  *   - Additional pages in later phases
  *
- * Builds out content in dependency order — reference targets first, then
+ * Builds out content in dependency order - reference targets first, then
  * pages that consume them. Idempotent: each run cleans up previously-seeded
  * items in this script's name-space before recreating.
  *
  * Run: npm run seed:modeling
- * Prerequisites: opti:push (schema), seed (existing pages — homepage exists)
+ * Prerequisites: opti:push (schema), seed (existing pages - homepage exists)
  */
 
 import { config } from "dotenv";
@@ -32,7 +32,7 @@ import {
 } from "./_shared";
 
 let CONTAINER = "";
-// Global content root — standalone blocks (authors, outcomes, testimonials,
+// Global content root - standalone blocks (authors, outcomes, testimonials,
 // milestones, team members) live here so they appear in "Shared Blocks → For
 // All Applications". Pages stay under CONTAINER / hub keys. Set in main().
 let BLOCKS_CONTAINER = "";
@@ -114,16 +114,16 @@ const PHASE_D_PAGE_KEYS = {
 // without touching content from other scripts.
 
 const MODELING_SENTINELS = [
-  /^Author — /,
-  /^Outcome — /,
-  /^Testimonial — Case Study /,
-  /^Article — /,
-  /^Case Study — /,
+  /^Author - /,
+  /^Outcome - /,
+  /^Testimonial - Case Study /,
+  /^Article - /,
+  /^Case Study - /,
   /^Insights Hub$/,
   /^Insights Hub: Articles$/,
   /^Insights Hub: Case Studies$/,
-  /^Milestone — /,
-  /^Team Member — /,
+  /^Milestone - /,
+  /^Team Member - /,
 ];
 
 // URLs for Phase D pages that are nested under existing seed-content.ts
@@ -140,7 +140,7 @@ const PHASE_D_PAGE_URLS = [
 async function cleanupPreviousModelingContent(): Promise<void> {
   console.log("--- Cleaning previously seeded modeling content ---");
   // Sweep by display-name sentinel in both the start-page container and the
-  // shared-blocks folder — sentinel matching (em-dash prefixes) leaves
+  // shared-blocks folder - sentinel matching (em-dash prefixes) leaves
   // manually created blocks of the same content types untouched.
   let deleted = 0;
   for (const container of [CONTAINER, BLOCKS_CONTAINER]) {
@@ -174,7 +174,7 @@ interface AuthorDef {
 const AUTHORS: AuthorDef[] = [
   {
     key: AUTHOR_KEYS.evieMarsh,
-    displayName: "Author — Evie Marsh",
+    displayName: "Author - Evie Marsh",
     name: "Evie Marsh",
     role: "Head of Mortgages, Mosey Bank",
     bioHtml:
@@ -183,7 +183,7 @@ const AUTHORS: AuthorDef[] = [
   },
   {
     key: AUTHOR_KEYS.jordanReid,
-    displayName: "Author — Jordan Reid",
+    displayName: "Author - Jordan Reid",
     name: "Jordan Reid",
     role: "Senior Markets Analyst, Mosey Bank",
     bioHtml:
@@ -192,11 +192,11 @@ const AUTHORS: AuthorDef[] = [
   },
   {
     key: AUTHOR_KEYS.priyaShah,
-    displayName: "Author — Priya Shah",
+    displayName: "Author - Priya Shah",
     name: "Priya Shah",
     role: "Director of Business Banking, Mosey Bank",
     bioHtml:
-      "<p>Priya leads the Mosey small-business banking team. She works directly with founders to understand what banking needs to do — and stop doing — for growing UK businesses.</p>",
+      "<p>Priya leads the Mosey small-business banking team. She works directly with founders to understand what banking needs to do - and stop doing - for growing UK businesses.</p>",
     linkedinUrl: "https://www.linkedin.com/in/priya-shah-mosey/",
   },
 ];
@@ -223,7 +223,7 @@ async function seedAuthors(): Promise<void> {
   }
 }
 
-// Phase C — Part 1: Outcome stats (reference targets for case studies)
+// Phase C - Part 1: Outcome stats (reference targets for case studies)
 
 interface OutcomeDef {
   key: string;
@@ -234,14 +234,14 @@ interface OutcomeDef {
 }
 
 const OUTCOMES: OutcomeDef[] = [
-  { key: OUTCOME_KEYS.bakeryRevenue, displayName: "Outcome — Bakery revenue uplift",     stat: "38",  suffix: "%",  label: "Revenue growth year-over-year" },
-  { key: OUTCOME_KEYS.bakeryStaff,   displayName: "Outcome — Bakery hires",              stat: "11",  suffix: "",   label: "New staff hired" },
-  { key: OUTCOME_KEYS.bakeryDays,    displayName: "Outcome — Bakery payment speed",       stat: "2",   suffix: " d", label: "Settlement time (was 7)" },
-  { key: OUTCOME_KEYS.bakeryNps,     displayName: "Outcome — Bakery NPS",                stat: "72",  suffix: "",   label: "Net promoter score" },
-  { key: OUTCOME_KEYS.familySaved,   displayName: "Outcome — Family savings unlocked",   stat: "12",  suffix: "K",  label: "Saved toward first home" },
-  { key: OUTCOME_KEYS.familyDeposit, displayName: "Outcome — Family deposit growth",     stat: "5.1", suffix: "%",  label: "AER on the savings pot" },
-  { key: OUTCOME_KEYS.familyHours,   displayName: "Outcome — Family time saved",         stat: "6",   suffix: " h", label: "Per month on admin (was 14)" },
-  { key: OUTCOME_KEYS.familyMonths,  displayName: "Outcome — Family timeline",           stat: "18",  suffix: " mo",label: "To reach deposit target" },
+  { key: OUTCOME_KEYS.bakeryRevenue, displayName: "Outcome - Bakery revenue uplift",     stat: "38",  suffix: "%",  label: "Revenue growth year-over-year" },
+  { key: OUTCOME_KEYS.bakeryStaff,   displayName: "Outcome - Bakery hires",              stat: "11",  suffix: "",   label: "New staff hired" },
+  { key: OUTCOME_KEYS.bakeryDays,    displayName: "Outcome - Bakery payment speed",       stat: "2",   suffix: " d", label: "Settlement time (was 7)" },
+  { key: OUTCOME_KEYS.bakeryNps,     displayName: "Outcome - Bakery NPS",                stat: "72",  suffix: "",   label: "Net promoter score" },
+  { key: OUTCOME_KEYS.familySaved,   displayName: "Outcome - Family savings unlocked",   stat: "12",  suffix: "K",  label: "Saved toward first home" },
+  { key: OUTCOME_KEYS.familyDeposit, displayName: "Outcome - Family deposit growth",     stat: "5.1", suffix: "%",  label: "AER on the savings pot" },
+  { key: OUTCOME_KEYS.familyHours,   displayName: "Outcome - Family time saved",         stat: "6",   suffix: " h", label: "Per month on admin (was 14)" },
+  { key: OUTCOME_KEYS.familyMonths,  displayName: "Outcome - Family timeline",           stat: "18",  suffix: " mo",label: "To reach deposit target" },
 ];
 
 async function seedOutcomes(): Promise<void> {
@@ -261,7 +261,7 @@ async function seedOutcomes(): Promise<void> {
   }
 }
 
-// Phase C — Part 2: Testimonials (one per case study)
+// Phase C - Part 2: Testimonials (one per case study)
 
 interface TestimonialDef {
   key: string;
@@ -274,15 +274,15 @@ interface TestimonialDef {
 const TESTIMONIALS: TestimonialDef[] = [
   {
     key: TESTIMONIAL_KEYS.bakery,
-    displayName: "Testimonial — Case Study Bakery",
+    displayName: "Testimonial - Case Study Bakery",
     quote:
-      "Switching to Mosey for our card payments and lending was the single biggest thing we did this year. Next-day settlement freed up cash to hire — we went from 4 to 11 staff.",
+      "Switching to Mosey for our card payments and lending was the single biggest thing we did this year. Next-day settlement freed up cash to hire - we went from 4 to 11 staff.",
     authorName: "Anya Patel",
     authorRole: "Owner, Patel's Pâtisserie",
   },
   {
     key: TESTIMONIAL_KEYS.family,
-    displayName: "Testimonial — Case Study Family",
+    displayName: "Testimonial - Case Study Family",
     quote:
       "We thought saving for a deposit was years away. Mosey's fixed-rate account, plus the budgeting tools, helped us get there in 18 months. The advisors actually listened.",
     authorName: "Liam & Saoirse O'Connor",
@@ -311,7 +311,7 @@ async function seedTestimonials(): Promise<void> {
   }
 }
 
-// Phase C — Part 3: Hub pages (provide URL hierarchy)
+// Phase C - Part 3: Hub pages (provide URL hierarchy)
 //
 // The /en/insights/ DynamicExperience is created here as a minimal placeholder
 // so its child URLs resolve. Phase E will REPLACE its composition with the
@@ -514,7 +514,7 @@ async function seedHubPages(): Promise<void> {
         layoutType: "outline",
         nodes: singleSectionHeading(
           "Case Studies",
-          "How Mosey customers — families and small businesses — moved forward with us."
+          "How Mosey customers - families and small businesses - moved forward with us."
         ),
       },
     },
@@ -523,7 +523,7 @@ async function seedHubPages(): Promise<void> {
   console.log("  [created] Insights Hub: Case Studies → /en/insights/case-studies/");
 }
 
-// Phase C — Part 4: Articles (TraditionalPage subtype)
+// Phase C - Part 4: Articles (TraditionalPage subtype)
 
 interface ArticleDef {
   key: string;
@@ -543,7 +543,7 @@ const ARTICLES: ArticleDef[] = [
   {
     key: ARTICLE_KEYS.firstHome,
     routeSegment: "saving-for-first-home",
-    displayName: "Article — Saving for your first home",
+    displayName: "Article - Saving for your first home",
     title: "Saving for your first home: a 5-step plan that actually works",
     summary:
       "Buying your first home feels impossible until it isn't. Here's the saving-and-application sequence we walk first-time buyers through every week.",
@@ -552,7 +552,7 @@ const ARTICLES: ArticleDef[] = [
       "<h2>1. Know your deposit number</h2>",
       "<p>Lenders need 5–10% of the purchase price as a minimum deposit. On a £225,000 home, that's £11,250 at 5%. Pick the number you actually need before you start saving.</p>",
       "<h2>2. Pick the right account, not the popular one</h2>",
-      "<p>A Lifetime ISA gives you a 25% government bonus on up to £4,000 a year — that's £1,000 free. Pair it with a high-rate easy-access account for the rest.</p>",
+      "<p>A Lifetime ISA gives you a 25% government bonus on up to £4,000 a year - that's £1,000 free. Pair it with a high-rate easy-access account for the rest.</p>",
       "<h2>3. Automate the boring part</h2>",
       "<p>Set up a standing order the day after payday. Treat it as a bill you pay yourself. People who automate save 32% more than people who 'save what's left'.</p>",
       "<h2>4. Get a decision in principle early</h2>",
@@ -569,14 +569,14 @@ const ARTICLES: ArticleDef[] = [
   {
     key: ARTICLE_KEYS.mortgageRates,
     routeSegment: "mortgage-rates-explained",
-    displayName: "Article — Mortgage rates explained",
+    displayName: "Article - Mortgage rates explained",
     title: "Mortgage rates in 2026: what's actually moving them",
     summary:
       "Headline rates make great news. They make terrible decision-making tools. Here's what to watch instead.",
     bodyHtml: [
       "<p>The Bank of England base rate gets most of the headlines, but it's only one of four things moving the rate you'll actually pay.</p>",
       "<h2>The four levers</h2>",
-      "<p>Swap rates, lender competition, your loan-to-value, and your credit history all play a bigger role than people realise. The base rate is the floor — your personal rate is the floor plus a stack of risk premiums.</p>",
+      "<p>Swap rates, lender competition, your loan-to-value, and your credit history all play a bigger role than people realise. The base rate is the floor - your personal rate is the floor plus a stack of risk premiums.</p>",
       "<h2>What's happened in 2026</h2>",
       "<p>Swap rates eased in Q1 as inflation data came in below expectations. That feeds through to 2- and 5-year fixed offers within weeks, not months. We've seen lenders cut fixed rates four times this year.</p>",
       "<h2>Should you fix?</h2>",
@@ -591,18 +591,18 @@ const ARTICLES: ArticleDef[] = [
   {
     key: ARTICLE_KEYS.businessEss,
     routeSegment: "business-banking-essentials",
-    displayName: "Article — Business banking essentials",
+    displayName: "Article - Business banking essentials",
     title: "Business banking essentials for founders in year one",
     summary:
       "Five banking decisions that quietly determine whether your first year is calm or chaotic. Most founders only realise they got them wrong at month nine.",
     bodyHtml: [
       "<p>You'll worry about product-market fit, hiring, and your tax bill. Banking should not be on the list of things keeping you up. Here's how to make sure it isn't.</p>",
       "<h2>1. Separate accounts from day one</h2>",
-      "<p>Mixing personal and business money is the most common, most expensive mistake we see. Even sole traders should split — it makes Self Assessment painless.</p>",
+      "<p>Mixing personal and business money is the most common, most expensive mistake we see. Even sole traders should split - it makes Self Assessment painless.</p>",
       "<h2>2. Pick a card processor before you need one</h2>",
       "<p>If you'll accept payments, lock in a processor with next-day settlement before launch. Waiting 7 days for funds tanks early-stage cash flow.</p>",
       "<h2>3. Set up bookkeeping integrations once</h2>",
-      "<p>Connect Xero or QuickBooks to your business current account on opening day. Backfilling six months of transactions later costs an accountant £400 — automating up front costs you nothing.</p>",
+      "<p>Connect Xero or QuickBooks to your business current account on opening day. Backfilling six months of transactions later costs an accountant £400 - automating up front costs you nothing.</p>",
       "<h2>4. Build a lending relationship early</h2>",
       "<p>Apply for a small overdraft facility while you don't need it. When you do, the relationship is already in place.</p>",
       "<h2>5. Calendar a banking review</h2>",
@@ -652,7 +652,7 @@ async function seedArticles(): Promise<void> {
   }
 }
 
-// Phase C — Part 5: Case Studies
+// Phase C - Part 5: Case Studies
 
 interface CaseStudyDef {
   key: string;
@@ -674,14 +674,14 @@ const CASE_STUDIES: CaseStudyDef[] = [
   {
     key: CASE_STUDY_KEYS.bakery,
     routeSegment: "local-bakery-growth",
-    displayName: "Case Study — Local bakery growth",
+    displayName: "Case Study - Local bakery growth",
     title: "How a Manchester pâtisserie tripled revenue in 18 months",
     clientName: "Patel's Pâtisserie",
     industry: "business-banking",
     summary:
       "A six-year-old high-street bakery moved its banking, payments, and lending to Mosey and used the unlocked cash flow to hire seven new staff.",
     challengeHtml:
-      "<p>Anya Patel's bakery had outgrown its old bank. Card payments settled after 7 days — meaning a Saturday lunch rush sat in suspense until the following Friday. Two failed lending applications had left her cautious about expansion.</p>",
+      "<p>Anya Patel's bakery had outgrown its old bank. Card payments settled after 7 days - meaning a Saturday lunch rush sat in suspense until the following Friday. Two failed lending applications had left her cautious about expansion.</p>",
     solutionHtml:
       "<p>The Mosey Business team consolidated her current account, card terminal, and a flexible overdraft. Next-day settlement freed up an average of £18,000 in working capital. A small business loan, structured around seasonal cash flow, funded a refit and the first three hires.</p>",
     outcomeKeys: [
@@ -697,7 +697,7 @@ const CASE_STUDIES: CaseStudyDef[] = [
   {
     key: CASE_STUDY_KEYS.familyFinance,
     routeSegment: "family-finance-journey",
-    displayName: "Case Study — Family finance journey",
+    displayName: "Case Study - Family finance journey",
     title: "From renters to homeowners: a Manchester family's 18-month plan",
     clientName: "The O'Connor family",
     industry: "personal-finance",
@@ -757,7 +757,7 @@ async function seedCaseStudies(): Promise<void> {
   }
 }
 
-// Phase D — Part 1: Timeline Milestones (reference targets for TimelineBlock)
+// Phase D - Part 1: Timeline Milestones (reference targets for TimelineBlock)
 
 interface MilestoneDef {
   key: string;
@@ -768,14 +768,14 @@ interface MilestoneDef {
 }
 
 const MILESTONES: MilestoneDef[] = [
-  { key: MILESTONE_KEYS.founded,     displayName: "Milestone — Founded",        date: "1998",     title: "Founded in Leeds",                 description: "Mosey Bank opens its first branch on Albion Street with 12 staff and a single goal: clearer banking, fewer surprises." },
-  { key: MILESTONE_KEYS.firstBranch, displayName: "Milestone — 10 branches",     date: "2003",     title: "Expansion across the North",       description: "Branch number ten opens in Newcastle. Mosey now serves 80,000 personal customers across Yorkshire and the North East." },
-  { key: MILESTONE_KEYS.online,      displayName: "Milestone — Online banking", date: "2008",     title: "Online banking launches",          description: "Mosey customers can now manage their account, set up standing orders, and pay bills entirely online — well ahead of the high-street competition." },
-  { key: MILESTONE_KEYS.appLaunch,   displayName: "Milestone — App launch",     date: "2014",     title: "The Mosey app arrives",            description: "Mobile-first banking, instant push notifications on every transaction, and Apple Pay support from day one. The app hits 4.8 stars within its first month." },
-  { key: MILESTONE_KEYS.oneMillion,  displayName: "Milestone — One million",     date: "2019",     title: "One million customers",            description: "Mosey crosses the one million customer mark — and we're still answering the phone in under 30 seconds on average." },
-  { key: MILESTONE_KEYS.business,    displayName: "Milestone — Business banking", date: "2021",   title: "Business banking launches",         description: "We bring the same simplicity to SMEs: a 15-minute opening flow, accounting integrations from launch day, and no monthly fee in year one." },
-  { key: MILESTONE_KEYS.fxSwitch,    displayName: "Milestone — FX rebuild",     date: "2024",     title: "Real-rate FX, zero fees",          description: "We rebuild the FX engine: real mid-market exchange rates and no foreign transaction fees on the current account. The change saves UK travellers an estimated £14M a year." },
-  { key: MILESTONE_KEYS.today,       displayName: "Milestone — Today",          date: "Today",    title: "Two million customers, one focus",  description: "140+ branches, two million customers, and a single principle that hasn't changed since 1998: tell people what their money is doing." },
+  { key: MILESTONE_KEYS.founded,     displayName: "Milestone - Founded",        date: "1998",     title: "Founded in Leeds",                 description: "Mosey Bank opens its first branch on Albion Street with 12 staff and a single goal: clearer banking, fewer surprises." },
+  { key: MILESTONE_KEYS.firstBranch, displayName: "Milestone - 10 branches",     date: "2003",     title: "Expansion across the North",       description: "Branch number ten opens in Newcastle. Mosey now serves 80,000 personal customers across Yorkshire and the North East." },
+  { key: MILESTONE_KEYS.online,      displayName: "Milestone - Online banking", date: "2008",     title: "Online banking launches",          description: "Mosey customers can now manage their account, set up standing orders, and pay bills entirely online - well ahead of the high-street competition." },
+  { key: MILESTONE_KEYS.appLaunch,   displayName: "Milestone - App launch",     date: "2014",     title: "The Mosey app arrives",            description: "Mobile-first banking, instant push notifications on every transaction, and Apple Pay support from day one. The app hits 4.8 stars within its first month." },
+  { key: MILESTONE_KEYS.oneMillion,  displayName: "Milestone - One million",     date: "2019",     title: "One million customers",            description: "Mosey crosses the one million customer mark - and we're still answering the phone in under 30 seconds on average." },
+  { key: MILESTONE_KEYS.business,    displayName: "Milestone - Business banking", date: "2021",   title: "Business banking launches",         description: "We bring the same simplicity to SMEs: a 15-minute opening flow, accounting integrations from launch day, and no monthly fee in year one." },
+  { key: MILESTONE_KEYS.fxSwitch,    displayName: "Milestone - FX rebuild",     date: "2024",     title: "Real-rate FX, zero fees",          description: "We rebuild the FX engine: real mid-market exchange rates and no foreign transaction fees on the current account. The change saves UK travellers an estimated £14M a year." },
+  { key: MILESTONE_KEYS.today,       displayName: "Milestone - Today",          date: "Today",    title: "Two million customers, one focus",  description: "140+ branches, two million customers, and a single principle that hasn't changed since 1998: tell people what their money is doing." },
 ];
 
 async function seedMilestones(): Promise<void> {
@@ -795,7 +795,7 @@ async function seedMilestones(): Promise<void> {
   }
 }
 
-// Phase D — Part 2: Team Members
+// Phase D - Part 2: Team Members
 
 interface TeamMemberDef {
   key: string;
@@ -807,12 +807,12 @@ interface TeamMemberDef {
 }
 
 const TEAM_MEMBERS: TeamMemberDef[] = [
-  { key: TEAM_KEYS.ceo,       displayName: "Team Member — Maya Singh",     name: "Maya Singh",     role: "Chief Executive Officer",       bio: "Maya joined Mosey in 2017 and became CEO in 2022. Previously led retail banking at a UK challenger bank.",  linkedinUrl: "https://www.linkedin.com/in/maya-singh-mosey/" },
-  { key: TEAM_KEYS.cfo,       displayName: "Team Member — Tom Whitfield",  name: "Tom Whitfield",  role: "Chief Financial Officer",        bio: "Tom oversees finance, capital planning, and treasury. 18 years across UK and EU banking.",                    linkedinUrl: "https://www.linkedin.com/in/tom-whitfield-mosey/" },
-  { key: TEAM_KEYS.cto,       displayName: "Team Member — Anya Petrov",    name: "Anya Petrov",    role: "Chief Technology Officer",       bio: "Anya runs all of engineering, security, and platform. She rebuilt the Mosey app from the ground up in 2014.",   linkedinUrl: "https://www.linkedin.com/in/anya-petrov-mosey/" },
-  { key: TEAM_KEYS.business,  displayName: "Team Member — Priya Shah",     name: "Priya Shah",     role: "Director of Business Banking",   bio: "Priya leads the small-business banking team and writes about banking for founders.",                          linkedinUrl: "https://www.linkedin.com/in/priya-shah-mosey/" },
-  { key: TEAM_KEYS.customer,  displayName: "Team Member — Sam Okafor",     name: "Sam Okafor",     role: "Head of Customer Experience",    bio: "Sam ensures the average Mosey complaint is resolved in 3 days. Was an ombudsman before joining us.",            linkedinUrl: "https://www.linkedin.com/in/sam-okafor-mosey/" },
-  { key: TEAM_KEYS.risk,      displayName: "Team Member — Helena Bauer",   name: "Helena Bauer",   role: "Chief Risk Officer",             bio: "Helena oversees credit, financial, and operational risk. Previously CRO at a Tier-1 European bank.",            linkedinUrl: "https://www.linkedin.com/in/helena-bauer-mosey/" },
+  { key: TEAM_KEYS.ceo,       displayName: "Team Member - Maya Singh",     name: "Maya Singh",     role: "Chief Executive Officer",       bio: "Maya joined Mosey in 2017 and became CEO in 2022. Previously led retail banking at a UK challenger bank.",  linkedinUrl: "https://www.linkedin.com/in/maya-singh-mosey/" },
+  { key: TEAM_KEYS.cfo,       displayName: "Team Member - Tom Whitfield",  name: "Tom Whitfield",  role: "Chief Financial Officer",        bio: "Tom oversees finance, capital planning, and treasury. 18 years across UK and EU banking.",                    linkedinUrl: "https://www.linkedin.com/in/tom-whitfield-mosey/" },
+  { key: TEAM_KEYS.cto,       displayName: "Team Member - Anya Petrov",    name: "Anya Petrov",    role: "Chief Technology Officer",       bio: "Anya runs all of engineering, security, and platform. She rebuilt the Mosey app from the ground up in 2014.",   linkedinUrl: "https://www.linkedin.com/in/anya-petrov-mosey/" },
+  { key: TEAM_KEYS.business,  displayName: "Team Member - Priya Shah",     name: "Priya Shah",     role: "Director of Business Banking",   bio: "Priya leads the small-business banking team and writes about banking for founders.",                          linkedinUrl: "https://www.linkedin.com/in/priya-shah-mosey/" },
+  { key: TEAM_KEYS.customer,  displayName: "Team Member - Sam Okafor",     name: "Sam Okafor",     role: "Head of Customer Experience",    bio: "Sam ensures the average Mosey complaint is resolved in 3 days. Was an ombudsman before joining us.",            linkedinUrl: "https://www.linkedin.com/in/sam-okafor-mosey/" },
+  { key: TEAM_KEYS.risk,      displayName: "Team Member - Helena Bauer",   name: "Helena Bauer",   role: "Chief Risk Officer",             bio: "Helena oversees credit, financial, and operational risk. Previously CRO at a Tier-1 European bank.",            linkedinUrl: "https://www.linkedin.com/in/helena-bauer-mosey/" },
 ];
 
 async function seedTeamMembers(): Promise<void> {
@@ -837,9 +837,9 @@ async function seedTeamMembers(): Promise<void> {
   }
 }
 
-// Phase D — Part 3: Modeling-demo pages (Our Story, Team, Pricing, Compare)
+// Phase D - Part 3: Modeling-demo pages (Our Story, Team, Pricing, Compare)
 //
-// These pages live under existing seed-content.ts containers — about, business,
+// These pages live under existing seed-content.ts containers - about, business,
 // personal. We look up the parent page keys in Graph at seed time.
 
 async function seedOurStoryPage(parentKey: string): Promise<void> {
@@ -859,7 +859,7 @@ async function seedOurStoryPage(parentKey: string): Promise<void> {
           properties: wrapProps({
             heading: "Our story",
             subheading:
-              "A short walk through the milestones that shaped how Mosey banks today — from a single branch in Leeds to two million customers across the UK.",
+              "A short walk through the milestones that shaped how Mosey banks today - from a single branch in Leeds to two million customers across the UK.",
             milestones: MILESTONES.map((m) => `cms://content/${m.key}`),
           }),
         },
@@ -874,11 +874,11 @@ async function seedOurStoryPage(parentKey: string): Promise<void> {
       locale: "en",
       container: parentKey,
       status: "published",
-      displayName: "Page — Our Story",
+      displayName: "Page - Our Story",
       routeSegment: "our-story",
       composition,
     },
-    "Page — Our Story"
+    "Page - Our Story"
   );
   console.log("  [created] /en/about/our-story/");
 }
@@ -915,11 +915,11 @@ async function seedTeamPage(parentKey: string): Promise<void> {
       locale: "en",
       container: parentKey,
       status: "published",
-      displayName: "Page — Team",
+      displayName: "Page - Team",
       routeSegment: "team",
       composition,
     },
-    "Page — Team"
+    "Page - Team"
   );
   console.log("  [created] /en/about/team/");
 }
@@ -1049,7 +1049,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
       contentType: "ComparisonTableBlock",
       properties: wrapProps({
         heading: "Plan comparison",
-        subheading: "Pick the plan that matches where your business is today. Switch up or down whenever — no contract.",
+        subheading: "Pick the plan that matches where your business is today. Switch up or down whenever - no contract.",
         columns: [
           { name: "Starter", highlighted: false },
           { name: "Plus",    highlighted: true },
@@ -1059,9 +1059,9 @@ async function seedPricingPage(parentKey: string): Promise<void> {
           { label: "Monthly fee",            values: ["£0", "£12", "£35"] },
           { label: "Free transactions",      values: ["100/month", "Unlimited", "Unlimited"] },
           { label: "International transfers",values: ["£3 each", "Free same-day", "Free same-day"] },
-          { label: "Relationship manager",   values: ["—", "Dedicated", "Dedicated"] },
-          { label: "Multi-currency accounts",values: ["—", "—", "Included"] },
-          { label: "API access",             values: ["—", "—", "Included"] },
+          { label: "Relationship manager",   values: ["-", "Dedicated", "Dedicated"] },
+          { label: "Multi-currency accounts",values: ["-", "-", "Included"] },
+          { label: "API access",             values: ["-", "-", "Included"] },
           { label: "User seats",             values: ["1", "10", "50"] },
         ],
       }),
@@ -1075,7 +1075,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
       locale: "en",
       container: parentKey,
       status: "published",
-      displayName: "Page — Pricing",
+      displayName: "Page - Pricing",
       routeSegment: "pricing",
       composition: {
         id: uid(),
@@ -1092,7 +1092,7 @@ async function seedPricingPage(parentKey: string): Promise<void> {
         ],
       },
     },
-    "Page — Pricing"
+    "Page - Pricing"
   );
   console.log("  [created] /en/business/pricing/");
 }
@@ -1127,10 +1127,10 @@ async function seedCompareAccountsPage(parentKey: string): Promise<void> {
               { label: "Monthly fee",                values: ["£0",        "£5",         "£18"] },
               { label: "Foreign transaction fees",   values: ["None",      "None",       "None"] },
               { label: "Free ATM abroad / month",    values: ["£200",      "£500",       "Unlimited"] },
-              { label: "Travel insurance",           values: ["—",         "Worldwide",  "Worldwide + winter sports"] },
+              { label: "Travel insurance",           values: ["-",         "Worldwide",  "Worldwide + winter sports"] },
               { label: "Mobile + web banking",       values: ["Included",  "Included",   "Included"] },
-              { label: "Dedicated phone line",       values: ["—",         "—",          "Included"] },
-              { label: "Interest on credit balances", values: ["—",        "2.5% AER",   "3.5% AER (first £20k)"] },
+              { label: "Dedicated phone line",       values: ["-",         "-",          "Included"] },
+              { label: "Interest on credit balances", values: ["-",        "2.5% AER",   "3.5% AER (first £20k)"] },
               { label: "Best for",                   values: ["Day-to-day","Frequent travellers","Premium customers"] },
             ],
           }),
@@ -1146,11 +1146,11 @@ async function seedCompareAccountsPage(parentKey: string): Promise<void> {
       locale: "en",
       container: parentKey,
       status: "published",
-      displayName: "Page — Compare Accounts",
+      displayName: "Page - Compare Accounts",
       routeSegment: "compare-accounts",
       composition,
     },
-    "Page — Compare Accounts"
+    "Page - Compare Accounts"
   );
   console.log("  [created] /en/personal/compare-accounts/");
 }
@@ -1166,7 +1166,7 @@ async function main(): Promise<void> {
   await cleanupPreviousModelingContent();
 
   // Remove modeling blocks stranded at the top-level root by earlier seed
-  // versions. Root only — the blocks folder may hold manually created blocks
+  // versions. Root only - the blocks folder may hold manually created blocks
   // of the same types (e.g. an editor's own TeamMemberBlock); folder-side
   // leftovers are cleaned by sentinel in cleanupPreviousModelingContent.
   console.log("--- Sweeping misplaced modeling shared blocks at the top-level root ---");
@@ -1218,7 +1218,7 @@ async function main(): Promise<void> {
       "  Re-run after another 60s: npx tsx scripts/seed-modeling.ts"
     );
   } else if (missingParents.length > 0) {
-    console.warn(`  [warn] ${missingParents.length} parent page(s) not found: ${missingParents.join(", ")} — their Phase D children will be skipped.`);
+    console.warn(`  [warn] ${missingParents.length} parent page(s) not found: ${missingParents.join(", ")} - their Phase D children will be skipped.`);
   }
 
   if (aboutKey)    { await seedOurStoryPage(aboutKey); await seedTeamPage(aboutKey); }
