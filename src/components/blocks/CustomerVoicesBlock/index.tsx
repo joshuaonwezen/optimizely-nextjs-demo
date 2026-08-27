@@ -2,7 +2,6 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { QuoteBlockType } from "@/components/blocks/QuoteBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
-import { sectionBlockId } from "../_shared/previewSection";
 import {
   BACKGROUND_OFFWHITE_DEFAULT, TEXT_COLOR, HEADING_SIZE, HEADING_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
@@ -67,7 +66,7 @@ export default function CustomerVoicesBlock(props: CustomerVoicesProps) {
   const cards = (data.cards ?? []) as CardData[];
 
   return (
-    <section data-component="CustomerVoicesBlock" {...sectionBlockId(data as never)} className={`${bg.wrapper} rounded-2xl px-6 py-10 sm:px-10`}>
+    <section data-component="CustomerVoicesBlock" className={`${bg.wrapper} rounded-2xl px-6 py-10 sm:px-10`}>
       {data.heading && (
         <h2 {...pa("heading")} className={`${headingClass} ${bg.text} font-semibold text-center`}>
           {data.heading}
