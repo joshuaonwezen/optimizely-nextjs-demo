@@ -1,7 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { HeroBlockClient } from "./HeroBlockClient";
-import { contentEditAnchor } from "../_shared/previewSection";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
@@ -135,7 +134,6 @@ export default async function HeroBlock(props: HeroBlockProps) {
       headingSize={headingSize}
       fontStyle={fontStyle}
       edit={!!data.__context?.edit}
-      rootAttrs={contentEditAnchor(data as any)}
       paHeadline={pa("headline")}
       paSubheadline={pa("subheadline")}
       paCtaText={pa("ctaText")}

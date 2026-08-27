@@ -24,7 +24,6 @@ export interface HeroBlockClientProps {
   textClass?: string;
   textMutedClass?: string;
   edit: boolean;
-  rootAttrs?: Record<string, string>;
   paHeadline?: PreviewAttrs;
   paSubheadline?: PreviewAttrs;
   paCtaText?: PreviewAttrs;
@@ -46,7 +45,6 @@ export function HeroBlockClient({
   textClass = "text-on-brand",
   textMutedClass = "text-on-brand-subtle",
   edit,
-  rootAttrs = {},
   paHeadline = {},
   paSubheadline = {},
   paCtaText = {},
@@ -79,7 +77,6 @@ export function HeroBlockClient({
     <section
       data-component="HeroBlock"
       data-track-view="HeroBlock"
-      {...rootAttrs}
       className={`relative flex items-center ${isTall ? "min-h-screen" : ""}`}
     >
       {/* Full-bleed background — absolutely positioned so it doesn't affect document scrollWidth */}
