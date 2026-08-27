@@ -103,19 +103,6 @@ export default async function PricingTierBlock(props: PricingTierBlockProps) {
   const resolved = await resolveLinkHref(data.ctaLink);
   const isEdit = !!data.__context?.edit;
   const href = isEdit ? undefined : resolved;
-  const editChips = (
-    <div className="mt-3 flex flex-wrap items-center gap-2">
-      <span
-        {...pa("ctaLink")}
-        className={`inline-flex items-center gap-1.5 rounded-full border border-current/20 px-3 py-1 text-xs opacity-70 cursor-pointer hover:opacity-100 transition-opacity ${textColor}`}
-      >
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
-          <path d="M6.5 9.5L9.5 6.5M7 4l.5-.5a3 3 0 0 1 4.2 4.2l-.5.5M9 12l-.5.5a3 3 0 0 1-4.2-4.2l.5-.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-        </svg>
-        {resolved ? `→ ${resolved}` : "Set a link"}
-      </span>
-    </div>
-  );
 
   return (
     <div data-component="PricingTierBlock" className={wrapperStyle}>
@@ -178,11 +165,11 @@ export default async function PricingTierBlock(props: PricingTierBlockProps) {
           className={ctaIsDarkChip ? "bg-on-brand text-brand hover:opacity-90" : undefined}
           data-track-event="mb_pricing_tier_click"
           data-track-tags={JSON.stringify({ tier: data.name ?? "", label: data.ctaText ?? "", highlighted: !!data.highlighted })}
+          {...pa("ctaLink")}
         >
           <span {...pa("ctaText")}>{data.ctaText}</span>
         </Button>
       )}
-      {isEdit && editChips}
     </div>
   );
 }

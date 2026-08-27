@@ -123,27 +123,13 @@ export default async function CallToActionBlock(props: CallToActionProps) {
     "brand";
   const isLarge = ds?.size === "large";
 
-  // Edit-mode affordance: a tidy chip instead of a raw mono URL string.
-  const editChips = (
-    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-      <span
-        {...pa("link")}
-        className="inline-flex items-center gap-1.5 rounded-full bg-on-surface/5 px-3 py-1 text-xs text-on-surface-variant cursor-pointer hover:bg-on-surface/10 transition-colors"
-      >
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
-          <path d="M6.5 9.5L9.5 6.5M7 4l.5-.5a3 3 0 0 1 4.2 4.2l-.5.5M9 12l-.5.5a3 3 0 0 1-4.2-4.2l.5-.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-        </svg>
-        {resolved ? `→ ${resolved}` : "Set a link"}
-      </span>
-    </div>
-  );
-
   if (isGhost) {
     return (
       <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className="py-12 text-center">
         {(href || isEdit) && (
           <a
             href={isEdit ? undefined : href}
+            {...pa("link")}
             data-track-event="mb_cta_click"
             data-track-tags={JSON.stringify({ label: data.label ?? "", variant: "ghost" })}
             className={`${fontClass} inline-flex items-center gap-2 font-semibold ${style.text} hover:underline underline-offset-4 ${isLarge ? "text-lg" : "text-base"}`}
@@ -152,7 +138,6 @@ export default async function CallToActionBlock(props: CallToActionProps) {
             <span aria-hidden>→</span>
           </a>
         )}
-        {isEdit && editChips}
       </div>
     );
   }
@@ -170,11 +155,11 @@ export default async function CallToActionBlock(props: CallToActionProps) {
           className={customClass}
           data-track-event="mb_cta_click"
           data-track-tags={JSON.stringify({ label: data.label ?? "", variant })}
+          {...pa("link")}
         >
           <span {...pa("label")}>{data.label ?? "Get Started"}</span>
         </Button>
       )}
-      {isEdit && editChips}
     </div>
   );
 }
