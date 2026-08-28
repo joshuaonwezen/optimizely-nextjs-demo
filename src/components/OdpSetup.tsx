@@ -22,9 +22,15 @@ export default function OdpSetup() {
   // Attach fs_user_id to the pageview so realtime segments (which are built on the pageview
   // event and evaluated at event time on the identifiers in the event) qualify the customer
   // profile - not just the anonymous vuid. Custom events already send it via odpDestination.
+  //
+  // `page` MUST be included: the classic Zaius tag does not auto-attach the URL to a manually
+  // dispatched event, so URL-conditioned audiences (e.g. "page contains /business") have nothing
+  // to match without it. Any-pageview audiences (active_visitors) work regardless; page-specific
+  // ones never qualify until the URL is on the event.
   useEffect(() => {
     const fsUserId = getCookie("optimizelyEndUserId");
-    window.zaius?.event("pageview", fsUserId ? { fs_user_id: fsUserId } : undefined);
+    const page = window.location.href;
+    window.zaius?.event("pageview", fsUserId ? { fs_user_id: fsUserId, page } : { page });
   }, [pathname]);
 
   return null;
