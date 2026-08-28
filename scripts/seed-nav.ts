@@ -403,9 +403,21 @@ async function createNavItem(node: NavDef, ancestors: string[]): Promise<void> {
 
   let { ok, status, body: resp } = await apiFetch("", { method: "POST", body: JSON.stringify(makeBody(true)) });
 
-  // If the href reference isn't committed yet, retry once without it
-  if (!ok && hrefRef && JSON.stringify(resp).includes("does not exist")) {
-    console.warn(`  [retry] ${node.label} - href not committed yet, creating without href`);
+  // A just-created child nav-item (or the linked page) may not be visible to this
+  // parent's reference validation yet - the write hasn't propagated on slower
+  // backends. Retry the full body with backoff before giving up; without this, a
+  // laggy instance fails every run on a "does not exist" child reference.
+  const refMissing = () => JSON.stringify(resp).includes("does not exist");
+  for (let attempt = 0; !ok && refMissing() && attempt < 4; attempt++) {
+    const delay = 1000 * (attempt + 1);
+    console.warn(`  [retry] ${node.label} - referenced content not committed yet, waiting ${delay}ms (attempt ${attempt + 1}/4)`);
+    await new Promise((r) => setTimeout(r, delay));
+    ({ ok, status, body: resp } = await apiFetch("", { method: "POST", body: JSON.stringify(makeBody(true)) }));
+  }
+
+  // Last resort: if the page href is the only unresolved reference, create without it.
+  if (!ok && hrefRef && refMissing()) {
+    console.warn(`  [retry] ${node.label} - creating without href (page ref still unresolved)`);
     ({ ok, status, body: resp } = await apiFetch("", { method: "POST", body: JSON.stringify(makeBody(false)) }));
   }
 
@@ -414,14 +426,29 @@ async function createNavItem(node: NavDef, ancestors: string[]): Promise<void> {
     throw new Error(`NavItem creation failed for ${node.label}`);
   }
 
-  // Publish the draft (v1 API may return 201 with empty body)
+  // Publish the draft (v1 API may return 201 with empty body). The version read-back
+  // can lag on slower backends; if it isn't retried the item is left as a draft, and
+  // a parent that references this (unpublished) child fails validation with
+  // "does not exist". Retry the lookup, then confirm the publish actually took.
   let version = ((resp as Record<string, unknown>)?.initialVersion as Record<string, unknown> | undefined)?.version as string | undefined;
-  if (!version) {
+  for (let attempt = 0; !version && attempt < 5; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 1000 * attempt));
     const vRes = await apiFetch(`/${node.key}/versions?pageSize=1`);
     version = ((vRes.body as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version;
   }
   if (version) {
-    await apiFetch(`/${node.key}/versions/${version}:publish`, { method: "POST" });
+    let pub = await apiFetch(`/${node.key}/versions/${version}:publish`, { method: "POST" });
+    // The publish handler can 404 a version that GET /versions already returns - on
+    // slower backends the version hasn't propagated to the publish path yet. Retry
+    // with backoff; otherwise the item stays a draft and anything that references it
+    // (its parent nav-item, or the top-level Navigation block) fails "does not exist".
+    for (let attempt = 0; !pub.ok && attempt < 6; attempt++) {
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      pub = await apiFetch(`/${node.key}/versions/${version}:publish`, { method: "POST" });
+    }
+    if (!pub.ok) console.warn(`  [warn] publish failed for ${node.label}: ${pub.status} after retries - parent refs may fail`);
+  } else {
+    console.warn(`  [warn] no version resolved for ${node.label} - left unpublished, parent refs may fail`);
   }
 
   const childCount = node.children.length;

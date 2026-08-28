@@ -1033,7 +1033,7 @@ export async function findPageKeyByUrl(urls: string[]): Promise<string | null> {
     ),
   ];
   const query = `query FindPageKey($urls: [String]) {
-    _Page(where: { _metadata: { url: { default: { in: $urls } } } }, limit: 1) {
+    _Page(where: { _metadata: { url: { default: { in: $urls } } } }, limit: 10) {
       items { _metadata { key } }
     }
   }`;
@@ -1049,7 +1049,16 @@ export async function findPageKeyByUrl(urls: string[]): Promise<string | null> {
   const data = (await res.json()) as {
     data?: { _Page?: { items?: Array<{ _metadata?: { key?: string } }> } };
   };
-  return data.data?._Page?.items?.[0]?._metadata?.key ?? null;
+  const items = data.data?._Page?.items ?? [];
+  // Graph can retain stale docs for pages that were deleted but not yet dropped from
+  // the index, so a match may be a key that no longer resolves - fatal when the key is
+  // used as a container or a hard reference. Return the first candidate that still
+  // exists in the Management API; skip dead ones (caller falls back as appropriate).
+  for (const it of items) {
+    const key = it._metadata?.key;
+    if (key && (await contentKeyExists(key))) return key;
+  }
+  return null;
 }
 
 /**
@@ -1062,7 +1071,22 @@ export async function findPageKeyByUrl(urls: string[]): Promise<string | null> {
 export async function pageRefForUrl(url: string): Promise<string> {
   const variants = url.endsWith("/") ? [url, url.slice(0, -1)] : [url, `${url}/`];
   const key = await findPageKeyByUrl(variants);
-  return key ? `cms://content/${key}` : url;
+  // Graph can return a stale key for a page that was deleted but not yet dropped
+  // from the index (seen on slower instances after a re-seed). Confirm the key still
+  // resolves in the Management API before handing back a cms:// ref; a dead ref makes
+  // the referencing create 400 ("unresolved reference"). Fall back to the plain URL -
+  // the same result a fresh instance produces when the page doesn't exist yet.
+  if (key && (await contentKeyExists(key))) return `cms://content/${key}`;
+  return url;
+}
+
+/** True if a content item with this key currently resolves in the Management API. */
+export async function contentKeyExists(key: string): Promise<boolean> {
+  const token = await getManagementToken();
+  const res = await fetch(`${CONTENT_ENDPOINT}/${key}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.ok;
 }
 
 /**
