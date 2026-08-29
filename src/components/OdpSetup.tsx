@@ -19,18 +19,16 @@ export default function OdpSetup() {
     if (fsUserId) window.zaius?.entity("customer", { fs_user_id: fsUserId });
   }, []);
 
-  // Attach fs_user_id to the pageview so realtime segments (which are built on the pageview
-  // event and evaluated at event time on the identifiers in the event) qualify the customer
-  // profile - not just the anonymous vuid. Custom events already send it via odpDestination.
-  //
-  // `page` MUST be included: the classic Zaius tag does not auto-attach the URL to a manually
-  // dispatched event, so URL-conditioned audiences (e.g. "page contains /business") have nothing
-  // to match without it. Any-pageview audiences (active_visitors) work regardless; page-specific
-  // ones never qualify until the URL is on the event.
+  // Fire a pageview so ODP can qualify the visitor for pageview-based real-time segments.
+  // Pass ONLY the fs_user_id identifier - do NOT pass a `page` field: the ODP Web SDK
+  // auto-parses the page URL from the browser context and populates the normalized
+  // "Page > URL" entity that segment rules (e.g. "Page > URL contains business") read.
+  // Passing `page` manually suppresses that normalization, leaving "Page > URL" empty so
+  // URL-conditioned segments match nobody. fs_user_id is stitched to the anonymous vuid via
+  // the entity() call above, so the pageview is attributed to the unified customer profile.
   useEffect(() => {
     const fsUserId = getCookie("optimizelyEndUserId");
-    const page = window.location.href;
-    window.zaius?.event("pageview", fsUserId ? { fs_user_id: fsUserId, page } : { page });
+    window.zaius?.event("pageview", fsUserId ? { fs_user_id: fsUserId } : undefined);
   }, [pathname]);
 
   return null;
