@@ -87,12 +87,15 @@ export async function queryAllQualifiedSegments(userId: string, fresh = false): 
 // but is never selected. That "half-configured" state is intentional (see below); create the
 // audiences in ODP and add their identifiers here to light them up.
 export const ODP_SEGMENT_TO_VARIATION: Record<string, string> = {
+  // Batch audiences (recompute on ODP's schedule - fine for returning-visitor personalization).
   business_banking_customer: "business",
   personal_banking_customers: "personal",
-  // No ODP audience exists for these yet - the CMS variation is seeded but will never be
-  // served until an audience is created and mapped here:
-  //   "<mortgage-intent-audience>":  "mortgages",
-  //   "<investor-audience>":         "investments",
+  // Realtime segments (evaluate on the live event stream - qualify within a session). Named
+  // differently from the batch audiences above, so both are listed and either one resolves.
+  business_visitors: "business",
+  mortgage_visitors: "mortgages",
+  // Still unmapped - no backing audience/segment yet:
+  //   "<investor-audience>": "investments",
 };
 
 // Resolves the first qualifying ODP audience to a CMS variation key. A blank map value means
