@@ -36,12 +36,16 @@ export async function POST(request: NextRequest) {
     return new Response("A seed run is already in progress.", { status: 409 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as Record<string, string> & { localize?: boolean };
+  const body = (await request.json().catch(() => ({}))) as Record<string, string> & { localize?: boolean; fresh?: boolean };
 
   const env: NodeJS.ProcessEnv = { ...process.env };
   // Opt-in localization: the seed tool's checkbox sends `localize`; the runner
   // reads SEED_LOCALIZE and gates the seed-localization step on it.
   if (body.localize) env.SEED_LOCALIZE = "1";
+  // Opt-in destructive rebuild: the checkbox sends `fresh`; the runner reads
+  // SEED_FRESH and forwards it to every seed script. Default (unchecked) is the
+  // non-destructive upsert that keeps existing pages and edits.
+  if (body.fresh) env.SEED_FRESH = "1";
   let missing: string[] = [];
 
   if (body.instance) {

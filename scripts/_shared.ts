@@ -3,7 +3,7 @@
  * All seed scripts import constants, types, and helpers from here.
  */
 
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
 import { config as loadEnv } from "dotenv";
 import { getManagementToken } from "../src/lib/optimizely/auth";
 
@@ -33,6 +33,17 @@ export function uid(): string {
 /** UUID without hyphens - used as content keys. */
 export function noHyphens(): string {
   return randomUUID().replace(/-/g, "");
+}
+
+/**
+ * Deterministic 32-hex content key derived from a stable identity (a namespace +
+ * an identity string, e.g. a page's full route path). Unlike noHyphens(), the
+ * same inputs always produce the same key - across runs and across instances -
+ * so re-seeds update the same item in place instead of creating a new one with a
+ * fresh random key. Same shape as noHyphens() (32 hex chars, no hyphens).
+ */
+export function stableKey(namespace: string, identity: string): string {
+  return createHash("md5").update(`${namespace}:${identity}`).digest("hex");
 }
 
 /**
@@ -1059,6 +1070,32 @@ export async function findPageKeyByUrl(urls: string[]): Promise<string | null> {
     if (key && (await contentKeyExists(key))) return key;
   }
   return null;
+}
+
+/**
+ * Resolve the content key to use for a seed page, preferring identity over a
+ * fresh key so re-seeds update the same page in place.
+ *
+ * Resolution order:
+ *  1. An existing page already published at one of `urls` - adopt its key. This
+ *     covers the transition from older seeds that used random per-run keys: the
+ *     routeSegment is already taken by that page, so we must update it, not try
+ *     to create a colliding new key.
+ *  2. The deterministic `preferredKey` if content with that key already exists.
+ *  3. Otherwise `preferredKey`, to create the page fresh.
+ *
+ * `existed` is true in cases 1-2 (update in place), false in case 3 (create).
+ * Reuses findPageKeyByUrl (Graph lookup, validates hits via contentKeyExists)
+ * and contentKeyExists (Management API GET).
+ */
+export async function resolvePageKey(
+  urls: string[],
+  preferredKey: string
+): Promise<{ key: string; existed: boolean }> {
+  const byUrl = await findPageKeyByUrl(urls);
+  if (byUrl) return { key: byUrl, existed: true };
+  if (await contentKeyExists(preferredKey)) return { key: preferredKey, existed: true };
+  return { key: preferredKey, existed: false };
 }
 
 /**

@@ -86,6 +86,35 @@ const RULES: SeedRule[] = [
       note: "External status page.",
     },
   },
+  // Short vanity URLs -> the real nested pages the seed creates. These are the
+  // kind of top-level marketing/print URLs a bank keeps pointing at its canonical
+  // product pages. Every toPath here is a page created by seed-content / seed-nav
+  // / seed-modeling, and no real page lives at the fromPath, so there is no clash.
+  ...([
+    ["/savings",            "/personal/savings"],
+    ["/current-account",    "/personal/current-account"],
+    ["/mortgages",          "/mortgage"],                    // plural -> singular landing
+    ["/loans",              "/personal/loans"],
+    ["/credit-cards",       "/personal/credit-cards"],
+    ["/contact",            "/help/contact"],
+    ["/faqs",               "/help/faqs"],
+    ["/branches",           "/help/branches"],
+    ["/careers",            "/about/careers"],
+    ["/business-banking",   "/business/business-banking"],
+    ["/first-time-buyers",  "/mortgage/first-time-buyers"],
+    ["/isa",                "/investments/stocks-isa"],
+  ] as const).map(([fromPath, toPath], i): SeedRule => ({
+    key: `5e7700000000000000000000000000${(0x35 + i).toString(16)}`,
+    name: `Redirect: ${fromPath}`,
+    props: {
+      fromPath,
+      toPath,
+      permanent: true,      // canonical short URL -> 308
+      matchSubpaths: false,
+      enabled: true,
+      note: `Vanity short URL for ${toPath}.`,
+    },
+  })),
 ];
 
 async function main() {

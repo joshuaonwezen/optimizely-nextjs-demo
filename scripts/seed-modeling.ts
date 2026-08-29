@@ -26,8 +26,9 @@ import {
   findItemsInContainerByName,
   findPageKeyByUrl,
   pageRefForUrl,
-  noHyphens,
+  stableKey,
   patchContentProperties,
+  patchPublishedPageProperties,
   wrapProps,
 } from "./_shared";
 
@@ -39,72 +40,80 @@ let BLOCKS_CONTAINER = "";
 
 config({ path: ".env.local" });
 
-// Pre-allocated keys
+// Destructive rebuild is opt-in (--fresh / SEED_FRESH=1, forwarded by the runner).
+// By default this script is non-destructive: keys are stable, existing items are
+// left in place (createContent 409-skips), and only missing items are created.
+const FRESH = process.argv.includes("--fresh") || process.env.SEED_FRESH === "1";
+
+// Pre-allocated keys. Deterministic (stableKey of a per-item identity) so a re-seed
+// resolves to the SAME key and updates/skips the item in place instead of churning
+// keys every run - which used to break any reference to a modeling page or author.
+const K = (id: string): string => stableKey("mb-model", id);
 
 export const AUTHOR_KEYS = {
-  evieMarsh:  noHyphens(),
-  jordanReid: noHyphens(),
-  priyaShah:  noHyphens(),
+  evieMarsh:  K("author:evieMarsh"),
+  jordanReid: K("author:jordanReid"),
+  priyaShah:  K("author:priyaShah"),
 };
 
 const OUTCOME_KEYS = {
-  bakeryRevenue:  noHyphens(),
-  bakeryStaff:    noHyphens(),
-  bakeryDays:     noHyphens(),
-  bakeryNps:      noHyphens(),
-  familySaved:    noHyphens(),
-  familyDeposit:  noHyphens(),
-  familyHours:    noHyphens(),
-  familyMonths:   noHyphens(),
+  bakeryRevenue:  K("outcome:bakeryRevenue"),
+  bakeryStaff:    K("outcome:bakeryStaff"),
+  bakeryDays:     K("outcome:bakeryDays"),
+  bakeryNps:      K("outcome:bakeryNps"),
+  familySaved:    K("outcome:familySaved"),
+  familyDeposit:  K("outcome:familyDeposit"),
+  familyHours:    K("outcome:familyHours"),
+  familyMonths:   K("outcome:familyMonths"),
 };
 
 const TESTIMONIAL_KEYS = {
-  bakery: noHyphens(),
-  family: noHyphens(),
+  bakery: K("testimonial:bakery"),
+  family: K("testimonial:family"),
 };
 
 const ARTICLE_KEYS = {
-  firstHome:    noHyphens(),
-  mortgageRates:noHyphens(),
-  businessEss:  noHyphens(),
+  firstHome:    K("article:firstHome"),
+  mortgageRates:K("article:mortgageRates"),
+  businessEss:  K("article:businessEss"),
 };
 
 const CASE_STUDY_KEYS = {
-  bakery:       noHyphens(),
-  familyFinance:noHyphens(),
+  bakery:       K("caseStudy:bakery"),
+  familyFinance:K("caseStudy:familyFinance"),
 };
 
 const HUB_KEYS = {
-  insights:     noHyphens(), // /en/insights/
-  articlesIdx:  noHyphens(), // /en/insights/articles/
-  caseStudiesIdx: noHyphens(), // /en/insights/case-studies/
+  insights:     K("hub:insights"),       // /en/insights/
+  articlesIdx:  K("hub:articlesIdx"),    // /en/insights/articles/
+  caseStudiesIdx: K("hub:caseStudiesIdx"), // /en/insights/case-studies/
 };
 
 const MILESTONE_KEYS = {
-  founded:    noHyphens(),
-  firstBranch:noHyphens(),
-  online:     noHyphens(),
-  appLaunch:  noHyphens(),
-  oneMillion: noHyphens(),
-  business:   noHyphens(),
-  fxSwitch:   noHyphens(),
-  today:      noHyphens(),
+  founded:    K("milestone:founded"),
+  firstBranch:K("milestone:firstBranch"),
+  online:     K("milestone:online"),
+  appLaunch:  K("milestone:appLaunch"),
+  oneMillion: K("milestone:oneMillion"),
+  business:   K("milestone:business"),
+  fxSwitch:   K("milestone:fxSwitch"),
+  today:      K("milestone:today"),
 };
 
 const TEAM_KEYS = {
-  ceo:       noHyphens(),
-  cfo:       noHyphens(),
-  cto:       noHyphens(),
-  business:  noHyphens(),
-  customer:  noHyphens(),
-  risk:      noHyphens(),
+  ceo:       K("team:ceo"),
+  cfo:       K("team:cfo"),
+  cto:       K("team:cto"),
+  business:  K("team:business"),
+  customer:  K("team:customer"),
+  risk:      K("team:risk"),
 };
 
 const PHASE_D_PAGE_KEYS = {
-  ourStory:       noHyphens(),
-  team:           noHyphens(),
-  pricing:        noHyphens(),
-  compareAccounts:noHyphens(),
+  ourStory:       K("phaseD:ourStory"),
+  team:           K("phaseD:team"),
+  pricing:        K("phaseD:pricing"),
+  compareAccounts:K("phaseD:compareAccounts"),
 };
 
 // Idempotent cleanup
@@ -618,6 +627,12 @@ const ARTICLES: ArticleDef[] = [
 
 async function seedArticles(): Promise<void> {
   console.log(`\n--- Seeding ${ARTICLES.length} Articles (pass 1: create without cross-refs) ---`);
+  // Track which items this run actually created (fresh drafts) vs. which already
+  // existed (published from a prior run). Pass 2 must patch a draft with
+  // patchContentProperties but a published item with patchPublishedPageProperties
+  // (a plain PATCH rejects a published version). Under --fresh everything is a
+  // fresh draft; on a default re-seed the kept items are published.
+  const createdArticles = new Set<string>();
   for (const a of ARTICLES) {
     const payload = {
       key: a.key,
@@ -639,15 +654,15 @@ async function seedArticles(): Promise<void> {
       },
     };
     const result = await createContent(payload, a.displayName, { skipPublish: true });
-    if (result) console.log(`  [created] ${a.displayName} → /en/insights/articles/${a.routeSegment}/`);
+    if (result) { createdArticles.add(a.key); console.log(`  [created] ${a.displayName} → /en/insights/articles/${a.routeSegment}/`); }
   }
 
   console.log(`--- Articles pass 2: wiring relatedArticles cross-references ---`);
   for (const a of ARTICLES) {
     if (a.relatedKeys.length === 0) continue;
-    await patchContentProperties(a.key, {
-      relatedArticles: a.relatedKeys.map((k) => `cms://content/${k}`),
-    });
+    const props = { relatedArticles: a.relatedKeys.map((k) => `cms://content/${k}`) };
+    if (createdArticles.has(a.key)) await patchContentProperties(a.key, props);
+    else await patchPublishedPageProperties(a.key, props); // kept item is already published
     console.log(`  [patched] ${a.displayName} → ${a.relatedKeys.length} related article(s)`);
   }
 }
@@ -721,6 +736,7 @@ const CASE_STUDIES: CaseStudyDef[] = [
 
 async function seedCaseStudies(): Promise<void> {
   console.log(`\n--- Seeding ${CASE_STUDIES.length} Case Studies (pass 1: create without cross-refs) ---`);
+  const createdCaseStudies = new Set<string>();
   for (const cs of CASE_STUDIES) {
     const payload = {
       key: cs.key,
@@ -744,15 +760,15 @@ async function seedCaseStudies(): Promise<void> {
       },
     };
     const result = await createContent(payload, cs.displayName, { skipPublish: true });
-    if (result) console.log(`  [created] ${cs.displayName} → /en/insights/case-studies/${cs.routeSegment}/`);
+    if (result) { createdCaseStudies.add(cs.key); console.log(`  [created] ${cs.displayName} → /en/insights/case-studies/${cs.routeSegment}/`); }
   }
 
   console.log(`--- Case Studies pass 2: wiring relatedCaseStudies cross-references ---`);
   for (const cs of CASE_STUDIES) {
     if (cs.relatedKeys.length === 0) continue;
-    await patchContentProperties(cs.key, {
-      relatedCaseStudies: cs.relatedKeys.map((k) => `cms://content/${k}`),
-    });
+    const props = { relatedCaseStudies: cs.relatedKeys.map((k) => `cms://content/${k}`) };
+    if (createdCaseStudies.has(cs.key)) await patchContentProperties(cs.key, props);
+    else await patchPublishedPageProperties(cs.key, props); // kept item is already published
     console.log(`  [patched] ${cs.displayName} → ${cs.relatedKeys.length} related case study(ies)`);
   }
 }
@@ -1163,7 +1179,16 @@ async function main(): Promise<void> {
   console.log(`  container: ${CONTAINER}`);
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}\n`);
 
-  await cleanupPreviousModelingContent();
+  if (FRESH) {
+    // Destructive rebuild (--fresh): delete this script's previously seeded items
+    // (matched by display-name sentinel + Phase-D URL) so they are recreated from
+    // scratch. Gated because it discards any editor edits to modeling content; by
+    // default the stable keys make createContent 409-skip existing items instead.
+    console.log("(--fresh) rebuilding modeling content from scratch");
+    await cleanupPreviousModelingContent();
+  } else {
+    console.log("--- Non-destructive upsert (default); existing modeling items are kept ---");
+  }
 
   // Remove modeling blocks stranded at the top-level root by earlier seed
   // versions. Root only - the blocks folder may hold manually created blocks

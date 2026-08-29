@@ -68,6 +68,17 @@ async function main() {
   // own guard checks SEED_LOCALIZE / its argv, and it won't inherit the runner's --localize arg).
   if (localize) env.SEED_LOCALIZE = "1";
 
+  // Destructive rebuild is opt-in (--fresh or SEED_FRESH truthy). Default is a
+  // non-destructive upsert: existing pages are updated in place and editor-created
+  // content is left intact. Normalize into env so every spawned seed child sees it
+  // (children check SEED_FRESH env, not the runner's --fresh arg they don't inherit).
+  const fresh =
+    process.argv.includes("--fresh") || /^(1|true|yes)$/i.test(env.SEED_FRESH ?? "");
+  env.SEED_FRESH = fresh ? "1" : "";
+  console.log(fresh
+    ? "Mode: --fresh (destructive rebuild - deletes and recreates all seeded content)"
+    : "Mode: upsert (non-destructive - updates seeded pages in place, keeps editor content)");
+
   // Optional steps - failures print a warning and the run continues.
   // These may depend on Graph indexing the content from required steps (~60s lag).
   const optional: [string, string[]][] = [

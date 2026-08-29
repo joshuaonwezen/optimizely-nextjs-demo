@@ -67,6 +67,17 @@ Always use the seed runner — never call individual seed scripts directly. The 
 2. **CLI:** `npm run seed:all` seeds whatever the base vars in `.env.local` point to (the personal instance). For another instance, override the base vars on the command line with that instance's suffixed values.
 3. **All instances (CLI):** `npm run seed:instances` seeds every instance in `src/lib/optimizely/seedInstances.ts` in sequence. It resolves each instance's suffixed vars the same way the seed route does, skips any instance whose required vars are absent (warning, not fatal), continues past a failed instance, and prints a per-instance summary at the end. Add `--dry-run` to only report which instances would seed, or `--localize` to include the Dutch localization step.
 
+### Non-destructive by default (`--fresh` to rebuild)
+
+**The seed is now a non-destructive upsert by default. It no longer deletes existing content.** Re-seeding updates the pages the seed owns in place and leaves editor-created pages (and any other content under the root) untouched.
+
+- **Stable content keys.** Every seeded page/block gets a *deterministic* key (`stableKey()` in `scripts/_shared.ts`) derived from its identity (route path for pages, a per-item id for modeling, `href` for nav), instead of a fresh random UUID each run. So a re-seed resolves to the **same** key + URL, and anything referencing a page by key/URL survives. `seed-content.ts` also reconciles by URL first (`reconcilePageIdentities()` → `resolvePageKey()`), adopting an existing page's key when one already sits at the target URL.
+- **What each seeder does on a default run:** `seed-content` upserts pages in place (never deletes the root's children); `seed-modeling` keeps existing items (createContent 409-skips) and only creates what's missing; `seed-nav` still rebuilds its own `Navigation`/`NavigationItem` blocks (the Management API does not persist content-area edits through PATCH, so nav blocks must be DELETE+POST) but with stable keys and it never touches content pages or editor-named nav blocks.
+- **`--fresh` (or `SEED_FRESH=1`) restores the old destructive rebuild:** delete every child of the root and recreate from scratch. The runner forwards it to every seed script: `npm run seed:all -- --fresh` (or set `SEED_FRESH=1`). Use it for a clean slate.
+- **One-time migration:** the *first* seed after this change against an instance that still holds old **random-key** content should be run **once with `--fresh`** to clear the pre-existing random-key pages/blocks; every seed after that can use the default. (`seed-content` adopts old page keys by URL so it transitions cleanly without `--fresh`, but `seed-modeling`/`seed-nav` would otherwise leave old random-key duplicates until a `--fresh` run.)
+- **Trade-off:** with no default delete, a page the seed *used to* create but no longer defines lingers as an orphan. That is the intended "retain" behavior; `--fresh` clears it.
+- The `/demo/management-api` seed tool always runs the safe default; use the CLI with `--fresh` when you need the destructive rebuild.
+
 ### What the runner does (in order)
 
 | Step | Script | Notes |

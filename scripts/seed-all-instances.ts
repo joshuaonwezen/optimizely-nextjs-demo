@@ -58,6 +58,9 @@ async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const localize =
     process.argv.includes("--localize") || /^(1|true|yes)$/i.test(process.env.SEED_LOCALIZE ?? "");
+  // Destructive rebuild is opt-in; forwarded to each instance's runner via env.
+  const fresh =
+    process.argv.includes("--fresh") || /^(1|true|yes)$/i.test(process.env.SEED_FRESH ?? "");
 
   // --only=id[,id] restricts the run to a subset (e.g. reseed one instance).
   const onlyArg = process.argv.find((a) => a.startsWith("--only="));
@@ -81,6 +84,7 @@ async function main() {
 
     const env = resolveEnv(instance.suffix);
     if (localize) env.SEED_LOCALIZE = "1";
+    if (fresh) env.SEED_FRESH = "1";
 
     const missing = REQUIRED.filter((name) => !env[name]).map((name) =>
       name === "OPTIMIZELY_GRAPH_GATEWAY" ? name : `${name}${instance.suffix}`

@@ -65,6 +65,7 @@ export default function SeedCmsPanel() {
   const [instance, setInstance] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
   const [localize, setLocalize] = useState(false);
+  const [fresh, setFresh] = useState(false);
   const [log, setLog] = useState("");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<"success" | "failure" | null>(null);
@@ -86,7 +87,7 @@ export default function SeedCmsPanel() {
       const res = await fetch("/api/demo/seed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...(instance ? { instance } : values), localize }),
+        body: JSON.stringify({ ...(instance ? { instance } : values), localize, fresh }),
       });
       if (!res.ok || !res.body) {
         setLog(await res.text());
@@ -145,6 +146,23 @@ export default function SeedCmsPanel() {
           <span className="text-xs font-semibold text-on-surface">Localize content (create Dutch / nl versions)</span>
           <span className="text-xs text-on-surface-variant">
             Runs the localization step after seeding. Off by default - leave unchecked to seed English only.
+          </span>
+        </span>
+      </label>
+
+      <label className="flex items-start gap-2 max-w-sm">
+        <input
+          type="checkbox"
+          checked={fresh}
+          onChange={(e) => setFresh(e.target.checked)}
+          disabled={running}
+          className="mt-0.5 accent-error"
+        />
+        <span className="flex flex-col gap-0.5">
+          <span className="text-xs font-semibold text-error">Fresh rebuild (destructive - deletes existing content first)</span>
+          <span className="text-xs text-on-surface-variant">
+            Off by default: the seed updates its own pages in place and keeps editor-created content. Check this to
+            delete every child of the root and recreate everything from scratch (the old behavior) - use for a clean slate.
           </span>
         </span>
       </label>

@@ -28,6 +28,8 @@ import {
   wrapProps,
   uid,
   noHyphens,
+  stableKey,
+  resolvePageKey,
   sectionComponent,
   gridSection,
   elementComponent,
@@ -38,6 +40,12 @@ import { FAQ_ITEMS, INVESTMENT_FAQ_ITEMS, HELP_FAQ_ITEMS } from "./faq-data";
 import { QUOTE_CARDS } from "./quote-card-data";
 
 config({ path: ".env.local" });
+
+// Destructive rebuild is opt-in. By default the seed is a non-destructive upsert
+// (stable keys, no deletes) so editor-created pages and edits survive a re-seed.
+// Pass --fresh (or SEED_FRESH=1) to restore the old delete-everything-and-recreate
+// behavior. The runner forwards --fresh to every seed script.
+const FRESH = process.argv.includes("--fresh") || process.env.SEED_FRESH === "1";
 
 let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 // Global content root - where standalone/shared blocks live so they appear in
@@ -674,36 +682,41 @@ interface PageDef {
   properties?: Record<string, unknown>; // page-level properties (e.g. SEO contract fields)
 }
 
-// Pre-declare keys so pages can cross-reference each other
+// Pre-declare keys so pages can cross-reference each other. Keys are DETERMINISTIC
+// (stableKey of the page's full route path) so a re-seed resolves to the same key
+// and updates the page in place rather than creating a fresh one - see resolvePageKey
+// in _shared.ts and the Pass 0 reconcile in main(). PAGE_KEYS is the preferred key;
+// the actual key used may be adopted from an existing page at the same URL (older
+// seeds used random keys), so Pass 0 writes the resolved key back into this map.
 const PAGE_KEYS = {
   // Homepage
-  homepage:               noHyphens(),
+  homepage:               stableKey("mb-page", "home"),
   // Level-1 category pages (DynamicExperience, direct children of CONTAINER)
-  personal:               noHyphens(),  // /en/personal/
-  business:               noHyphens(),  // /en/business/
-  investments:            noHyphens(),  // /en/investments/
-  help:                   noHyphens(),  // /en/help/
-  about:                  noHyphens(),  // /en/about/
+  personal:               stableKey("mb-page", "personal"),                                       // /en/personal/
+  business:               stableKey("mb-page", "business"),                                       // /en/business/
+  investments:            stableKey("mb-page", "investments"),                                    // /en/investments/
+  help:                   stableKey("mb-page", "help"),                                           // /en/help/
+  about:                  stableKey("mb-page", "about"),                                          // /en/about/
   // Level-1 product pages (DynamicExperience, direct children of CONTAINER)
-  mortgage:               noHyphens(),  // /en/mortgage/ - also URL prefix for mortgage sub-pages
+  mortgage:               stableKey("mb-page", "mortgage"),                                        // /en/mortgage/ - also URL prefix for mortgage sub-pages
   // Level-2 product pages (DynamicExperience, children of category pages)
-  currentAccount:         noHyphens(),  // /en/personal/current-account/
-  savings:                noHyphens(),  // /en/personal/savings/
-  businessBanking:        noHyphens(),  // /en/business/business-banking/
-  contact:                noHyphens(),  // /en/help/contact/
+  currentAccount:         stableKey("mb-page", "personal/current-account"),                        // /en/personal/current-account/
+  savings:                stableKey("mb-page", "personal/savings"),                                // /en/personal/savings/
+  businessBanking:        stableKey("mb-page", "business/business-banking"),                       // /en/business/business-banking/
+  contact:                stableKey("mb-page", "help/contact"),                                    // /en/help/contact/
   // Level-2 mortgage sub-pages (DynamicExperience, children of mortgage)
-  firstTimeBuyers:        noHyphens(),  // /en/mortgage/first-time-buyers/
-  remortgaging:           noHyphens(),  // /en/mortgage/remortgaging/
+  firstTimeBuyers:        stableKey("mb-page", "mortgage/first-time-buyers"),                       // /en/mortgage/first-time-buyers/
+  remortgaging:           stableKey("mb-page", "mortgage/remortgaging"),                            // /en/mortgage/remortgaging/
   // Level-3 current account sub-pages
-  instantPayments:        noHyphens(),  // /en/personal/current-account/instant-payments/
-  mobileApp:              noHyphens(),  // /en/personal/current-account/mobile-app/
-  travelMoney:            noHyphens(),  // /en/personal/current-account/travel-money/
+  instantPayments:        stableKey("mb-page", "personal/current-account/instant-payments"),        // /en/personal/current-account/instant-payments/
+  mobileApp:              stableKey("mb-page", "personal/current-account/mobile-app"),              // /en/personal/current-account/mobile-app/
+  travelMoney:            stableKey("mb-page", "personal/current-account/travel-money"),            // /en/personal/current-account/travel-money/
   // Level-3 savings sub-pages
-  easyAccessSavings:      noHyphens(),  // /en/personal/savings/easy-access-savings/
-  fixedRateSavings:       noHyphens(),  // /en/personal/savings/fixed-rate-savings/
+  easyAccessSavings:      stableKey("mb-page", "personal/savings/easy-access-savings"),             // /en/personal/savings/easy-access-savings/
+  fixedRateSavings:       stableKey("mb-page", "personal/savings/fixed-rate-savings"),             // /en/personal/savings/fixed-rate-savings/
   // Level-3 business banking sub-pages
-  businessCurrentAccount: noHyphens(),  // /en/business/business-banking/business-current-account/
-  businessLending:        noHyphens(),  // /en/business/business-banking/business-lending/
+  businessCurrentAccount: stableKey("mb-page", "business/business-banking/business-current-account"), // /en/business/business-banking/business-current-account/
+  businessLending:        stableKey("mb-page", "business/business-banking/business-lending"),       // /en/business/business-banking/business-lending/
 };
 
 // Additional nested TraditionalPages. These fill out the site (and give the nav in
@@ -1811,6 +1824,57 @@ async function findSavingsKey(): Promise<string | null> {
   return data?._Page?.items?.[0]?._metadata?.key ?? null;
 }
 
+/**
+ * Pass 0 (default, non-destructive): resolve every seed page to a STABLE content
+ * key so a re-seed updates the same page in place instead of deleting + recreating
+ * it with a fresh random key. For each page we build its URL from the container
+ * ancestry, then resolvePageKey() either adopts the key of an existing page at that
+ * URL (covering older seeds that used random per-run keys, whose routeSegment is
+ * already taken) or keeps the deterministic stableKey. Any adopted key that differs
+ * from the module-load key is rewritten across every cross-page reference (page.key,
+ * container, and cms://content/{key} links inside compositions) and into PAGE_KEYS,
+ * so the homepage (built later) and the level filters see the resolved keys too.
+ * Pages the seed does not define are never touched.
+ */
+async function reconcilePageIdentities(): Promise<void> {
+  const byKey = new Map<string, PageDef>(pages.map((p) => [p.key, p]));
+  // Ancestry-joined route path, e.g. "personal/savings" - both the stableKey
+  // identity and (as /en/<path>/) the URL used to find an existing page.
+  const identityOf = (page: PageDef): string => {
+    const segs: string[] = [];
+    let cur: PageDef | undefined = page;
+    while (cur?.routeSegment) {
+      segs.unshift(cur.routeSegment);
+      cur = cur.container ? byKey.get(cur.container) : undefined;
+    }
+    return segs.join("/");
+  };
+
+  const remap: Record<string, string> = {};
+  for (const page of pages) {
+    if (!page.routeSegment) continue; // homepage updates the start page, not a keyed page
+    const identity = identityOf(page);
+    const url = `/en/${identity}/`;
+    const preferred = stableKey("mb-page", identity);
+    const { key: resolved, existed } = await resolvePageKey([url, url.slice(0, -1)], preferred);
+    if (resolved !== page.key) remap[page.key] = resolved;
+    console.log(`  [reconcile] ${page.displayName} -> ${existed ? "update" : "create"} key=${resolved} (${url})`);
+  }
+
+  if (Object.keys(remap).length === 0) return;
+  // Keys are unique 32-hex strings, so a global string replace over each page's
+  // JSON safely rewrites page.key, container, and every cms://content/{key} ref.
+  const applyRemap = (obj: PageDef): PageDef => {
+    let json = JSON.stringify(obj);
+    for (const [from, to] of Object.entries(remap)) json = json.split(from).join(to);
+    return JSON.parse(json) as PageDef;
+  };
+  for (let i = 0; i < pages.length; i++) pages[i] = applyRemap(pages[i]);
+  for (const [name, key] of Object.entries(PAGE_KEYS)) {
+    if (remap[key]) (PAGE_KEYS as Record<string, string>)[name] = remap[key];
+  }
+}
+
 async function main() {
   console.log("=== Mosey Bank Content Seeding Script ===\n");
 
@@ -1825,25 +1889,34 @@ async function main() {
   console.log(`  container: ${CONTAINER}`);
   console.log(`  blocks container (For All Applications): ${BLOCKS_CONTAINER}`);
 
-  console.log("\n--- Cleaning existing content ---");
-  await deleteExisting();
-  // Sweep stale shared blocks at the top-level root, where earlier seed
-  // versions created them as plain content items (invisible to the Shared
-  // Blocks tab). Type-based deletion is safe there - the UI never creates
-  // blocks at the root. Inside the shared-blocks folder each seed script
-  // cleans its own types (seed-nav/seed-faqs by type, seed-modeling by
-  // sentinel), so manually created blocks of managed types survive.
-  await cleanSharedBlocks(await discoverTopLevelRoot());
-  // Migrate legacy shared blocks that older seeds created flat in the "For All
-  // Applications" folder root into the organizing subfolders: delete the flat
-  // copies here so every seed script recreates them inside its subfolder
-  // without a 409 collision (fixed-key blocks) or a duplicate (random-key
-  // blocks). Runs first (this is the runner's first script); idempotent.
-  await migrateFlatSharedBlocksToSubfolders();
-
-  // Wait for CMS to free up routeSegments from deleted pages before re-creating
-  console.log("\n  Waiting 8s for routeSegments to be released...");
-  await new Promise((r) => setTimeout(r, 8000));
+  if (FRESH) {
+    // Destructive rebuild (opt-in via --fresh / SEED_FRESH=1): delete every child
+    // of the root and recreate from scratch. This is the old default behavior;
+    // it wipes editor-created pages and edits, so it is now gated behind the flag.
+    console.log("\n--- Cleaning existing content (--fresh: destructive rebuild) ---");
+    await deleteExisting();
+    // Sweep stale shared blocks at the top-level root, where earlier seed
+    // versions created them as plain content items (invisible to the Shared
+    // Blocks tab). Type-based deletion is safe there - the UI never creates
+    // blocks at the root. Inside the shared-blocks folder each seed script
+    // cleans its own types (seed-nav/seed-faqs by type, seed-modeling by
+    // sentinel), so manually created blocks of managed types survive.
+    await cleanSharedBlocks(await discoverTopLevelRoot());
+    await migrateFlatSharedBlocksToSubfolders();
+    // Wait for CMS to free up routeSegments from deleted pages before re-creating
+    console.log("\n  Waiting 8s for routeSegments to be released...");
+    await new Promise((r) => setTimeout(r, 8000));
+  } else {
+    // Default: non-destructive upsert. Nothing is deleted. Reconcile each seed
+    // page to a STABLE key (adopting an existing page's key when one already sits
+    // at its URL) so re-seeds update pages in place; pages the seed does not
+    // define (editor-created content) are never visited, so they are left intact.
+    console.log("\n--- Non-destructive upsert (default); pass --fresh for a clean rebuild ---");
+    // Idempotent, non-destructive: only relocates seed-owned block types that older
+    // seeds left flat in the "For All Applications" root into their subfolders.
+    await migrateFlatSharedBlocksToSubfolders();
+    await reconcilePageIdentities();
+  }
 
   // Create shared standalone FAQ items BEFORE the pages that reference them -
   // the CMS validates composition references at creation time and 400s on an
