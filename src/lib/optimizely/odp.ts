@@ -87,6 +87,9 @@ export async function queryAllQualifiedSegments(userId: string, fresh = false): 
 // but is never selected. That "half-configured" state is intentional (see below); create the
 // audiences in ODP and add their identifiers here to light them up.
 export const ODP_SEGMENT_TO_VARIATION: Record<string, string> = {
+  // Identity / lifecycle (cross-session). Qualifying on mb_customer_identified (has_email=true)
+  // means we recognise a known customer on a later visit - serve the welcome-back experience.
+  known_customers: "returning",
   // Batch audiences (recompute on ODP's schedule - fine for returning-visitor personalization).
   business_banking_customer: "business",
   personal_banking_customers: "personal",
@@ -98,13 +101,28 @@ export const ODP_SEGMENT_TO_VARIATION: Record<string, string> = {
   //   "<investor-audience>": "investments",
 };
 
-// Resolves the first qualifying ODP audience to a CMS variation key. A blank map value means
-// "the audience and variation share a name" - fall back to the audience name itself. The `map`
-// parameter defaults to the module map and exists so the resolution logic can be unit-tested.
+// Precedence when a visitor qualifies for several mapped audiences at once. Identity/lifecycle
+// wins over browsing-persona, so a known customer who is also browsing business still gets the
+// welcome-back experience. Any mapped segment not listed here is considered after these, in the
+// order ODP returned it.
+const VARIATION_PRIORITY = [
+  "known_customers",
+  "business_visitors",
+  "business_banking_customer",
+  "mortgage_visitors",
+  "personal_banking_customers",
+] as const;
+
+// Resolves a qualifying ODP audience to a CMS variation key, honouring VARIATION_PRIORITY first.
+// A blank map value means "the audience and variation share a name" - fall back to the audience
+// name itself. The `map` parameter defaults to the module map so the logic can be unit-tested.
 export function resolveVariationKey(
   segments: string[],
   map: Record<string, string> = ODP_SEGMENT_TO_VARIATION,
 ): string | undefined {
+  for (const name of VARIATION_PRIORITY) {
+    if (segments.includes(name) && name in map) return map[name] || name;
+  }
   for (const segment of segments) {
     if (segment in map) return map[segment] || segment;
   }

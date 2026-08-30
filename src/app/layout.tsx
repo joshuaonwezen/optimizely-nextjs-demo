@@ -7,6 +7,7 @@ import GlobalBanner from "@/components/layout/GlobalBanner";
 import Footer from "@/components/layout/Footer";
 import DemoToolbar from "@/components/demo/DemoToolbar";
 import OdpSetup from "@/components/OdpSetup";
+import OdpRecoveryBanner from "@/components/personalization/OdpRecoveryBanner";
 import AutoTracker from "@/components/AutoTracker";
 import StickyOfferBar from "@/components/layout/StickyOfferBar";
 import RatesBar from "@/components/layout/RatesBar";
@@ -108,6 +109,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
+        <OdpRecoveryBanner />
         <GlobalBanner />
         <NavigationHeader />
         <main>{children}</main>

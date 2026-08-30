@@ -349,6 +349,69 @@ async function buildBusinessVariation(): Promise<CompNode[]> {
   ];
 }
 
+// Welcome-back experience for a KNOWN customer (ODP audience `known_customers`, built on the
+// mb_customer_identified event). Account actions instead of acquisition copy - the payoff of
+// ODP recognising a returning, identified visitor across sessions.
+async function buildReturningVariation(): Promise<CompNode[]> {
+  const ctaRef = await pageRefForUrl("/en/personal/current-account");
+  return [
+    heroComponent("Returning Hero", {
+      headline: "Welcome back to Mosey",
+      subheadline:
+        "Good to see you again. Jump back into your accounts, pick up your last enquiry, or see what's new since your last visit.",
+    }),
+    sectionComponent("SectionHeadingBlock", "Returning Heading", {
+      heading: "Everything, just where you left it",
+      subheading:
+        "Your accounts, payments, and saved products - one login to manage it all.",
+    }),
+    gridSection("Returning Quick Actions", [
+      elementComponent("ProductCardBlock", "Log In Card", {
+        icon: "account",
+        title: "Log in",
+        description:
+          "Straight to your dashboard - check balances, move money, and review recent activity.",
+        linkUrl: "/en/current-account",
+        linkText: "Go to my accounts →",
+      }),
+      elementComponent("ProductCardBlock", "Payments Card", {
+        icon: "business",
+        title: "Make a payment",
+        description:
+          "Send money, pay a bill, or set up a standing order in a couple of taps.",
+        linkUrl: "/en/current-account",
+        linkText: "Make a payment →",
+      }),
+      elementComponent("ProductCardBlock", "Savings Card", {
+        icon: "savings",
+        title: "Your savings goals",
+        description:
+          "You're on track. Top up a pot or open a new fixed-rate saver at 5.1% AER.",
+        linkUrl: "/en/savings",
+        linkText: "View my savings →",
+      }),
+      elementComponent("ProductCardBlock", "Enquiry Card", {
+        icon: "mortgage",
+        title: "Pick up your enquiry",
+        description:
+          "Started a message and didn't finish? Continue where you left off - we saved your place.",
+        linkUrl: "/en/help/contact",
+        linkText: "Finish your enquiry →",
+      }),
+    ]),
+    sectionComponent("TestimonialBlock", "Returning Testimonial", {
+      quote:
+        "I log back in and everything's just there - my accounts, my savings goals, even the message I half-wrote last week. It remembers me.",
+      authorName: "Priya Nair",
+      authorRole: "Mosey customer since 2021",
+    }),
+    sectionComponent("CallToAction", "Returning CTA", {
+      label: "Log in to your account",
+      link: ctaRef,
+    }),
+  ];
+}
+
 async function buildNewVisitorVariation(): Promise<CompNode[]> {
   const ctaRef = await pageRefForUrl("/en/personal/current-account");
   return [
@@ -772,6 +835,11 @@ async function main() {
   console.log(`[schema] hero content type on this instance: ${HERO_CONTENT_TYPE}\n`);
 
   const variations: VariationDef[] = [
+    {
+      variationKey: "returning",
+      displayName: "Homepage – Returning",
+      nodes: await buildReturningVariation(),
+    },
     {
       variationKey: "personal",
       displayName: "Homepage – Personal",

@@ -59,20 +59,37 @@ async function getMainContentKeys(pageKey: string): Promise<string[]> {
     .filter((k): k is string => Boolean(k));
 }
 
-/** Prepend the ContactFormBlock into the main Contact page's mainContent area. */
+// Poll Graph for the Contact Us page key. This script runs in the optional phase right after
+// the core seed, so /en/help/contact may not be indexed yet (~60s lag). Retrying instead of
+// skipping is what stops the well-linked "Contact Us" page from ending up form-less.
+async function resolveContactKey(): Promise<string | null> {
+  const urls = ["/en/help/contact", "/en/help/contact/"];
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    const key = await findPageKeyByUrl(urls);
+    if (key) return key;
+    if (attempt < 6) {
+      console.log(`  [wait] Contact page not indexed yet - retry ${attempt}/6 in 15s…`);
+      await new Promise((r) => setTimeout(r, 15000));
+    }
+  }
+  return null;
+}
+
+// Attach the ContactFormBlock to the nav-linked "Contact Us" page (/en/help/contact).
+// featuredBlock is a single reference TraditionalPage ALWAYS renders, so the form shows
+// reliably; mainContent is cleared of any stale form left by a prior run.
 async function wireContactPage(blockKey: string): Promise<void> {
-  const contactKey = await findPageKeyByUrl(["/en/help/contact", "/en/help/contact/"]);
+  const contactKey = await resolveContactKey();
   if (!contactKey) {
-    console.warn("  [warn] Contact page (/en/help/contact) not found in Graph - re-run after seed-content indexes");
+    console.warn("  [warn] Contact page (/en/help/contact) not found in Graph after retries - re-run this script once seed-content has indexed");
     return;
   }
   const existing = (await getMainContentKeys(contactKey)).filter((k) => k !== blockKey);
-  const mainContent = [
-    { reference: `cms://content/${blockKey}` },
-    ...existing.map((k) => ({ reference: `cms://content/${k}` })),
-  ];
-  await patchPublishedPageProperties(contactKey, { mainContent });
-  console.log(`  [patched] Contact page mainContent → ContactFormBlock + ${existing.length} existing block(s)`);
+  await patchPublishedPageProperties(contactKey, {
+    featuredBlock: { reference: `cms://content/${blockKey}` },
+    mainContent: existing.map((k) => ({ reference: `cms://content/${k}` })),
+  });
+  console.log(`  [patched] Contact Us page featuredBlock → ContactFormBlock (kept ${existing.length} mainContent block(s))`);
 }
 
 async function main() {
