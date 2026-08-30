@@ -23,7 +23,7 @@ import {
   findItemsInContainerByName,
   sweepMisplacedSharedBlocks,
   wrapProps,
-  stableKey,
+  noHyphens,
 } from "./_shared";
 
 config({ path: ".env.local" });
@@ -74,20 +74,6 @@ interface NavDef {
   pageKey?: string;
 }
 
-/**
- * Assign each nav node a DETERMINISTIC key derived from its href, so a re-seed
- * reuses the same NavigationItem keys instead of minting fresh random ones every
- * run. hrefs are unique across the tree. (The nav blocks are still rebuilt via
- * DELETE + POST each run because the Management API does not persist content-area
- * property updates through PATCH - stable keys just stop the key churn.)
- */
-function assignStableNavKeys(nodes: NavDef[]): void {
-  for (const node of nodes) {
-    node.key = stableKey("mb-nav", node.href);
-    assignStableNavKeys(node.children);
-  }
-}
-
 function collectExistingUrls(nodes: NavDef[]): string[] {
   const urls: string[] = [];
   for (const node of nodes) {
@@ -99,87 +85,87 @@ function collectExistingUrls(nodes: NavDef[]): string[] {
 
 const NAV_TREE: NavDef[] = [
   {
-    key: "", label: "Personal", href: "/en/personal",
+    key: noHyphens(), label: "Personal", href: "/en/personal",
     existing: true,
     children: [
       {
-        key: "", label: "Current Account", href: "/en/personal/current-account",
+        key: noHyphens(), label: "Current Account", href: "/en/personal/current-account",
         existing: true,
         children: [
-          { key: "", label: "Instant Payments", href: "/en/personal/current-account/instant-payments", existing: true, children: [] },
-          { key: "", label: "Mobile App",       href: "/en/personal/current-account/mobile-app",       existing: true, children: [] },
-          { key: "", label: "Travel Money",     href: "/en/personal/current-account/travel-money",     existing: true, children: [] },
+          { key: noHyphens(), label: "Instant Payments", href: "/en/personal/current-account/instant-payments", existing: true, children: [] },
+          { key: noHyphens(), label: "Mobile App",       href: "/en/personal/current-account/mobile-app",       existing: true, children: [] },
+          { key: noHyphens(), label: "Travel Money",     href: "/en/personal/current-account/travel-money",     existing: true, children: [] },
         ],
       },
       {
-        key: "", label: "Savings", href: "/en/personal/savings",
+        key: noHyphens(), label: "Savings", href: "/en/personal/savings",
         existing: true,
         children: [
-          { key: "", label: "Easy Access", href: "/en/personal/savings/easy-access-savings", existing: true, children: [] },
-          { key: "", label: "Fixed Rate",  href: "/en/personal/savings/fixed-rate-savings",  existing: true, children: [] },
+          { key: noHyphens(), label: "Easy Access", href: "/en/personal/savings/easy-access-savings", existing: true, children: [] },
+          { key: noHyphens(), label: "Fixed Rate",  href: "/en/personal/savings/fixed-rate-savings",  existing: true, children: [] },
         ],
       },
-      { key: "", label: "Personal Loans", href: "/en/personal/loans", existing: true, children: [] },
-      { key: "", label: "Credit Cards",   href: "/en/personal/credit-cards", existing: true, children: [] },
-      { key: "", label: "Overdrafts",     href: "/en/personal/overdrafts",   existing: true, children: [] },
+      { key: noHyphens(), label: "Personal Loans", href: "/en/personal/loans", existing: true, children: [] },
+      { key: noHyphens(), label: "Credit Cards",   href: "/en/personal/credit-cards", existing: true, children: [] },
+      { key: noHyphens(), label: "Overdrafts",     href: "/en/personal/overdrafts",   existing: true, children: [] },
     ],
   },
   {
-    key: "", label: "Business", href: "/en/business",
+    key: noHyphens(), label: "Business", href: "/en/business",
     existing: true,
     children: [
       {
-        key: "", label: "Business Banking", href: "/en/business/business-banking",
+        key: noHyphens(), label: "Business Banking", href: "/en/business/business-banking",
         existing: true,
         children: [
-          { key: "", label: "Business Current Account", href: "/en/business/business-banking/business-current-account", existing: true, children: [] },
-          { key: "", label: "Business Lending",         href: "/en/business/business-banking/business-lending",         existing: true, children: [] },
+          { key: noHyphens(), label: "Business Current Account", href: "/en/business/business-banking/business-current-account", existing: true, children: [] },
+          { key: noHyphens(), label: "Business Lending",         href: "/en/business/business-banking/business-lending",         existing: true, children: [] },
         ],
       },
-      { key: "", label: "Merchant Services",     href: "/en/business/merchant-services",      existing: true, children: [] },
-      { key: "", label: "International Payments", href: "/en/business/international-payments", existing: true, children: [] },
-      { key: "", label: "Business Credit Cards",  href: "/en/business/business-credit-cards", existing: true, children: [] },
+      { key: noHyphens(), label: "Merchant Services",     href: "/en/business/merchant-services",      existing: true, children: [] },
+      { key: noHyphens(), label: "International Payments", href: "/en/business/international-payments", existing: true, children: [] },
+      { key: noHyphens(), label: "Business Credit Cards",  href: "/en/business/business-credit-cards", existing: true, children: [] },
     ],
   },
   {
-    key: "", label: "Mortgages", href: "/en/mortgage", description: "Find your mortgage",
+    key: noHyphens(), label: "Mortgages", href: "/en/mortgage", description: "Find your mortgage",
     existing: true,
     children: [
-      { key: "", label: "First-Time Buyers", href: "/en/mortgage/first-time-buyers", existing: true, children: [] },
-      { key: "", label: "Remortgaging",      href: "/en/mortgage/remortgaging",      existing: true, children: [] },
-      { key: "", label: "Buy-to-Let",        href: "/en/mortgage/buy-to-let",        existing: true, children: [] },
-      { key: "", label: "Overpayments",      href: "/en/mortgage/overpayments",      existing: true, children: [] },
+      { key: noHyphens(), label: "First-Time Buyers", href: "/en/mortgage/first-time-buyers", existing: true, children: [] },
+      { key: noHyphens(), label: "Remortgaging",      href: "/en/mortgage/remortgaging",      existing: true, children: [] },
+      { key: noHyphens(), label: "Buy-to-Let",        href: "/en/mortgage/buy-to-let",        existing: true, children: [] },
+      { key: noHyphens(), label: "Overpayments",      href: "/en/mortgage/overpayments",      existing: true, children: [] },
     ],
   },
   {
-    key: "", label: "Investments", href: "/en/investments",
+    key: noHyphens(), label: "Investments", href: "/en/investments",
     existing: true,
     children: [
-      { key: "", label: "Stocks & Shares ISA",        href: "/en/investments/stocks-isa",         existing: true, children: [] },
-      { key: "", label: "Pensions",                   href: "/en/investments/pensions",           existing: true, children: [] },
-      { key: "", label: "Junior ISA",                 href: "/en/investments/junior-isa",         existing: true, children: [] },
-      { key: "", label: "General Investment Account", href: "/en/investments/general-investment", existing: true, children: [] },
+      { key: noHyphens(), label: "Stocks & Shares ISA",        href: "/en/investments/stocks-isa",         existing: true, children: [] },
+      { key: noHyphens(), label: "Pensions",                   href: "/en/investments/pensions",           existing: true, children: [] },
+      { key: noHyphens(), label: "Junior ISA",                 href: "/en/investments/junior-isa",         existing: true, children: [] },
+      { key: noHyphens(), label: "General Investment Account", href: "/en/investments/general-investment", existing: true, children: [] },
     ],
   },
   {
-    key: "", label: "Help", href: "/en/help",
+    key: noHyphens(), label: "Help", href: "/en/help",
     existing: true,
     children: [
-      { key: "", label: "FAQs",          href: "/en/help/faqs",          existing: true, children: [] },
-      { key: "", label: "Contact Us",    href: "/en/help/contact",       existing: true, children: [] },
-      { key: "", label: "Find a Branch", href: "/en/help/branches",      existing: true, children: [] },
-      { key: "", label: "Security & Fraud", href: "/en/help/security",   existing: true, children: [] },
-      { key: "", label: "Accessibility", href: "/en/help/accessibility", existing: true, children: [] },
+      { key: noHyphens(), label: "FAQs",          href: "/en/help/faqs",          existing: true, children: [] },
+      { key: noHyphens(), label: "Contact Us",    href: "/en/help/contact",       existing: true, children: [] },
+      { key: noHyphens(), label: "Find a Branch", href: "/en/help/branches",      existing: true, children: [] },
+      { key: noHyphens(), label: "Security & Fraud", href: "/en/help/security",   existing: true, children: [] },
+      { key: noHyphens(), label: "Accessibility", href: "/en/help/accessibility", existing: true, children: [] },
     ],
   },
   {
-    key: "", label: "About", href: "/en/about",
+    key: noHyphens(), label: "About", href: "/en/about",
     existing: true,
     children: [
-      { key: "", label: "About Mosey",    href: "/en/about/about-us",       existing: true, children: [] },
-      { key: "", label: "Careers",        href: "/en/about/careers",        existing: true, children: [] },
-      { key: "", label: "Press",          href: "/en/about/press",          existing: true, children: [] },
-      { key: "", label: "Sustainability", href: "/en/about/sustainability", existing: true, children: [] },
+      { key: noHyphens(), label: "About Mosey",    href: "/en/about/about-us",       existing: true, children: [] },
+      { key: noHyphens(), label: "Careers",        href: "/en/about/careers",        existing: true, children: [] },
+      { key: noHyphens(), label: "Press",          href: "/en/about/press",          existing: true, children: [] },
+      { key: noHyphens(), label: "Sustainability", href: "/en/about/sustainability", existing: true, children: [] },
     ],
   },
 ];
@@ -317,7 +303,7 @@ async function createNavPage(node: NavDef, pageKeyMap: Map<string, string>, pare
     ctaLink: "#",
   };
 
-  const key = stableKey("mb-nav", node.href);
+  const key = noHyphens();
   const { ok, status, body: resp } = await apiFetch("", {
     method: "POST",
     body: JSON.stringify({
@@ -481,7 +467,7 @@ async function createNavTree(nodes: NavDef[], ancestors: string[] = []): Promise
 
 async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
   const navItemRefs = topLevelNodes.map((n) => ({ reference: `cms://content/${n.key}` }));
-  let targetKey = stableKey("mb-nav", "navigation-menu");
+  let targetKey = noHyphens();
   let targetContainer = BLOCKS_CONTAINER;
 
   if (NAV_BLOCK_KEY) {
@@ -554,9 +540,6 @@ async function updateNavBlock(topLevelNodes: NavDef[]): Promise<void> {
 
 async function main() {
   console.log("=== Nav Seeding Script ===\n");
-
-  // Deterministic NavigationItem keys (from href) so re-seeds don't churn keys.
-  assignStableNavKeys(NAV_TREE);
 
   console.log("--- Discovering root container ---");
   CONTAINER = await discoverRootContainer();

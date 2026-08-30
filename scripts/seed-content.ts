@@ -1444,6 +1444,12 @@ async function updateStartPageComposition(
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({
       displayName: page.displayName,
+      // Carry the routeSegment on the version POST. Without it the CMS re-derives
+      // the slug from displayName, drifting the URL whenever they differ (e.g.
+      // "Personal Banking"/route "personal" -> /personal-banking/), which silently
+      // breaks nav links that resolve pages by URL. Omitted for the homepage/start
+      // page (no routeSegment), which must keep its root URL.
+      ...(page.routeSegment ? { routeSegment: page.routeSegment } : {}),
       composition,
       ...(page.properties ? { properties: wrapProps(page.properties) } : {}),
     }),
