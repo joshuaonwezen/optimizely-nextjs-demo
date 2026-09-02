@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import CopyButton from "@/components/ui/CopyButton";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useIsClient } from "@/lib/useIsClient";
 
 interface Props {
   /** Absolute link pinned to the version currently being previewed. */
@@ -12,169 +13,127 @@ interface Props {
   version?: string | null;
 }
 
-const STORAGE_KEY = "preview-share-link";
-
-const switchListeners = new Set<() => void>();
-
-function readEnabled(): boolean {
-  try {
-    return window.localStorage.getItem(STORAGE_KEY) === "on";
-  } catch {
-    return false;
-  }
-}
-
-// Persisted on/off switch, mirrors PreviewDebugOverlay. Defaults to off so editors
-// who never share links are not bothered. useSyncExternalStore keeps SSR (off) and
-// hydration in sync.
-function useShareEnabled(): [boolean, (v: boolean) => void] {
-  const enabled = useSyncExternalStore(
-    (cb) => {
-      switchListeners.add(cb);
-      window.addEventListener("storage", cb);
-      return () => {
-        switchListeners.delete(cb);
-        window.removeEventListener("storage", cb);
-      };
-    },
-    readEnabled,
-    () => false
-  );
-  const set = (v: boolean) => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, v ? "on" : "off");
-    } catch {
-      /* storage unavailable */
-    }
-    switchListeners.forEach((l) => l());
-  };
-  return [enabled, set];
-}
-
+// Floating "Share preview link" control for the /preview route. Styled to match
+// the site chrome (same tokens as AudienceSwitcher), not the dark debug overlay.
+// Portalled to <body> because the CMS preview harness makes <main> a containing
+// block, which would otherwise strand a `fixed` child at the page bottom.
 export default function ExternalPreviewLink({ pinnedUrl, latestUrl, version }: Props) {
-  const [enabled, setEnabled] = useShareEnabled();
-  const [collapsed, setCollapsed] = useState(true);
-  const [mode, setMode] = useState<"pinned" | "latest">("pinned");
+  const isClient = useIsClient();
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"pinned" | "latest">(pinnedUrl ? "pinned" : "latest");
+  const [copied, setCopied] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-  // Feature is unconfigured (OPTIMIZELY_PREVIEW_SECRET unset) - render nothing.
-  if (!pinnedUrl && !latestUrl) return null;
+  useEffect(() => {
+    function onOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, []);
+
+  // Feature unconfigured (OPTIMIZELY_PREVIEW_SECRET unset) or not yet on the client.
+  if (!isClient || (!pinnedUrl && !latestUrl)) return null;
 
   const activeUrl = (mode === "latest" ? latestUrl : pinnedUrl) ?? pinnedUrl ?? latestUrl ?? "";
 
-  if (!enabled) {
-    return (
-      <button
-        data-component="ExternalPreviewLink"
-        type="button"
-        onClick={() => setEnabled(true)}
-        title="Share an external preview link"
-        aria-label="Share an external preview link"
-        className="fixed bottom-3 right-3 z-[2147483647] flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-[11px] text-white/70 opacity-40 shadow hover:opacity-100"
-      >
-        🔗
-      </button>
-    );
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(activeUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    } catch {
+      /* clipboard unavailable */
+    }
   }
 
-  if (collapsed) {
-    return (
-      <div
-        data-component="ExternalPreviewLink"
-        className="fixed bottom-3 right-3 z-[2147483647] flex items-center gap-2 rounded-full bg-black/80 py-1.5 pl-3 pr-1.5 font-mono text-[11px] text-white shadow-lg backdrop-blur"
-      >
-        <button type="button" onClick={() => setCollapsed(false)} className="flex items-center gap-2">
-          <span className="inline-block h-2 w-2 rounded-full bg-sky-400" />
-          share link
-        </button>
-        <button
-          type="button"
-          onClick={() => setEnabled(false)}
-          title="Hide share link box"
-          aria-label="Hide share link box"
-          className="rounded px-1 text-white/60 hover:text-white"
-        >
-          ✕
-        </button>
-      </div>
-    );
-  }
-
-  return (
+  return createPortal(
     <div
       data-component="ExternalPreviewLink"
-      className="fixed bottom-3 right-3 z-[2147483647] w-80 max-w-[calc(100vw-1.5rem)] rounded-xl bg-black/85 font-mono text-white shadow-2xl backdrop-blur"
+      ref={ref}
+      className="fixed bottom-4 right-4 z-[2147483647] flex flex-col items-end gap-2"
     >
-      <div className="flex items-center justify-between px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
-          External preview link
-        </span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setCollapsed(true)}
-            className="rounded px-1.5 text-white/60 hover:text-white"
-            title="Collapse"
-            aria-label="Collapse share link box"
-          >
-            –
-          </button>
-          <button
-            type="button"
-            onClick={() => setEnabled(false)}
-            className="rounded px-1.5 text-white/60 hover:text-white"
-            title="Hide"
-            aria-label="Hide share link box"
-          >
-            ✕
-          </button>
+      {open && (
+        <div className="w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-outline-variant bg-surface-lowest shadow-xl">
+          <p className="px-4 pt-3 pb-2 text-xs font-mono uppercase tracking-wider text-on-surface-variant">
+            Share preview link
+          </p>
+
+          <div className="flex gap-1.5 px-4">
+            {([
+              ["pinned", version ? `Version ${version}` : "This version", !pinnedUrl],
+              ["latest", "Always latest", !latestUrl],
+            ] as const).map(([m, label, disabled]) => (
+              <button
+                key={m}
+                type="button"
+                disabled={disabled}
+                onClick={() => setMode(m)}
+                className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 ${
+                  mode === m
+                    ? "bg-brand-fill text-on-brand"
+                    : "bg-surface-low text-on-surface hover:bg-surface"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="px-4 pt-3">
+            <input
+              readOnly
+              value={activeUrl}
+              onFocus={(e) => e.currentTarget.select()}
+              className="w-full rounded-lg border border-outline-variant bg-surface-low px-2.5 py-2 text-xs font-mono text-on-surface-variant"
+            />
+          </div>
+
+          <div className="px-4 pt-2 pb-3">
+            <button
+              type="button"
+              onClick={copy}
+              className="w-full rounded-lg bg-brand-fill py-2 text-sm font-medium text-on-brand transition-colors hover:bg-brand-fill-dim"
+            >
+              {copied ? "Copied" : "Copy link"}
+            </button>
+          </div>
+
+          <p className="border-t border-outline-variant px-4 py-3 text-xs leading-snug text-on-surface-variant">
+            Anyone with this link can view the draft — no CMS login. It stays valid until the
+            preview secret is rotated.
+          </p>
         </div>
-      </div>
+      )}
 
-      <div className="space-y-2 px-3 pb-3">
-        <div className="flex gap-1 rounded bg-white/5 p-0.5 text-[10px]">
-          <button
-            type="button"
-            onClick={() => setMode("pinned")}
-            disabled={!pinnedUrl}
-            className={`flex-1 rounded px-2 py-1 ${
-              mode === "pinned" ? "bg-white/15 text-white" : "text-white/60 hover:text-white"
-            } disabled:opacity-30`}
-          >
-            This version{version ? ` (v${version})` : ""}
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("latest")}
-            disabled={!latestUrl}
-            className={`flex-1 rounded px-2 py-1 ${
-              mode === "latest" ? "bg-white/15 text-white" : "text-white/60 hover:text-white"
-            } disabled:opacity-30`}
-          >
-            Always latest
-          </button>
-        </div>
-
-        <textarea
-          readOnly
-          value={activeUrl}
-          rows={3}
-          onFocus={(e) => e.currentTarget.select()}
-          className="w-full resize-none rounded bg-black/40 p-2 text-[10px] leading-relaxed text-white/80"
-        />
-
-        <div className="flex items-center justify-between">
-          <CopyButton
-            text={activeUrl}
-            label="copy link"
-            className="rounded bg-white/10 px-2 py-1 text-[10px] uppercase tracking-wide hover:bg-white/20"
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 rounded-full border border-outline-variant bg-surface-lowest py-2 pl-3 pr-4 text-sm font-medium text-on-surface shadow-lg transition-all hover:shadow-xl"
+      >
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden className="h-4 w-4 shrink-0 text-brand">
+          <path
+            fillRule="evenodd"
+            d="M12.6 2.7a3.6 3.6 0 0 1 5.1 5.1l-2 2a1 1 0 0 1-1.5-1.4l2-2a1.6 1.6 0 1 0-2.3-2.3l-2 2a1 1 0 0 1-1.4-1.4l2-2Zm-3.3 4.4a1 1 0 0 1 0 1.4l-1.7 1.7a1 1 0 1 0 1.4 1.4l1.7-1.7a1 1 0 0 1 1.4 1.4l-1.7 1.7A3 3 0 0 1 6.2 8.8L7.9 7.1a1 1 0 0 1 1.4 0Zm3.8 1.4a1 1 0 0 1 1.4 0 3 3 0 0 1 0 4.2l-2.3 2.4a3 3 0 0 1-4.3-4.3 1 1 0 0 1 1.4 1.4 1 1 0 0 0 0 1.5 1 1 0 0 0 1.5 0l2.3-2.3a1 1 0 0 0 0-1.5 1 1 0 0 1 0-1.4Z"
+            clipRule="evenodd"
           />
-        </div>
-
-        <p className="text-[10px] leading-snug text-white/50">
-          Anyone with this link can view the draft - no CMS login. It stays valid until the
-          preview secret is rotated.
-        </p>
-      </div>
-    </div>
+        </svg>
+        <span className="text-xs text-on-surface-variant">Preview</span>
+        <span>Share link</span>
+        <svg
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden
+          className={`h-3.5 w-3.5 text-on-surface-variant transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <path
+            fillRule="evenodd"
+            d="M5.3 7.3a1 1 0 0 1 1.4 0L10 10.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4Z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </button>
+    </div>,
+    document.body
   );
 }

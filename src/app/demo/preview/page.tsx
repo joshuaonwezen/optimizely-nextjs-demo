@@ -134,6 +134,26 @@ return (
   </>
 );`;
 
+const EXTERNAL_PREVIEW_SNIPPET = `// The CMS preview_token is a ~5-minute JWT and cannot be extended - Optimizely
+// provides no API to mint a stable one. To let a stakeholder with no CMS login
+// open a draft, authenticate to Graph with the App Key + Secret instead:
+// "querying with HMAC is equivalent to querying as a super user ... returns all
+// content regardless of publication status" - and it never expires.
+
+// src/lib/optimizely/adminPreviewClient.ts - a GraphClient whose request() is
+// patched to send Basic auth (App Key + Secret) rather than Bearer <preview_token>.
+Authorization: \`Basic \${btoa(\`\${OPTIMIZELY_APP_KEY}:\${OPTIMIZELY_APP_SECRET}\`)}\`
+
+// The shareable URL carries NO Graph credential - only key / loc / (ver) plus an
+// HMAC-SHA256 signature (src/lib/preview/shareLink.ts), so a recipient cannot
+// edit the query string to pull a different content key.
+/preview/share?key=<key>&loc=en&ver=<n>&sig=<hmac>
+
+// src/app/preview/share/page.tsx verifies the signature, resolves the version
+// (pinned, or newest by _metadata.lastModified), fetches the draft with the
+// admin client, and renders it read-only - no communicationinjector, no
+// NextPreviewComponent. Links stay valid until OPTIMIZELY_PREVIEW_SECRET rotates.`;
+
 export default function PreviewDemoPage() {
   return (
     <>
@@ -293,6 +313,49 @@ export default function PreviewDemoPage() {
           <CodeBlock code={VB_LAYOUT_SNIPPET} />
         </section>
 
+        {/* External preview links */}
+        <section id="external-preview">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Sharing a Preview Externally <a href="#external-preview" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
+            The <code className="bg-surface-low px-1 rounded text-xs font-mono">preview_token</code> the
+            CMS appends is a ~5 minute JWT and there is no way to extend it or issue a stable one - so
+            it cannot be handed to someone outside the editor. For a shareable link, the app fetches the
+            draft with the <strong>App Key + Secret</strong> (Graph treats these as a super-user, with no
+            expiry) and signs the URL with its own secret so the content key cannot be tampered with.
+          </p>
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            {[
+              {
+                label: "No stable preview token",
+                note: "The CMS preview_token always expires in ~5 min. Neither Optimizely's API nor the community SDK can mint a longer-lived one.",
+              },
+              {
+                label: "App Key + Secret = super-user",
+                note: "Basic/HMAC auth on the Graph delivery endpoint returns content of any publish status and never expires. Server-side only.",
+              },
+              {
+                label: "Signed, revocable links",
+                note: "The URL holds only key/loc/ver + an HMAC signature. Links never expire; rotating OPTIMIZELY_PREVIEW_SECRET invalidates every one.",
+              },
+            ].map(({ label, note }) => (
+              <div key={label} className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+                <p className="text-xs font-mono font-semibold text-on-surface mb-2">{label}</p>
+                <p className="text-xs text-on-surface-variant leading-relaxed">{note}</p>
+              </div>
+            ))}
+          </div>
+          <CodeBlock code={EXTERNAL_PREVIEW_SNIPPET} label="Fetching a draft without the ephemeral token" />
+          <p className="text-sm text-on-surface-variant mt-6 max-w-3xl">
+            On the <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code> route a
+            floating <strong>Share link</strong> control builds two links: one pinned to the version being
+            previewed, and one that always resolves the newest version. The external route
+            (<code className="bg-surface-low px-1 rounded text-xs font-mono">/preview/share</code>) renders
+            read-only - no edit overlays, no communicationinjector.
+          </p>
+        </section>
+
         {/* Setup guide */}
         <section id="setup-guide">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-4">
@@ -306,6 +369,8 @@ export default function PreviewDemoPage() {
                   { key: "NEXT_PUBLIC_OPTIMIZELY_CMS_URL", desc: "Your CMS instance URL. Used to build the communicationinjector.js script URL on the /preview route." },
                   { key: "OPTIMIZELY_GRAPH_SINGLE_KEY", desc: "Read-only key for published Graph queries. Already required for the main app." },
                   { key: "OPTIMIZELY_GRAPH_GATEWAY", desc: "Graph gateway URL (default: https://cg.optimizely.com/content/v2). Passed to config() in componentRegistry.ts." },
+                  { key: "OPTIMIZELY_APP_KEY / _SECRET", desc: "App Key + Secret. Used server-side as Basic auth to fetch drafts for external preview links (super-user, no token expiry). Already present for webhooks / Content Source API." },
+                  { key: "OPTIMIZELY_PREVIEW_SECRET", desc: "Any random string. Signs the /preview/share links so the content key cannot be tampered with. Rotating it invalidates every outstanding external preview link. Unset = the Share link control is hidden." },
                 ].map(({ key, desc }) => (
                   <div key={key} className="bg-surface-lowest border border-ghost-border rounded-xl p-3">
                     <code className="text-xs font-mono text-brand block mb-1">{key}</code>
