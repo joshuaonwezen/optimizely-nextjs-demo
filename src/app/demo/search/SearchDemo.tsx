@@ -6,12 +6,13 @@ type SearchResult = { title: string; url: string; score: number; pinned: boolean
 export default function SearchDemo() {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"relevance" | "semantic">("relevance");
+  const [fuzzy, setFuzzy] = useState(true);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const search = useCallback((q: string, m: string) => {
+  const search = useCallback((q: string, m: string, f: boolean) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!q || q.length < 2) {
       setResults([]);
@@ -21,7 +22,7 @@ export default function SearchDemo() {
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&mode=${m}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&mode=${m}${f ? "" : "&fuzzy=0"}`);
         const data = await res.json();
         setResults(data.items ?? []);
         setTotal(data.total ?? 0);
@@ -42,7 +43,7 @@ export default function SearchDemo() {
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            search(e.target.value, mode);
+            search(e.target.value, mode, fuzzy);
           }}
           placeholder="Type to search published content…"
           className="flex-1 px-4 py-2 text-sm bg-surface border border-ghost-border rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-brand/30"
@@ -52,7 +53,7 @@ export default function SearchDemo() {
           onChange={(e) => {
             const m = e.target.value as "relevance" | "semantic";
             setMode(m);
-            search(query, m);
+            search(query, m, fuzzy);
           }}
           className="px-3 py-2 text-sm bg-surface border border-ghost-border rounded-xl text-on-surface focus:outline-none"
         >
@@ -60,6 +61,20 @@ export default function SearchDemo() {
           <option value="semantic">Semantic</option>
         </select>
       </div>
+
+      <label className="flex items-center gap-2 text-xs text-on-surface-variant cursor-pointer">
+        <input
+          type="checkbox"
+          checked={fuzzy}
+          onChange={(e) => {
+            setFuzzy(e.target.checked);
+            search(query, mode, e.target.checked);
+          }}
+          className="accent-brand"
+        />
+        Fuzzy matching (typo tolerance) - sends{" "}
+        <code className="bg-surface px-1 rounded font-mono">fuzzy: true</code>
+      </label>
 
       {loading && (
         <p className="text-xs text-on-surface-variant">Searching…</p>

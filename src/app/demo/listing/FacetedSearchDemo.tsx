@@ -22,6 +22,7 @@ export default function FacetedSearchDemo() {
   const [query, setQuery] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+  const [fuzzy, setFuzzy] = useState(true);
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestions>(EMPTY_SUGGESTIONS);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -29,7 +30,7 @@ export default function FacetedSearchDemo() {
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autocompleteDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const search = useCallback((q: string, cats: string[], tgs: string[]) => {
+  const search = useCallback((q: string, cats: string[], tgs: string[], fz: boolean) => {
     if (searchDebounce.current) clearTimeout(searchDebounce.current);
     if (!q || q.length < 2) {
       setResponse(null);
@@ -41,6 +42,7 @@ export default function FacetedSearchDemo() {
         const params = new URLSearchParams({ q, facets: "1" });
         if (cats.length > 0) params.set("category", cats.join(","));
         if (tgs.length > 0) params.set("tags", tgs.join(","));
+        if (!fz) params.set("fuzzy", "0");
         const res = await fetch(`/api/search?${params}`);
         setResponse(await res.json());
       } catch {
@@ -69,8 +71,8 @@ export default function FacetedSearchDemo() {
   }, []);
 
   useEffect(() => {
-    search(query, categories, tags);
-  }, [query, categories, tags, search]);
+    search(query, categories, tags, fuzzy);
+  }, [query, categories, tags, fuzzy, search]);
 
   function toggle(list: string[], value: string, set: (next: string[]) => void) {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -139,6 +141,17 @@ export default function FacetedSearchDemo() {
           </div>
         )}
       </div>
+
+      <label className="flex items-center gap-2 text-xs text-on-surface-variant cursor-pointer">
+        <input
+          type="checkbox"
+          checked={fuzzy}
+          onChange={(e) => setFuzzy(e.target.checked)}
+          className="accent-brand"
+        />
+        Fuzzy matching (typo tolerance) - sends{" "}
+        <code className="bg-surface px-1 rounded font-mono">fuzzy: true</code>
+      </label>
 
       <div className="grid md:grid-cols-[220px_1fr] gap-6">
         <div className="space-y-4">

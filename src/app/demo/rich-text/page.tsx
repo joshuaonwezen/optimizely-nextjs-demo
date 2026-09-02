@@ -202,10 +202,11 @@ const CONTENT_AREA_VS_RICHTEXT_SNIPPET = `// When to use richText vs. a content 
 
 const SEARCH_SNIPPET = `// richText fields are indexed for full-text search by default -
 // body copy is searchable via the _fulltext operator without any extra config.
+// fuzzy: true also covers richText body, so a typo in a body word still matches.
 
-query SearchArticles($q: String!) {
+query SearchArticles($q: String!, $fuzzy: Boolean) {
   ArticlePage(
-    where: { _fulltext: { match: $q } }
+    where: { _fulltext: { match: $q, fuzzy: $fuzzy } }
     orderBy: { _ranking: RELEVANCE }
     limit: 10
   ) {

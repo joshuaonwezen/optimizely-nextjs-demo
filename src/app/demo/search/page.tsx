@@ -52,10 +52,11 @@ const FULLTEXT_SNIPPET = `# _fulltext searches across ALL text fields that were 
 # displayName, string properties, richText body, and any field with
 # indexingType: "fulltext" (the default for string-type properties).
 # Fields with indexingType: "disabled" are NOT searched.
+# fuzzy: true adds typo tolerance (see the Fuzzy matching section below).
 
-query SearchRelevance($query: String!) {
+query SearchRelevance($query: String!, $fuzzy: Boolean) {
   _Content(
-    where: { _fulltext: { match: $query } }
+    where: { _fulltext: { match: $query, fuzzy: $fuzzy } }
     orderBy: { _ranking: RELEVANCE }
     limit: 10
   ) {
@@ -79,10 +80,34 @@ const SEMANTIC_SNIPPET = `# SEMANTIC ranking uses vector embeddings - it underst
 #   1.0 → pure semantic (ignores term frequency entirely)
 #   0.5 → balanced (default in this project)
 
-query SearchSemantic($query: String!, $weight: Float!) {
+query SearchSemantic($query: String!, $weight: Float!, $fuzzy: Boolean) {
   _Content(
-    where: { _fulltext: { match: $query } }
+    where: { _fulltext: { match: $query, fuzzy: $fuzzy } }
     orderBy: { _ranking: SEMANTIC, _semanticWeight: $weight }
+    limit: 10
+  ) {
+    total
+    items {
+      _score
+      _metadata { displayName url { default } }
+    }
+  }
+}`;
+
+const FUZZY_SNIPPET = `# fuzzy: true enables approximate (typo-tolerant) matching. It works on
+# _fulltext { match } as well as the field operators contains, eq, and in.
+# Edit distance scales with term length (Damerau-Levenshtein):
+#   1-2 chars  ->  exact match required
+#   3-5 chars  ->  edit distance 1   ("savngs"  matches "savings")
+#   6+  chars  ->  edit distance 2   ("morgage" matches "mortgage")
+#
+# fuzzy is independent of synonyms and boost - combine them freely. It does
+# NOT fuzzy-match synonym terms (those stay exact, case-insensitive).
+
+query SearchRelevance($query: String!, $fuzzy: Boolean) {
+  _Content(
+    where: { _fulltext: { match: $query, fuzzy: $fuzzy } }
+    orderBy: { _ranking: RELEVANCE }
     limit: 10
   ) {
     total
@@ -99,10 +124,10 @@ const FILTERED_SNIPPET = `# Combine _fulltext with where clauses to narrow resul
 # This query returns only _Page items (pages, not blocks or assets)
 # published in the last 90 days, ranked by relevance.
 
-query SearchPages($query: String!, $since: DateTime!) {
+query SearchPages($query: String!, $since: DateTime!, $fuzzy: Boolean) {
   _Page(
     where: {
-      _fulltext: { match: $query }
+      _fulltext: { match: $query, fuzzy: $fuzzy }
       _metadata: { published: { gte: $since } }
     }
     orderBy: { _ranking: RELEVANCE }
@@ -147,9 +172,9 @@ const TRACKING_QUERY_SNIPPET = `# Add tracking: { phrase, source } to the _Conte
 # Each result item returns a _track URL containing the session ID,
 # content ID, content type, and zero-based position.
 
-query SearchRelevance($query: String!) {
+query SearchRelevance($query: String!, $fuzzy: Boolean) {
   _Content(
-    where: { _fulltext: { match: $query } }
+    where: { _fulltext: { match: $query, fuzzy: $fuzzy } }
     orderBy: { _ranking: RELEVANCE }
     limit: 10
     tracking: { phrase: $query, source: "/search" }
@@ -209,9 +234,9 @@ const PINNED_QUERY_SNIPPET = `# Add pinned: { phrase, collections } alongside wh
 # Graph prepends matching pinned items before organic results (up to 5).
 # Omit collections to evaluate ALL active collections automatically.
 
-query SearchWithPinned($query: String!, $collectionId: String) {
+query SearchWithPinned($query: String!, $collectionId: String, $fuzzy: Boolean) {
   _Content(
-    where: { _fulltext: { match: $query } }
+    where: { _fulltext: { match: $query, fuzzy: $fuzzy } }
     orderBy: { _ranking: RELEVANCE }
     limit: 10
     pinned: { phrase: $query, collections: $collectionId }
@@ -273,9 +298,11 @@ const SYNONYMS_QUERY_SNIPPET = `# Apply synonym expansion on field-level operato
 # Multiple slots:
 # where: { Name: { eq: "ISA", synonyms: [ONE, TWO] } }
 
-# Note: _fulltext { match } uses BM25 without synonym expansion.
-# Use field-level contains with synonyms, or switch to SEMANTIC ranking
-# which handles meaning-based matching implicitly.`;
+# synonyms also works on _fulltext { match } - the production search in this
+# project uses _fulltext: { match: $query, synonyms: [ONE], fuzzy: $fuzzy }.
+# synonyms and fuzzy are independent options and combine freely. Fuzzy applies
+# to the typed query terms only, never to synonym expansion (synonym terms are
+# matched exactly, case-insensitively).`;
 
 const CACHE_SNIPPET = `// Search results must NEVER be cached - every query string is unique.
 // Using the default ISR behaviour would create a separate cache entry
@@ -389,6 +416,8 @@ export default function SearchDemoPage() {
             a 300ms debounce. Try searching for content from the Mosey Bank site -
             &ldquo;savings&rdquo;, &ldquo;mortgage&rdquo;, &ldquo;team&rdquo;, or &ldquo;FAQ&rdquo;. Switch to
             Semantic mode to see how it finds related content that doesn&apos;t contain the exact phrase.
+            Leave <strong>Fuzzy</strong> on and try a typo like &ldquo;morgage&rdquo; or &ldquo;savngs&rdquo;,
+            then toggle it off to see the misspelling return nothing.
           </p>
           <SearchDemo />
         </section>
@@ -424,7 +453,10 @@ export default function SearchDemoPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Graph supports two ranking modes. <strong>RELEVANCE</strong> is classic BM25 - term
             frequency, inverse document frequency, and field weighting. It works well for exact-phrase
-            search but misses synonyms. <strong>SEMANTIC</strong> uses vector embeddings and finds
+            search but misses synonyms and typos unless you add{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">synonyms</code> and{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">fuzzy: true</code> (below).{" "}
+            <strong>SEMANTIC</strong> uses vector embeddings and finds
             conceptually related content even when the words don&apos;t match.{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">_semanticWeight</code> blends
             the two signals.
@@ -434,7 +466,7 @@ export default function SearchDemoPage() {
             {[
               {
                 label: "RELEVANCE",
-                note: "Fast, no GPU required. Best for: exact product names, error codes, known terms.",
+                note: "Fast, no GPU required. Best for: exact product names, error codes, known terms. Add fuzzy: true for typo tolerance.",
                 good: true,
               },
               {
@@ -459,6 +491,54 @@ export default function SearchDemoPage() {
           </div>
 
           <CodeBlock code={SEMANTIC_SNIPPET} label="Semantic search with configurable weight" />
+        </section>
+
+        <section id="fuzzy">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Fuzzy matching
+            <SectionAnchor id="fuzzy" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">fuzzy: true</code> turns on
+            approximate, typo-tolerant matching. It is a Boolean option on{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">_fulltext</code> (and on the{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">contains</code>,{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">eq</code>, and{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">in</code> field operators),
+            independent of <code className="bg-surface-low px-1 rounded font-mono text-xs">synonyms</code>{" "}
+            and <code className="bg-surface-low px-1 rounded font-mono text-xs">boost</code>. Graph applies
+            Damerau-Levenshtein edit distance to each term, scaled by its length. The search on this site
+            sends <code className="bg-surface-low px-1 rounded font-mono text-xs">fuzzy: true</code> by
+            default; the <strong>Fuzzy</strong> toggle in the search overlay flips it.{" "}
+            <a href="https://docs.developers.optimizely.com/platform-optimizely/docs/fuzzy-search-support" target="_blank" rel="noopener" className="text-brand hover:underline">Fuzzy search docs ↗</a>
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            {[
+              {
+                label: "1-2 characters",
+                note: "Exact match required. Short terms are never fuzzed - too many false positives.",
+              },
+              {
+                label: "3-5 characters",
+                note: "Edit distance 1. \"savngs\" matches \"savings\", \"lian\" matches \"loan\".",
+              },
+              {
+                label: "6+ characters",
+                note: "Edit distance 2. \"morgage\" matches \"mortgage\", \"finanical\" matches \"financial\".",
+              },
+            ].map(({ label, note }) => (
+              <div
+                key={label}
+                className="bg-surface-lowest rounded-2xl p-5 border border-ghost-border"
+              >
+                <p className="text-xs font-mono font-semibold text-on-surface mb-2">{label}</p>
+                <p className="text-xs text-on-surface-variant leading-relaxed">{note}</p>
+              </div>
+            ))}
+          </div>
+
+          <CodeBlock code={FUZZY_SNIPPET} label="Typo-tolerant relevance search" />
         </section>
 
         <section id="filtering">
@@ -667,6 +747,7 @@ export default function SearchDemoPage() {
         <KeyPoints points={[
           <><strong className="text-on-surface">_fulltext searches indexed text fields automatically.</strong> String properties are indexed by default. Opt out per-field with <code className="bg-surface-low px-1 rounded font-mono text-xs">indexingType: &quot;disabled&quot;</code>.</>,
           <><strong className="text-on-surface">RELEVANCE = BM25 keyword matching.</strong> Fast, deterministic. SEMANTIC = vector similarity - slower but understands meaning and synonyms.</>,
+          <><strong className="text-on-surface"><code className="bg-surface-low px-1 rounded font-mono text-xs">fuzzy: true</code> tolerates typos.</strong> Approximate matching on <code className="bg-surface-low px-1 rounded font-mono text-xs">_fulltext</code> / <code className="bg-surface-low px-1 rounded font-mono text-xs">contains</code> / <code className="bg-surface-low px-1 rounded font-mono text-xs">eq</code> / <code className="bg-surface-low px-1 rounded font-mono text-xs">in</code>; edit distance scales with term length (exact under 3 chars, 1 for 3-5, 2 for 6+). Independent of synonyms and boost. This site&apos;s search sends it by default.</>,
           <><strong className="text-on-surface">Combine _fulltext with any where clause</strong> to restrict by type, date, or tag. Filtering narrows the candidate set before ranking is applied.</>,
           <><strong className="text-on-surface">Cursor pagination is stable;</strong> offset pagination shifts when new content is published. Always use the cursor returned by Graph, not a computed skip value.</>,
           <><strong className="text-on-surface">Search queries must use cache: &quot;no-store&quot;.</strong> Every user query is unique - ISR would fill the data cache with one-time entries. Navigation queries are the opposite - same query for every visitor, perfect for ISR.</>,

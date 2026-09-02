@@ -336,8 +336,8 @@ const TYPES_FACET_SNIPPET = `# Metadata fields facet too - no schema changes nee
 # _metadata.types buckets results by content type, useful for
 # an "All / Articles / Pages" filter bar on a global search.
 
-query SearchWithTypeFacet($query: String!) {
-  _Content(where: { _fulltext: { match: $query } }) {
+query SearchWithTypeFacet($query: String!, $fuzzy: Boolean) {
+  _Content(where: { _fulltext: { match: $query, fuzzy: $fuzzy } }) {
     total
     facets {
       _metadata {
@@ -700,6 +700,9 @@ export default async function ListingDemoPage({
             query as the results, no separate aggregation or suggestion service. Type{" "}
             <strong>banking</strong> or <strong>mortgage</strong> and pause: autocomplete suggests tags
             and page paths as you type, then the checkboxes drill into the results with live counts.
+            The <strong>Fuzzy matching</strong> toggle sends{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">fuzzy: true</code> so a typo
+            like <strong>morgage</strong> still resolves.
           </p>
           <FacetedSearchDemo />
 
@@ -793,6 +796,7 @@ export default async function ListingDemoPage({
           <><strong className="text-on-surface">Facet ordering uses orderType, not orderBy.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">orderType: COUNT | VALUE</code> picks the sort key; <code className="bg-surface-low px-1 rounded font-mono text-xs">orderBy: ASC | DESC</code> picks the direction.</>,
           <><strong className="text-on-surface">Autocomplete returns values, not documents.</strong> Each field takes <code className="bg-surface-low px-1 rounded font-mono text-xs">(limit, value)</code> and suggests indexed values - combine multiple fields (tags, URL paths) in one query for richer suggestions.</>,
           <><strong className="text-on-surface">Facets and autocomplete require queryable indexing.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">indexingType: &quot;queryable&quot;</code> on the field definition; metadata fields like <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata.types</code> facet out of the box. A searchable-only field returns a schema error, not empty buckets.</>,
+          <><strong className="text-on-surface"><code className="bg-surface-low px-1 rounded font-mono text-xs">fuzzy: true</code> on the search filter tolerates typos.</strong> Faceted search combines <code className="bg-surface-low px-1 rounded font-mono text-xs">_fulltext: &#123; match, fuzzy &#125;</code> with the <code className="bg-surface-low px-1 rounded font-mono text-xs">where</code> facet filters in one query - fuzzy widens the candidate set before the facet counts are computed.</>,
         ]} />
 
         <SourcePanel

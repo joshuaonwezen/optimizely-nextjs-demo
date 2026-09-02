@@ -24,6 +24,7 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
   const [query,   setQuery]   = useState("");
   const [mode,    setMode]    = useState<SearchMode>("relevance");
   const [weight,  setWeight]  = useState(0.5);
+  const [fuzzy,   setFuzzy]   = useState(true);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [total,   setTotal]   = useState(0);
   const [loading, setLoading] = useState(false);
@@ -40,14 +41,14 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
-  const runSearch = useCallback(async (q: string, m: SearchMode, w: number) => {
+  const runSearch = useCallback(async (q: string, m: SearchMode, w: number, f: boolean) => {
     if (q.length < 2) { setResults([]); setTotal(0); return; }
     setLoading(true);
     try {
-      const url = m === "semantic"
+      const base = m === "semantic"
         ? `/api/search?q=${encodeURIComponent(q)}&mode=semantic&weight=${w}`
         : `/api/search?q=${encodeURIComponent(q)}&mode=relevance`;
-      const res  = await fetch(url);
+      const res  = await fetch(f ? base : `${base}&fuzzy=0`);
       const data = await res.json();
       setResults(data.items ?? []);
       setTotal(data.total ?? 0);
@@ -59,17 +60,22 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
   const handleQueryChange = (value: string) => {
     setQuery(value);
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => runSearch(value, mode, weight), 300);
+    timerRef.current = setTimeout(() => runSearch(value, mode, weight, fuzzy), 300);
   };
 
   const handleModeChange = (m: SearchMode) => {
     setMode(m);
-    if (query.length >= 2) runSearch(query, m, weight);
+    if (query.length >= 2) runSearch(query, m, weight, fuzzy);
   };
 
   const handleWeightChange = (w: number) => {
     setWeight(w);
-    if (query.length >= 2) runSearch(query, mode, w);
+    if (query.length >= 2) runSearch(query, mode, w, fuzzy);
+  };
+
+  const handleFuzzyChange = (f: boolean) => {
+    setFuzzy(f);
+    if (query.length >= 2) runSearch(query, mode, weight, f);
   };
 
   return (
@@ -116,7 +122,20 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
               {m}
             </button>
           ))}
-          <span className="ml-auto text-xs text-on-surface-variant self-center">
+          <button
+            type="button"
+            onClick={() => handleFuzzyChange(!fuzzy)}
+            aria-pressed={fuzzy}
+            title="Typo-tolerant matching (Damerau-Levenshtein edit distance)"
+            className={`ml-auto px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+              fuzzy
+                ? "bg-brand-fill text-on-brand"
+                : "text-on-surface-variant hover:text-brand"
+            }`}
+          >
+            Fuzzy
+          </button>
+          <span className="text-xs text-on-surface-variant self-center">
             {mode === "semantic" ? "Vector similarity" : "Keyword (BM25)"}
           </span>
         </div>

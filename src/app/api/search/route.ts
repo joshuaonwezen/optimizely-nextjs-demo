@@ -23,19 +23,21 @@ export async function GET(request: NextRequest) {
   const mode   = searchParams.get("mode") === "semantic" ? "semantic" : "relevance";
   const weight = Math.min(1, Math.max(0, parseFloat(searchParams.get("weight") ?? "0.5")));
   const locale = [searchParams.get("locale") ?? "en"];
+  // Fuzzy (typo-tolerant) matching is on by default; only an explicit fuzzy=0 disables it.
+  const fuzzy  = searchParams.get("fuzzy") !== "0";
 
   if (!q || q.length < 2) {
     return NextResponse.json({ total: 0, items: [] });
   }
 
   if (searchParams.get("facets") === "1") {
-    return facetedSearch(q, listParam(searchParams.get("category")), listParam(searchParams.get("tags")), locale);
+    return facetedSearch(q, listParam(searchParams.get("category")), listParam(searchParams.get("tags")), locale, fuzzy);
   }
 
   try {
     const result = await graphqlFetch<any>(
       mode === "semantic" ? SEARCH_SEMANTIC_QUERY : SEARCH_RELEVANCE_QUERY,
-      mode === "semantic" ? { query: q, weight, locale } : { query: q, locale },
+      mode === "semantic" ? { query: q, weight, locale, fuzzy } : { query: q, locale, fuzzy },
       { cache: "no-store" }
     );
 
@@ -64,11 +66,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function facetedSearch(q: string, categories: string[] | null, tags: string[] | null, locale: string[] = ["en"]) {
+async function facetedSearch(q: string, categories: string[] | null, tags: string[] | null, locale: string[] = ["en"], fuzzy = true) {
   try {
     const result = await graphqlFetch<any>(
       SEARCH_FACETED_QUERY,
-      { query: q, categories, tags, locale },
+      { query: q, categories, tags, locale, fuzzy },
       { cache: "no-store" }
     );
 

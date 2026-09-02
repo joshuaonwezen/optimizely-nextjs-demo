@@ -1,8 +1,8 @@
 export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
-  query SearchRelevance($query: String!, $locale: [Locales]) {
+  query SearchRelevance($query: String!, $locale: [Locales], $fuzzy: Boolean) {
     SEO(
       locale: $locale
-      where: { _fulltext: { match: $query, synonyms: [ONE] } }
+      where: { _fulltext: { match: $query, synonyms: [ONE], fuzzy: $fuzzy } }
       orderBy: { _ranking: RELEVANCE }
       limit: 10
       pinned: { phrase: $query }
@@ -22,11 +22,11 @@ export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
 `;
 
 export const SEARCH_FACETED_QUERY = /* GraphQL */ `
-  query SearchFaceted($query: String!, $categories: [String!], $tags: [String!], $locale: [Locales]) {
+  query SearchFaceted($query: String!, $categories: [String!], $tags: [String!], $locale: [Locales], $fuzzy: Boolean) {
     ArticlePage(
       locale: $locale
       where: {
-        _fulltext: { match: $query }
+        _fulltext: { match: $query, fuzzy: $fuzzy }
         category: { in: $categories }
         tags: { in: $tags }
       }
@@ -70,10 +70,10 @@ export const AUTOCOMPLETE_QUERY = /* GraphQL */ `
 `;
 
 export const SEARCH_SEMANTIC_QUERY = /* GraphQL */ `
-  query SearchSemantic($query: String!, $weight: Float!, $locale: [Locales]) {
+  query SearchSemantic($query: String!, $weight: Float!, $locale: [Locales], $fuzzy: Boolean) {
     SEO(
       locale: $locale
-      where: { _fulltext: { match: $query, synonyms: [ONE] } }
+      where: { _fulltext: { match: $query, synonyms: [ONE], fuzzy: $fuzzy } }
       orderBy: { _ranking: SEMANTIC, _semanticWeight: $weight }
       limit: 10
       pinned: { phrase: $query }
