@@ -605,6 +605,16 @@ Use `graphqlFetch` from `src/lib/optimizely/client.ts` for all manual queries �
 ### `_metadata.url.graph` — graph:// reference string
 Every content item's `_metadata.url` now includes a `graph` field (e.g. `graph://cms/Page/abc123?loc=en`). Pass it directly to `getClient().getContent(graphRef)` to fetch that item without constructing a `GraphReference` object manually.
 
+### External preview links — `/preview/share`
+
+Lets editors share a link that opens a **draft** in the front end for people with **no CMS login**.
+
+- The CMS `preview_token` is a ~5 min JWT and Optimizely provides **no way to extend it or mint a stable one**. Instead the draft is fetched with **App Key + Secret Basic auth** (`OPTIMIZELY_APP_KEY` / `_SECRET`) — Optimizely Graph treats that as super-user and returns content of any publish status, with no expiry. Those creds stay server-side only.
+- The shareable URL carries **no Graph credential** — just `key` / `loc` / optional `ver` plus an HMAC-SHA256 `sig` signed with `OPTIMIZELY_PREVIEW_SECRET` (`src/lib/preview/shareLink.ts`). The signature only stops a recipient from editing the query string to pull other content keys. **Links never expire; rotating `OPTIMIZELY_PREVIEW_SECRET` is the kill switch** for every outstanding link.
+- `src/lib/optimizely/adminPreviewClient.ts` is a `GraphClient` with its private `request()` monkey-patched to force the Basic header (same instance-patch pattern as `previewClient.ts`), so the full `getPreviewContent` pipeline runs unchanged over super-user auth. Shared DAM re-probe lives in `graphPreviewPatches.ts`.
+- `src/app/preview/share/page.tsx` renders read-only — no `communicationinjector.js`, no `NextPreviewComponent`, no debug overlay. Covered by the existing `/preview` middleware exemption.
+- The floating "External preview link" box (`src/components/preview/ExternalPreviewLink.tsx`) sits bottom-right on `/preview` (the debug overlay owns bottom-left) and offers "this version" vs "always latest" links.
+
 ### `damAssets` — DAM image/video/file utilities (SDK 2.0.0)
 ```ts
 import { damAssets } from "@optimizely/cms-sdk";

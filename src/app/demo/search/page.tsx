@@ -328,22 +328,25 @@ const SYNONYMS_QUERY_SNIPPET = `# Apply synonym expansion on field-level operato
 # to the typed query terms only, never to synonym expansion (synonym terms are
 # matched exactly, case-insensitively).`;
 
-const CACHE_SNIPPET = `// Search results must NEVER be cached - every query string is unique.
-// Using the default ISR behaviour would create a separate cache entry
-// per search term and balloon the Next.js data cache with useless entries.
+const CACHE_SNIPPET = `// Search should skip the Next.js Data Cache but still ride Graph's own cache.
 
-// ✅ Correct - graphqlFetch with explicit cache: "no-store"
+// ✅ no-store keeps search OUT of the Next.js Data Cache. Otherwise every
+// unique query string becomes a persistent entry that is never read again,
+// evicting entries you do reuse (pages, navigation).
 const results = await graphqlFetch(SEARCH_QUERY, { query: q }, { cache: "no-store" });
+// (the /api/search route in this project already passes this)
 
-// ✅ Also correct - API route passes cache: "no-store" to graphqlFetch
-// (see src/app/api/search/route.ts)
+// no-store is a Next.js directive - it does NOT disable the Optimizely Graph
+// response cache. Repeated queries still return from Graph's edge, purged
+// within seconds of a publish by the webhook. Synonyms help here: "home loan"
+// and "mortgage" resolve to the same match set, so the hot query set stays
+// small and stays warm.
 
-// ❌ Wrong - using the default 60s ISR for search queries
+// ❌ Wrong - ISR on search: one Data Cache entry per unique phrase, indefinitely.
 const results = await graphqlFetch(SEARCH_QUERY, { query: q });
-// ^ stores every unique query string in the data cache forever (until server restart)
 
-// Compare with navigation, which IS cacheable because
-// it's always the same query with no user-provided variables:
+// Navigation is the opposite - one query for every visitor, no variables,
+// a perfect ISR candidate:
 graphqlFetch(GET_NAV_QUERY, {}, { next: { revalidate: 300, tags: ["navigation"] } });`;
 
 const GEO_SCHEMA_SNIPPET = `# Content Source schema - a single GeoPoint field, NOT two floats.
@@ -632,19 +635,44 @@ export default function SearchDemoPage() {
 
         <section id="cache">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Cache strategy - always <code className="font-mono text-xl">no-store</code>
+            Cache strategy - skip the app cache, keep the edge cache
             <SectionAnchor id="cache" label="#" />
           </h2>
-          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            Search queries must never be cached. Each user types a different string, so ISR would create
-            a cache entry per unique query - polluting the Next.js data cache with entries that are never
-            reused. The <code className="bg-surface-low px-1 rounded font-mono text-xs">/api/search</code>{" "}
-            route in this project passes{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">cache: &quot;no-store&quot;</code>{" "}
-            to <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch</code>{" "}
-            explicitly - bypassing both Next.js ISR and Graph CDN.
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            Two cache layers sit under a search request, and you want opposite things from them.
           </p>
-          <CodeBlock code={CACHE_SNIPPET} label="Why search bypasses ISR" />
+          <ul className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed space-y-2 list-disc pl-5">
+            <li>
+              <strong>Next.js Data Cache - skip it.</strong> Each visitor types a slightly different
+              phrase. Under ISR every unique{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">&#123; query, variables &#125;</code>{" "}
+              pair becomes its own persistent entry that is almost never read again, and on a bounded
+              cache that junk evicts entries you do reuse (pages, navigation). The{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">/api/search</code> route
+              passes <code className="bg-surface-low px-1 rounded font-mono text-xs">cache: &quot;no-store&quot;</code>{" "}
+              to keep search out of it.
+            </li>
+            <li>
+              <strong>Optimizely Graph&apos;s response cache - keep it.</strong>{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">no-store</code> is a
+              Next.js directive; it does not reach Graph, which keeps its own TTL-based response cache,
+              purged within seconds of a publish by the webhook. Repeated queries still return from
+              Graph&apos;s edge - and that is the layer you want for search. A handful of popular terms
+              carry most of the volume, and the{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">synonyms</code> expansion
+              funnels &ldquo;home loan&rdquo;, &ldquo;house loan&rdquo;, and &ldquo;mortgage&rdquo; onto
+              the same match set, so the hot query set stays small and stays warm.
+            </li>
+          </ul>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            Net: no per-visitor entries in your app, a shared cache at Graph, freshness from the publish
+            webhook. (A <code className="bg-surface-low px-1 rounded font-mono text-xs">GET</code>{" "}
+            transport and stored queries push Graph&apos;s hit rate higher still;{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch</code> uses{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">POST</code> here for
+            simplicity.)
+          </p>
+          <CodeBlock code={CACHE_SNIPPET} label="App cache vs. Graph cache for search" />
         </section>
 
         <section id="tracking">
@@ -810,7 +838,7 @@ export default function SearchDemoPage() {
           <><strong className="text-on-surface"><code className="bg-surface-low px-1 rounded font-mono text-xs">fuzzy: true</code> tolerates typos.</strong> Approximate matching on <code className="bg-surface-low px-1 rounded font-mono text-xs">_fulltext</code> / <code className="bg-surface-low px-1 rounded font-mono text-xs">contains</code> / <code className="bg-surface-low px-1 rounded font-mono text-xs">eq</code> / <code className="bg-surface-low px-1 rounded font-mono text-xs">in</code>; edit distance scales with term length (exact under 3 chars, 1 for 3-5, 2 for 6+). Independent of synonyms and boost. This site&apos;s search sends it by default.</>,
           <><strong className="text-on-surface">Combine _fulltext with any where clause</strong> to restrict by type, date, or tag. Filtering narrows the candidate set before ranking is applied.</>,
           <><strong className="text-on-surface">Cursor pagination is stable;</strong> offset pagination shifts when new content is published. Always use the cursor returned by Graph, not a computed skip value.</>,
-          <><strong className="text-on-surface">Search queries must use cache: &quot;no-store&quot;.</strong> Every user query is unique - ISR would fill the data cache with one-time entries. Navigation queries are the opposite - same query for every visitor, perfect for ISR.</>,
+          <><strong className="text-on-surface">Search uses cache: &quot;no-store&quot; to skip the Next.js Data Cache, not to bypass Graph.</strong> Per-visitor phrases would fill a bounded persistent cache with one-time entries; Graph&apos;s own response cache (purged on publish) still serves repeated and synonym-funneled queries from the edge. Navigation is the opposite - one query for every visitor, a perfect ISR candidate.</>,
           <><strong className="text-on-surface">_score is a float between 0 and 1.</strong> Use it to show relevance indicators in the UI or to filter out low-confidence results below a threshold.</>,
           <><strong className="text-on-surface">Add <code className="bg-surface-low px-1 rounded font-mono text-xs">tracking</code> to record search phrases.</strong> Each result item returns a <code className="bg-surface-low px-1 rounded font-mono text-xs">_track</code> URL - call it with a GET request when the user clicks a result. Tracking should never block or interrupt navigation.</>,
           <><strong className="text-on-surface">Use <code className="bg-surface-low px-1 rounded font-mono text-xs">pinned</code> to guarantee editorial picks appear first.</strong> Create a collection, add items with trigger phrases, then pass <code className="bg-surface-low px-1 rounded font-mono text-xs">pinned: &#123; phrase, collections &#125;</code> in the GraphQL query. Up to 5 pinned items are prepended before organic results.</>,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import CopyButton from "@/components/ui/CopyButton";
 
 export interface ServedMetadata {
   key?: string | null;
@@ -68,27 +69,6 @@ function useSecondsSince(iso: string): number {
     return () => clearInterval(id);
   }, [iso]);
   return Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(text);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1200);
-        } catch {
-          /* clipboard unavailable */
-        }
-      }}
-      className="rounded bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide hover:bg-white/20"
-    >
-      {copied ? "copied" : "copy"}
-    </button>
-  );
 }
 
 function Section({

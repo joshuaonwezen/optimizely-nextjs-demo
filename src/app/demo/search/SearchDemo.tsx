@@ -132,7 +132,7 @@ export default function SearchDemo() {
       <p className="text-xs text-on-surface-variant border-t border-ghost-border pt-3">
         Calls <code className="bg-surface px-1 rounded font-mono">/api/search</code> with{" "}
         <code className="bg-surface px-1 rounded font-mono">cache: &ldquo;no-store&rdquo;</code>
-        {" "}- results are never cached.
+        {" "}- kept out of the Next.js Data Cache; Graph&apos;s own response cache still applies.
       </p>
     </div>
   );

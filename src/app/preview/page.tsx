@@ -2,14 +2,17 @@ import { type PreviewParams } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
 import { NextPreviewComponent } from "@optimizely/cms-sdk/react/nextjs";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import Script from "next/script";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { getPreviewClient } from "@/lib/optimizely/previewClient";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import { PREVIEW_DIAGNOSTIC_QUERY } from "@/lib/graphql/queries/PreviewDiagnostic";
+import { buildExternalPreviewQuery } from "@/lib/preview/shareLink";
 import PreviewDebugOverlay, {
   type ServedMetadata,
 } from "@/components/preview/PreviewDebugOverlay";
+import ExternalPreviewLink from "@/components/preview/ExternalPreviewLink";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +90,26 @@ async function PreviewPage({ searchParams }: Props) {
     redactedParams[k] = k === "preview_token" ? `${v.slice(0, 6)}…(${v.length} chars)` : v;
   }
 
+  // Signed external preview links - shareable with people who have no CMS login.
+  const hdrs = await headers();
+  const origin = (() => {
+    const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "";
+    if (!host) return "";
+    return `${hdrs.get("x-forwarded-proto") ?? "https"}://${host}`;
+  })();
+  const shareLoc = typeof params.loc === "string" ? params.loc : "en";
+  const shareVer = typeof params.ver === "string" ? params.ver : undefined;
+  const pinnedQuery =
+    origin && contentKey
+      ? buildExternalPreviewQuery({ key: contentKey, loc: shareLoc, ver: shareVer })
+      : null;
+  const latestQuery =
+    origin && contentKey
+      ? buildExternalPreviewQuery({ key: contentKey, loc: shareLoc })
+      : null;
+  const pinnedUrl = pinnedQuery ? `${origin}/preview/share${pinnedQuery}` : null;
+  const latestUrl = latestQuery ? `${origin}/preview/share${latestQuery}` : null;
+
   return (
     <>
       <Script
@@ -110,6 +133,11 @@ async function PreviewPage({ searchParams }: Props) {
         diagnosticQuery={PREVIEW_DIAGNOSTIC_QUERY}
         diagnosticResult={diagnosticResult}
         fetchError={fetchError}
+      />
+      <ExternalPreviewLink
+        pinnedUrl={pinnedUrl}
+        latestUrl={latestUrl}
+        version={served?.version != null ? String(served.version) : (shareVer ?? null)}
       />
     </>
   );
