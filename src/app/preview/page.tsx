@@ -117,6 +117,32 @@ async function PreviewPage({ searchParams }: Props) {
         strategy="afterInteractive"
       />
       <NextPreviewComponent />
+
+      {/* In-flow toolbar at the top of the preview - fixed/sticky chrome is
+          unreliable inside the CMS preview iframe (it strands at the page
+          bottom and covers content links), so keep it in normal flow. */}
+      <div className="relative z-[2147483647] flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant bg-surface-lowest px-4 py-2">
+        <span className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-on-surface-variant">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand" />
+          Editorial preview
+        </span>
+        <div className="flex items-center gap-2">
+          <ExternalPreviewLink
+            pinnedUrl={pinnedUrl}
+            latestUrl={latestUrl}
+            version={served?.version != null ? String(served.version) : (shareVer ?? null)}
+          />
+          <PreviewDebugOverlay
+            params={redactedParams}
+            served={served}
+            serverRenderedAt={serverRenderedAt}
+            diagnosticQuery={PREVIEW_DIAGNOSTIC_QUERY}
+            diagnosticResult={diagnosticResult}
+            fetchError={fetchError}
+          />
+        </div>
+      </div>
+
       {content ? (
         <OptimizelyComponent content={content} />
       ) : (
@@ -126,19 +152,6 @@ async function PreviewPage({ searchParams }: Props) {
           </p>
         </div>
       )}
-      <PreviewDebugOverlay
-        params={redactedParams}
-        served={served}
-        serverRenderedAt={serverRenderedAt}
-        diagnosticQuery={PREVIEW_DIAGNOSTIC_QUERY}
-        diagnosticResult={diagnosticResult}
-        fetchError={fetchError}
-      />
-      <ExternalPreviewLink
-        pinnedUrl={pinnedUrl}
-        latestUrl={latestUrl}
-        version={served?.version != null ? String(served.version) : (shareVer ?? null)}
-      />
     </>
   );
 }

@@ -613,7 +613,7 @@ Lets editors share a link that opens a **draft** in the front end for people wit
 - The shareable URL carries **no Graph credential** — just `key` / `loc` / optional `ver` plus an HMAC-SHA256 `sig` signed with `OPTIMIZELY_PREVIEW_SECRET` (`src/lib/preview/shareLink.ts`). The signature only stops a recipient from editing the query string to pull other content keys. **Links never expire; rotating `OPTIMIZELY_PREVIEW_SECRET` is the kill switch** for every outstanding link.
 - `src/lib/optimizely/adminPreviewClient.ts` is a `GraphClient` with its private `request()` monkey-patched to force the Basic header (same instance-patch pattern as `previewClient.ts`), so the full `getPreviewContent` pipeline runs unchanged over super-user auth. Shared DAM re-probe lives in `graphPreviewPatches.ts`.
 - `src/app/preview/share/page.tsx` renders read-only — no `communicationinjector.js`, no `NextPreviewComponent`, no debug overlay. Covered by the existing `/preview` middleware exemption.
-- The floating "External preview link" box (`src/components/preview/ExternalPreviewLink.tsx`) sits bottom-right on `/preview` (the debug overlay owns bottom-left) and offers "this version" vs "always latest" links.
+- `src/app/preview/page.tsx` renders an **in-flow toolbar** at the top of the page holding `ExternalPreviewLink` (Share link → "this version" vs "always latest") and `PreviewDebugOverlay` (diagnostics pill → dark detail panel). Both are inline dropdowns, not `fixed`/`sticky` — the CMS preview iframe strands positioned chrome at the document bottom where it covers page links. `AudienceSwitcher` is hidden on `/preview` (`DemoToolbar`).
 
 ### `damAssets` — DAM image/video/file utilities (SDK 2.0.0)
 ```ts

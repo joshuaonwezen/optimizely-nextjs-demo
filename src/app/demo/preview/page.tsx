@@ -348,8 +348,8 @@ export default function PreviewDemoPage() {
           </div>
           <CodeBlock code={EXTERNAL_PREVIEW_SNIPPET} label="Fetching a draft without the ephemeral token" />
           <p className="text-sm text-on-surface-variant mt-6 max-w-3xl">
-            On the <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code> route a
-            floating <strong>Share link</strong> control builds two links: one pinned to the version being
+            The toolbar at the top of the <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code> route
+            has a <strong>Share link</strong> control that builds two links: one pinned to the version being
             previewed, and one that always resolves the newest version. The external route
             (<code className="bg-surface-low px-1 rounded text-xs font-mono">/preview/share</code>) renders
             read-only - no edit overlays, no communicationinjector.
