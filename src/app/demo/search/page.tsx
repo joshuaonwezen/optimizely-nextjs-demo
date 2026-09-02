@@ -94,6 +94,30 @@ query SearchSemantic($query: String!, $weight: Float!, $fuzzy: Boolean) {
   }
 }`;
 
+// Worked comparisons against this site's seeded content (Mosey Bank).
+// "relevance" here means RELEVANCE + synonyms + fuzzy - the same filter the
+// production search uses - so the delta shown is purely the ranking model.
+const RANKING_EXAMPLES = [
+  {
+    query: "worried about fraud",
+    relevance: "About Mosey and About Us rank 1-2: \"about\" is a strong term match. Security & Fraud sits at #3. 13 hits.",
+    semantic: "Security & Fraud jumps to #1 - the model reads the intent, not the stop-word. 33 hits.",
+    takeaway: "Semantic wins when common words in the query create noisy term matches.",
+  },
+  {
+    query: "retirement",
+    relevance: "2 hits: Pensions and Investments - only pages carrying the term or its synonym (pension).",
+    semantic: "11 hits, adding 5 Savings Tips for 2025, Fixed Rate Savings, and the Family finance journey case study - none of which contain \"retirement\".",
+    takeaway: "Semantic widens recall to conceptually-related content that shares no keywords.",
+  },
+  {
+    query: "mortgage",
+    relevance: "Mortgage page first, then Homepage, Personal Banking, and the mortgage-rates article. 15 hits.",
+    semantic: "Same top hits, same order - 44 hits, but the extra 29 are all lower down.",
+    takeaway: "For a specific known term, BM25 already nails the top - semantic only pads the tail. Don't reach for it by default.",
+  },
+];
+
 const FUZZY_SNIPPET = `# fuzzy: true enables approximate (typo-tolerant) matching. It works on
 # _fulltext { match } as well as the field operators contains, eq, and in.
 # Edit distance scales with term length (Damerau-Levenshtein):
@@ -491,6 +515,42 @@ export default function SearchDemoPage() {
           </div>
 
           <CodeBlock code={SEMANTIC_SNIPPET} label="Semantic search with configurable weight" />
+
+          <p className="text-sm text-on-surface-variant mt-8 mb-4 max-w-3xl leading-relaxed">
+            <strong>Try these in the demo above.</strong> Toggle between Relevance and Semantic (and
+            push the weight toward 1.0) to see the ranking model change the result set. The starkest
+            differences show up when the query is a phrase or a concept rather than a single known term.
+          </p>
+
+          <div className="space-y-3">
+            {RANKING_EXAMPLES.map(({ query, relevance, semantic, takeaway }) => (
+              <div key={query} className="bg-surface-lowest rounded-2xl p-5 border border-ghost-border">
+                <p className="font-mono text-sm font-semibold text-on-surface mb-3">
+                  &ldquo;{query}&rdquo;
+                </p>
+                <div className="grid md:grid-cols-2 gap-x-6 gap-y-2 text-xs leading-relaxed">
+                  <div>
+                    <span className="font-mono font-semibold text-on-surface-variant">RELEVANCE</span>
+                    <p className="text-on-surface-variant mt-1">{relevance}</p>
+                  </div>
+                  <div>
+                    <span className="font-mono font-semibold text-brand">SEMANTIC</span>
+                    <p className="text-on-surface-variant mt-1">{semantic}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-on-surface-variant mt-3 pt-3 border-t border-ghost-border">
+                  {takeaway}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-xs text-on-surface-variant mt-4 max-w-3xl leading-relaxed">
+            Note: on this content set the BM25 scores dwarf the semantic scores in magnitude, so raising{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">_semanticWeight</code> mostly
+            broadens recall and reorders the tail rather than upending the top hits. A larger corpus with
+            more near-duplicate phrasing shows a stronger reshuffle.
+          </p>
         </section>
 
         <section id="fuzzy">
