@@ -101,6 +101,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body
         className={`${vcNudge.variable} ${dieGrotesk.variable} ${robotoMono.variable} min-h-screen bg-surface text-on-surface font-body antialiased overflow-x-clip`}
       >
+        {/* Portal target for the /preview editorial toolbar - kept first so the
+            bar renders above the site nav at the very top of the page. */}
+        <div id="preview-topbar-slot" />
         <noscript>
           <iframe
             src="https://www.googletagmanager.com/ns.html?id=GTM-5SVM6NH"

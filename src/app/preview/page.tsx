@@ -9,10 +9,9 @@ import { getPreviewClient } from "@/lib/optimizely/previewClient";
 import { graphqlFetch } from "@/lib/optimizely/client";
 import { PREVIEW_DIAGNOSTIC_QUERY } from "@/lib/graphql/queries/PreviewDiagnostic";
 import { buildExternalPreviewQuery } from "@/lib/preview/shareLink";
-import PreviewDebugOverlay, {
+import PreviewToolbar, {
   type ServedMetadata,
-} from "@/components/preview/PreviewDebugOverlay";
-import ExternalPreviewLink from "@/components/preview/ExternalPreviewLink";
+} from "@/components/preview/PreviewToolbar";
 
 export const dynamic = "force-dynamic";
 
@@ -118,30 +117,19 @@ async function PreviewPage({ searchParams }: Props) {
       />
       <NextPreviewComponent />
 
-      {/* In-flow toolbar at the top of the preview - fixed/sticky chrome is
-          unreliable inside the CMS preview iframe (it strands at the page
-          bottom and covers content links), so keep it in normal flow. */}
-      <div className="relative z-[2147483647] flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant bg-surface-lowest px-4 py-2">
-        <span className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-on-surface-variant">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand" />
-          Editorial preview
-        </span>
-        <div className="flex items-center gap-2">
-          <ExternalPreviewLink
-            pinnedUrl={pinnedUrl}
-            latestUrl={latestUrl}
-            version={served?.version != null ? String(served.version) : (shareVer ?? null)}
-          />
-          <PreviewDebugOverlay
-            params={redactedParams}
-            served={served}
-            serverRenderedAt={serverRenderedAt}
-            diagnosticQuery={PREVIEW_DIAGNOSTIC_QUERY}
-            diagnosticResult={diagnosticResult}
-            fetchError={fetchError}
-          />
-        </div>
-      </div>
+      {/* Portalled to a slot above the site nav; panels expand inside the bar
+          rather than floating over the page. */}
+      <PreviewToolbar
+        pinnedUrl={pinnedUrl}
+        latestUrl={latestUrl}
+        version={served?.version != null ? String(served.version) : (shareVer ?? null)}
+        params={redactedParams}
+        served={served}
+        serverRenderedAt={serverRenderedAt}
+        diagnosticQuery={PREVIEW_DIAGNOSTIC_QUERY}
+        diagnosticResult={diagnosticResult}
+        fetchError={fetchError}
+      />
 
       {content ? (
         <OptimizelyComponent content={content} />
