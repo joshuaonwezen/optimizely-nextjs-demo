@@ -7,6 +7,7 @@ import {
   resolveLatestVersion,
 } from "@/lib/optimizely/adminPreviewClient";
 import { verifyExternalPreview } from "@/lib/preview/shareLink";
+import PreviewShareRibbon from "@/components/preview/PreviewShareRibbon";
 
 export const dynamic = "force-dynamic";
 
@@ -47,9 +48,7 @@ async function ExternalPreviewPage({ searchParams }: Props) {
 
   return (
     <>
-      <div className="sticky top-0 z-50 bg-amber-400 px-4 py-1.5 text-center text-xs font-medium text-black">
-        Draft preview{servedVer ? ` (v${servedVer})` : ""} - this content is not published
-      </div>
+      <PreviewShareRibbon version={servedVer} />
       <OptimizelyComponent content={content} />
     </>
   );
