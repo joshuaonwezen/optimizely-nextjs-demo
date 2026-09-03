@@ -220,10 +220,12 @@ export async function generateStaticParams(): Promise<PageParams[]> {
   return pages
     .map((page: any) => {
       const url: string = page?._metadata?.url?.default ?? "";
-      if (!url || url === "/") return { slug: undefined };
 
-      // English homepage variants → root route (no slug)
-      if (url === "/en/" || url === "/en/homepage/") return { slug: undefined };
+      // Homepage URLs — exclude from static generation. The homepage reads cookies()
+      // for ODP personalisation (getVisitorContext), which throws DYNAMIC_SERVER_USAGE
+      // at build time. Omitting it here means Next.js serves it on-demand at runtime,
+      // which is correct since cookie access forces dynamic rendering anyway.
+      if (!url || url === "/" || url === "/en/" || url === "/en/homepage/") return null;
 
       // For English pages, strip the /en/ prefix so URLs stay clean (/savings not /en/savings).
       // For all other locales, keep the full path (/nl/savings stays /nl/savings).
@@ -232,7 +234,7 @@ export async function generateStaticParams(): Promise<PageParams[]> {
         locale === "en" ? url.replace(/^\/en\//, "/") : url;
 
       const segments = effective.replace(/^\/|\/$/g, "").split("/").filter(Boolean);
-      if (segments.length === 0) return { slug: undefined };
+      if (segments.length === 0) return null;
       return { slug: segments };
     })
     .filter(Boolean);
