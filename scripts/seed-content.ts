@@ -34,6 +34,7 @@ import {
   gridSection,
   elementComponent,
   rootComponent,
+  patchPublishedPageProperties,
   type CompNode,
 } from "./_shared";
 import { FAQ_ITEMS, INVESTMENT_FAQ_ITEMS, HELP_FAQ_ITEMS } from "./faq-data";
@@ -1984,6 +1985,8 @@ async function main() {
       body: { html: "<p>Compare your options or chat to a real Mosey person in the app seven days a week - we will help you choose with confidence.</p>" },
     },
   }, "Shared Callout", { skipPublish: true });
+  // Create without `link` — the currentAccount page doesn't exist yet. The link is
+  // patched in after Pass 1 creates all page stubs.
   await createContent({
     key: SHARED_CTA_KEY,
     contentType: "CallToAction",
@@ -1992,7 +1995,6 @@ async function main() {
     displayName: "Shared - Open an account CTA",
     properties: {
       label: "Open an account today",
-      link: `cms://content/${PAGE_KEYS.currentAccount}`,
     },
   }, "Shared CTA", { skipPublish: true });
   await ensurePublished(SHARED_CALLOUT_KEY);
@@ -2025,6 +2027,11 @@ async function main() {
   for (const page of level1) await createPageStub(page);
   for (const page of level2) await createPageStub(page);
   for (const page of level3) await createPageStub(page);
+
+  // Patch the Shared CTA's link now that the currentAccount page stub exists.
+  // patchPublishedPageProperties creates a new draft first, so this is safe even
+  // on re-seeds where the CTA is already published.
+  await patchPublishedPageProperties(SHARED_CTA_KEY, { link: `cms://content/${PAGE_KEYS.currentAccount}` });
 
   console.log(`\n--- Pass 2: applying compositions ---`);
   for (const page of level1) await applyComposition(page);

@@ -172,6 +172,46 @@ const NAV_TREE: NavDef[] = [
 
 // Graph query: build url → CMS key map for all pages/experiences
 
+/**
+ * Walk the CMS container tree via the Management API and build a url → key map
+ * for all pages directly under the site root. Unlike the Graph-based lookup,
+ * this is immediate — no 30-60s indexing lag — so it reliably finds pages that
+ * were just published by seed-content in the same runner invocation.
+ *
+ * Strategy: list the direct children of each container; for each page, fetch its
+ * routeSegment from the locales endpoint; construct the URL by prepending the
+ * parent path. Recurse into sub-containers (DynamicExperience/TraditionalPage
+ * children) up to 4 levels deep so every seeded nav target is covered.
+ */
+async function fetchPageKeyMapFromApi(containerKey: string, parentPath: string, depth = 0): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (depth > 4) return map;
+
+  const { ok, body } = await apiFetch(`/${containerKey}/items`);
+  if (!ok) return map;
+  const items = (body as { items?: Array<{ key: string; contentType?: string }> }).items ?? [];
+
+  for (const item of items) {
+    const ct = item.contentType ?? "";
+    if (ct !== "DynamicExperience" && ct !== "TraditionalPage") continue;
+
+    const { ok: lok, body: lBody } = await apiFetch(`/${item.key}/locales/en?pageSize=1`);
+    if (!lok) continue;
+    const routeSegment = ((lBody as { items?: Array<{ routeSegment?: string }> }).items?.[0]?.routeSegment ?? "").trim();
+    if (!routeSegment) continue;
+
+    const path = `${parentPath}/${routeSegment}`;
+    map.set(path, item.key);
+    if (path.startsWith("/en/")) map.set(path.replace(/^\/en/, ""), item.key);
+    else map.set("/en" + path, item.key);
+
+    // Recurse into this page's children (sub-pages sit inside it as a container).
+    const sub = await fetchPageKeyMapFromApi(item.key, path, depth + 1);
+    for (const [u, k] of sub) map.set(u, k);
+  }
+  return map;
+}
+
 /** One Graph read: url → CMS key map (with /en cross-prefix aliases). */
 async function fetchPageKeyMap(): Promise<Map<string, string>> {
   const query = `
@@ -225,21 +265,40 @@ function urlResolves(map: Map<string, string>, url: string): boolean {
  * seed-nav.ts to backfill.
  */
 async function buildPageKeyMap(requiredUrls: string[] = []): Promise<Map<string, string>> {
+  // Primary: walk the Management API container tree — immediate, no indexing lag.
+  // Pages published by seed-content are available here the moment seed-nav starts.
+  console.log("  [mgmt-api] Walking container tree for page keys...");
+  const apiMap = await fetchPageKeyMapFromApi(CONTAINER, "/en");
+  console.log(`  [mgmt-api] Found ${apiMap.size} page URL entries (incl. aliases)`);
+
+  // Merge into a working map so Graph polling below can supplement any gaps.
+  const map = new Map<string, string>(apiMap);
+
+  const stillMissing = requiredUrls.filter((u) => !urlResolves(map, u));
+  if (stillMissing.length === 0) {
+    console.log(`  [mgmt-api] All ${requiredUrls.length} required nav page URLs resolved without Graph polling.`);
+    return map;
+  }
+
+  // Fallback: poll Graph for URLs the container walk missed (e.g. pages published
+  // before this seed run that live outside the root container tree, or instances
+  // where routeSegments aren't indexed by the Management API yet).
+  console.log(`  [graph] ${stillMissing.length} URL(s) not found via Management API — supplementing from Graph...`);
   const MAX_ATTEMPTS = 16;  // ~16 * 15s ≈ 4 min ceiling
-  let map = new Map<string, string>();
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    map = await fetchPageKeyMap();
+    const graphMap = await fetchPageKeyMap();
+    for (const [u, k] of graphMap) if (!map.has(u)) map.set(u, k);
     const missing = requiredUrls.filter((u) => !urlResolves(map, u));
-    if (map.size > 0 && missing.length === 0) {
-      console.log(`  [graph] All ${requiredUrls.length} required nav page URLs indexed (${map.size} entries incl. aliases)`);
+    if (missing.length === 0) {
+      console.log(`  [graph] All remaining nav URLs resolved (attempt ${attempt}/${MAX_ATTEMPTS}).`);
       return map;
     }
-    console.log(`  [graph] ${map.size} entries; ${missing.length}/${requiredUrls.length} required nav URLs not yet indexed (attempt ${attempt}/${MAX_ATTEMPTS}) - waiting...`);
+    console.log(`  [graph] ${missing.length} URL(s) still missing (attempt ${attempt}/${MAX_ATTEMPTS}) - waiting...`);
     if (attempt < MAX_ATTEMPTS) await new Promise((r) => setTimeout(r, 15000));
   }
-  const stillMissing = requiredUrls.filter((u) => !urlResolves(map, u));
+  const unresolved = requiredUrls.filter((u) => !urlResolves(map, u));
   console.warn(
-    `  [warn] ${stillMissing.length} nav page URL(s) still not indexed after ${MAX_ATTEMPTS} attempts - ` +
+    `  [warn] ${unresolved.length} nav page URL(s) still not found after Management API walk + ${MAX_ATTEMPTS} Graph attempts - ` +
     `those nav items will be created without an href. Re-run 'npx tsx scripts/seed-nav.ts' once Graph catches up.`
   );
   return map;
