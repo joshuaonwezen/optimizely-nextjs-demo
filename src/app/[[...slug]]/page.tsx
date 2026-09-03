@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { unstable_noStore as noStore } from "next/cache";
 import { getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
@@ -109,6 +110,9 @@ async function CmsPage({
   //      other route stays static/ISR and never calls ODP.
   let variationValues = activeVariations;
   if (variationValues.length === 0 && !cleanSlug) {
+    // Reading cookies makes this render dynamic. noStore() tells Next.js not to
+    // cache the route output, resolving the conflict with export const revalidate.
+    noStore();
     const { userId } = await getVisitorContext();
     const key = resolveVariationKey(await queryOdpSegments(userId));
     if (key) variationValues = [key];
