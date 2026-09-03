@@ -98,16 +98,11 @@ async function PreviewPage({ searchParams }: Props) {
   })();
   const shareLoc = typeof params.loc === "string" ? params.loc : "en";
   const shareVer = typeof params.ver === "string" ? params.ver : undefined;
-  const pinnedQuery =
+  const shareQuery =
     origin && contentKey
       ? buildExternalPreviewQuery({ key: contentKey, loc: shareLoc, ver: shareVer })
       : null;
-  const latestQuery =
-    origin && contentKey
-      ? buildExternalPreviewQuery({ key: contentKey, loc: shareLoc })
-      : null;
-  const pinnedUrl = pinnedQuery ? `${origin}/preview/share${pinnedQuery}` : null;
-  const latestUrl = latestQuery ? `${origin}/preview/share${latestQuery}` : null;
+  const shareUrl = shareQuery ? `${origin}/preview/share${shareQuery}` : null;
 
   return (
     <>
@@ -117,12 +112,10 @@ async function PreviewPage({ searchParams }: Props) {
       />
       <NextPreviewComponent />
 
-      {/* Portalled to a slot above the site nav; panels expand inside the bar
-          rather than floating over the page. */}
+      {/* Portalled to a slot above the site nav; the diagnostics panel expands
+          inside the bar rather than floating over the page. */}
       <PreviewToolbar
-        pinnedUrl={pinnedUrl}
-        latestUrl={latestUrl}
-        version={served?.version != null ? String(served.version) : (shareVer ?? null)}
+        shareUrl={shareUrl}
         params={redactedParams}
         served={served}
         serverRenderedAt={serverRenderedAt}

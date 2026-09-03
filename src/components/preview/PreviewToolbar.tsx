@@ -14,12 +14,9 @@ export interface ServedMetadata {
 }
 
 interface Props {
-  /** Link pinned to the version currently being previewed. */
-  pinnedUrl: string | null;
-  /** Link that always resolves the newest version. */
-  latestUrl: string | null;
-  /** Version number of the pinned link, for labels. */
-  version?: string | null;
+  /** Signed share link (pinned to the version being previewed), or null when
+   *  OPTIMIZELY_PREVIEW_SECRET is unset. */
+  shareUrl: string | null;
   params: Record<string, string>;
   served: ServedMetadata | null;
   serverRenderedAt: string;
@@ -28,8 +25,6 @@ interface Props {
   fetchError?: string;
 }
 
-type OpenPanel = "share" | "debug" | null;
-
 function useSecondsSince(iso: string): number {
   const [now, setNow] = useState(() => new Date(iso).getTime());
   useEffect(() => {
@@ -37,6 +32,36 @@ function useSecondsSince(iso: string): number {
     return () => clearInterval(t);
   }, [iso]);
   return Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
+}
+
+// navigator.clipboard needs a `clipboard-write` permission that the CMS preview
+// iframe does not grant, so fall back to the legacy execCommand path (which
+// works from a user gesture inside the iframe).
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fall through to execCommand */
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return ok;
+  } catch {
+    return false;
+  }
 }
 
 function Chevron({ open }: { open: boolean }) {
@@ -94,13 +119,11 @@ function DebugSection({
 }
 
 // The /preview editorial toolbar. Portalled to a slot at the very top of <body>
-// (above the site nav). Panels expand INSIDE the bar and push the page down -
-// nothing floats over the content, and nothing is fixed/sticky (both are
-// unreliable inside the CMS preview iframe).
+// (above the site nav). The diagnostics panel expands INSIDE the bar and pushes
+// the page down; nothing is fixed/sticky (both strand at the document bottom
+// inside the CMS preview iframe).
 export default function PreviewToolbar({
-  pinnedUrl,
-  latestUrl,
-  version,
+  shareUrl,
   params,
   served,
   serverRenderedAt,
@@ -109,8 +132,7 @@ export default function PreviewToolbar({
   fetchError,
 }: Props) {
   const isClient = useIsClient();
-  const [panel, setPanel] = useState<OpenPanel>(null);
-  const [mode, setMode] = useState<"pinned" | "latest">(pinnedUrl ? "pinned" : "latest");
+  const [debugOpen, setDebugOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -121,8 +143,6 @@ export default function PreviewToolbar({
   const mismatch = Boolean(requestedVer && servedVer && requestedVer !== servedVer);
   const alert = Boolean(mismatch || fetchError);
   const resultText = JSON.stringify(diagnosticResult, null, 2);
-  const canShare = Boolean(pinnedUrl || latestUrl);
-  const activeUrl = (mode === "latest" ? latestUrl : pinnedUrl) ?? pinnedUrl ?? latestUrl ?? "";
 
   useEffect(() => () => clearTimeout(copyTimer.current), []);
 
@@ -130,38 +150,41 @@ export default function PreviewToolbar({
   const slot = document.getElementById("preview-topbar-slot");
   if (!slot) return null;
 
-  const toggle = (p: Exclude<OpenPanel, null>) => setPanel((cur) => (cur === p ? null : p));
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(activeUrl);
-      setCopied(true);
-      clearTimeout(copyTimer.current);
-      copyTimer.current = setTimeout(() => setCopied(false), 1400);
-    } catch {
-      /* clipboard unavailable */
-    }
+  async function share() {
+    if (!shareUrl) return;
+    const ok = await copyToClipboard(shareUrl);
+    if (!ok) return;
+    setCopied(true);
+    clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopied(false), 1600);
   }
 
   return createPortal(
     <div
       data-component="PreviewToolbar"
-      className="border-b border-outline-variant bg-surface-lowest text-on-surface"
+      className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant bg-surface-lowest px-4 py-2 text-on-surface"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2">
-        <span className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-on-surface-variant">
-          <span className={`inline-block h-1.5 w-1.5 rounded-full ${alert ? "bg-error" : "bg-brand"}`} />
-          Editorial preview{servedVer ? ` · v${servedVer}` : ""}
-        </span>
+      <span className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-on-surface-variant">
+        <span className={`inline-block h-1.5 w-1.5 rounded-full ${alert ? "bg-error" : "bg-brand"}`} />
+        Editorial preview{servedVer ? ` · v${servedVer}` : ""}
+      </span>
 
-        <div className="flex items-center gap-2">
-          {canShare && (
-            <button
-              type="button"
-              onClick={() => toggle("share")}
-              aria-expanded={panel === "share"}
-              className="flex items-center gap-1.5 rounded-full border border-outline-variant bg-surface-lowest py-1.5 pl-2.5 pr-3 text-sm font-medium text-on-surface shadow-sm transition-shadow hover:shadow"
-            >
+      <div className="flex items-center gap-2">
+        {shareUrl && (
+          <button
+            type="button"
+            onClick={share}
+            className="flex items-center gap-1.5 rounded-full border border-outline-variant bg-surface-lowest py-1.5 pl-2.5 pr-3 text-sm font-medium text-on-surface shadow-sm transition-shadow hover:shadow"
+          >
+            {copied ? (
+              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden className="h-4 w-4 shrink-0 text-brand">
+                <path
+                  fillRule="evenodd"
+                  d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0l-3.5-3.5a1 1 0 1 1 1.4-1.4l2.8 2.8 6.8-6.8a1 1 0 0 1 1.4 0Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            ) : (
               <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden className="h-4 w-4 shrink-0 text-brand">
                 <path
                   fillRule="evenodd"
@@ -169,71 +192,32 @@ export default function PreviewToolbar({
                   clipRule="evenodd"
                 />
               </svg>
-              <span>Share link</span>
-              <Chevron open={panel === "share"} />
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => toggle("debug")}
-            aria-expanded={panel === "debug"}
-            title="Preview diagnostics"
-            className={`flex items-center gap-1.5 rounded-full border py-1.5 pl-2.5 pr-3 text-sm font-medium shadow-sm transition-shadow hover:shadow ${
-              alert
-                ? "border-error/40 bg-error/10 text-error"
-                : "border-outline-variant bg-surface-lowest text-on-surface"
-            }`}
-          >
-            <span className={`inline-block h-2 w-2 rounded-full ${alert ? "bg-error" : "bg-brand"}`} />
-            <span className="font-mono text-xs">{servedVer ? `v${servedVer}` : "preview"} · {seconds}s</span>
-            <Chevron open={panel === "debug"} />
+            )}
+            <span>{copied ? "Link copied" : "Share link"}</span>
           </button>
-        </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setDebugOpen((o) => !o)}
+          aria-expanded={debugOpen}
+          title="Preview diagnostics"
+          className={`flex items-center gap-1.5 rounded-full border py-1.5 pl-2.5 pr-3 text-sm font-medium shadow-sm transition-shadow hover:shadow ${
+            alert
+              ? "border-error/40 bg-error/10 text-error"
+              : "border-outline-variant bg-surface-lowest text-on-surface"
+          }`}
+        >
+          <span className={`inline-block h-2 w-2 rounded-full ${alert ? "bg-error" : "bg-brand"}`} />
+          <span className="font-mono text-xs">
+            {servedVer ? `v${servedVer}` : "preview"} · {seconds}s
+          </span>
+          <Chevron open={debugOpen} />
+        </button>
       </div>
 
-      {panel === "share" && canShare && (
-        <div className="border-t border-outline-variant px-4 py-3">
-          <div className="mx-auto flex max-w-md flex-col gap-2">
-            <div className="flex gap-1.5">
-              {([
-                ["pinned", version ? `Version ${version}` : "This version", !pinnedUrl],
-                ["latest", "Always latest", !latestUrl],
-              ] as const).map(([m, label, disabled]) => (
-                <button
-                  key={m}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => setMode(m)}
-                  className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                    mode === m
-                      ? "bg-brand-fill text-on-brand"
-                      : "bg-surface-low text-on-surface hover:bg-surface"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <input
-              readOnly
-              value={activeUrl}
-              onFocus={(e) => e.currentTarget.select()}
-              className="w-full rounded-lg border border-outline-variant bg-surface-low px-2.5 py-2 text-xs font-mono text-on-surface-variant"
-            />
-            <button
-              type="button"
-              onClick={copy}
-              className="rounded-lg bg-brand-fill py-2 text-sm font-medium text-on-brand transition-colors hover:bg-brand-fill-dim"
-            >
-              {copied ? "Copied" : "Copy link"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {panel === "debug" && (
-        <div className="border-t border-outline-variant px-4 py-3 font-mono">
+      {debugOpen && (
+        <div className="w-full border-t border-outline-variant pt-3 font-mono">
           <div className="mx-auto max-w-md">
             {fetchError ? (
               <div className="mb-2 rounded bg-error/10 px-2 py-1.5 text-[11px] text-error">

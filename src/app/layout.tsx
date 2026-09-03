@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { Roboto_Mono } from "next/font/google";
 import NavigationHeader from "@/components/layout/NavigationHeader";
 import GlobalBanner from "@/components/layout/GlobalBanner";
+import HideOnPreview from "@/components/layout/HideOnPreview";
 import Footer from "@/components/layout/Footer";
 import DemoToolbar from "@/components/demo/DemoToolbar";
 import OdpSetup from "@/components/OdpSetup";
@@ -112,8 +113,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
-        <OdpRecoveryBanner />
-        <GlobalBanner />
+        <HideOnPreview>
+          <OdpRecoveryBanner />
+          <GlobalBanner />
+        </HideOnPreview>
         <NavigationHeader />
         <main>{children}</main>
         <RatesBar />
