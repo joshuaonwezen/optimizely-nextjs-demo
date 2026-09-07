@@ -23,6 +23,14 @@
  *
  * Note: GA4 drops any event older than ~72 hours, so WINDOW_HOURS must stay
  * under that. To build up months of history, run this on a daily schedule.
+ *
+ * Experiment attribution: every event carries a fake exp_variant_string param
+ * (format RuleKey-VariationName, comma-joined for a visitor in >1 experiment).
+ * The rule keys / variation names come from the live FX datafile when
+ * OPTIMIZELY_FX_SDK_KEY is set, else a small hardcoded fallback pool. Each
+ * synthetic user is assigned a stable 0-2 experiments. To surface this in GA4,
+ * add an event-scoped custom dimension on the parameter `exp_variant_string`
+ * (GA4 Admin -> Custom definitions).
  */
 
 import { config } from "dotenv";
@@ -35,6 +43,10 @@ config({ path: ".env.local" });
 // silently dropped with a 204.
 const MEASUREMENT_ID = process.env.GA4_MEASUREMENT_ID || "G-EKYQLXD2VB";
 const API_SECRET = process.env.GA4_API_SECRET;
+// Optional. When set, exp_variant_string values are pulled from the live FX
+// datafile so they match the experiments actually configured. Without it, the
+// hardcoded FALLBACK_EXPERIMENTS pool is used instead.
+const FX_SDK_KEY = process.env.OPTIMIZELY_FX_SDK_KEY;
 
 if (!API_SECRET) {
   console.error(
@@ -105,6 +117,15 @@ const SOURCES = [
   { utm_source: "bing", utm_medium: "organic", utm_campaign: "(organic)" },
 ];
 
+// Used only when the live FX datafile can't be fetched. Shape matches what
+// buildExperimentPool() returns: one entry per running experiment, each with
+// its variation keys.
+const FALLBACK_EXPERIMENTS = [
+  { ruleKey: "homepage_hero_experiment", variations: ["off", "variation_1", "variation_2"] },
+  { ruleKey: "savings_cta_experiment", variations: ["control", "urgency_copy"] },
+  { ruleKey: "mortgage_calculator_experiment", variations: ["control", "inline_widget"] },
+];
+
 const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const pick = (arr) => arr[rand(0, arr.length - 1)];
 
@@ -117,6 +138,46 @@ function pickWeighted(arr) {
     if (r < 0) return item;
   }
   return arr[arr.length - 1];
+}
+
+// Pool of experiments to attribute synthetic users to. Discovered from the live
+// FX datafile (every running experiment) so it never drifts from what is
+// configured; falls back to FALLBACK_EXPERIMENTS if the datafile is unreachable.
+async function buildExperimentPool() {
+  if (!FX_SDK_KEY) {
+    console.warn(
+      "⚠ OPTIMIZELY_FX_SDK_KEY not set - using the hardcoded fallback experiment pool for exp_variant_string."
+    );
+    return FALLBACK_EXPERIMENTS;
+  }
+  try {
+    const res = await fetch(`https://cdn.optimizely.com/datafiles/${FX_SDK_KEY}.json`, {
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const datafile = JSON.parse(await res.text());
+    const pool = (datafile.experiments ?? [])
+      .filter((e) => e.status === "Running" && Array.isArray(e.variations) && e.variations.length > 0)
+      .map((e) => ({ ruleKey: e.key, variations: e.variations.map((v) => v.key) }));
+    if (pool.length === 0) {
+      console.warn("⚠ No running experiments in the FX datafile - using the fallback pool.");
+      return FALLBACK_EXPERIMENTS;
+    }
+    return pool;
+  } catch (err) {
+    console.warn(`⚠ Could not read the FX datafile (${err.message}) - using the fallback pool.`);
+    return FALLBACK_EXPERIMENTS;
+  }
+}
+
+// Random 0-2 experiments for one synthetic user, each formatted
+// RuleKey-VariationName and comma-joined (GA4's multi-experiment convention).
+// Returns null when the user is in no experiment, so the param is just omitted.
+function pickExpVariantString(pool) {
+  const count = Math.min(rand(0, 2), pool.length);
+  if (count === 0) return null;
+  const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, count);
+  return shuffled.map((exp) => `${exp.ruleKey}-${pick(exp.variations)}`).join(",");
 }
 
 const endpoint = DEBUG
@@ -139,7 +200,7 @@ function buildLocation(sub, locale, source) {
 }
 
 // Build one request payload (one session) with all its events.
-function buildSession({ clientId, locale }) {
+function buildSession({ clientId, locale, expVariantString }) {
   const source = pick(SOURCES);
   // In verify mode keep everything at "now" so it lands in DebugView/Realtime.
   const sessionStartMs = VERIFY ? now - 30_000 : rand(floorMs + 60_000, now - 60_000);
@@ -152,6 +213,7 @@ function buildSession({ clientId, locale }) {
   const commonParams = () => ({
     session_id: String(sessionId),
     engagement_time_msec: rand(1000, 45000),
+    ...(expVariantString ? { exp_variant_string: expVariantString } : {}),
     ...(VERIFY ? { debug_mode: true } : {}),
   });
 
@@ -244,7 +306,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // name slipping in). This does NOT validate credentials - GA4 can't; see
 // verifyIngestion() for that.
 async function preflight() {
-  const sample = buildSession({ clientId: "0.0", locale: "en" });
+  const sample = buildSession({
+    clientId: "0.0",
+    locale: "en",
+    expVariantString: "sample_experiment-variation_1",
+  });
   const res = await fetch(
     `https://www.google-analytics.com/debug/mp/collect?measurement_id=${MEASUREMENT_ID}&api_secret=${API_SECRET}`,
     { method: "POST", body: JSON.stringify({ ...sample, timestamp_micros: String(now * 1000) }) }
@@ -384,6 +450,11 @@ console.log(
 
 if (!DEBUG) await preflight();
 
+const EXPERIMENT_POOL = await buildExperimentPool();
+console.log(
+  `Experiment pool: ${EXPERIMENT_POOL.length} experiment(s) [${EXPERIMENT_POOL.map((e) => e.ruleKey).join(", ")}]`
+);
+
 let sessions = 0;
 let nlSessions = 0;
 let events = 0;
@@ -391,10 +462,11 @@ let failures = 0;
 
 for (let u = 0; u < NUM_USERS; u++) {
   const clientId = `${rand(1000000000, 1999999999)}.${Math.floor(floorMs / 1000)}`;
+  const expVariantString = pickExpVariantString(EXPERIMENT_POOL);
   const sessionCount = rand(SESSIONS_PER_USER[0], SESSIONS_PER_USER[1]);
   for (let s = 0; s < sessionCount; s++) {
     const locale = FORCE_LOCALE || (Math.random() < NL_SHARE ? "nl" : "en");
-    const payload = buildSession({ clientId, locale });
+    const payload = buildSession({ clientId, locale, expVariantString });
     const result = await send(payload);
     if (result.ok) {
       sessions++;

@@ -25,3 +25,7 @@ jobs:
           # repo secrets to activate; harmless (warns and skips) until then.
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
           GA4_SA_KEY: ${{ secrets.GA4_SA_KEY }}
+          # Datafile source for the fake exp_variant_string param (rule keys +
+          # variation names). Optional - a hardcoded fallback pool is used if
+          # unset. Same secret the experiment-odp-seed job already uses.
+          OPTIMIZELY_FX_SDK_KEY: ${{ secrets.OPTIMIZELY_FX_SDK_KEY }}
