@@ -251,7 +251,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
       {(bioContent || bioHtml) && (
         <div
           {...pa("bio")}
-          className="mt-6 text-base leading-relaxed text-on-surface-variant space-y-4"
+          className={`richtext ${fallback.invert ? "richtext-invert" : ""} mt-6 text-base text-on-surface-variant`}
         >
           {bioContent && <RichText content={bioContent} />}
           {bioHtml && <div dangerouslySetInnerHTML={{ __html: bioHtml }} />}

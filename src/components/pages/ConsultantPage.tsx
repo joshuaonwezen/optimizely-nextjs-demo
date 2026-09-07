@@ -81,7 +81,7 @@ export default function ConsultantPage({ content }: { content: ConsultantContent
       </header>
 
       {(content.bio?.json || content.bio?.html) && (
-        <div {...pa("bio")} className="prose text-on-surface-variant leading-relaxed space-y-6 mb-12">
+        <div {...pa("bio")} className="richtext text-on-surface-variant mb-12">
           {content.bio.json ? (
             <RichText content={content.bio.json as RichTextProps["content"]} />
           ) : (

@@ -127,7 +127,7 @@ export default function SpotlightBlock(props: SpotlightBlockProps) {
           {(textContent || textHtml) && (
             <div
               {...pa("textfield")}
-              className={`mt-4 text-base leading-relaxed ${bg.textMuted || "text-on-surface-variant"} space-y-3`}
+              className={`richtext ${bg.invert ? "richtext-invert" : ""} mt-4 text-base ${bg.textMuted || "text-on-surface-variant"}`}
             >
               {textContent && <RichText content={textContent} />}
               {textHtml && <div dangerouslySetInnerHTML={{ __html: textHtml }} />}
