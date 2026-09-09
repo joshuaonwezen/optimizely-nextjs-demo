@@ -208,6 +208,15 @@ export default withAppContext(CmsPage);
 
 /** Pre-render all known CMS page paths at build time */
 export async function generateStaticParams(): Promise<PageParams[]> {
+  // Always pre-render the homepage. Its no-slug branch calls cookies() (via the
+  // ODP path), which only resolves to a dynamic route cleanly when Next observes
+  // that dynamic usage during a build-time prerender. On a freshly created
+  // instance Graph has no pages, so the query below returns nothing and "/" would
+  // otherwise be omitted - Next then tries to statically render it on demand and
+  // cookies() throws DYNAMIC_SERVER_USAGE (500). Pinning it makes every instance
+  // behave like a seeded one; the render still notFound()s until content exists.
+  const HOMEPAGE: PageParams = { slug: undefined };
+
   let result;
   try {
     result = await graphqlFetch<any>(
@@ -216,12 +225,12 @@ export async function generateStaticParams(): Promise<PageParams[]> {
       { next: { revalidate: 3600 } }
     );
   } catch {
-    return [];
+    return [HOMEPAGE];
   }
 
   const pages = result.data?._Page?.items ?? [];
 
-  return pages
+  const params: PageParams[] = pages
     .map((page: any) => {
       const url: string = page?._metadata?.url?.default ?? "";
       if (!url || url === "/") return { slug: undefined };
@@ -240,6 +249,15 @@ export async function generateStaticParams(): Promise<PageParams[]> {
       return { slug: segments };
     })
     .filter(Boolean);
+
+  // De-dupe: "/", "/en/" and "/en/homepage/" all map to the homepage param.
+  const seen = new Set<string>();
+  return [HOMEPAGE, ...params].filter((p) => {
+    const key = (p.slug ?? []).join("/");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 // SEO fields come from the SEO contract spread into every page type in

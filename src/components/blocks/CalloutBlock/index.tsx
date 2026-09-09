@@ -83,15 +83,16 @@ export default function CalloutBlock(props: CalloutBlockProps) {
   const style = resolveStyleClasses(props.displaySettings, { background: "white" });
 
   const bodyContent = (() => {
+    const richTextClass = `richtext ${style.invert ? "richtext-invert" : ""}`.trim();
     if (data.body && typeof data.body === "object" && "json" in data.body && data.body.json) {
       return (
-        <div {...pa("body")}>
+        <div {...pa("body")} className={richTextClass}>
           <RichText content={data.body.json as RichTextProps["content"]} />
         </div>
       );
     }
     if (typeof data.body === "string" && data.body) {
-      return <div {...pa("body")} dangerouslySetInnerHTML={{ __html: data.body }} />;
+      return <div {...pa("body")} className={richTextClass} dangerouslySetInnerHTML={{ __html: data.body }} />;
     }
     return null;
   })();

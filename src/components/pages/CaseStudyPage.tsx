@@ -153,7 +153,7 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
       {content.challenge && (
         <section className="mb-12">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-4">The challenge</h2>
-          <div {...pa("challenge")} className="prose text-on-surface-variant leading-relaxed space-y-6">
+          <div {...pa("challenge")} className="richtext text-on-surface-variant">
             {content.challenge.json ? (
               <RichText content={content.challenge.json as RichTextProps["content"]} />
             ) : content.challenge.html ? (
@@ -166,7 +166,7 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
       {content.solution && (
         <section className="mb-12">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-4">Our solution</h2>
-          <div {...pa("solution")} className="prose text-on-surface-variant leading-relaxed space-y-6">
+          <div {...pa("solution")} className="richtext text-on-surface-variant">
             {content.solution.json ? (
               <RichText content={content.solution.json as RichTextProps["content"]} />
             ) : content.solution.html ? (

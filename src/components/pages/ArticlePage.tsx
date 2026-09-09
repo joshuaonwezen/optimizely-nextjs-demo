@@ -152,7 +152,7 @@ export default async function ArticlePage({ content }: { content: ArticleContent
         </div>
       )}
 
-      <div {...pa("body")} className="prose text-on-surface-variant leading-relaxed space-y-6 mb-12">
+      <div {...pa("body")} className="richtext text-on-surface-variant mb-12">
         {content.body?.json ? (
           <RichText content={content.body.json as RichTextProps["content"]} />
         ) : content.body?.html ? (

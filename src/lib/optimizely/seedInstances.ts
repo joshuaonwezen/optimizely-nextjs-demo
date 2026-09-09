@@ -8,6 +8,7 @@ export const SEED_INSTANCES = [
   { id: "mostinnewcms", label: "mostinNewCMS", suffix: "_MOSTINNEWCMS" },
   { id: "kastlenewcms", label: "kastleNewCMS", suffix: "_KASTLENEWCMS" },
   { id: "toddcms", label: "toddCMS", suffix: "_TODDCMS" },
+  { id: "apjcms", label: "apjCMS", suffix: "_APJCMS" },
 ] as const;
 
 export type SeedInstanceId = (typeof SEED_INSTANCES)[number]["id"];

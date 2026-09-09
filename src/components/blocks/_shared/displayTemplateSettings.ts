@@ -264,7 +264,12 @@ export type ResolvedStyles = {
   font: string;
   align: string;
   size: string;
+  invert: boolean;
 };
+
+// Backgrounds whose resolved foreground is light - rich text on these needs
+// .richtext-invert so headings / list markers stay legible.
+const LIGHT_FG_BACKGROUNDS = new Set(["dark", "blueGrad", "opal"]);
 
 const DEFAULTS: Required<StyleFallbacks> = {
   background: "transparent",
@@ -295,6 +300,9 @@ export function resolveStyleClasses(ds: DisplaySettings, fallbacks: StyleFallbac
     font:      FONT_CLASSES[pick("fontStyle")] ?? FONT_CLASSES.modern,
     align:     TEXT_ALIGN_CLASSES[pick("textAlign")] ?? TEXT_ALIGN_CLASSES.left,
     size:      TEXT_SIZE_CLASSES[pick("textSize")] ?? TEXT_SIZE_CLASSES.md,
+    invert:
+      pick("textColor") === "light" ||
+      (pick("textColor") === "auto" && LIGHT_FG_BACKGROUNDS.has(pick("background"))),
   };
 }
 

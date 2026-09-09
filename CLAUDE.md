@@ -28,7 +28,7 @@ You can skip step 3 — the seed auto-discovers the root container via `GET /v1/
 
 **Step 3 — Populate `.env.local`**
 
-The runner reads credentials from `.env.local`. For the `personal` instance use the base name; for the other instances append the instance suffix (`_JOSHCMS`, `_HARRYNEWCMS`, `_MOSTINNEWCMS` — see the instances table below). Known instances are registered in `src/lib/optimizely/seedInstances.ts`.
+The runner reads credentials from `.env.local`. For the `personal` instance use the base name; for the other instances append the instance suffix (`_JOSHCMS`, `_HARRYNEWCMS`, `_MOSTINNEWCMS`, `_APJCMS` — see the instances table below). Known instances are registered in `src/lib/optimizely/seedInstances.ts`.
 
 | Variable | Required | Where to get it |
 |---|---|---|
@@ -139,6 +139,7 @@ Credentials for each instance live in `.env.local` with suffixes. The registry i
 | mostinNewCMS | `_MOSTINNEWCMS` | `app-opon10saas39t5rt002.cms.optimizely.com` | `mostin-cms.vercel.app` |
 | kastleNewCMS | `_KASTLENEWCMS` | `app-opononboards2c23t002.cms.optimizely.com` | _(TBD)_ |
 | toddCMS | `_TODDCMS` | `app-opononboardyt09bt002.cms.optimizely.com` | _(TBD)_ |
+| apjCMS | `_APJCMS` | `app-opon12saasw5l98p001.cms.optimizely.com` | `apj-cms.vercel.app` |
 
 Each instance needs its own `OPTIMIZELY_ROOT_CONTAINER_<SUFFIX>` — a UUID **without hyphens** pointing to the root container for that instance. It must exist before seeding. Two supported container setups:
 
@@ -224,7 +225,7 @@ For content seeding you need a dedicated **API key** created in the CMS UI:
 | `OPTIMIZELY_CMS_CLIENT_ID` / `_SECRET` | Content management (seed scripts, Management API) | Settings → API Keys in CMS UI |
 | `OPTIMIZELY_APP_KEY` / `_SECRET` | Graph webhook registration (Basic auth) | Settings → API Keys in CMS UI |
 
-For additional CMS instances, suffix both sets with the instance suffix (`_JOSHCMS`, `_HARRYNEWCMS`, `_MOSTINNEWCMS`, ...) and register the instance in `src/lib/optimizely/seedInstances.ts` so the `/demo/management-api` seed tool can resolve the right pair.
+For additional CMS instances, suffix both sets with the instance suffix (`_JOSHCMS`, `_HARRYNEWCMS`, `_MOSTINNEWCMS`, `_APJCMS`, ...) and register the instance in `src/lib/optimizely/seedInstances.ts` so the `/demo/management-api` seed tool can resolve the right pair.
 
 ### v1 API — endpoint and payload rules
 

@@ -56,13 +56,13 @@ export default function TraditionalPage({ content }: { content: any }) {
 
       <div {...pa("body")}>
         {content.body?.json && (
-          <div className="richtext">
+          <div className="richtext text-on-surface-variant">
             <RichText content={content.body.json} />
           </div>
         )}
         {content.body?.html && !content.body?.json && (
           <div
-            className="richtext"
+            className="richtext text-on-surface-variant"
             dangerouslySetInnerHTML={{ __html: content.body.html }}
           />
         )}

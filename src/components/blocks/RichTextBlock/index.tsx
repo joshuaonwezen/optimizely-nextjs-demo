@@ -87,7 +87,7 @@ export default function TextBlock(props: TextBlockProps) {
   if (data.body && typeof data.body === "object" && "json" in data.body && data.body.json) {
     return (
       <div data-component="TextBlock" {...pa("body")} className={containerClass}>
-        <div className={`${fontClass} ${textSizeClass} leading-relaxed space-y-6`}>
+        <div className={`richtext ${style.invert ? "richtext-invert" : ""} ${fontClass} ${textSizeClass}`}>
           <RichText content={data.body.json as RichTextProps["content"]} />
         </div>
       </div>
@@ -99,7 +99,7 @@ export default function TextBlock(props: TextBlockProps) {
       <div
         data-component="TextBlock"
         {...pa("body")}
-        className={`${containerClass} ${fontClass} ${textSizeClass} leading-relaxed`}
+        className={`${containerClass} richtext ${style.invert ? "richtext-invert" : ""} ${fontClass} ${textSizeClass}`}
         dangerouslySetInnerHTML={{ __html: data.body }}
       />
     );
