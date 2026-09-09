@@ -1,25 +1,35 @@
 /**
- * Seeds a self-contained ContactFormBlock content item and a "Contact (Classic)"
- * TraditionalPage that references it via its single featuredBlock slot.
+ * Seeds a ContactFormBlock shared block and builds a DynamicExperience contact
+ * page at /en/help/contact with only form sections in the composition:
+ *   - The custom ContactFormBlock (always present)
+ *   - A native OptiFormsContainerData form (optional, if one is indexed in Graph)
  *
- * Native OptiForms cannot be placed on a TraditionalPage (they only render inside
- * a DynamicExperience composition), so the traditional contact page uses the
- * custom ContactFormBlock instead.
+ * On re-runs the block is swept and recreated; the page composition is patched
+ * each time so both form sections stay current.
  *
- * Depends on seed-content having been indexed by Graph - the new page nests under
- * the /help page, whose key is resolved at runtime via findPageKeyByUrl. Run after
- * the main seed completes (~30-60s Graph lag). Run: npx tsx scripts/seed-contact-pages.ts
+ * If the contact page was previously a TraditionalPage (legacy seed), it is
+ * permanently deleted and replaced with a DynamicExperience at the same route.
+ *
+ * Also creates/updates a "Contact (Classic)" TraditionalPage at
+ * /en/help/contact-classic that carries the custom form via featuredBlock.
+ *
+ * Run: npx tsx scripts/seed-contact-pages.ts
  */
 
 import { config } from "dotenv";
 import { randomUUID } from "crypto";
 import {
+  uid,
+  stableKey,
   createContent,
   ensureSubfolder,
   discoverRootContainer,
   findPageKeyByUrl,
   patchPublishedPageProperties,
   sweepMisplacedSharedBlocks,
+  deleteContentByKey,
+  getManagementToken,
+  CONTENT_ENDPOINT,
   GRAPH_ENDPOINT,
   SINGLE_KEY,
 } from "./_shared";
@@ -30,77 +40,148 @@ function noHyphens(): string {
   return randomUUID().replace(/-/g, "");
 }
 
-/**
- * Fetch the current mainContent references of a TraditionalPage, excluding any
- * ContactFormBlock (a prior run's form - it was just swept, so re-adding it would
- * leave a dangling reference).
- */
-async function getMainContentKeys(pageKey: string): Promise<string[]> {
-  const query = `query MainContent($key: String!) {
-    TraditionalPage(where: { _metadata: { key: { eq: $key } } }, limit: 1) {
-      items { mainContent { __typename _metadata { key } } }
-    }
-  }`;
+const CONTACT_KEY = stableKey("mb-page", "help/contact");
+const HELP_KEY    = stableKey("mb-page", "help");
+
+/** Query Graph for a published native Form Container block key. */
+async function findNativeFormKey(): Promise<string | null> {
+  const envKey = (process.env.OPTIMIZELY_CONTACT_FORM_KEY ?? "").replace(/-/g, "");
+  if (envKey) return envKey;
+  const query = `{ OptiFormsContainerData(limit: 5) { items { _metadata { key displayName } } } }`;
   const res = await fetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
-    body: JSON.stringify({ query, variables: { key: pageKey } }),
+    body: JSON.stringify({ query }),
   });
-  if (!res.ok) return [];
+  if (!res.ok) return null;
   const data = (await res.json()) as {
-    data?: {
-      TraditionalPage?: { items?: Array<{ mainContent?: Array<{ __typename?: string; _metadata?: { key?: string } }> }> };
-    };
+    data?: { OptiFormsContainerData?: { items?: Array<{ _metadata?: { key?: string; displayName?: string } }> } };
   };
-  const items = data.data?.TraditionalPage?.items?.[0]?.mainContent ?? [];
-  return items
-    .filter((i) => i.__typename !== "ContactFormBlock")
-    .map((i) => i._metadata?.key)
-    .filter((k): k is string => Boolean(k));
+  const items = data.data?.OptiFormsContainerData?.items ?? [];
+  if (items.length === 0) return null;
+  console.log(`  [found] native form: "${items[0]._metadata?.displayName}" (key=${items[0]._metadata?.key})`);
+  return items[0]._metadata?.key ?? null;
 }
 
-// Poll Graph for the Contact Us page key. This script runs in the optional phase right after
-// the core seed, so /en/help/contact may not be indexed yet (~60s lag). Retrying instead of
-// skipping is what stops the well-linked "Contact Us" page from ending up form-less.
-async function resolveContactKey(): Promise<string | null> {
-  const urls = ["/en/help/contact", "/en/help/contact/"];
-  for (let attempt = 1; attempt <= 6; attempt++) {
-    const key = await findPageKeyByUrl(urls);
-    if (key) return key;
-    if (attempt < 6) {
-      console.log(`  [wait] Contact page not indexed yet - retry ${attempt}/6 in 15s…`);
-      await new Promise((r) => setTimeout(r, 15000));
-    }
-  }
-  return null;
-}
+/**
+ * Ensure the contact page exists as a DynamicExperience.
+ * Deletes any existing TraditionalPage at the same stable key so the
+ * DynamicExperience can be created at the same route.
+ */
+async function ensureContactExperience(): Promise<void> {
+  const token = await getManagementToken();
 
-// Attach the ContactFormBlock to the nav-linked "Contact Us" page (/en/help/contact).
-// featuredBlock is a single reference TraditionalPage ALWAYS renders, so the form shows
-// reliably; mainContent is cleared of any stale form left by a prior run.
-async function wireContactPage(blockKey: string): Promise<void> {
-  const contactKey = await resolveContactKey();
-  if (!contactKey) {
-    console.warn("  [warn] Contact page (/en/help/contact) not found in Graph after retries - re-run this script once seed-content has indexed");
-    return;
-  }
-  const existing = (await getMainContentKeys(contactKey)).filter((k) => k !== blockKey);
-  await patchPublishedPageProperties(contactKey, {
-    featuredBlock: { reference: `cms://content/${blockKey}` },
-    mainContent: existing.map((k) => ({ reference: `cms://content/${k}` })),
+  // Check what type the existing page is (if it exists).
+  const checkRes = await fetch(`${CONTENT_ENDPOINT}/${CONTACT_KEY}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
-  console.log(`  [patched] Contact Us page featuredBlock → ContactFormBlock (kept ${existing.length} mainContent block(s))`);
+
+  if (checkRes.ok) {
+    const data = (await checkRes.json()) as { contentType?: string };
+    if (data.contentType === "DynamicExperience") {
+      console.log(`  [exists] Contact page is already a DynamicExperience - skipping recreation`);
+      return;
+    }
+    // TraditionalPage (or any other type): delete it so we can recreate as DynamicExperience.
+    console.log(`  [migrate] Deleting legacy ${data.contentType ?? "page"} at key=${CONTACT_KEY}`);
+    await deleteContentByKey(CONTACT_KEY);
+  }
+
+  // Create the DynamicExperience (empty composition — patched below).
+  await createContent(
+    {
+      key: CONTACT_KEY,
+      contentType: "DynamicExperience",
+      container: HELP_KEY,
+      locale: "en",
+      displayName: "Contact Us",
+      routeSegment: "contact",
+      properties: {
+        metaTitle: "Contact Us | Mosey Bank",
+        metaDescription:
+          "Get in touch with Mosey Bank via in-app chat, phone, or our online form. Real people, seven days a week.",
+      },
+    },
+    "Contact Us page"
+  );
+  console.log(`  [created] Contact Us DynamicExperience → key=${CONTACT_KEY}`);
+}
+
+/** Patch the contact DynamicExperience composition with form sections and publish. */
+async function patchContactComposition(blockKey: string, nativeFormKey: string | null): Promise<void> {
+  const token = await getManagementToken();
+
+  // Create a fresh draft (the published version cannot be patched directly).
+  await fetch(`${CONTENT_ENDPOINT}/${CONTACT_KEY}/versions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ locale: "en", displayName: "Contact Us", routeSegment: "contact" }),
+  }).then((r) => r.text());
+
+  const vd = (await (
+    await fetch(`${CONTENT_ENDPOINT}/${CONTACT_KEY}/versions?pageSize=30`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  ).json()) as { items?: Array<{ version?: string; status?: string }> };
+
+  const version = (vd.items ?? [])
+    .filter((i) => i.status === "draft" && i.version)
+    .sort((a, b) => Number(b.version) - Number(a.version))[0]?.version;
+
+  if (!version) throw new Error(`Could not find a draft version for contact page key=${CONTACT_KEY}`);
+  console.log(`  [draft] version ${version}`);
+
+  // Build composition: custom form first, native form second (if available).
+  const nodes = [
+    {
+      id: uid(),
+      displayName: "Contact Form",
+      nodeType: "section",
+      component: { reference: `cms://content/${blockKey}` },
+    },
+    ...(nativeFormKey
+      ? [
+          {
+            id: uid(),
+            displayName: "Online Form",
+            nodeType: "section",
+            layoutType: "form",
+            component: { reference: `cms://content/${nativeFormKey}` },
+          },
+        ]
+      : []),
+  ];
+
+  const composition = {
+    id: uid(),
+    displayName: "Contact Us",
+    nodeType: "experience",
+    layoutType: "outline",
+    nodes,
+  };
+
+  const patchRes = await fetch(`${CONTENT_ENDPOINT}/${CONTACT_KEY}/versions/${version}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/merge-patch+json" },
+    body: JSON.stringify({ composition }),
+  });
+  if (!patchRes.ok) {
+    throw new Error(`PATCH composition: ${patchRes.status} ${(await patchRes.text()).slice(0, 400)}`);
+  }
+
+  const pubRes = await fetch(`${CONTENT_ENDPOINT}/${CONTACT_KEY}/versions/${version}:publish`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!pubRes.ok) throw new Error(`Publish: ${pubRes.status} ${(await pubRes.text()).slice(0, 300)}`);
+  console.log(`  [patched] Contact page composition - ${nodes.length} form section(s), published`);
 }
 
 async function main() {
   await discoverRootContainer();
-  // ContactFormBlock is a shared block - it must live inside the shared-blocks
-  // folder ("Shared Blocks → For All Applications") to show up in that tab.
+
   const blocksContainer = await ensureSubfolder("formsTools");
 
-  // Remove blocks stranded at the top-level root by earlier seed versions and
-  // stale copies in the folder (keys are random per run). The existing
-  // Contact (Classic) page is re-pointed at the fresh block below.
   console.log("--- Sweeping misplaced/stale ContactFormBlock shared blocks ---");
   await sweepMisplacedSharedBlocks(["ContactFormBlock"]);
 
@@ -125,20 +206,22 @@ async function main() {
     "ContactFormBlock"
   );
 
-  // Step 2: place the custom form on the MAIN Contact page (/en/help/contact) via
-  // its mainContent area. This is the traditional contact page the user actually
-  // reaches; the native-forms variant lives on a separate DynamicExperience page.
-  await wireContactPage(blockKey);
+  // Step 2: ensure the contact page is a DynamicExperience and patch its composition.
+  console.log("\n--- Building Contact Us DynamicExperience ---");
+  const nativeFormKey = await findNativeFormKey();
+  if (!nativeFormKey) {
+    console.log("  [info] No native OptiFormsContainerData found in Graph - contact page will have 1 form section (custom only)");
+  }
+  await ensureContactExperience();
+  await patchContactComposition(blockKey, nativeFormKey);
 
-  // Step 3: create the TraditionalPage under /help, referencing the block via featuredBlock.
-  // On re-runs the page already exists (routeSegment in use → create skips), but its
-  // old block was just swept - re-point featuredBlock at the fresh block instead.
+  // Step 3: create/update the Contact (Classic) TraditionalPage at /en/help/contact-classic.
   const existingPageKey = await findPageKeyByUrl(["/en/help/contact-classic", "/en/help/contact-classic/"]);
   if (existingPageKey) {
     await patchPublishedPageProperties(existingPageKey, {
       featuredBlock: { reference: `cms://content/${blockKey}` },
     });
-    console.log("  [patched] existing Contact (Classic) page → new ContactFormBlock");
+    console.log("\n  [patched] existing Contact (Classic) page → new ContactFormBlock");
     console.log("\nDone - ContactFormBlock reseeded and re-linked.");
     return;
   }

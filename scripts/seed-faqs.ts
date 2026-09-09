@@ -10,13 +10,12 @@ import { config } from "dotenv";
 import { getManagementToken } from "../src/lib/optimizely/auth";
 import {
   CONTENT_ENDPOINT,
-  GRAPH_ENDPOINT,
-  SINGLE_KEY,
   createContent,
   ensureSubfolder,
   discoverRootContainer,
   sweepMisplacedSharedBlocks,
   sweepSeededBlocks,
+  findPageKeyByUrl,
   wrapProps,
   noHyphens,
 } from "./_shared";
@@ -99,32 +98,35 @@ async function createFaqContainer(): Promise<void> {
 
 // Part 3 - Find the FAQs TraditionalPage and set featuredBlock
 
+async function resolveFaqsPageKey(): Promise<string | null> {
+  const urls = ["/en/help/faqs/", "/en/help/faqs", "/help/faqs/", "/help/faqs", "/en/faqs/", "/en/faqs"];
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    const key = await findPageKeyByUrl(urls);
+    if (key) return key;
+    if (attempt < 6) {
+      console.log(`  [wait] FAQs page not indexed yet - retry ${attempt}/6 in 15s…`);
+      await new Promise((r) => setTimeout(r, 15000));
+    }
+  }
+  return null;
+}
+
 async function wireFaqsPage(): Promise<void> {
   console.log("\n--- Part 3: Wiring FaqContainerBlock to FAQs page ---");
 
-  // Find the FAQs page key from Graph
-  const query = `{ _Page(where:{_metadata:{url:{default:{in:["/en/faqs/","/faqs/","/en/help/faqs/","/help/faqs/","/en/faqs","/faqs","/en/help/faqs","/help/faqs"]}}}},limit:1) { items { _metadata { key displayName } } } }`;
-  const graphRes = await fetch(GRAPH_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
-    body: JSON.stringify({ query }),
-  });
-  const graphData = await graphRes.json() as { data?: { _Page?: { items?: Array<{ _metadata?: { key?: string; displayName?: string } }> } } };
-  const faqsKey = graphData.data?._Page?.items?.[0]?._metadata?.key;
-  const faqsName = graphData.data?._Page?.items?.[0]?._metadata?.displayName;
-
+  const faqsKey = await resolveFaqsPageKey();
   if (!faqsKey) {
-    console.warn("  [warn] FAQs page not found in Graph - run seed:nav first, then re-run this script.");
+    console.warn("  [warn] FAQs page not found in Graph after retries - re-run this script once the seed has indexed.");
     return;
   }
-  console.log(`  [found] FAQs page: "${faqsName}" (key=${faqsKey})`);
+  console.log(`  [found] FAQs page key=${faqsKey}`);
 
   // Create a fresh draft (copying the published page), patch featuredBlock onto
   // it, then publish. The page's latest version is usually already published,
   // and a published version cannot be patched directly - so we make a new draft.
   const { ok: newOk, status: newStatus, text: newText, json: newVer } = await apiFetch(
     `/${faqsKey}/versions?locale=en`,
-    { method: "POST", body: JSON.stringify({ displayName: faqsName ?? "FAQs" }) }
+    { method: "POST", body: JSON.stringify({ displayName: "FAQs" }) }
   );
   if (!newOk) {
     console.error(`  [ERROR] Could not create draft for FAQs page: ${newStatus} ${newText.slice(0, 200)}`);
