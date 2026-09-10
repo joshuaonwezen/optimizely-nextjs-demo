@@ -18,6 +18,7 @@
     "seed:locations": "npx tsx scripts/seed-locations.ts",
     "seed:redirects": "npx tsx scripts/seed-redirects.ts",
     "seed:search-config": "npx tsx scripts/seed-search-config.ts",
+    "seed:categories": "npx tsx scripts/seed-categories.ts",
     "cleanup:types": "npx tsx scripts/cleanup-types.ts",
     "webhook:register": "node scripts/register-webhook.mjs",
     "ga4:seed": "node scripts/send-ga4-events.mjs",

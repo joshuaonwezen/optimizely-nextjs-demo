@@ -5,6 +5,7 @@ import {
   SEARCH_RELEVANCE_QUERY,
   SEARCH_SEMANTIC_QUERY,
 } from "@/lib/graphql/queries/SearchContent";
+import { resolveCategoryUris } from "@/lib/taxonomy";
 
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 
@@ -82,7 +83,12 @@ async function facetedSearch(q: string, categories: string[] | null, tags: strin
         title:    item._metadata.displayName as string,
         url:      item._metadata.url.default as string,
         score:    (item._score as number | null | undefined) ?? 0,
-        category: (item.category as string | null | undefined) ?? null,
+        // Category term URIs, falling back to the legacy enum for content that
+        // has not been tagged in the CMS taxonomy yet.
+        categories: resolveCategoryUris(
+          item._itemMetadata?.categories as string[] | null | undefined,
+          item.category as string | null | undefined
+        ),
         tags:     (item.tags as string[] | null | undefined) ?? [],
       }));
 
@@ -90,7 +96,8 @@ async function facetedSearch(q: string, categories: string[] | null, tags: strin
       total: raw.total ?? items.length,
       items,
       facets: {
-        category: raw.facets?.category ?? [],
+        // Bucket names are term URIs; the client resolves labels via src/lib/taxonomy.ts.
+        category: raw.facets?._itemMetadata?.categories ?? [],
         tags:     raw.facets?.tags ?? [],
       },
     });

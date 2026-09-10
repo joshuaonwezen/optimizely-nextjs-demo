@@ -1,12 +1,14 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { expandToUris, termLabel, type TaxonomyTermMeta } from "@/lib/taxonomy";
 
 type FacetValue = { name: string; count: number };
 type SearchResult = {
   title: string;
   url: string;
   score: number;
-  category: string | null;
+  /** Category term URIs (cms://taxonomy/categories/<key>). */
+  categories: string[];
   tags: string[];
 };
 type SearchResponse = {
@@ -18,7 +20,7 @@ type Suggestions = { tags: string[]; paths: string[] };
 
 const EMPTY_SUGGESTIONS: Suggestions = { tags: [], paths: [] };
 
-export default function FacetedSearchDemo() {
+export default function FacetedSearchDemo({ terms }: { terms: TaxonomyTermMeta[] }) {
   const [query, setQuery] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
@@ -30,7 +32,7 @@ export default function FacetedSearchDemo() {
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autocompleteDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const search = useCallback((q: string, cats: string[], tgs: string[], fz: boolean) => {
+  const search = useCallback((q: string, cats: string[], tgs: string[], fz: boolean, allTerms: TaxonomyTermMeta[]) => {
     if (searchDebounce.current) clearTimeout(searchDebounce.current);
     if (!q || q.length < 2) {
       setResponse(null);
@@ -40,7 +42,9 @@ export default function FacetedSearchDemo() {
       setLoading(true);
       try {
         const params = new URLSearchParams({ q, facets: "1" });
-        if (cats.length > 0) params.set("category", cats.join(","));
+        // Articles are tagged leaf-only, so a selected term has to be expanded
+        // to its descendants before it reaches Graph.
+        if (cats.length > 0) params.set("category", expandToUris(allTerms, cats).join(","));
         if (tgs.length > 0) params.set("tags", tgs.join(","));
         if (!fz) params.set("fuzzy", "0");
         const res = await fetch(`/api/search?${params}`);
@@ -71,8 +75,8 @@ export default function FacetedSearchDemo() {
   }, []);
 
   useEffect(() => {
-    search(query, categories, tags, fuzzy);
-  }, [query, categories, tags, fuzzy, search]);
+    search(query, categories, tags, fuzzy, terms);
+  }, [query, categories, tags, fuzzy, terms, search]);
 
   function toggle(list: string[], value: string, set: (next: string[]) => void) {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -160,6 +164,7 @@ export default function FacetedSearchDemo() {
             values={response?.facets.category ?? []}
             selected={categories}
             onToggle={(v) => toggle(categories, v, setCategories)}
+            terms={terms}
           />
           <FacetGroup
             label="Tags"
@@ -201,7 +206,11 @@ export default function FacetedSearchDemo() {
                     <span className="text-xs font-mono text-on-surface-variant shrink-0">{r.score.toFixed(1)}</span>
                   </div>
                   <p className="text-xs text-on-surface-variant mt-0.5">
-                    {r.category && <span className="font-mono">{r.category}</span>}
+                    {r.categories.length > 0 && (
+                      <span className="font-mono">
+                        {r.categories.map((c) => termLabel(terms, c)).join(", ")}
+                      </span>
+                    )}
                     {r.tags.length > 0 && <span className="font-mono"> · {r.tags.join(", ")}</span>}
                   </p>
                 </li>
@@ -233,11 +242,14 @@ function FacetGroup({
   values,
   selected,
   onToggle,
+  terms,
 }: {
   label: string;
   values: FacetValue[];
   selected: string[];
   onToggle: (value: string) => void;
+  /** When given, bucket names are treated as term URIs and resolved to labels. */
+  terms?: TaxonomyTermMeta[];
 }) {
   return (
     <div data-component="FacetGroup">
@@ -255,7 +267,7 @@ function FacetGroup({
                   onChange={() => onToggle(v.name)}
                   className="accent-brand"
                 />
-                <span className="truncate">{v.name}</span>
+                <span className="truncate">{terms ? termLabel(terms, v.name) : v.name}</span>
                 <span className="ml-auto font-mono text-on-surface-variant">{v.count}</span>
               </label>
             </li>

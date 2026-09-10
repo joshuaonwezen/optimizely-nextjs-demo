@@ -1,0 +1,140 @@
+import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import type { TaxonomyTermMeta } from "@/lib/taxonomy";
+
+export const GET_TAXONOMY_TERMS_QUERY = /* GraphQL */ `
+  query GetTaxonomyTerms($locale: [Locales]) {
+    _TaxonomyTerm(limit: 100, locale: $locale) {
+      total
+      items {
+        _metadata {
+          key
+          taxonomy
+          displayName
+          description
+          usage
+          parent
+        }
+      }
+    }
+  }
+`;
+
+export interface TaxonomyTermsResult {
+  terms: TaxonomyTermMeta[];
+  total: number;
+  fromCms: boolean;
+}
+
+interface GraphResponse {
+  _TaxonomyTerm?: {
+    total?: number | null;
+    items?: Array<{
+      _metadata?: {
+        key?: string | null;
+        taxonomy?: string | null;
+        displayName?: string | null;
+        description?: string | null;
+        usage?: string | null;
+        parent?: string | null;
+      } | null;
+    }> | null;
+  } | null;
+}
+
+const EMPTY: TaxonomyTermsResult = { terms: [], total: 0, fromCms: false };
+
+// The SDK's generated page query does not select _itemMetadata, so a page that
+// wants to render its own category chips fetches them by key. Both root fields
+// travel in one request so this costs a single round trip.
+export const GET_CONTENT_TAXONOMY_QUERY = /* GraphQL */ `
+  query GetContentTaxonomy($key: String!, $locale: [Locales]) {
+    _Content(where: { _metadata: { key: { eq: $key } } }, limit: 1, locale: $locale) {
+      items {
+        _itemMetadata { categories }
+      }
+    }
+    _TaxonomyTerm(limit: 100, locale: $locale) {
+      items {
+        _metadata { key displayName usage parent }
+      }
+    }
+  }
+`;
+
+export interface ContentTaxonomyResult {
+  /** Category term URIs assigned to the content item. */
+  uris: string[];
+  terms: TaxonomyTermMeta[];
+}
+
+const EMPTY_CONTENT_TAXONOMY: ContentTaxonomyResult = { uris: [], terms: [] };
+
+export async function getContentTaxonomy(
+  key: string | null | undefined,
+  options?: { locale?: string }
+): Promise<ContentTaxonomyResult> {
+  if (!key) return EMPTY_CONTENT_TAXONOMY;
+  const { locale = "en" } = options ?? {};
+  try {
+    const res = await graphqlFetch<{
+      _Content?: {
+        items?: Array<{ _itemMetadata?: { categories?: string[] | null } | null }> | null;
+      } | null;
+      _TaxonomyTerm?: GraphResponse["_TaxonomyTerm"];
+    }>(
+      GET_CONTENT_TAXONOMY_QUERY,
+      { key, locale: [locale] },
+      { next: { revalidate: CACHE_TTL, tags: ["page"] } }
+    );
+
+    const uris = res.data?._Content?.items?.[0]?._itemMetadata?.categories ?? [];
+    const byKey = new Map<string, TaxonomyTermMeta>();
+    for (const item of res.data?._TaxonomyTerm?.items ?? []) {
+      const m = item?._metadata;
+      if (!m?.key || byKey.has(m.key)) continue;
+      byKey.set(m.key, {
+        key: m.key,
+        displayName: m.displayName ?? m.key,
+        usage: m.usage,
+        parent: m.parent,
+      });
+    }
+    return { uris, terms: [...byKey.values()] };
+  } catch {
+    return EMPTY_CONTENT_TAXONOMY;
+  }
+}
+
+export async function getTaxonomyTerms(options?: {
+  locale?: string;
+}): Promise<TaxonomyTermsResult> {
+  const { locale = "en" } = options ?? {};
+  try {
+    const res = await graphqlFetch<GraphResponse>(
+      GET_TAXONOMY_TERMS_QUERY,
+      { locale: [locale] },
+      { next: { revalidate: CACHE_TTL, tags: ["page"] } }
+    );
+
+    const items = res.data?._TaxonomyTerm?.items ?? [];
+    // Graph stores one term document per locale, so the same key can come back
+    // more than once even with a locale filter. Keep the first of each key.
+    const byKey = new Map<string, TaxonomyTermMeta>();
+    for (const item of items) {
+      const m = item?._metadata;
+      if (!m?.key || byKey.has(m.key)) continue;
+      byKey.set(m.key, {
+        key: m.key,
+        displayName: m.displayName ?? m.key,
+        description: m.description,
+        usage: m.usage,
+        parent: m.parent,
+      });
+    }
+
+    const terms = [...byKey.values()];
+    return { terms, total: terms.length, fromCms: terms.length > 0 };
+  } catch {
+    return EMPTY;
+  }
+}

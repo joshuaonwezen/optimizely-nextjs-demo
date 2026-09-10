@@ -4,6 +4,8 @@ import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getClient } from "@optimizely/cms-sdk";
 import { CACHE_TTL } from "@/lib/optimizely/client";
+import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
+import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
 
 interface ImageRef {
   url?: { default?: string | null } | null;
@@ -61,12 +63,8 @@ function refKey(ref: ContentRefShape | null | undefined): string | null {
   return ref?.key ?? ref?._metadata?.key ?? null;
 }
 
-const INDUSTRY_LABEL: Record<string, string> = {
-  "personal-finance": "Personal Finance",
-  "business-banking": "Business Banking",
-  "investments": "Investments",
-  "market-insights": "Market Insights",
-};
+// Category labels come from the CMS taxonomy, so adding a term in
+// Settings > Categories needs no code change here.
 
 async function loadOutcomes(keys: string[]): Promise<OutcomeData[]> {
   if (keys.length === 0) return [];
@@ -87,7 +85,18 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
   const { pa, src } = getPreviewUtils(content as any);
 
   const heroUrl = src(content.heroImage as any) ?? content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
-  const industryLabel = content.industry ? INDUSTRY_LABEL[content.industry] ?? content.industry : null;
+  // Categories live on _itemMetadata, which the SDK's page query does not
+  // select, so fetch them by key. Falls back to the legacy `industry` enum for
+  // content that has not been tagged in the taxonomy yet.
+  const taxonomy = await getContentTaxonomy(content._metadata?.key);
+  // Editorial-workflow terms are dropped here; they are for the CMS, not visitors.
+  const categories = publicCategoryUris(
+    taxonomy.terms,
+    resolveCategoryUris(taxonomy.uris, content.industry)
+  ).map((uri) => ({
+    key: toTermKey(uri),
+    label: termLabel(taxonomy.terms, uri),
+  }));
 
   const outcomeKeys = (content.outcomes ?? [])
     .map(refKey)
@@ -103,12 +112,14 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
       <header className="mb-12">
         <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-6">
           <span className="text-brand">Case Study</span>
-          {industryLabel && (
-            <>
+          {categories.map((c) => (
+            <span key={c.key} className="flex items-center gap-3">
               <span>·</span>
-              <span>{industryLabel}</span>
-            </>
-          )}
+              <Link href={`/en/insights/?category=${c.key}`} className="hover:text-brand">
+                {c.label}
+              </Link>
+            </span>
+          ))}
           {content.clientName && (
             <>
               <span>·</span>

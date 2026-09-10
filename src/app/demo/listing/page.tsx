@@ -10,6 +10,8 @@ import LiveDemoShell from "@/components/demo/LiveDemoShell";
 import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 import FacetedSearchDemo from "./FacetedSearchDemo";
+import { getTaxonomyTerms } from "@/lib/graphql/queries/GetTaxonomyTerms";
+import { expandToUris, rollUpCounts, termLabel, toTermKey, type TaxonomyTermMeta } from "@/lib/taxonomy";
 
 export const metadata: Metadata = {
   title: "Content Listing & Discovery",
@@ -36,12 +38,10 @@ const facetedSearchDemoTs = fs.readFileSync(
   "utf8"
 );
 
-const CATEGORY_LABELS: Record<string, string> = {
-  "personal-finance": "Personal Finance",
-  "business-banking": "Business Banking",
-  "investments": "Investments",
-  "market-insights": "Market Insights",
-};
+// Category labels come from the CMS taxonomy (_TaxonomyTerm), not a hardcoded
+// map: an editor can add a term in Settings > Categories and it shows up here
+// with no code change. termLabel() falls back to a humanized key if a term is
+// missing or untranslated in this locale.
 
 const LIST_QUERY_SNIPPET = `# A list query fetches only the metadata fields needed for a list view -
 # displayName, published date, and URL. No per-page content is fetched.
@@ -372,9 +372,11 @@ export const ArticlePageType = contentType({
 // facetable - no configuration needed. Faceting a searchable-only field
 // returns a schema error, not empty buckets.`;
 
-function ArticleCard({ item }: { item: ArticleListItem }) {
+function ArticleCard({ item, terms }: { item: ArticleListItem; terms: TaxonomyTermMeta[] }) {
   const url = item._metadata?.url?.default ?? "#";
-  const categoryLabel = CATEGORY_LABELS[item.category ?? ""] ?? item.category;
+  const categoryLabel = item.categoryUris.length
+    ? termLabel(terms, item.categoryUris[0])
+    : null;
   const date = item._metadata?.published
     ? new Date(item._metadata.published).toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" })
     : null;
@@ -417,30 +419,44 @@ function buildFacetHref(
 function FacetSidebarLive({
   facets,
   activeCategories,
+  terms,
 }: {
   facets: ArticleListResult["facets"];
   activeCategories: string[];
+  terms: TaxonomyTermMeta[];
 }) {
   if (facets.category.length === 0) return null;
+  // Articles are tagged leaf-only, so Graph never returns a bucket for a parent
+  // term. Rolling the counts up through the tree is what lets this render as a
+  // hierarchy rather than a flat list of leaves.
+  const rows = rollUpCounts(terms, facets.category as ArticleFacetBucket[]).filter(
+    (row) => row.totalCount > 0
+  );
   return (
     <nav className="shrink-0">
       <p className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-3">Category</p>
-      <ul className="space-y-1">
-        {facets.category.map(({ name, count }: ArticleFacetBucket) => {
-          const isActive = activeCategories.includes(name);
-          const href = buildFacetHref(activeCategories, name);
+      <ul className="space-y-0.5">
+        {rows.map((row) => {
+          // The URL param carries the short term key, not the full URI.
+          const isActive = activeCategories.includes(row.key);
+          const href = buildFacetHref(activeCategories, row.key);
           return (
-            <li key={name}>
+            <li key={row.key}>
               <Link
                 href={href}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+                style={{ paddingLeft: `${8 + row.depth * 14}px` }}
+                className={`flex items-center justify-between pr-3 py-1.5 rounded-lg text-xs transition-colors ${
                   isActive
                     ? "bg-brand text-on-brand font-semibold"
                     : "text-on-surface-variant hover:bg-surface-low"
                 }`}
               >
-                <span>{CATEGORY_LABELS[name] ?? name}</span>
-                <span className={`tabular-nums ${isActive ? "opacity-80" : "opacity-50"}`}>{count}</span>
+                <span className={`truncate ${row.ownCount === 0 && !isActive ? "opacity-70" : ""}`}>
+                  {termLabel(terms, row.key)}
+                </span>
+                <span className={`tabular-nums ml-2 ${isActive ? "opacity-80" : "opacity-50"}`}>
+                  {row.totalCount}
+                </span>
               </Link>
             </li>
           );
@@ -523,9 +539,21 @@ export default async function ListingDemoPage({
     : [];
   const activeCursor = typeof sp.cursor === "string" ? sp.cursor : null;
 
+  // The URL carries short term keys (?category=mortgages); Graph filters on the
+  // full term URI, so convert on the way into the query.
+  // The taxonomy is fetched first because the filter is expanded through it:
+  // articles are tagged leaf-only, so selecting a parent term has to match every
+  // term beneath it too.
+  const taxonomy = await getTaxonomyTerms();
+  const terms = taxonomy.terms;
+
   const [listResult, facetsResult] = await Promise.all([
     getArticles({ limit: 6 }),
-    getArticles({ limit: 6, cursor: activeCursor, category: activeCategories.length ? activeCategories : null }),
+    getArticles({
+      limit: 6,
+      cursor: activeCursor,
+      category: activeCategories.length ? expandToUris(terms, activeCategories) : null,
+    }),
   ]);
 
   const clearHref = `?#facets-demo`;
@@ -568,7 +596,7 @@ export default async function ListingDemoPage({
             <LiveDemoShell label={`${listResult.total} articles from your CMS - most recent 6`}>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {listResult.items.map((item, i) => (
-                  <ArticleCard key={i} item={item} />
+                  <ArticleCard key={i} item={item} terms={terms} />
                 ))}
               </div>
             </LiveDemoShell>
@@ -640,7 +668,7 @@ export default async function ListingDemoPage({
             <LiveDemoShell
               label={
                 activeCategories.length
-                  ? `Filtered by: ${activeCategories.map(c => CATEGORY_LABELS[c] ?? c).join(", ")}`
+                  ? `Filtered by: ${activeCategories.map((c) => termLabel(terms, c)).join(", ")}`
                   : "All categories - click a category to filter"
               }
               action={
@@ -656,13 +684,14 @@ export default async function ListingDemoPage({
                   <FacetSidebarLive
                     facets={listResult.facets}
                     activeCategories={activeCategories}
+                    terms={terms}
                   />
                   <div>
                     {facetsResult.items.length > 0 ? (
                       <>
                         <div className="grid sm:grid-cols-2 gap-4 mb-4">
                           {facetsResult.items.map((item, i) => (
-                            <ArticleCard key={i} item={item} />
+                            <ArticleCard key={i} item={item} terms={terms} />
                           ))}
                         </div>
                         <PaginationBar
@@ -704,7 +733,7 @@ export default async function ListingDemoPage({
             <code className="bg-surface-low px-1 rounded font-mono text-xs">fuzzy: true</code> so a typo
             like <strong>morgage</strong> still resolves.
           </p>
-          <FacetedSearchDemo />
+          <FacetedSearchDemo terms={terms} />
 
           <p className="text-sm text-on-surface-variant mt-8 mb-4 max-w-3xl leading-relaxed">
             The <code className="bg-surface-low px-1 rounded font-mono text-xs">autocomplete</code> field

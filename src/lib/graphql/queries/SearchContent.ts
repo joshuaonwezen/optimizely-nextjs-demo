@@ -21,13 +21,17 @@ export const SEARCH_RELEVANCE_QUERY = /* GraphQL */ `
   }
 `;
 
+// Category filtering and faceting run on the CMS taxonomy (_itemMetadata.categories),
+// not the legacy ArticlePage.category enum. Bucket names come back as term URIs
+// (cms://taxonomy/categories/<key>); resolve labels with src/lib/taxonomy.ts.
+// `tags` is a separate free-text axis and still uses the string array property.
 export const SEARCH_FACETED_QUERY = /* GraphQL */ `
-  query SearchFaceted($query: String!, $categories: [String!], $tags: [String!], $locale: [Locales], $fuzzy: Boolean) {
+  query SearchFaceted($query: String!, $categories: [String], $tags: [String!], $locale: [Locales], $fuzzy: Boolean) {
     ArticlePage(
       locale: $locale
       where: {
         _fulltext: { match: $query, fuzzy: $fuzzy }
-        category: { in: $categories }
+        _itemMetadata: { categories: { in: $categories } }
         tags: { in: $tags }
       }
       orderBy: { _ranking: RELEVANCE }
@@ -39,13 +43,16 @@ export const SEARCH_FACETED_QUERY = /* GraphQL */ `
         _score
         category
         tags
+        _itemMetadata { categories }
         _metadata {
           displayName
           url { default }
         }
       }
       facets {
-        category(orderType: COUNT, orderBy: DESC, limit: 10) { name count }
+        _itemMetadata {
+          categories(orderType: COUNT, orderBy: DESC, limit: 20) { name count }
+        }
         tags(orderType: COUNT, orderBy: DESC, limit: 12) { name count }
       }
     }

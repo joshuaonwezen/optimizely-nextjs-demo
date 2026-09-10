@@ -4,6 +4,8 @@ import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getClient } from "@optimizely/cms-sdk";
 import { CACHE_TTL } from "@/lib/optimizely/client";
+import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
+import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
 
 interface ImageRef {
   url?: { default?: string | null } | null;
@@ -49,12 +51,8 @@ interface ArticleContent {
   relatedArticles?: RelatedRef[] | null;
 }
 
-const CATEGORY_LABEL: Record<string, string> = {
-  "personal-finance": "Personal Finance",
-  "business-banking": "Business Banking",
-  "investments": "Investments",
-  "market-insights": "Market Insights",
-};
+// Category labels come from the CMS taxonomy, so adding a term in
+// Settings > Categories needs no code change here.
 
 async function loadAuthor(key: string | null | undefined): Promise<AuthorData | null> {
   if (!key) return null;
@@ -75,7 +73,19 @@ export default async function ArticlePage({ content }: { content: ArticleContent
   const authorKey = content.author?.key ?? content.author?._metadata?.key ?? null;
   const author = await loadAuthor(authorKey);
   const formattedDate = formatDate(content.publishDate);
-  const categoryLabel = content.category ? CATEGORY_LABEL[content.category] ?? content.category : null;
+  // Categories live on _itemMetadata, which the SDK's page query does not
+  // select, so fetch them by key. Falls back to the legacy `category` enum for
+  // content that has not been tagged in the taxonomy yet.
+  const taxonomy = await getContentTaxonomy(content._metadata?.key);
+  // Editorial-workflow terms are dropped here; they are for the CMS, not visitors.
+  const categoryUris = publicCategoryUris(
+    taxonomy.terms,
+    resolveCategoryUris(taxonomy.uris, content.category)
+  );
+  const categories = categoryUris.map((uri) => ({
+    key: toTermKey(uri),
+    label: termLabel(taxonomy.terms, uri),
+  }));
   const tags = (content.tags ?? []).filter(Boolean);
   const related = (content.relatedArticles ?? []).filter((r) => r?._metadata?.url?.default);
 
@@ -83,17 +93,18 @@ export default async function ArticlePage({ content }: { content: ArticleContent
     <article data-component="ArticlePage" className="max-w-3xl mx-auto px-8 pt-16 pb-24">
       <header className="mb-12">
         <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-6">
-          {categoryLabel && (
+          {categories.map((c) => (
             <Link
-              href={`/en/insights/?category=${content.category}`}
+              key={c.key}
+              href={`/en/insights/?category=${c.key}`}
               className="text-brand hover:opacity-80"
             >
-              {categoryLabel}
+              {c.label}
             </Link>
-          )}
+          ))}
           {formattedDate && (
             <>
-              {categoryLabel && <span>·</span>}
+              {categories.length > 0 && <span>·</span>}
               <time dateTime={content.publishDate ?? undefined}>{formattedDate}</time>
             </>
           )}

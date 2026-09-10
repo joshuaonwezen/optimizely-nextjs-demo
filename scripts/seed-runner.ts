@@ -117,6 +117,11 @@ async function main() {
     // from Graph, so it needs the pages above indexed (~60s lag on a fresh seed;
     // re-run individually if pins are skipped). Cleans up old config each run.
     ["npx", ["tsx", "scripts/seed-search-config.ts"]],
+    // CMS Categories: creates the taxonomy term tree, then tags each page by URL.
+    // Terms go through the experimental taxonomy API; assignment resolves pages
+    // from Graph, so it needs the pages above indexed (~60s lag on a fresh seed -
+    // re-run individually if many pages are skipped).
+    ["npx", ["tsx", "scripts/seed-categories.ts"]],
     // Last: needs every page above to be in Graph already (~60s indexing lag on
     // a fresh seed - re-run individually if many items are skipped/failed).
     // Opt-in only (see `localize` above); the child inherits SEED_LOCALIZE via env.

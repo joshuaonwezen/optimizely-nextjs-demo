@@ -897,11 +897,17 @@ export async function deleteContentByKey(key: string): Promise<void> {
  * Merge new properties onto an already-PUBLISHED page and publish the result.
  *
  * A published version cannot be patched directly (the API 400s with "Only
- * versions in status 'draft' can be patched"). So we create a fresh draft
- * (POST /versions copies the current published content), merge-patch the given
- * properties onto it, and publish. displayName + routeSegment are carried over
- * on the POST so the CMS does not re-derive the route segment from the name
- * (which would silently change the page URL).
+ * versions in status 'draft' can be patched"), so this creates a fresh draft,
+ * merge-patches the given properties onto it, and publishes.
+ *
+ * IMPORTANT: POST /versions copies the item's COMPOSITION but NOT its
+ * `properties` bag - the new draft starts with no properties at all. Patching
+ * only the caller's subset onto it and publishing therefore WIPES every other
+ * property (heading, body, metaTitle, mainContent, ...). So the current
+ * version's properties are read first and merged underneath the new ones.
+ *
+ * displayName + routeSegment are carried over on the POST so the CMS does not
+ * re-derive the route segment from the name (which would change the page URL).
  *
  * Use this instead of patchContentProperties when the target may be published
  * (e.g. wiring a shared block onto a page created by seed-content).
@@ -913,15 +919,22 @@ export async function patchPublishedPageProperties(
 ): Promise<void> {
   const token = await getManagementToken();
 
-  // Read the current version's displayName + routeSegment so the new draft keeps them.
+  // Read the current version's displayName + routeSegment so the new draft keeps
+  // them, and its properties so the merge below cannot drop them.
   const curRes = await fetch(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=1`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!curRes.ok) throw new Error(`GET locales/${locale} for ${key}: ${curRes.status}`);
   const curData = (await curRes.json()) as {
-    items?: Array<{ displayName?: string; routeSegment?: string }>;
+    items?: Array<{
+      displayName?: string;
+      routeSegment?: string;
+      properties?: Record<string, unknown>;
+    }>;
   };
   const cur = curData.items?.[0];
+  // Already in PropertyData ({ value: ... }) form, the same shape wrapProps emits.
+  const existingProps = cur?.properties ?? {};
 
   // Create a fresh draft (copies the published content).
   const draftBody: Record<string, unknown> = { locale };
@@ -947,7 +960,9 @@ export async function patchPublishedPageProperties(
   const patchRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/merge-patch+json" },
-    body: JSON.stringify({ properties: wrapProps(properties) }),
+    body: JSON.stringify({
+      properties: { ...existingProps, ...wrapProps(properties) },
+    }),
   });
   if (!patchRes.ok) {
     throw new Error(`PATCH ${key}/versions/${version}: ${patchRes.status} ${(await patchRes.text()).slice(0, 200)}`);
