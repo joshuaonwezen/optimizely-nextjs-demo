@@ -82,6 +82,9 @@ async function versions(key: string, locale = "en"): Promise<VersionRow[]> {
   const res = await api(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=50`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  // Graph can keep serving a doc for content that has since been deleted, so a
+  // 404 here means a stale index entry, not a failure worth aborting the run.
+  if (res.status === 404) return [];
   if (!res.ok) throw new Error(`GET locales ${key}: ${res.status}`);
   return ((await res.json()) as { items?: VersionRow[] }).items ?? [];
 }
@@ -185,13 +188,20 @@ async function repair(key: string): Promise<string> {
 async function main(): Promise<void> {
   const pages = await allPages();
   console.log(`${DRY ? "[dry-run]" : "[apply]"} checking ${pages.length} page(s)\n`);
-  let changed = 0;
+  let restored = 0;
+  let drafts = 0;
   for (const p of pages) {
     const result = await repair(p.key);
-    if (!result.startsWith("ok:") && !result.startsWith("skip:")) changed += 1;
+    if (result.startsWith("RESTORED") || result.startsWith("WOULD RESTORE")) restored += 1;
+    if (result.startsWith("DROPPED") || result.startsWith("WOULD DROP")) drafts += 1;
     if (!result.startsWith("ok:")) console.log(`${result}\n    ${p.url}`);
   }
-  console.log(`\n${changed} page(s) ${DRY ? "would be restored (re-run with --apply)" : "restored"}`);
+  console.log(
+    `
+${restored} page(s) ${DRY ? "would be restored" : "restored"}, ` +
+      `${drafts} empty draft(s) ${DRY ? "would be dropped" : "dropped"}` +
+      (DRY ? " (re-run with --apply)" : "")
+  );
 }
 
 main().catch((e) => {

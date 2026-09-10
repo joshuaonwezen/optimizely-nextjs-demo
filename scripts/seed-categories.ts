@@ -2,6 +2,7 @@ import {
   CONTENT_ENDPOINT,
   GRAPH_ENDPOINT,
   SINGLE_KEY,
+  apiFetch,
   getManagementToken,
   patchPublishedPageProperties,
 } from "./_shared";
@@ -122,7 +123,7 @@ async function seedTerms(): Promise<void> {
  * the CMS by ~60s and would make back-to-back runs churn versions.
  */
 async function currentCategories(key: string, locale = "en"): Promise<string[]> {
-  const res = await fetch(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=1`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=1`, {
     headers: { Authorization: `Bearer ${await getManagementToken()}` },
   });
   if (!res.ok) return [];
@@ -153,6 +154,7 @@ async function assignCategories(): Promise<void> {
   let failed = 0;
 
   let cleared = 0;
+  let stale = 0;
 
   for (const page of pages) {
     const terms = termsForUrl(page.url);
@@ -192,13 +194,19 @@ async function assignCategories(): Promise<void> {
       tagged += 1;
       console.log(`[tagged] ${page.url} -> ${terms.join(", ")}`);
     } catch (err) {
+      const message = (err as Error).message;
+      // Graph can serve a doc for content that has since been deleted.
+      if (message.includes("404")) {
+        stale += 1;
+        continue;
+      }
       failed += 1;
-      console.warn(`[warn] ${page.url}: ${(err as Error).message}`);
+      console.warn(`[warn] ${page.url}: ${message}`);
     }
   }
 
   console.log(
-    `[assign] ${tagged} tagged, ${unchanged} already correct, ${cleared} cleared, ${skipped} skipped by design, ${failed} failed`
+    `[assign] ${tagged} tagged, ${unchanged} already correct, ${cleared} cleared, ${skipped} skipped by design, ${stale} stale in Graph, ${failed} failed`
   );
 }
 

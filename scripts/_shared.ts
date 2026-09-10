@@ -14,6 +14,30 @@ loadEnv({ path: ".env.local" });
 export { getManagementToken };
 
 export const API_BASE = "https://api.cms.optimizely.com";
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * fetch() with Management API rate-limit handling.
+ *
+ * Bulk seeding trips 429 with a Retry-After header; without a backoff the run
+ * simply loses those items (this is how a categories seed silently skipped half
+ * an instance). Honour Retry-After, cap the wait, and give up after a few tries.
+ */
+export async function apiFetch(
+  url: string,
+  init: RequestInit = {},
+  attempt = 0
+): Promise<Response> {
+  const res = await fetch(url, init);
+  if (res.status === 429 && attempt < 6) {
+    const retryAfter = Number(res.headers.get("retry-after")) || 2 ** attempt;
+    await sleep(Math.min(retryAfter, 30) * 1000);
+    return apiFetch(url, init, attempt + 1);
+  }
+  return res;
+}
+
 export const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 export const GRAPH_ENDPOINT =
   process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
@@ -921,7 +945,7 @@ export async function patchPublishedPageProperties(
 
   // Read the current version's displayName + routeSegment so the new draft keeps
   // them, and its properties so the merge below cannot drop them.
-  const curRes = await fetch(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=1`, {
+  const curRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=1`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!curRes.ok) throw new Error(`GET locales/${locale} for ${key}: ${curRes.status}`);
@@ -940,7 +964,7 @@ export async function patchPublishedPageProperties(
   const draftBody: Record<string, unknown> = { locale };
   if (cur?.displayName !== undefined) draftBody.displayName = cur.displayName;
   if (cur?.routeSegment !== undefined) draftBody.routeSegment = cur.routeSegment;
-  await fetch(`${CONTENT_ENDPOINT}/${key}/versions`, {
+  await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(draftBody),
@@ -950,14 +974,14 @@ export async function patchPublishedPageProperties(
   // global /versions list mixes locales, so picking the highest-numbered draft
   // there can grab a different language's version and patch the wrong content.
   const vd = (await (
-    await fetch(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=30`, { headers: { Authorization: `Bearer ${token}` } })
+    await apiFetch(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=30`, { headers: { Authorization: `Bearer ${token}` } })
   ).json()) as { items?: Array<{ version?: string; status?: string }> };
   const version = (vd.items ?? [])
     .filter((i) => i.status === "draft" && i.version)
     .sort((a, b) => Number(b.version) - Number(a.version))[0]?.version;
   if (!version) throw new Error(`Could not find a draft version for ${key}/${locale}`);
 
-  const patchRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
+  const patchRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/merge-patch+json" },
     body: JSON.stringify({
@@ -968,7 +992,7 @@ export async function patchPublishedPageProperties(
     throw new Error(`PATCH ${key}/versions/${version}: ${patchRes.status} ${(await patchRes.text()).slice(0, 200)}`);
   }
 
-  const pubRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}:publish`, {
+  const pubRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}:publish`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
