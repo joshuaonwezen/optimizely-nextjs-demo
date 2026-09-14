@@ -349,6 +349,53 @@ const results = await graphqlFetch(SEARCH_QUERY, { query: q });
 // a perfect ISR candidate:
 graphqlFetch(GET_NAV_QUERY, {}, { next: { revalidate: 300, tags: ["navigation"] } });`;
 
+const EVERYTHING_QUERY_SNIPPET = `# The "kitchen sink" - every search capability on this page, in one request.
+# Real production queries rarely turn all of these on at once (each adds a
+# little latency and complexity) - this is here to show they compose freely
+# on the same field, not as a recommended default.
+
+query SearchEverything(
+  $query: String!
+  $categories: [String]     # optional - only set when a facet is picked
+  $tags: [String!]          # optional - only set when a facet is picked
+  $weight: Float!           # semantic blend, see #ranking
+  $fuzzy: Boolean           # typo tolerance, see #fuzzy
+  $cursor: String           # pagination, see #filtering
+) {
+  ArticlePage(
+    where: {
+      _fulltext: { match: $query, synonyms: [ONE, TWO], fuzzy: $fuzzy }   # see #fuzzy, #synonyms
+      _itemMetadata: { categories: { in: $categories } }                   # see facets on /demo/listing
+      tags: { in: $tags }
+    }
+    orderBy: { _ranking: SEMANTIC, _semanticWeight: $weight }               # see #ranking
+    limit: 10
+    cursor: $cursor
+    pinned: { phrase: $query }                                             # see #pinned
+    tracking: { phrase: $query, source: "/demo/search" }                   # see #tracking
+  ) {
+    total
+    cursor
+    items {
+      _score
+      _track                          # click tracking URL, see #tracking
+      category
+      tags
+      _itemMetadata { categories }
+      _metadata {
+        displayName
+        url { default }
+      }
+    }
+    facets {
+      _itemMetadata {
+        categories(orderType: COUNT, orderBy: DESC, limit: 20) { name count }
+      }
+      tags(orderType: COUNT, orderBy: DESC, limit: 12) { name count }
+    }
+  }
+}`;
+
 const GEO_SCHEMA_SNIPPET = `# Content Source schema - a single GeoPoint field, NOT two floats.
 # Geo operators only attach to a field of type "GeoPoint".
 
@@ -797,6 +844,41 @@ export default function SearchDemoPage() {
           </div>
         </section>
 
+        <section id="everything">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+            Everything at once
+            <SectionAnchor id="everything" label="#" />
+          </h2>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            Every argument on this page attaches to the same query field, so they combine freely.
+            Here they all are at once - semantic ranking, fuzzy matching, both synonym slots,
+            facet filtering and counts, pinned results, and phrase/click tracking, in a single
+            request against <code className="bg-surface-low px-1 rounded font-mono text-xs">ArticlePage</code>.
+            A real production query usually turns on only what it needs - this is a showcase of
+            what&apos;s available, not a recommended default.
+          </p>
+          <CodeBlock code={EVERYTHING_QUERY_SNIPPET} label="Semantic + fuzzy + synonyms + facets + pinned + tracking, combined" />
+          <div className="grid md:grid-cols-3 gap-4 mt-6">
+            {[
+              { label: "Ranking", note: "orderBy _ranking: SEMANTIC + _semanticWeight", href: "#ranking" },
+              { label: "Fuzzy", note: "_fulltext { fuzzy: true }", href: "#fuzzy" },
+              { label: "Synonyms", note: "_fulltext { synonyms: [ONE, TWO] }", href: "#synonyms" },
+              { label: "Facets", note: "_itemMetadata.categories + tags, see /demo/listing", href: "/demo/listing" },
+              { label: "Pinned results", note: "pinned: { phrase }", href: "#pinned" },
+              { label: "Tracking", note: "tracking: { phrase, source } + _track", href: "#tracking" },
+            ].map(({ label, note, href }) => (
+              <a
+                key={label}
+                href={href}
+                className="block bg-surface-lowest rounded-2xl p-5 border border-ghost-border hover:border-brand/30 transition-colors"
+              >
+                <p className="text-xs font-mono font-semibold text-on-surface mb-2">{label}</p>
+                <p className="text-xs text-on-surface-variant leading-relaxed">{note}</p>
+              </a>
+            ))}
+          </div>
+        </section>
+
         <section id="geo">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
             Geo search with <code className="font-mono text-xl">GeoPoint</code>
@@ -843,6 +925,7 @@ export default function SearchDemoPage() {
           <><strong className="text-on-surface">Add <code className="bg-surface-low px-1 rounded font-mono text-xs">tracking</code> to record search phrases.</strong> Each result item returns a <code className="bg-surface-low px-1 rounded font-mono text-xs">_track</code> URL - call it with a GET request when the user clicks a result. Tracking should never block or interrupt navigation.</>,
           <><strong className="text-on-surface">Use <code className="bg-surface-low px-1 rounded font-mono text-xs">pinned</code> to guarantee editorial picks appear first.</strong> Create a collection, add items with trigger phrases, then pass <code className="bg-surface-low px-1 rounded font-mono text-xs">pinned: &#123; phrase, collections &#125;</code> in the GraphQL query. Up to 5 pinned items are prepended before organic results.</>,
           <><strong className="text-on-surface">Synonyms reduce zero-result searches by expanding query terms.</strong> Upload a CSV to slot ONE or TWO via REST, then enable synonym expansion per field using <code className="bg-surface-low px-1 rounded font-mono text-xs">synonyms: ONE</code> on <code className="bg-surface-low px-1 rounded font-mono text-xs">contains</code>, <code className="bg-surface-low px-1 rounded font-mono text-xs">in</code>, or <code className="bg-surface-low px-1 rounded font-mono text-xs">eq</code> operators.</>,
+          <><strong className="text-on-surface">Ranking, fuzzy, synonyms, facets, pinned, and tracking all compose on the same query field.</strong> There&apos;s no conflict between turning them on together - see the &quot;Everything at once&quot; section for the combined example.</>,
           <><strong className="text-on-surface">Geo search needs a single <code className="bg-surface-low px-1 rounded font-mono text-xs">GeoPoint</code> field, not two floats.</strong> Filter with <code className="bg-surface-low px-1 rounded font-mono text-xs">distance</code> and sort with <code className="bg-surface-low px-1 rounded font-mono text-xs">orderBy</code> by origin. The <code className="bg-surface-low px-1 rounded font-mono text-xs">radius</code> argument is typed <code className="bg-surface-low px-1 rounded font-mono text-xs">Int</code>, not Float. Graph returns coordinates only - compute distance labels yourself with Haversine.</>,
         ]} />
 
