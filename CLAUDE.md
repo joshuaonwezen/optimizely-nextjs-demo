@@ -402,6 +402,33 @@ allowedTypes: [FaqItemBlockType]
 
 TypeScript will surface this as: `Type '"FaqItemBlock"' is not assignable to type 'PermittedTypes'`.
 
+### `type: "composition"` — extra Visual Builder compositions on an experience
+
+An `_experience` type can declare extra properties of `type: "composition"`, each rendering as its own composition in the Visual Builder outline with its own `allowedTypes`/`restrictedTypes`. Undocumented as of 2026-09; everything below was established against the live API. `ProductLandingExperience` (personal instance only, see below) uses it for a locked top area, an open middle, and a locked bottom.
+
+- **`format` is the layout type.** Without `format: "outline"` the editor fails with *"The composition property does not have a layout type configured."* `layoutType`/`layout` are rejected as unknown fields, `editorSettings.*` as "not a valid setting".
+- **The layout type is immutable once the property holds content** — including content deleted with `?permanent=true`, and `cms-ignore-data-loss-warnings` does not override it. Merge-patch the property to `null`, then re-add it with `format` set.
+- **Only on `_experience`.** `_page` returns *"only supported on Experience content types"*.
+- **The built-in `composition` cannot be removed, hidden or renamed** (the name is reserved), and the outline always lists it **last**, whatever `sortOrder` the other properties use. Restrict it with the type-level `composition` config (`CompositionConfiguration`: `allowedTypes`/`restrictedTypes` only):
+  ```js
+  contentType({ key: "...", baseType: "_experience",
+    properties: { topComposition: { type: "composition", format: "outline", allowedTypes: ["HeroBlock"] } },
+    composition: { allowedTypes: ["ArticleListBlock", "FaqContainerBlock"] },  // the built-in one
+  })
+  ```
+  So a three-area page is: two custom properties plus the built-in composition as the bottom.
+- **Content is written through v1** as `properties.<name> = { value: <node tree> }`, the same outline node shape as the built-in composition. preview3 reads the value back as `null` and v1 omits it on a draft read — check the published version or Graph. **Never PATCH a content type through preview3**: it silently resets `allowedTypes` to `[]`.
+- **Graph** types the field as `CompositionStructureNode`, but cms-sdk 2.2.0 has no handler for the property type and emits a bare scalar field, which Graph rejects ("must have a selection of subfields"). [compositionProperties.ts](src/lib/optimizely/compositionProperties.ts) patches `GraphClient.prototype.request` to append `{ ...ICompositionNode }`; `adminPreviewClient` overrides `request` on its instance, so it calls `rewriteCompositionFields` itself.
+- A permanently deleted content key stays reserved (POST 409 / GET 404), so reshuffling these properties means the seed needs a new key.
+
+### Personal-instance-only content types
+
+`ProductLandingExperience` and `ArticleListBlock` are being trialled on the **personal** instance only. They are defined in [personalOnlyTypes.mjs](src/lib/optimizely/personalOnlyTypes.mjs) — outside `optimizely.config.mjs` and the `src/components/**/*.tsx` glob — so a normal `opti:push` never carries them to another instance. `.mjs` because the SDK typings do not know `type: "composition"`.
+
+- `npx tsx scripts/push-personal-types.ts` pushes them (via `/v1/manifest`) and re-adds `ProductLandingExperience` to `DynamicExperience.mayContainTypes`. **A normal `opti:push` to personal resets that list, so re-run this after one.**
+- `isPersonalInstance()` ([personalInstance.ts](src/lib/optimizely/personalInstance.ts), a CMS-host check) gates registry registration, the `generateMetadata` SEO fragment, the seed and the push script. Registering these types elsewhere would add fragments for types that instance's Graph lacks, which breaks **every** page there.
+- `npx tsx scripts/seed-product-landing.ts` seeds the page (not in the seed runner, guarded to personal).
+
 ### `compositionBehaviors` — elementEnabled vs sectionEnabled
 - `"elementEnabled"` — leaf block, can be placed inside a grid column; cannot have content area (`type: "array"`) properties
 - `"sectionEnabled"` — container block, can have content area properties; can NOT be placed inside a grid column

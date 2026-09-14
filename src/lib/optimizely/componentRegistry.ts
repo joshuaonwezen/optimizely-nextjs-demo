@@ -72,11 +72,13 @@ import CustomerVoicesBlock, { CustomerVoicesBlockType, CustomerVoicesBlockDefaul
 import SpotlightBlock, { SpotlightBlockType, SpotlightBlockDefaultTemplate } from "@/components/blocks/SpotlightBlock";
 import RedirectRule, { RedirectRuleType } from "@/components/blocks/RedirectRule";
 import RedirectConfig, { RedirectConfigType } from "@/components/blocks/RedirectConfig";
+import ArticleListBlock from "@/components/blocks/ArticleListBlock";
 
 import DynamicExperience from "@/components/experience/DynamicExperience";
 import BlogExperience from "@/components/experience/BlogExperience";
 import BlankExperience from "@/components/experience/BlankExperience";
 import BlankSection from "@/components/experience/BlankSection";
+import ProductLandingExperience from "@/components/experience/ProductLandingExperience";
 import TraditionalPage from "@/components/pages/TraditionalPage";
 import ArticlePage from "@/components/pages/ArticlePage";
 import CaseStudyPage from "@/components/pages/CaseStudyPage";
@@ -94,12 +96,26 @@ import {
   DefaultColumnTemplate,
   DefaultSectionTemplate,
 } from "../../../optimizely.config.mjs";
+import { registerCompositionProperties } from "./compositionProperties";
+import { isPersonalInstance } from "./personalInstance";
+import {
+  ArticleListBlockDefaultTemplate,
+  PERSONAL_ONLY_CONTENT_TYPES,
+  ProductLandingExperienceType,
+} from "./personalOnlyTypes.mjs";
 
 // Configure the Graph client once for the whole app — all getClient() calls use this.
 config({
   apiKey: process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "",
   graphUrl: process.env.OPTIMIZELY_GRAPH_GATEWAY,
 });
+
+// Types trialled on the personal instance only (personalOnlyTypes.mjs). Registering
+// them elsewhere would add fragments for types that instance's Graph does not have.
+const PERSONAL_ONLY = isPersonalInstance();
+
+// Extra `composition`-type properties need a selection set the SDK does not generate.
+if (PERSONAL_ONLY) registerCompositionProperties([ProductLandingExperienceType]);
 
 // Native Optimizely Forms type schemas — defined here so opti:push does NOT discover
 // them (the buildConfig glob only covers src/components/**/*.tsx, not src/lib/).
@@ -229,6 +245,7 @@ export function initComponentRegistry() {
     ArticlePageType,
     CaseStudyPageType,
     ConsultantPageType,
+    ...(PERSONAL_ONLY ? PERSONAL_ONLY_CONTENT_TYPES : []),
   ]);
 
   // Display templates
@@ -290,6 +307,7 @@ export function initComponentRegistry() {
     DefaultRowTemplate,
     DefaultColumnTemplate,
     DefaultSectionTemplate,
+    ...(PERSONAL_ONLY ? [ArticleListBlockDefaultTemplate] : []),
   ]);
 
   // React components — display template variants use the tags pattern so the SDK
@@ -307,6 +325,7 @@ export function initComponentRegistry() {
       // Experience / page types
       DynamicExperience,
       BlogExperience,
+      ProductLandingExperience,
       BlankExperience,
       BlankSection,
       TraditionalPage,
@@ -373,6 +392,7 @@ export function initComponentRegistry() {
         tags: { Flat: FaqItemBlock },
       },
       FaqContainerBlock,
+      ArticleListBlock,
       FeaturedContentBlock: {
         default: FeaturedContentBlock,
         tags: { Card: FeaturedContentBlock },

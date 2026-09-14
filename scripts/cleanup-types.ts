@@ -22,6 +22,7 @@ const KEEP = new Set([
   // Experience / page types - use the content type KEY, not the variable name
   "DynamicExperience",
   "BlogExperience",
+  "ProductLandingExperience",
   "TraditionalPage",   // LandingPageType.key in optimizely.config.mjs
   "ArticlePage",
   "CaseStudyPage",
@@ -41,6 +42,7 @@ const KEEP = new Set([
   "RenditionImageBlock",
   "FaqContainerBlock",
   "FaqItemBlock",
+  "ArticleListBlock",
   "FeaturedContentBlock",
   "LogoGridBlock",
   "AuthorBlock",
@@ -148,6 +150,7 @@ const KEEP_TEMPLATES = new Set([
   "ComparisonTableBlockDefaultTemplate",
   "ContactFormBlockDefaultTemplate",
   "FaqContainerBlockDefaultTemplate",
+  "ArticleListBlockDefaultTemplate",
   "FaqItemBlockDefaultTemplate",
   "FeatureItemBlockDefaultTemplate",
   "FeaturedContentBlockDefaultTemplate",

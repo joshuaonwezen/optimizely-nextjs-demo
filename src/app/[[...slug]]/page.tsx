@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
+import { isPersonalInstance } from "@/lib/optimizely/personalInstance";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
 import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
@@ -284,6 +285,7 @@ const GET_PAGE_META_QUERY = /* GraphQL */ `
         ... on TraditionalPage { ${SEO_FIELDS} }
         ... on ArticlePage { ${SEO_FIELDS} summary }
         ... on CaseStudyPage { ${SEO_FIELDS} summary }
+        ${isPersonalInstance() ? `... on ProductLandingExperience { ${SEO_FIELDS} }` : ""}
       }
     }
   }
