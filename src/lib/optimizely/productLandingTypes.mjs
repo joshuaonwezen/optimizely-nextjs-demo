@@ -2,11 +2,11 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { SEOContract } from "../../../optimizely.config.mjs";
 import { BACKGROUND_NONE_DEFAULT, HEADING_SIZE, FONT_STYLE } from "../../components/blocks/_shared/displayTemplateSettings";
 
-// Content types trialled on the personal CMS instance only. They live outside
-// optimizely.config.mjs and src/components/**/*.tsx on purpose: a normal opti:push
-// never carries them to another instance. scripts/push-personal-types.ts pushes
-// them to personal, and componentRegistry.ts only registers them when the app
-// points at personal (isPersonalInstance), so other instances' queries are unchanged.
+// Content types rolled out per instance. They live outside optimizely.config.mjs and
+// src/components/**/*.tsx on purpose: a normal opti:push never carries them anywhere,
+// so an instance only gets them from scripts/push-product-landing-types.ts, and the
+// app registers them only for hosts in PRODUCT_LANDING_CMS_HOSTS
+// (productLandingInstances.ts), leaving every other instance's queries unchanged.
 // This is a .mjs file because the SDK typings do not know the "composition"
 // property type yet.
 
@@ -102,5 +102,5 @@ export const ProductLandingExperienceType = contentType({
   },
 });
 
-export const PERSONAL_ONLY_CONTENT_TYPES = [ArticleListBlockType, ProductLandingExperienceType];
-export const PERSONAL_ONLY_DISPLAY_TEMPLATES = [ArticleListBlockDefaultTemplate];
+export const PRODUCT_LANDING_CONTENT_TYPES = [ArticleListBlockType, ProductLandingExperienceType];
+export const PRODUCT_LANDING_DISPLAY_TEMPLATES = [ArticleListBlockDefaultTemplate];

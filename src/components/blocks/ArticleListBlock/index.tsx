@@ -5,7 +5,7 @@ import { getTaxonomyTerms } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { expandToUris, LEGACY_CATEGORY_MAP } from "@/lib/taxonomy";
 import { resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
-// Content type + display template: src/lib/optimizely/personalOnlyTypes.mjs
+// Content type + display template: src/lib/optimizely/productLandingTypes.mjs
 // (personal instance only, kept out of the opti:push glob on purpose).
 
 const DEFAULT_LIMIT = 3;

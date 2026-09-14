@@ -421,13 +421,36 @@ An `_experience` type can declare extra properties of `type: "composition"`, eac
 - **Graph** types the field as `CompositionStructureNode`, but cms-sdk 2.2.0 has no handler for the property type and emits a bare scalar field, which Graph rejects ("must have a selection of subfields"). [compositionProperties.ts](src/lib/optimizely/compositionProperties.ts) patches `GraphClient.prototype.request` to append `{ ...ICompositionNode }`; `adminPreviewClient` overrides `request` on its instance, so it calls `rewriteCompositionFields` itself.
 - A permanently deleted content key stays reserved (POST 409 / GET 404), so reshuffling these properties means the seed needs a new key.
 
-### Personal-instance-only content types
+### Product Landing types - rolled out per instance
 
-`ProductLandingExperience` and `ArticleListBlock` are being trialled on the **personal** instance only. They are defined in [personalOnlyTypes.mjs](src/lib/optimizely/personalOnlyTypes.mjs) — outside `optimizely.config.mjs` and the `src/components/**/*.tsx` glob — so a normal `opti:push` never carries them to another instance. `.mjs` because the SDK typings do not know `type: "composition"`.
+`ProductLandingExperience` and `ArticleListBlock` are **not** in `optimizely.config.mjs` or the
+`src/components/**/*.tsx` glob: they live in [productLandingTypes.mjs](src/lib/optimizely/productLandingTypes.mjs)
+(`.mjs` because the SDK typings do not know `type: "composition"`), so a normal `opti:push` never
+carries them anywhere. Each instance gets them explicitly:
 
-- `npx tsx scripts/push-personal-types.ts` pushes them (via `/v1/manifest`) and re-adds `ProductLandingExperience` to `DynamicExperience.mayContainTypes`. **A normal `opti:push` to personal resets that list, so re-run this after one.**
-- `isPersonalInstance()` ([personalInstance.ts](src/lib/optimizely/personalInstance.ts), a CMS-host check) gates registry registration, the `generateMetadata` SEO fragment, the seed and the push script. Registering these types elsewhere would add fragments for types that instance's Graph lacks, which breaks **every** page there.
-- `npx tsx scripts/seed-product-landing.ts` seeds the page (not in the seed runner, guarded to personal).
+- `npx tsx scripts/push-product-landing-types.ts` pushes them to the instance the env vars point at and
+  re-adds `ProductLandingExperience` to `DynamicExperience.mayContainTypes`. **A normal `opti:push` resets
+  that list, so re-run this after one.** It skips any CMS without the `Composition` property format.
+- `npx tsx scripts/product-landing-instances.ts [--only=id,id] [--dry-run]` does push + seed across every
+  instance in `seedInstances.ts`.
+- `npx tsx scripts/seed-product-landing.ts` seeds just the page; it skips instances that lack the type.
+- `PRODUCT_LANDING_CMS_HOSTS` in [productLandingInstances.ts](src/lib/optimizely/productLandingInstances.ts)
+  decides where the **app** registers the types (registry, `generateMetadata` SEO fragment). Add a host only
+  after its push is done AND Graph's schema sync has caught up - registering types Graph does not know adds
+  fragments for unknown types and breaks **every** page on that instance.
+- Live as of 2026-09-14 on personal, joshCMS, harryNewCMS, mostinNewCMS, kastleNewCMS and toddCMS.
+  **apjCMS is excluded**: no `Composition` property format. On kastleNewCMS the seeded page stays a **draft**
+  (approval workflow) until someone approves it.
+
+**`POST /v1/manifest` answers 200 even when it imports nothing.** The body carries `outcomes` and `errors`
+per section; a push that "succeeded" can create zero types. Always fail on `errors[]`.
+
+**Import the types in phases.** Inside a single manifest, an experience's allowed composition types are
+validated against what the CMS *already* has, not against types created in the same payload. Pushing
+`ArticleListBlock` together with `ProductLandingExperience` fails on a fresh instance with *"The type
+'ArticleListBlock' cannot be used in a 'outline, grid, form' layout composition"* plus *"Unable to find a
+content type"* for the display template, and nothing is created. Push components first, then experiences,
+then display templates, waiting for each to become visible (the import is eventually consistent).
 
 ### `compositionBehaviors` — elementEnabled vs sectionEnabled
 - `"elementEnabled"` — leaf block, can be placed inside a grid column; cannot have content area (`type: "array"`) properties

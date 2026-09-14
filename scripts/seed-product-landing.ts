@@ -9,7 +9,9 @@
  * Extra composition properties are written through v1 as `{ value: <node tree> }`
  * in `properties`, the same node shape as the built-in `composition`.
  *
- * Personal instance only for now (guarded by isPersonalInstance) - not part of seed-runner.
+ * Skips when the instance does not have ProductLandingExperience (see
+ * scripts/push-product-landing-types.ts). Not part of seed-runner; run per instance
+ * with scripts/product-landing-instances.ts.
  * Run: npx tsx scripts/seed-product-landing.ts
  */
 
@@ -34,7 +36,6 @@ import {
   type CompNode,
 } from "./_shared";
 import { FAQ_ITEMS } from "./faq-data";
-import { isPersonalInstance } from "../src/lib/optimizely/personalInstance";
 
 const TYPE_KEY = "ProductLandingExperience";
 const ROUTE = "product-landing";
@@ -129,11 +130,6 @@ async function draftVersion(container: string): Promise<string> {
 
 async function main() {
   console.log("=== Seeding Product Landing page ===\n");
-
-  if (!isPersonalInstance()) {
-    console.warn("  [skip] Product Landing is personal-instance only for now; OPTIMIZELY_CMS_URL points elsewhere.");
-    return;
-  }
 
   const typeRes = await call("GET", `${API_BASE}/v1/contenttypes/${TYPE_KEY}`);
   if (typeRes.status === 404) {

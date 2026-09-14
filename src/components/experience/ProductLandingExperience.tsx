@@ -12,7 +12,7 @@ function ComponentWrapper({ children, node }: ComponentContainerProps) {
 // Three stacked compositions: topComposition (hero + sub-hero grid only),
 // middleComposition (open), and the experience's built-in composition as the
 // bottom (article list + FAQs only). What each one accepts is set on the content
-// type (src/lib/optimizely/personalOnlyTypes.mjs): the two properties carry
+// type (src/lib/optimizely/productLandingTypes.mjs): the two properties carry
 // allowedTypes, the built-in one is restricted by the type-level composition
 // config. It renders last because the CMS always sorts it last in the outline.
 export default function ProductLandingExperience({ content }: { content: any }) {
