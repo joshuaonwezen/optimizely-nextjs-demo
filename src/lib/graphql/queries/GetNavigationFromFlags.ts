@@ -1,5 +1,7 @@
 // Demo reference implementation for /demo/navigation - production nav uses GetNavigation.ts
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import type { NavNode } from "./GetNavigation";
 
 export interface FlagNavResult {
@@ -97,13 +99,31 @@ const FALLBACK_TREE: NavNode[] = [
   { key: "fallback-about",     label: "About",     href: "/en/about/",     children: [] },
 ];
 
+// The Graph call lives in its own "use cache" function because the SDK client
+// does not forward next: { revalidate, tags } to its fetch. buildTree stays
+// outside the boundary - it is pure, so there is nothing to gain by caching it.
+async function fetchFlagNav(): Promise<{ TraditionalPage?: { items?: RawFlagItem[] } }> {
+  "use cache";
+  cacheTag("navigation");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_NAVIGATION_FROM_FLAGS_QUERY, {});
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchFlagNav] Graph query failed:", error);
+    return {};
+  }
+}
+
 export async function getNavigationFromFlags(): Promise<FlagNavResult> {
   try {
-    const result = await graphqlFetch<{
-      TraditionalPage?: { items?: RawFlagItem[] };
-    }>(GET_NAVIGATION_FROM_FLAGS_QUERY, {}, { next: { revalidate: CACHE_TTL, tags: ["navigation"] } });
+    const result = await fetchFlagNav();
 
-    const raw = result.data?.TraditionalPage?.items ?? [];
+    const raw = result?.TraditionalPage?.items ?? [];
     const tree = buildTree(raw);
 
     if (tree.length === 0) return { tree: FALLBACK_TREE, fromCms: false };

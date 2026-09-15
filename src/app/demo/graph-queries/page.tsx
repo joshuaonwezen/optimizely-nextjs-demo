@@ -68,10 +68,10 @@ const NAIVE_PAGE_SNIPPET = `// ❌ The naive approach: one fetch per block
 // Even a simple page with 8 blocks fires 9 sequential requests.
 
 async function CmsPage({ url }) {
-  const page     = await graphqlFetch(PAGE_QUERY, { url });
-  const hero     = await graphqlFetch(HERO_QUERY, { key: page.heroKey });
-  const richText = await graphqlFetch(TEXT_QUERY, { key: page.textKey });
-  const products = await graphqlFetch(CARD_QUERY, { key: page.cardKey });
+  const page     = await graphClient().request(PAGE_QUERY, { url });
+  const hero     = await graphClient().request(HERO_QUERY, { key: page.heroKey });
+  const richText = await graphClient().request(TEXT_QUERY, { key: page.textKey });
+  const products = await graphClient().request(CARD_QUERY, { key: page.cardKey });
   // ...
 
   return <Page hero={hero} text={richText} products={products} />;
@@ -139,8 +139,8 @@ export default function RootLayout({ children }) {
   return (
     <html>
       <body>
-        <GlobalBanner />      {/* graphqlFetch, revalidate: 3600 → cached */}
-        <NavigationHeader />  {/* graphqlFetch, revalidate: 3600 → cached */}
+        <GlobalBanner />      {/* "use cache" + cacheTag → cached */}
+        <NavigationHeader />  {/* "use cache" + cacheTag → cached */}
         <main>{children}</main>
         <Footer />            {/* static - no fetch */}
       </body>
@@ -204,9 +204,11 @@ const SELF_FETCH_SNIPPET = `// src/components/pages/ArticlePage.tsx
 // { key, url }, so the page resolves the full AuthorBlock by key.
 
 export default async function ArticlePage({ content }) {
+  // No next: { revalidate, tags } - getContent() routes through request(),
+  // which forwards no Next.js fetch options. Wrap in "use cache" to tag it.
   const author = content.author?._metadata?.key
     ? await getClient()
-        .getContent({ key: content.author._metadata.key }, { next: { revalidate: 300 } })
+        .getContent({ key: content.author._metadata.key })
         .catch(() => null)
     : null;
 
@@ -217,22 +219,48 @@ const BATCH_KEY_SNIPPET = `// src/components/blocks/TeamGridBlock/index.tsx
 // The page query returns TeamGridBlock.members as an array of reference keys.
 // One batch query fetches all full member records - not one-per-key.
 
+// NB: no \`photo\` in the selection. It is declared indexingType: "disabled",
+// so Graph has no such field on TeamMemberBlock and selecting it 400s the
+// whole query. Hand-written queries do not get the SDK's automatic filtering.
 const MEMBERS_BY_KEYS_QUERY = \`
   query TeamMembersByKeys($keys: [String!]) {
-    TeamMemberBlock(where: { _metadata: { key: { in: $keys } } }) {
-      items { ...TeamMemberBlockData }
+    TeamMemberBlock(where: { _metadata: { key: { in: $keys } } }, limit: 100) {
+      items {
+        _metadata { key types displayName locale }
+        name
+        role
+        bio
+        linkedinUrl { default }
+      }
     }
   }
-  \${TEAM_MEMBER_FRAGMENT}
 \`;
+
+async function fetchMembers(keys: string[]) {
+  "use cache";                     // the cache boundary is the function, because
+  cacheTag("page");                // the SDK client never forwards next: {} to
+  cacheLife({ stale: 300, revalidate: 3600, expire: 86400 });  // its own fetch
+  try {
+    return await graphClient().request(MEMBERS_BY_KEYS_QUERY, { keys });
+  } catch (error) {
+    console.error("[fetchMembers] Graph query failed:", error);
+    return {};                     // catch INSIDE - a rejection here would
+  }                                // fail the prerender outright
+}
 
 async function loadMembers(keys: string[]): Promise<MemberData[]> {
   if (keys.length === 0) return [];
-  const res = await graphqlFetch(MEMBERS_BY_KEYS_QUERY, { keys }, { next: { revalidate: 300 } });
-  const items = res.data?.TeamMemberBlock?.items ?? [];
+  const res = await fetchMembers(keys);   // keys array is the cache key
+  const items = res?.TeamMemberBlock?.items ?? [];
 
-  // Map results back by key to preserve original display order.
-  const byKey = new Map(items.map((i) => [i._metadata?.key, i]));
+  // Map results back by key to preserve the editor's display order - the query
+  // gives no ordering guarantee. Dedupe first: Graph returns one document per
+  // locale, so the same key can come back more than once.
+  const byKey = new Map();
+  for (const item of items) {
+    const k = item?._metadata?.key;
+    if (k && !byKey.has(k)) byKey.set(k, item);
+  }
   return keys.map((k) => byKey.get(k)).filter(Boolean);
 }`;
 
@@ -242,9 +270,7 @@ const NAIVE_LOOP_SNIPPET = `// ❌ Naive: N queries for N members - sequential, 
 
 async function loadMembers(keys: string[]) {
   return Promise.all(
-    keys.map((key) =>
-      graphqlFetch(MEMBER_BY_KEY_QUERY, { key }, { next: { revalidate: 300 } })
-    )
+    keys.map((key) => fetchOneMember(key))   // one cache entry per key
   );
 }`;
 
@@ -252,7 +278,7 @@ const PREDICTABLE_SNIPPET = `// Graph CDN caches by (query string + variables).
 // Static element queries are always identical → perfect cache hit rate.
 
 // ✅ Navigation - same query, no variables → one CDN entry, shared by all visitors.
-graphqlFetch(GET_NAVIGATION_QUERY, {}, { next: { revalidate: 300 } });
+graphClient().request(GET_NAVIGATION_QUERY, {});
 
 // ✅ Variation filter - structure is fixed; only value[] changes.
 // Finite combinations ([], ["personal"], ["business"]) → Graph CDN caches each.
@@ -262,7 +288,7 @@ getContentByPath(url, {
 
 // ❌ Anti-pattern: per-visitor data inside variables → every request is unique.
 // Graph CDN can never cache this; every request hits the Graph backend.
-graphqlFetch(PAGE_QUERY, {
+graphClient().request(PAGE_QUERY, {
   userId:    visitor.id,       // unique per visitor - cache miss every time
   sessionId: req.sessionId,    // random - makes CDN useless
 });
@@ -334,8 +360,8 @@ export default function GraphQueriesDemoPage() {
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
             <h3 className="font-display font-semibold text-on-surface mb-3">When to write custom queries</h3>
             <p className="text-sm text-on-surface-variant mb-4 leading-relaxed">
-              The SDK page query covers registered page content. Three situations require custom{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch</code> calls:
+              The SDK page query covers registered page content. Three situations require a custom{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">request()</code> call:
             </p>
             <div className="space-y-3">
               {[
@@ -362,11 +388,16 @@ export default function GraphQueriesDemoPage() {
               ))}
             </div>
             <p className="text-xs text-on-surface-variant mt-4 pt-4 border-t border-ghost-border">
-              Always use the{" "}
-              <code className="bg-surface-low px-1 rounded font-mono">graphqlFetch</code> wrapper from{" "}
-              <code className="bg-surface-low px-1 rounded font-mono">src/lib/optimizely/client.ts</code> - it
-              handles published vs. preview auth and ISR config automatically. Export query strings as named
-              constants, not anonymous inline literals - stable strings benefit from Graph CDN caching (see below).
+              Never call raw{" "}
+              <code className="bg-surface-low px-1 rounded font-mono">fetch</code> against Graph. New queries go
+              through a{" "}
+              <code className="bg-surface-low px-1 rounded font-mono">&quot;use cache&quot;</code> function over{" "}
+              <code className="bg-surface-low px-1 rounded font-mono">graphClient().request()</code>, which is
+              where{" "}
+              <code className="bg-surface-low px-1 rounded font-mono">cacheTag()</code> and{" "}
+              <code className="bg-surface-low px-1 rounded font-mono">cacheLife()</code> go. Export query
+              strings as named constants, not anonymous inline literals - stable strings benefit from Graph CDN
+              caching (see below).
             </p>
           </div>
         </section>
@@ -590,8 +621,8 @@ export default function GraphQueriesDemoPage() {
 
         <KeyPoints points={[
           <><strong className="text-on-surface">One CMS page = one Graph request.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">getContentByPath()</code> fetches the full composition automatically. Inline blocks need no additional queries.</>,
-          <><strong className="text-on-surface">For referenced content keys, use <code className="bg-surface-low px-1 rounded font-mono text-xs">getClient().getContent(&#123; key &#125;)</code></strong> - no manual GraphQL query needed. Write custom <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch</code> queries only for non-page data like navigation or content listings.</>,
-          <><strong className="text-on-surface">Always use the graphqlFetch wrapper</strong> - not raw fetch - so published/preview auth and ISR config are handled automatically.</>,
+          <><strong className="text-on-surface">For referenced content keys, use <code className="bg-surface-low px-1 rounded font-mono text-xs">getClient().getContent(&#123; key &#125;)</code></strong> - no manual GraphQL query needed. Write a custom query only for non-page data like navigation or content listings.</>,
+          <><strong className="text-on-surface">Never call raw fetch against Graph.</strong> Wrap <code className="bg-surface-low px-1 rounded font-mono text-xs">graphClient().request()</code> in a <code className="bg-surface-low px-1 rounded font-mono text-xs">&quot;use cache&quot;</code> function and put <code className="bg-surface-low px-1 rounded font-mono text-xs">cacheTag()</code> / <code className="bg-surface-low px-1 rounded font-mono text-xs">cacheLife()</code> there - the SDK client never forwards <code className="bg-surface-low px-1 rounded font-mono text-xs">next</code> options to its own fetch.</>,
           <><strong className="text-on-surface">Put static data in layout components with ISR.</strong> force-dynamic on the page route does not affect layout-level fetches - nav and banner stay cached.</>,
           <><strong className="text-on-surface">Predictable query strings are Graph CDN-cacheable.</strong> Embedding per-user variables (userId, sessionId) makes every request a cache miss at the Graph layer.</>,
           <><strong className="text-on-surface">@recursive(depth: N)</strong> fetches arbitrary tree depth in one round-trip. The depth cap prevents unbounded traversal.</>,

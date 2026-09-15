@@ -19,20 +19,25 @@ const PREVIEW_PARAMS_SNIPPET = `// CMS is configured with Preview URL: https://y
 
 `;
 
-const GRAPHQL_PREVIEW_SNIPPET = `// src/lib/optimizely/client.ts
-// When a previewToken is present, ISR is bypassed entirely
+const GRAPHQL_PREVIEW_SNIPPET = `// A preview fetch must stay OUTSIDE every cache boundary.
+// Two reasons: a draft must never be cached, and a preview token is
+// dynamic data - reading it inside "use cache" throws.
 
-if (previewToken) {
-  headers["Authorization"] = \`Bearer \${previewToken}\`;   // draft auth
-} else {
-  headers["Authorization"] = \`epi-single \${SINGLE_KEY}\`; // published auth
-}
+// The SDK client picks the auth mode from the token argument:
+//   previewToken given → Authorization: Bearer <token>   (draft access)
+//   omitted            → Authorization: epi-single <key> (published only)
 
-// Cache decision:
-if (previewToken) {
-  fetchOptions.cache = "no-store";   // always fetch fresh draft content
-} else {
-  fetchOptions.next = { revalidate: 60 };  // ISR for published content
+// src/lib/graphql/queries/GetNavigation.ts - the branch, in full:
+const data = previewToken
+  ? await graphClient().request(QUERY, vars, previewToken, false)
+  //                                         ↑ token      ↑ cache: false also
+  //                                                        bypasses Graph's CDN
+  : await fetchNavigationCached(key, locale);   // "use cache" + cacheTag
+
+// Never write this - it would cache a draft, and throw on the token read:
+async function broken(previewToken) {
+  "use cache";
+  return graphClient().request(QUERY, vars, previewToken);
 }`;
 
 const PREVIEW_PAGE_SNIPPET = `// src/app/preview/page.tsx
@@ -251,7 +256,7 @@ export default function PreviewDemoPage() {
               <CodeBlock code={PREVIEW_PARAMS_SNIPPET} className="h-full" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">graphqlFetch - cache bypass with previewToken</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Preview fetches stay outside the cache</p>
               <CodeBlock code={GRAPHQL_PREVIEW_SNIPPET} className="h-full" />
             </div>
           </div>

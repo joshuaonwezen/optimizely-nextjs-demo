@@ -1,4 +1,6 @@
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface EditorialItem {
   title?: string | null;
@@ -49,19 +51,35 @@ const GET_EDITORIAL_CONTENT_QUERY = /* GraphQL */ `
 
 const EMPTY = { items: [] as EditorialItem[], fromCms: false };
 
+// Cached at the function, not the fetch: the SDK's request() does not forward
+// next: { revalidate, tags }. `limit` is the cache key, so each distinct limit
+// gets its own entry.
+async function fetchEditorialContent(limit: number): Promise<GraphResponse> {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_EDITORIAL_CONTENT_QUERY, { limit });
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchEditorialContent] Graph query failed:", error);
+    return {};
+  }
+}
+
 export async function getEditorialContent(limit = 6): Promise<{
   items: EditorialItem[];
   fromCms: boolean;
 }> {
   try {
-    const res = await graphqlFetch<GraphResponse>(
-      GET_EDITORIAL_CONTENT_QUERY,
-      { limit },
-      { next: { revalidate: CACHE_TTL, tags: ["page"] } }
-    );
+    const res = await fetchEditorialContent(limit);
 
-    const articles = (res.data?.ArticlePage?.items ?? []).filter(Boolean) as EditorialItem[];
-    const caseStudies = (res.data?.CaseStudyPage?.items ?? []).filter(Boolean) as EditorialItem[];
+    const articles = (res?.ArticlePage?.items ?? []).filter(Boolean) as EditorialItem[];
+    const caseStudies = (res?.CaseStudyPage?.items ?? []).filter(Boolean) as EditorialItem[];
     const merged = [...articles, ...caseStudies].sort((a, b) => {
       const aDate = a._metadata?.published ?? "";
       const bDate = b._metadata?.published ?? "";
@@ -69,7 +87,8 @@ export async function getEditorialContent(limit = 6): Promise<{
     });
 
     return { items: merged.slice(0, limit), fromCms: merged.length > 0 };
-  } catch {
+  } catch (error) {
+    console.error("[getEditorialContent] Returning empty result:", error);
     return EMPTY;
   }
 }

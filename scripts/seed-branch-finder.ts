@@ -1,6 +1,8 @@
 /**
- * Seeds a shared BranchFinderBlock and places it on the "Find a Branch"
- * TraditionalPage (/en/help/branches) via its mainContent content area.
+ * Seeds a shared BranchFinderBlock and places it on both branch-locator pages -
+ * "Find a Branch" (/en/help/branches) and "Locations" (/en/locations, which the
+ * catch-all also serves at /locations) - via their mainContent content areas.
+ * One shared block, bound into both, so editors only maintain a single copy.
  *
  * BranchFinderBlock is a geo location-search block: it wraps the same
  * /api/locations/nearby lookup used by the BranchFinder widget on /demo/search,
@@ -94,28 +96,43 @@ async function main() {
     "BranchFinderBlock"
   );
 
-  // Step 2: wire the block into the Find a Branch page's mainContent.
-  const pageKey = await findPageKeyByUrl(["/en/help/branches", "/en/help/branches/"]);
-  if (!pageKey) {
-    console.warn(
-      "  [warn] Find a Branch page not found in Graph - run seed-content first, then re-run this script"
-    );
-    return;
-  }
-  console.log(`  branches page key: ${pageKey}`);
-
-  // Preserve any existing refs (the shared CTA), but drop a stale finder from a
-  // prior run so re-seeds don't accumulate duplicates. Prepend the fresh finder.
-  const existing = (await getMainContentKeys(pageKey)).filter((k) => k !== blockKey);
-  const mainContent = [
-    { reference: `cms://content/${blockKey}` },
-    ...existing.map((k) => ({ reference: `cms://content/${k}` })),
+  // Step 2: wire the block into every branch-locator page's mainContent. Both
+  // pages get the SAME block key, so there is only ever one shared block to edit.
+  const targets: Array<{ label: string; urls: string[] }> = [
+    { label: "Find a Branch", urls: ["/en/help/branches", "/en/help/branches/"] },
+    { label: "Locations", urls: ["/locations", "/locations/", "/en/locations", "/en/locations/"] },
   ];
 
-  await patchPublishedPageProperties(pageKey, { mainContent });
-  console.log(`  [patched] Find a Branch mainContent → BranchFinderBlock + ${existing.length} existing block(s)`);
+  let placed = 0;
+  for (const target of targets) {
+    const pageKey = await findPageKeyByUrl(target.urls);
+    if (!pageKey) {
+      console.warn(
+        `  [warn] ${target.label} page not found in Graph - run seed-content first, then re-run this script`
+      );
+      continue;
+    }
+    console.log(`  ${target.label} page key: ${pageKey}`);
 
-  console.log("\nDone - BranchFinderBlock seeded and placed. Allow ~30-60s for Graph reindex, then reload /en/help/branches.");
+    // Preserve any existing refs (the shared CTA), but drop a stale finder from a
+    // prior run so re-seeds don't accumulate duplicates. Prepend the fresh finder.
+    const existing = (await getMainContentKeys(pageKey)).filter((k) => k !== blockKey);
+    const mainContent = [
+      { reference: `cms://content/${blockKey}` },
+      ...existing.map((k) => ({ reference: `cms://content/${k}` })),
+    ];
+
+    await patchPublishedPageProperties(pageKey, { mainContent });
+    console.log(`  [patched] ${target.label} mainContent → BranchFinderBlock + ${existing.length} existing block(s)`);
+    placed++;
+  }
+
+  if (placed === 0) {
+    console.warn("  [warn] BranchFinderBlock created but placed on no page - re-run after Graph indexes the pages");
+    return;
+  }
+
+  console.log(`\nDone - BranchFinderBlock seeded and placed on ${placed} page(s). Allow ~30-60s for Graph reindex, then reload /en/help/branches and /locations.`);
 }
 
 main().catch((err) => {

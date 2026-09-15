@@ -1,4 +1,6 @@
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface QuoteBlock {
   author: string;
@@ -20,7 +22,7 @@ interface GetQuoteBlocksResult {
 
 export const GET_QUOTE_BLOCKS_QUERY = /* GraphQL */ `
   query GetQuoteBlocks {
-    QuoteBlock(limit: 100, orderBy: { author: { value: ASC } }) {
+    QuoteBlock(limit: 100, orderBy: { author: ASC }) {
       items {
         author
         role
@@ -30,15 +32,30 @@ export const GET_QUOTE_BLOCKS_QUERY = /* GraphQL */ `
   }
 `;
 
+// Cached at the function, not the fetch: the SDK's request() does not forward
+// next: { revalidate, tags }.
+async function fetchQuoteBlocks(): Promise<GetQuoteBlocksResult> {
+  "use cache";
+  cacheTag("quote-blocks");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_QUOTE_BLOCKS_QUERY, {});
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchQuoteBlocks] Graph query failed:", error);
+    return {};
+  }
+}
+
 export async function getQuoteBlocks(): Promise<{ items: QuoteBlock[]; fromGraph: boolean }> {
   try {
-    const result = await graphqlFetch<GetQuoteBlocksResult>(
-      GET_QUOTE_BLOCKS_QUERY,
-      {},
-      { next: { revalidate: CACHE_TTL, tags: ["quote-blocks"] } }
-    );
+    const result = await fetchQuoteBlocks();
 
-    const raw = result.data?.QuoteBlock?.items ?? [];
+    const raw = result?.QuoteBlock?.items ?? [];
     const items = raw
       .filter((q): q is RawQuoteBlock => q !== null)
       .map((q) => ({
@@ -50,7 +67,8 @@ export async function getQuoteBlocks(): Promise<{ items: QuoteBlock[]; fromGraph
 
     if (items.length === 0) return { items: [], fromGraph: false };
     return { items, fromGraph: true };
-  } catch {
+  } catch (error) {
+    console.error("[getQuoteBlocks] Returning no quote blocks:", error);
     return { items: [], fromGraph: false };
   }
 }

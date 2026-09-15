@@ -9,8 +9,8 @@ import SourcePanel from "@/components/demo/SourcePanel";
 
 export const dynamic = "force-dynamic";
 
-const clientTs = fs.readFileSync(
-  path.join(process.cwd(), "src/lib/optimizely/client.ts"),
+const getNavigationTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/graphql/queries/GetNavigation.ts"),
   "utf8"
 );
 const getSiteBannerTs = fs.readFileSync(
@@ -22,31 +22,33 @@ export const metadata: Metadata = {
   title: "Error Handling & Graceful Degradation",
 };
 
-const GRAPHQL_FETCH_ERRORS_SNIPPET = `// src/lib/optimizely/client.ts - two distinct error cases
+const GRAPHQL_FETCH_ERRORS_SNIPPET = `// How graphClient().request() fails - three distinct cases.
+// Paraphrased from the SDK: node_modules/@optimizely/cms-sdk/dist/esm/graph/index.js
 
-// Case 1: HTTP error (non-2xx response) → graphqlFetch THROWS
-//   When: network issue, Graph is down, invalid API key, rate limit
-//   Result: unhandled Error propagates up the call stack
-//   Caller responsibility: wrap in try-catch if absence is acceptable
+// Case 1: fetch() itself rejects (DNS failure, connection refused, bad Graph URL)
+//   Result: THROWS OptimizelyGraphError, with the original TypeError as .cause
+//   Caller responsibility: try-catch if absence is acceptable
 
-const response = await fetch(GRAPH_ENDPOINT, fetchOptions);
+// Case 2: non-2xx response (Graph down, invalid API key, rate limit, bad query)
+//   Result: THROWS - GraphContentResponseError when the body carries errors[],
+//           otherwise GraphHttpResponseError. Both include the status and the
+//           { query, variables } that caused it, which is what you want in a log.
 if (!response.ok) {
-  throw new Error(
-    \`GraphQL request failed: \${response.status} \${response.statusText}\`
-  );
+  const json = JSON.parse(text);           // may not be JSON at all
+  if (json.errors) throw new GraphContentResponseError(json.errors, { status, request });
+  throw new GraphHttpResponseError(response.statusText, { status, request });
 }
 
-// Case 2: GraphQL errors (200 OK but errors[] in body) → graphqlFetch RETURNS
-//   When: invalid query, unknown field, permission error on a field
-//   Result: { data: null, errors: [{message: "..."}] } - does not throw
-//   Caller responsibility: check result.errors if needed, handle data: null
+// Case 3: 200 OK carrying errors[] (a partially-resolved query)
+//   Result: does NOT throw, and the errors are DISCARDED - request() returns
+//           json.data only. Fields that failed to resolve arrive as null with
+//           no explanation anywhere.
+const json = await response.json();
+return json.data;        // ← errors[] never reaches the caller
 
-const result: GraphQLResponse<T> = await response.json();
-if (result.errors?.length) {
-  console.error("[GraphQL Errors]", result.errors);
-  // still returns - data may be partially populated
-}
-return result;`;
+// Case 3 is the trap: a partial failure is indistinguishable from genuinely
+// empty content. If a field is mysteriously null, query it directly against
+// Graph to see the errors[] the client swallowed.`;
 
 const NOT_FOUND_SNIPPET = `// src/app/[[...slug]]/page.tsx - the catch-all CMS route
 //
@@ -63,10 +65,10 @@ for (const candidateUrl of candidateUrls) {
   if (result) { page = result; break; }
 }
 
-// Strategy 2: fallback key query via graphqlFetch
+// Strategy 2: fallback key query via a raw request()
 if (!page) {
-  const res = await graphqlFetch(KEY_QUERY, { url });
-  page = res.data?._Page?.items?.[0] ?? null;
+  const res = await graphClient().request(KEY_QUERY, { url });
+  page = res?._Page?.items?.[0] ?? null;
 }
 
 // Only if both return nothing → 404
@@ -82,16 +84,33 @@ const COMPONENT_FALLBACK_SNIPPET = `// Per-component graceful degradation - neve
 // A broken banner should not blank the whole site.
 
 // src/lib/graphql/queries/GetSiteBanner.ts
-export async function getSiteBanner(): Promise<SiteBannerItem | null> {
+async function fetchSiteBanner(locale: string) {
+  "use cache";
+  cacheTag("banner");
+  cacheLife({ stale: 300, revalidate: 3600, expire: 86400 });
   try {
-    const result = await graphqlFetch(GET_SITE_BANNER_QUERY, {}, {
-      next: { revalidate: 60, tags: ["banner"] },
-    });
-    return result.data?.SiteBanner?.items?.[0] ?? null;  // null if empty
+    return await graphClient().request(GET_SITE_BANNER_QUERY, { locale: [locale] });
   } catch {
-    return null;   // Graph down → no banner → page still renders normally
+    return {};   // Graph down → empty → caller's fallback path runs
   }
 }
+
+export async function getSiteBanner(locale = "en"): Promise<SiteBannerItem | null> {
+  try {
+    const data = await fetchSiteBanner(locale);
+    return data?.SiteBanner?.items?.[0] ?? null;  // null if empty
+  } catch {
+    return null;   // mapping errors only - Graph errors were handled above
+  }
+}
+// The catch MUST go INSIDE the cached function, which is the opposite of the
+// instinct. A rejected promise inside "use cache" fails static generation
+// outright and no try/catch at the call site can rescue it.
+//
+// The cost is real and worth stating: a Graph outage during a render gets
+// written into the cache entry and served for the rest of the revalidate
+// window. Where an hour of "no banner" is worse than an hour of stale banner,
+// shorten cacheLife rather than moving the catch.
 
 // src/components/layout/GlobalBanner/index.tsx
 export default async function GlobalBanner() {
@@ -149,14 +168,26 @@ const FALLBACK_NAV = {
   ],
 };
 
-export async function getNavigation() {
+async function fetchNavigationCached(locale: string) {
+  "use cache";
+  cacheTag("navigation");
+  cacheLife({ stale: 300, revalidate: 3600, expire: 86400 });
   try {
-    const res = await graphqlFetch(GET_NAV_QUERY, {}, {
-      next: { revalidate: 300, tags: ["navigation"] },
-    });
-    return res.data?.Navigation?.items?.[0] ?? FALLBACK_NAV;
-  } catch {
-    return FALLBACK_NAV;   // Graph down → minimal hardcoded nav
+    return await graphClient().request(GET_NAV_QUERY, { locale: [locale] });
+  } catch (error) {
+    // Inside the boundary, because a rejection here would fail the prerender.
+    console.error("[fetchNavigationCached] Graph query failed:", error);
+    return {};
+  }
+}
+
+export async function getNavigation(locale = "en") {
+  try {
+    const data = await fetchNavigationCached(locale);
+    return data?.Navigation?.items?.[0] ?? FALLBACK_NAV;
+  } catch (error) {
+    console.error("[getNavigation] Falling back:", error);
+    return FALLBACK_NAV;   // empty result or mapping error → hardcoded nav
   }
 }
 
@@ -199,21 +230,27 @@ export default function ErrorHandlingDemoPage() {
 
         <section id="graphql-fetch-errors">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Two error cases in <code className="font-mono text-xl">graphqlFetch</code>
+            How a Graph query fails
             <SectionAnchor id="graphql-fetch-errors" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch</code> behaves
-            differently depending on where the error occurs. An HTTP error (non-2xx status) throws an
-            unhandled <code className="bg-surface-low px-1 rounded font-mono text-xs">Error</code>.
-            A GraphQL error (200 OK with{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">errors[]</code> in the body)
-            logs to console and returns the response - it does not throw. Callers must handle both
-            cases explicitly.{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">request()</code> behaves
+            differently depending on where the error occurs. A failed connection or any non-2xx status
+            throws  -  a typed{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">GraphContentResponseError</code>{" "}
+            when the body carries{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">errors[]</code>, otherwise{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">GraphHttpResponseError</code>,
+            both carrying the status and the offending query. A 200 that carries{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">errors[]</code> does{" "}
+            <strong>not</strong> throw: the client returns{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">json.data</code> and discards
+            the errors, so a partially-resolved query looks exactly like empty content. That third case is
+            the one that wastes an afternoon.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
 
-          <CodeBlock code={GRAPHQL_FETCH_ERRORS_SNIPPET} label="src/lib/optimizely/client.ts - HTTP error vs GraphQL error" />
+          <CodeBlock code={GRAPHQL_FETCH_ERRORS_SNIPPET} label="The three failure modes of graphClient().request()" />
 
           <div className="grid md:grid-cols-2 gap-4 mt-6">
             {[
@@ -308,7 +345,7 @@ export default function ErrorHandlingDemoPage() {
         </section>
 
         <KeyPoints points={[
-          <><strong className="text-on-surface">graphqlFetch throws on HTTP errors, returns on GraphQL errors.</strong> HTTP errors (Graph down, rate limit) throw; GraphQL errors (bad field, permission) return <code className="bg-surface-low px-1 rounded font-mono text-xs">{"{ data: null, errors: [...] }"}</code>. Handle both paths.</>,
+          <><strong className="text-on-surface">request() throws on HTTP errors and swallows GraphQL errors.</strong> A connection failure or non-2xx status throws a typed Graph error carrying the status and query; a 200 with <code className="bg-surface-low px-1 rounded font-mono text-xs">errors[]</code> returns <code className="bg-surface-low px-1 rounded font-mono text-xs">json.data</code> and drops the errors, so partial failures read as empty content.</>,
           <><strong className="text-on-surface">notFound() is for missing content, not Graph errors.</strong> A 404 tells search engines the URL is gone. Don&apos;t call it in a catch block - let Graph errors become 500s.</>,
           <><strong className="text-on-surface">Wrap layout component fetches in try-catch.</strong> An unhandled error in the root layout blanks every page on the site. Return null and let the component render nothing.</>,
           <><strong className="text-on-surface">Use hardcoded fallbacks for navigation.</strong> Navigation is critical - if Graph is down, a minimal hardcoded nav keeps the site usable.</>,
@@ -319,7 +356,7 @@ export default function ErrorHandlingDemoPage() {
         <SourcePanel
           heading="Source files"
           files={[
-            { label: "client.ts", path: "src/lib/optimizely/client.ts", content: clientTs },
+            { label: "GetNavigation.ts", path: "src/lib/graphql/queries/GetNavigation.ts", content: getNavigationTs },
             { label: "GetSiteBanner.ts", path: "src/lib/graphql/queries/GetSiteBanner.ts", content: getSiteBannerTs },
           ]}
         />

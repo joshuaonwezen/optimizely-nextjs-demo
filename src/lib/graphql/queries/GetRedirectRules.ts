@@ -1,4 +1,6 @@
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface RedirectRule {
   fromPath: string;
@@ -55,15 +57,31 @@ export function normalizeRedirectPath(input: string): string {
   return s;
 }
 
+// The cache boundary is this function, not the fetch: the SDK's request() does
+// not forward next: { revalidate, tags }. Only the /api/redirects route handler
+// calls this - middleware reaches the rules over HTTP, never by import.
+async function fetchRedirectConfig(): Promise<GetRedirectConfigResult> {
+  "use cache";
+  cacheTag("redirects");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_REDIRECT_RULES_QUERY, {});
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchRedirectConfig] Graph query failed:", error);
+    return {};
+  }
+}
+
 export async function getRedirectRules(): Promise<RedirectRule[]> {
   try {
-    const result = await graphqlFetch<GetRedirectConfigResult>(
-      GET_REDIRECT_RULES_QUERY,
-      {},
-      { next: { revalidate: CACHE_TTL, tags: ["redirects"] } }
-    );
+    const result = await fetchRedirectConfig();
 
-    const raw = result.data?.RedirectConfig?.items?.[0]?.rules ?? [];
+    const raw = result?.RedirectConfig?.items?.[0]?.rules ?? [];
 
     return raw
       .filter((r): r is RawRule => !!r && r.enabled !== false && !!r.fromPath && !!r.toPath)
@@ -76,7 +94,8 @@ export async function getRedirectRules(): Promise<RedirectRule[]> {
       .filter((r) => r.fromPath && r.toPath)
       // Longest fromPath first so an exact rule beats a shorter prefix rule.
       .sort((a, b) => b.fromPath.length - a.fromPath.length);
-  } catch {
+  } catch (error) {
+    console.error("[getRedirectRules] No redirects applied:", error);
     return [];
   }
 }

@@ -2,7 +2,9 @@ import { spawn } from "child_process";
 import type { NextRequest } from "next/server";
 import { SEED_INSTANCES } from "@/lib/optimizely/seedInstances";
 
-export const runtime = "nodejs";
+// No `export const runtime` - the route segment config is rejected under
+// experimental.useCache, and Node is already the default. This route spawns a
+// child process, so it could never run on the edge runtime anyway.
 // Vercel hobby plan caps maxDuration at 300; the route 403s in production anyway
 export const maxDuration = 300;
 

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import { AUTOCOMPLETE_QUERY } from "@/lib/graphql/queries/SearchContent";
 
 export async function GET(request: NextRequest) {
@@ -10,11 +10,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await graphqlFetch<any>(AUTOCOMPLETE_QUERY, { value: q }, { cache: "no-store" });
+    // No "use cache" boundary: user-typed input must never be cached, or every
+    // unique keystroke becomes a permanent cache entry.
+    const result = await graphClient().request(AUTOCOMPLETE_QUERY, { value: q });
 
     return NextResponse.json({
-      tags:  result.data?.ArticlePage?.autocomplete?.tags ?? [],
-      paths: result.data?.SEO?.autocomplete?._metadata?.url?.default ?? [],
+      tags:  result?.ArticlePage?.autocomplete?.tags ?? [],
+      paths: result?.SEO?.autocomplete?._metadata?.url?.default ?? [],
     });
   } catch (error) {
     console.error("[Autocomplete] Query failed:", error);

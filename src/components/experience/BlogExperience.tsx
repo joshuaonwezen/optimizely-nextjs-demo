@@ -5,7 +5,6 @@ import {
   getPreviewUtils,
   type ComponentContainerProps,
 } from "@optimizely/cms-sdk/react/server";
-import { CACHE_TTL } from "@/lib/optimizely/client";
 
 function ComponentWrapper({ children, node }: ComponentContainerProps) {
   const { pa } = getPreviewUtils(node);
@@ -35,8 +34,11 @@ export default async function BlogExperience({ content }: { content: any }) {
   let author: any = content?.author ?? null;
   const authorKey = author?.key ?? author?._metadata?.key ?? null;
   if (author && !author.name && authorKey) {
+    // No next: { revalidate, tags } - getContent() routes through request(),
+    // which forwards no Next.js fetch options, so the option was always
+    // discarded. The author resolution rides the page's own ISR window.
     author = await getClient()
-      .getContent({ key: authorKey }, { next: { revalidate: CACHE_TTL } } as any)
+      .getContent({ key: authorKey })
       .catch(() => null);
   }
   const authorName = author?.name ?? null;

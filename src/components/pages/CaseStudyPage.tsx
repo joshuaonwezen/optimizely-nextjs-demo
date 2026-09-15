@@ -3,7 +3,6 @@ import Link from "next/link";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getClient } from "@optimizely/cms-sdk";
-import { CACHE_TTL } from "@/lib/optimizely/client";
 import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
 
@@ -66,19 +65,20 @@ function refKey(ref: ContentRefShape | null | undefined): string | null {
 // Category labels come from the CMS taxonomy, so adding a term in
 // Settings > Categories needs no code change here.
 
+// No next: { revalidate, tags } on either call - getContent() routes through
+// request(), which forwards no Next.js fetch options, so the option was always
+// discarded. These resolutions ride the page's own ISR window.
 async function loadOutcomes(keys: string[]): Promise<OutcomeData[]> {
   if (keys.length === 0) return [];
   const results = await Promise.all(
-    keys.map((key) =>
-      getClient().getContent({ key }, { next: { revalidate: CACHE_TTL } } as any).catch(() => null)
-    )
+    keys.map((key) => getClient().getContent({ key }).catch(() => null))
   );
   return results.filter((item): item is OutcomeData => Boolean(item));
 }
 
 async function loadTestimonial(key: string | null | undefined): Promise<TestimonialData | null> {
   if (!key) return null;
-  return getClient().getContent({ key }, { next: { revalidate: CACHE_TTL } } as any).catch(() => null);
+  return getClient().getContent({ key }).catch(() => null);
 }
 
 export default async function CaseStudyPage({ content }: { content: CaseStudyContent }) {

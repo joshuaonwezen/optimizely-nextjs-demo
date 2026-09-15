@@ -1,4 +1,6 @@
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
 // Public tree type — used by NestedNavMenu and the demo page
 
@@ -126,6 +128,31 @@ export function toNavNode(raw: RawNavItem): NavNode {
 
 // Fetch helper
 
+// The cache boundary is this function, not the fetch: the SDK's request() does not
+// forward next: { revalidate, tags }, but "use cache" caches the returned value, so
+// cacheTag/cacheLife apply regardless of the client. The preview path deliberately
+// stays outside it - a draft must never be cached or tagged, and reading a preview
+// token is dynamic data that cannot cross a cache boundary.
+async function fetchNavigationCached(key: string | undefined, locale: string): Promise<GetNavigationResult> {
+  "use cache";
+  cacheTag("navigation");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(
+      key ? GET_NAVIGATION_BY_KEY_QUERY : GET_NAVIGATION_QUERY,
+      key ? { key, locale: [locale] } : { locale: [locale] }
+    );
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchNavigationCached] Graph query failed:", error);
+    return {};
+  }
+}
+
 /**
  * Fetch the Navigation shared block and map its navItems into a typed NavNode
  * tree.
@@ -134,8 +161,8 @@ export function toNavNode(raw: RawNavItem): NavNode {
  * Navigation") so re-seeding with a new CMS key is transparent. Pass `key` to
  * query a specific Navigation block (e.g. for preview).
  *
- * Cached for 5 minutes with a "navigation" tag — call
- * revalidateTag("navigation") from a publish webhook to bust on demand.
+ * Cached for 1 hour with a "navigation" tag — call revalidateTag("navigation")
+ * from a publish webhook to bust on demand. Preview fetches bypass the cache.
  *
  * Falls back to DEMO_NAV_DATA when the block can't be reached.
  */
@@ -149,15 +176,16 @@ export async function getNavigation(options: {
   const { previewToken, key, locale = "en" } = options;
 
   try {
-    const result = await graphqlFetch<GetNavigationResult>(
-      key ? GET_NAVIGATION_BY_KEY_QUERY : GET_NAVIGATION_QUERY,
-      key ? { key, locale: [locale] } : { locale: [locale] },
-      previewToken
-        ? { previewToken, cache: "no-store" }
-        : { next: { revalidate: CACHE_TTL, tags: ["navigation"] } }
-    );
+    const data: GetNavigationResult = previewToken
+      ? await graphClient().request(
+          key ? GET_NAVIGATION_BY_KEY_QUERY : GET_NAVIGATION_QUERY,
+          key ? { key, locale: [locale] } : { locale: [locale] },
+          previewToken,
+          false
+        )
+      : await fetchNavigationCached(key, locale);
 
-    const root = result.data?.Navigation?.items?.[0];
+    const root = data?.Navigation?.items?.[0];
     if (!root) return { tree: DEMO_NAV_DATA, fromCms: false };
 
     const items = (root.navItems ?? [])
@@ -166,7 +194,8 @@ export async function getNavigation(options: {
 
     if (items.length === 0) return { tree: DEMO_NAV_DATA, fromCms: false };
     return { tree: items, fromCms: true };
-  } catch {
+  } catch (error) {
+    console.error("[getNavigation] Falling back to DEMO_NAV_DATA:", error);
     return { tree: DEMO_NAV_DATA, fromCms: false };
   }
 }

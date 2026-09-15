@@ -11,8 +11,10 @@ export async function resolveLinkHref(
   if (!raw) return undefined;
   if (!raw.startsWith("cms://content/")) return raw;
   const key = raw.slice("cms://content/".length).split(/[?#]/)[0];
-  const target = await getClient()
-    .getContent({ key }, { next: { revalidate: 3600, tags: ["page"] } } as any)
+  // No next: { revalidate, tags } - getContent() routes through request(), which
+  // forwards no Next.js fetch options, so the option was always discarded.
+  const target: { _metadata?: { url?: { default?: string } } } | null = await getClient()
+    .getContent({ key })
     .catch(() => null);
-  return (target as any)?._metadata?.url?.default ?? undefined;
+  return target?._metadata?.url?.default ?? undefined;
 }

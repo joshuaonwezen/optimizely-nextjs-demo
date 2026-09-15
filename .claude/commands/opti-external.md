@@ -84,7 +84,9 @@ await fetch(
 External items query exactly like CMS content — no special handling needed:
 
 ```ts
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
 const QUERY = `{
   MyItem(limit: 10) {
@@ -96,9 +98,15 @@ const QUERY = `{
   }
 }`;
 
-const res = await graphqlFetch<{ MyItem: { items: MyItemData[] } }>(
-  QUERY, {}, { next: { revalidate: 60, tags: ["my-items"] } }
-);
+async function fetchMyItems(): Promise<{ MyItem?: { items?: MyItemData[] } }> {
+  "use cache";
+  cacheTag("my-items");     // add "my-items" to the webhook's revalidateTag list
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  return graphClient().request(QUERY, {});
+}
+
+const res = await fetchMyItems();
 ```
 
 ## Searchable field gotcha
@@ -124,13 +132,28 @@ const DEMO_ITEMS: MyItem[] = [
   { name: "Demo Item", quote: "Fallback content for demo.", rating: 5 },
 ];
 
+async function fetchMyItems() {
+  "use cache";
+  cacheTag("my-type");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  try {
+    return await graphClient().request(MY_ITEMS_QUERY, {});
+  } catch (error) {
+    // INSIDE the cached function: a rejection inside "use cache" fails static
+    // generation and the call site cannot rescue it. An outage is therefore
+    // cached for the revalidate window - that is the accepted trade-off.
+    console.error("[fetchMyItems] Graph query failed:", error);
+    return {};
+  }
+}
+
 export async function getMyItems(): Promise<MyItem[]> {
   try {
-    const res = await graphqlFetch<{ MyItem: { items: MyItem[] } }>(
-      QUERY, {}, { next: { revalidate: 60 } }
-    );
-    return res.data?.MyItem?.items ?? DEMO_ITEMS;
-  } catch {
+    const res = await fetchMyItems();
+    return res?.MyItem?.items ?? DEMO_ITEMS;
+  } catch (error) {
+    // Mapping errors only - Graph failures were handled above.
+    console.error("[getMyItems] Falling back to demo items:", error);
     return DEMO_ITEMS;
   }
 }

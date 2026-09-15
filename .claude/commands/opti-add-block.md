@@ -76,23 +76,37 @@ export default async function MyBlock(props: MyBlockProps) {
 }
 ```
 
-**Option B — self-fetch via graphqlFetch**:
+**Option B — self-fetch via a `"use cache"` query**:
 ```tsx
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
 const FETCH_QUERY = `{ MyBlock(limit: 1) { items { heading body } } }`;
+
+// Module level, not inline: only serializable values may cross the boundary, and
+// a component's props hold SDK composition nodes and React components.
+async function fetchMyBlock(): Promise<{ MyBlock?: { items?: MyBlockData[] } }> {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  return graphClient().request(FETCH_QUERY, {});
+}
 
 export default async function MyBlock(props: MyBlockProps) {
   let data = props.content ?? props;
   if (!data.heading) {
-    const res = await graphqlFetch<{ MyBlock: { items: MyBlockData[] } }>(
-      FETCH_QUERY, {}, { next: { revalidate: 60 } }
-    );
-    data = res.data?.MyBlock?.items?.[0] ?? data;
+    const res = await fetchMyBlock().catch(() => null);
+    data = res?.MyBlock?.items?.[0] ?? data;
   }
   // render...
 }
 ```
+
+If the block also renders in the Visual Builder, branch on `__context?.edit` and call
+`graphClient().request(FETCH_QUERY, {}, undefined, false)` there so editors see live
+values - see `OptiFormsContainer` for the pattern.
 
 ## Step 3 — Add a GraphQL fragment
 

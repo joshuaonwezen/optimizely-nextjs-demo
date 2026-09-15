@@ -29,7 +29,8 @@ const GENERATE_METADATA_SNIPPET = `// src/app/[[...slug]]/page.tsx
 // Return a Metadata object - Next.js writes the <head> tags.
 
 import type { Metadata } from "next";
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
 const GET_PAGE_SEO_QUERY = /* GraphQL */ \`
   query GetPageSeo($url: String!) {
@@ -54,12 +55,27 @@ const GET_PAGE_SEO_QUERY = /* GraphQL */ \`
   }
 \`;
 
+// The cache boundary is this function, not the fetch: the SDK client does not
+// forward next: { revalidate, tags } to its own fetch, so a tag set there would
+// be silently dropped. The catch goes inside - a rejection inside "use cache"
+// fails the prerender and no call-site try/catch can rescue it.
+async function fetchPageSeo(url: string) {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: 3600, expire: 86400 });
+  try {
+    return await graphClient().request(GET_PAGE_SEO_QUERY, { url });
+  } catch {
+    return {};   // falls through to the default title below
+  }
+}
+
 export async function generateMetadata(
   { params }: { params: { slug?: string[] } }
 ): Promise<Metadata> {
   const url = \`/\${params.slug?.join("/") ?? ""}\`;
-  const res = await graphqlFetch(GET_PAGE_SEO_QUERY, { url }, { next: { revalidate: 60 } });
-  const page = res.data?._Content?.items?.[0];
+  const res = await fetchPageSeo(url);
+  const page = res?._Content?.items?.[0];
 
   const title       = page?.metaTitle ?? page?._metadata?.displayName ?? "Mosey Bank";
   const description = page?.metaDescription ?? undefined;
@@ -85,12 +101,12 @@ const SITEMAP_SNIPPET = `// src/app/sitemap.ts
 // Use the same GetAllPagePaths query used by generateStaticParams.
 
 import type { MetadataRoute } from "next";
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const res   = await graphqlFetch(GET_ALL_PAGE_PATHS_QUERY, {}, { next: { revalidate: 3600 } });
-  const pages = res.data?._Page?.items ?? [];
+  const res   = await fetchAllPagePaths();   // "use cache" + cacheTag("page")
+  const pages = res?._Page?.items ?? [];
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://moseyfin.com";
 

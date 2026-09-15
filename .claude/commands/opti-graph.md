@@ -6,18 +6,39 @@ You are writing a Graph query. Key patterns for this project:
 
 ## Client
 
-Use `graphqlFetch` from `src/lib/optimizely/client.ts` for manual queries (seed scripts, self-fetching components). The SDK's `getClient().getContentByPath()` is used in the catch-all page route.
+Use `graphClient()` from `src/lib/optimizely/graphClient.ts` for manual queries, wrapped in a `"use cache"` function. The SDK's `getClient().getContentByPath()` is used in the catch-all page route.
+
+The cache boundary has to be the function: the SDK client does not forward `next: { revalidate, tags }` to its own `fetch`, so a tag or TTL set there would be silently dropped. `"use cache"` caches what the function RETURNS, which works over any client.
 
 ```ts
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
-const res = await graphqlFetch<{ MyType: { items: MyData[] } }>(
-  `{ MyType(limit: 10) { items { heading body } } }`,
-  {},                         // variables (pass {} if none)
-  { next: { revalidate: 60, tags: ["my-type"] } }  // Next.js cache options
-);
-const items = res.data?.MyType?.items ?? [];
+async function fetchMyType(): Promise<{ MyType?: { items?: MyData[] } }> {
+  "use cache";
+  cacheTag("my-type");                  // revalidateTag("my-type") busts this entry
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  // request(query, variables, previewToken?, cache?) - variables is a REQUIRED
+  // positional, and the 3rd arg is a preview token, not an options object.
+  try {
+    return await graphClient().request(`{ MyType(limit: 10) { items { heading body } } }`, {});
+  } catch (error) {
+    // Catch INSIDE the boundary. A rejected promise inside "use cache" fails
+    // static generation outright ("Error occurred prerendering page") and no
+    // try/catch at the call site can rescue it.
+    console.error("[fetchMyType] Graph query failed:", error);
+    return {};
+  }
+}
+
+// request() resolves to Graph's `data` payload, so there is no .data to unwrap.
+const res = await fetchMyType();
+const items = res?.MyType?.items ?? [];
 ```
+
+Rules: use `graphClient()` rather than `getClient()` in anything reachable from `layout.tsx` (`getClient()` throws where `config()` has not run); keep `try`/`catch` INSIDE the cached function, because a rejection there fails the prerender and the call site cannot rescue it — accepting that an outage is cached for the revalidate window, which is what `cacheLife` is for tuning; never read `cookies()`/`headers()`/`draftMode()`/`searchParams` inside one; and leave preview/draft, user-typed search, and anything keyed on unbounded user input (e.g. a geocoded lat/lon) outside any cache boundary. Requires `experimental.useCache` in `next.config.ts`.
 
 ## Auth modes
 
@@ -48,7 +69,7 @@ if (!data.heading && data._metadata?.key) {
 
 `getContent()` also accepts a `graph://` string from `_metadata.url.graph` directly.
 
-**Workaround B — self-fetching via `graphqlFetch`**, and URL-based detection in the page component:
+**Workaround B — self-fetching via a `"use cache"` query**, and URL-based detection in the page component:
 
 ```tsx
 // In TraditionalPage.tsx

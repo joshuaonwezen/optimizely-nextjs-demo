@@ -6,6 +6,18 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/demo/(.*)": ["./src/**/*"],
   },
+
+  /**
+   * Enables the `"use cache"` directive plus cacheTag() / cacheLife(), without
+   * the full cacheComponents migration (which would also force ppr: true).
+   * Lets a query module cache its own return value instead of depending on
+   * next: { revalidate, tags } reaching the underlying fetch() - which the
+   * cms-sdk Graph client does not forward.
+   */
+  experimental: {
+    useCache: true,
+  },
+
   /**
    * Allow the Optimizely CMS to embed this site in an iframe for Visual Builder.
    * Without the Content-Security-Policy frame-ancestors directive, the on-page

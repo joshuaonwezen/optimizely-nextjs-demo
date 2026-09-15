@@ -66,7 +66,7 @@ For a `type: "content"` single reference property:
 featuredBlock: { reference: "cms://content/abc123" }
 ```
 
-Note: Graph does NOT inline-expand single content references on page queries — it returns `{ __typename: "_Content", _metadata: { key: null } }`. If you need the referenced content's fields, either use a content area (array) instead, or make the component self-fetch its own data via `graphqlFetch`.
+Note: Graph does NOT inline-expand single content references on page queries — it returns `{ __typename: "_Content", _metadata: { key: null } }`. If you need the referenced content's fields, either use a content area (array) instead, or make the component self-fetch its own data via `graphClient().request()`.
 
 ## Update content (PATCH)
 
@@ -98,12 +98,16 @@ await fetch(
 Look up existing items before creating so the script is safe to re-run:
 
 ```ts
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
-const existing = await graphqlFetch<{ MyType: { items: { _metadata: { key: string } }[] } }>(
-  `{ MyType(limit: 100) { items { _metadata { key } } } }`
-);
-for (const item of existing.data?.MyType?.items ?? []) {
+// Seed scripts run outside Next, so there is no cache boundary here - just call
+// request() directly. It resolves to Graph's `data` payload.
+const existing: { MyType?: { items?: { _metadata: { key: string } }[] } } =
+  await graphClient().request(
+    `{ MyType(limit: 100) { items { _metadata { key } } } }`,
+    {}
+  );
+for (const item of existing?.MyType?.items ?? []) {
   await fetch(`${CMS_URL}/preview3/experimental/content/${item._metadata.key}`, {
     method: "DELETE", headers
   });

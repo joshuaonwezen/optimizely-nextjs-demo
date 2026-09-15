@@ -176,16 +176,16 @@ const PAGINATION_SNIPPET = `# Cursor pagination: pass the cursor from the previo
 # is published between requests - offset-based pagination isn't.
 
 # Page 1 - no cursor
-const page1 = await graphqlFetch(SEARCH_PAGES_QUERY, {
+const page1 = await graphClient().request(SEARCH_PAGES_QUERY, {
   query: "savings account",
   since: new Date(Date.now() - 90 * 86400_000).toISOString(),
 });
 
-const { items, cursor, total } = page1.data._Page;
+const { items, cursor, total } = page1._Page;
 // cursor = "eyJhbGciOiJub25lIn0.eyJza2lwIjoxMH0."  (opaque, don't parse)
 
 // Page 2 - pass cursor back
-const page2 = await graphqlFetch(SEARCH_PAGES_QUERY_WITH_CURSOR, {
+const page2 = await graphClient().request(SEARCH_PAGES_QUERY_WITH_CURSOR, {
   query: "savings account",
   since: ...,
   cursor: cursor,   // ← the cursor from page 1 response
@@ -330,24 +330,33 @@ const SYNONYMS_QUERY_SNIPPET = `# Apply synonym expansion on field-level operato
 
 const CACHE_SNIPPET = `// Search should skip the Next.js Data Cache but still ride Graph's own cache.
 
-// ✅ no-store keeps search OUT of the Next.js Data Cache. Otherwise every
-// unique query string becomes a persistent entry that is never read again,
-// evicting entries you do reuse (pages, navigation).
-const results = await graphqlFetch(SEARCH_QUERY, { query: q }, { cache: "no-store" });
-// (the /api/search route in this project already passes this)
+// ✅ No cache boundary around the call, so search stays OUT of the Next.js
+// Data Cache. Otherwise every unique query string becomes a persistent entry
+// that is never read again, evicting entries you do reuse (pages, navigation).
+const results = await graphClient().request(SEARCH_QUERY, { query: q });
+// (the /api/search route in this project calls it exactly like this)
 
-// no-store is a Next.js directive - it does NOT disable the Optimizely Graph
-// response cache. Repeated queries still return from Graph's edge, purged
-// within seconds of a publish by the webhook. Synonyms help here: "home loan"
-// and "mortgage" resolve to the same match set, so the hot query set stays
-// small and stays warm.
+// Staying out of the Next cache does NOT disable the Optimizely Graph response
+// cache. Repeated queries still return from Graph's edge, purged within seconds
+// of a publish by the webhook. Synonyms help here: "home loan" and "mortgage"
+// resolve to the same match set, so the hot query set stays small and warm.
+// Pass cache: false as the 4th arg to bypass Graph's cache too.
 
-// ❌ Wrong - ISR on search: one Data Cache entry per unique phrase, indefinitely.
-const results = await graphqlFetch(SEARCH_QUERY, { query: q });
+// ❌ Wrong - caching search: one Data Cache entry per unique phrase, forever.
+async function searchCached(q) {
+  "use cache";                     // do not do this for user-typed input
+  cacheTag("search");
+  return graphClient().request(SEARCH_QUERY, { query: q });
+}
 
-// Navigation is the opposite - one query for every visitor, no variables,
-// a perfect ISR candidate:
-graphqlFetch(GET_NAV_QUERY, {}, { next: { revalidate: 300, tags: ["navigation"] } });`;
+// Navigation is the opposite - one query for every visitor, no per-user
+// variables, so it belongs inside a cache boundary:
+async function fetchNavigationCached(locale) {
+  "use cache";
+  cacheTag("navigation");
+  cacheLife({ stale: 300, revalidate: 3600, expire: 86400 });
+  return graphClient().request(GET_NAV_QUERY, { locale: [locale] });
+}`;
 
 const EVERYTHING_QUERY_SNIPPET = `# The "kitchen sink" - every search capability on this page, in one request.
 # Real production queries rarely turn all of these on at once (each adds a
@@ -714,8 +723,7 @@ export default function SearchDemoPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Net: no per-visitor entries in your app, a shared cache at Graph, freshness from the publish
             webhook. (A <code className="bg-surface-low px-1 rounded font-mono text-xs">GET</code>{" "}
-            transport and stored queries push Graph&apos;s hit rate higher still;{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch</code> uses{" "}
+            transport and stored queries push Graph&apos;s hit rate higher still; the SDK client uses{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">POST</code> here for
             simplicity.)
           </p>

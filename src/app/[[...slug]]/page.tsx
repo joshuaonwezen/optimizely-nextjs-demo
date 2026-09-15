@@ -6,7 +6,9 @@ import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/s
 import { supportsProductLanding } from "@/lib/optimizely/productLandingInstances";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import { VARIATION_MARKER, FLAG_VAR_SEP } from "@/middleware";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
@@ -25,6 +27,80 @@ interface PageParams {
 }
 
 const LOCALE_PREFIX_RE = /^[a-z]{2}(-[a-z]{2})?$/;
+
+type KeyResult = {
+  // Optional because the cached fetcher returns {} when the Graph query fails -
+  // see fetchPageKeys. Every read below is already optional-chained.
+  _Page?: { items?: Array<{ _metadata: { key: string; version: string | number; variation: string | null } }> };
+};
+
+// These three Graph calls sit in module-level "use cache" functions rather than
+// inline, for two separate reasons. First, the SDK client does not forward
+// next: { revalidate, tags } to its fetch, so the cache boundary has to be the
+// function. Second, CmsPage itself calls noStore() and getVisitorContext()
+// (which reads cookies and headers) on the homepage path - dynamic reads cannot
+// happen inside a cache scope, so the query has to live outside CmsPage
+// entirely, taking only the serializable `urls` array as its cache key.
+async function fetchPageKeys(urls: string[]): Promise<KeyResult> {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(KEY_QUERY, { urls });
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchPageKeys] Graph query failed:", error);
+    return {};
+  }
+}
+
+async function fetchAllPagePaths(): Promise<{ _Page?: { items?: unknown[] } }> {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  // request() takes variables as a required positional - pass {}, not undefined.
+  try {
+    return await graphClient().request(GET_ALL_PAGE_PATHS_QUERY, {});
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchAllPagePaths] Graph query failed:", error);
+    return {};
+  }
+}
+
+// Takes a discriminator, not the query text: arguments form the cache key, and
+// passing the whole GraphQL document would put ~1KB of string in the key to
+// express a two-way choice.
+async function fetchPageMeta(
+  variant: "primary" | "fallback",
+  urls: string[]
+): Promise<PageMetaResult> {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(
+      variant === "primary" ? GET_PAGE_META_QUERY : GET_PAGE_META_FALLBACK_QUERY,
+      { urls }
+    );
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchPageMeta] Graph query failed:", error);
+    return {};
+  }
+}
 
 const KEY_QUERY = /* GraphQL */ `
   query FindPageKey($urls: [String]) {
@@ -133,10 +209,11 @@ async function CmsPage({
   // matching versions so we pick the variation match.
   for (const url of urls) {
     try {
-      const items = await client.getContentByPath(url, {
-        ...variationFilter,
-        next: { revalidate: CACHE_TTL, tags: ["page"] },
-      } as any);
+      // No next: { revalidate, tags } - getContentByPath() routes through
+      // request(), which forwards no Next.js fetch options, so the option was
+      // only ever discarded. Page content rides page-output ISR instead
+      // (export const revalidate above, busted by revalidatePath in the webhook).
+      const items = await client.getContentByPath(url, variationFilter);
       if (items.length > 0) {
         const variationMatch = variationFilter
           ? items.find((item: any) => variationValues.includes(item._metadata?.variation))
@@ -154,13 +231,13 @@ async function CmsPage({
   // _Page.items has no such restriction — use it to find key+variation by name,
   // then fall back to the highest base version.
   if (!page) {
-    type KeyResult = { _Page: { items: Array<{ _metadata: { key: string; version: string | number; variation: string | null } }> } };
-    let keyItems: KeyResult["_Page"]["items"] = [];
+    let keyItems: NonNullable<NonNullable<KeyResult["_Page"]>["items"]> = [];
     try {
-      const keyResult = await graphqlFetch<KeyResult>(KEY_QUERY, { urls }, { next: { revalidate: CACHE_TTL, tags: ["page"] } });
-      keyItems = keyResult.data?._Page?.items ?? [];
-    } catch {
+      const keyResult = await fetchPageKeys(urls);
+      keyItems = keyResult?._Page?.items ?? [];
+    } catch (error) {
       // Graph unavailable — fall through to notFound()
+      console.error("[CmsPage] Key lookup failed:", error);
     }
 
     const candidates = keyItems
@@ -220,16 +297,13 @@ export async function generateStaticParams(): Promise<PageParams[]> {
 
   let result;
   try {
-    result = await graphqlFetch<any>(
-      GET_ALL_PAGE_PATHS_QUERY,
-      undefined,
-      { next: { revalidate: 3600 } }
-    );
-  } catch {
+    result = await fetchAllPagePaths();
+  } catch (error) {
+    console.error("[generateStaticParams] Falling back to homepage only:", error);
     return [HOMEPAGE];
   }
 
-  const pages = result.data?._Page?.items ?? [];
+  const pages = result?._Page?.items ?? [];
 
   const params: PageParams[] = pages
     .map((page: any) => {
@@ -329,16 +403,26 @@ export async function generateMetadata({
   const { cleanSlug } = extractVariations(slug);
   const urls = buildUrlCandidates(cleanSlug);
 
+  // The fallback query must be driven by an EMPTY RESULT, not only by a throw.
+  // The SDK client throws on a non-2xx response but returns json.data for a 200
+  // that carries errors[] - which is exactly what a type the instance's Graph
+  // schema does not know (see the ProductLandingExperience note above) produces.
+  // A purely throw-driven fallback would silently stop firing in that case.
   let item: PageMetaItem | null = null;
   try {
-    const result = await graphqlFetch<PageMetaResult>(GET_PAGE_META_QUERY, { urls }, { next: { revalidate: CACHE_TTL } });
-    item = result.data?._Page?.items?.[0] ?? null;
-  } catch {
+    const result = await fetchPageMeta("primary", urls);
+    item = result?._Page?.items?.[0] ?? null;
+  } catch (error) {
+    console.error("[generateMetadata] Primary meta query failed:", error);
+  }
+
+  if (!item) {
     try {
-      const result = await graphqlFetch<PageMetaResult>(GET_PAGE_META_FALLBACK_QUERY, { urls }, { next: { revalidate: CACHE_TTL } });
-      item = result.data?._Page?.items?.[0] ?? null;
-    } catch {
+      const result = await fetchPageMeta("fallback", urls);
+      item = result?._Page?.items?.[0] ?? null;
+    } catch (error) {
       // Graph unavailable — return fallback title
+      console.error("[generateMetadata] Fallback meta query failed:", error);
     }
   }
 

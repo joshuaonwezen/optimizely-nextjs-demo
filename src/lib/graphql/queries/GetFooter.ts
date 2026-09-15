@@ -1,4 +1,6 @@
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import { toNavNode, type NavNode, type RawNavItem } from "@/lib/graphql/queries/GetNavigation";
 
 export interface FooterData {
@@ -48,11 +50,32 @@ const GET_FOOTER_QUERY = /* GraphQL */ `
   }
 `;
 
+// The Graph call sits in a "use cache" function rather than passing
+// next: { revalidate, tags } to fetch(), because the SDK's request() does not
+// forward Next.js fetch options. "use cache" caches the returned value instead,
+// so cacheTag/cacheLife work over any client. Args must stay serializable.
+async function fetchFooter(locale: string): Promise<GetFooterResult> {
+  "use cache";
+  cacheTag("footer");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_FOOTER_QUERY, { locale: [locale] });
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchFooter] Graph query failed:", error);
+    return {};
+  }
+}
+
 /**
  * Fetch the Footer shared block and map its columns into typed NavNode trees
  * (reusing the Navigation mapper - footer columns are NavigationItems).
  *
- * Cached for 5 minutes with a "footer" tag - the publish webhook calls
+ * Cached for 1 hour with a "footer" tag - the publish webhook calls
  * revalidateTag("footer") to bust on demand.
  *
  * Returns null when the block doesn't exist or can't be reached, so the
@@ -61,12 +84,8 @@ const GET_FOOTER_QUERY = /* GraphQL */ `
 export async function getFooter(options: { locale?: string } = {}): Promise<FooterData | null> {
   const { locale = "en" } = options;
   try {
-    const result = await graphqlFetch<GetFooterResult>(
-      GET_FOOTER_QUERY,
-      { locale: [locale] },
-      { next: { revalidate: CACHE_TTL, tags: ["footer"] } }
-    );
-    const root = result.data?.Footer?.items?.[0];
+    const data = await fetchFooter(locale);
+    const root = data?.Footer?.items?.[0];
     if (!root) return null;
 
     const columns = (root.columns ?? [])
@@ -75,7 +94,8 @@ export async function getFooter(options: { locale?: string } = {}): Promise<Foot
 
     if (columns.length === 0 && !root.tagline) return null;
     return { tagline: root.tagline ?? null, columns };
-  } catch {
+  } catch (error) {
+    console.error("[getFooter] Falling back to hardcoded footer:", error);
     return null;
   }
 }

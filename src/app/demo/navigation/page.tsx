@@ -133,17 +133,17 @@ const S3_HOW_IT_WORKS = `// Two-step query:
 // 1. Find parent page by its known URL
 // 2. Query all _Page items where _ancestors contains the parent key
 
-const parent = await graphqlFetch(GET_PARENT_KEY_QUERY);
+const parent = await graphClient().request(GET_PARENT_KEY_QUERY);
 const parentKey = parent._Page.items[0]._metadata.key;
 
-const children = await graphqlFetch(GET_CHILDREN_BY_ANCESTOR_QUERY, { parentKey });
+const children = await graphClient().request(GET_CHILDREN_BY_ANCESTOR_QUERY, { parentKey });
 // → returns Current Account, Savings, etc.`;
 
 const S4_HOW_IT_WORKS = `// Query ArticlePage directly - the content type IS the navigation scope.
 // No flag, no hierarchy: every published ArticlePage is a nav candidate.
 // orderBy and limit control what surfaces.
 
-const { items } = await graphqlFetch(GET_ARTICLE_NAVIGATION_QUERY);
+const { items } = await graphClient().request(GET_ARTICLE_NAVIGATION_QUERY);
 // items: [{ title, category, _metadata.url.default }, ...]`;
 
 function TradeOffs({ pros, cons }: { pros: string[]; cons: string[] }) {

@@ -279,7 +279,7 @@ export default async function ArticlePage({ content }) {
   // content.author is a type:"contentReference" - Graph returned only { key, url }
   const author = content.author?._metadata?.key
     ? await getClient()
-        .getContent({ key: content.author._metadata.key }, { next: { revalidate: 300 } })
+        .getContent({ key: content.author._metadata.key })
         .catch(() => null)
     : null;
 
@@ -292,18 +292,50 @@ export default async function ArticlePage({ content }) {
 
 Verified against Graph: querying a single `type:"content"` `featuredBlock` with an inline fragment returns the concrete type and its fields in one query; the same inline-fragment attempt on a `contentReference` is rejected by the schema. `getContent()` also accepts a `graph://` string from `_metadata.url.graph`, and an optional `{ previewToken }` option for preview mode.
 
-### `graphqlFetch` vs `getClient().request()` — when to use each
-The SDK exposes `getClient().request(query, variables, previewToken?, cache?)` for raw GraphQL queries. The `cache` parameter is a boolean — it does not support Next.js `next: { revalidate, tags }` fetch options.
+### Caching a raw Graph query with `"use cache"`
 
-`graphqlFetch` in `src/lib/optimizely/client.ts` exists specifically because Next.js ISR requires passing `next: { revalidate, tags }` through the underlying `fetch()` call. The SDK's `request()` method cannot do this.
+**Wrap `graphClient().request()` in a `"use cache"` function and put `cacheTag`/`cacheLife` there.** That is the only mechanism for giving a Graph query its own tag or TTL.
+
+Why the cache boundary has to be the function: `getClient().request(query, variables, previewToken?, cache?)` passes no `next` and no `cache` to its `fetch()` ([graph/index.js](node_modules/@optimizely/cms-sdk/dist/esm/graph/index.js), the `request` method) — its `cache` boolean only appends `?cache=` to the Graph URL, which controls **Graph's own CDN**. Next then applies `autoNoCache` to any fetch with no explicit cache config, so the call is never registered in the **fetch data cache** and `revalidateTag` cannot reach it. The same is true of `getContent()` and `getContentByPath()`, which route through `request()`.
+
+That is a statement about the *fetch data cache only*. An earlier version of this file and `/demo/caching` claimed `request()` "cannot participate in Next.js ISR" — that is wrong. Its results are still captured by page-output ISR (`export const revalidate`), and during build-time prerendering the fetch **is** cached and shared between export workers.
+
+`"use cache"` makes the distinction moot, because it caches the **function's return value** rather than the fetch, so `cacheTag`/`cacheLife` apply over any client:
+
+```ts
+async function fetchFooter(locale: string): Promise<GetFooterResult> {
+  "use cache";
+  cacheTag("footer");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  try {
+    return await graphClient().request(GET_FOOTER_QUERY, { locale: [locale] });
+  } catch (error) {
+    console.error("[fetchFooter] Graph query failed:", error);
+    return {};   // caller's existing fallback path takes over
+  }
+}
+```
+
+Rules this imposes:
+
+- **The `try`/`catch` goes INSIDE the cached function, not outside.** This is the opposite of the instinct and of what an earlier version of this file said. A rejected promise inside `"use cache"` fails static generation outright (*"Error occurred prerendering page"*) and **no `try`/`catch` at the call site can rescue it** — the boundary swallows the rejection first. The price is real and worth knowing: a Graph outage during a render is **written into the cache entry** and served for the rest of the `revalidate` window. Where an hour of empty is worse than an hour of stale, shorten that query's `cacheLife` rather than moving the catch. Call-site `try`/`catch` blocks are still worth keeping — after this change they only catch *mapping* errors.
+- **Nothing keyed on unbounded user input goes inside a boundary.** Arguments are the cache key, so a `"use cache"` function taking a search phrase or a geocoded lat/lon mints a permanent entry per distinct input that is never read again. `/api/search`, `/api/search/autocomplete` and `getNearbyLocations()` all call `request()` directly for this reason; `getLocations()` (no arguments) is cached.
+
+- **`experimental.useCache: true` must stay in `next.config.ts`.** `cacheTag()` throws `E886` without it. This is deliberately *not* `cacheComponents: true`, which would also force `ppr: true` and require Suspense boundaries around every dynamic read.
+- **It forbids `export const runtime` anywhere in `app/`.** The build fails with *"Route segment config `runtime` is not compatible with `nextConfig.experimental.useCache`"*. Node is the default, so just omit it.
+- **No `cookies()`, `headers()` or `draftMode()` inside a cached function** — it throws. Read dynamic data outside and pass it in as an argument.
+- **Args and the return value must be serializable**, and args form the cache key: `fetchNavigationCached(undefined, "en")` keys as `["$undefined","en"]`.
+- **Preview fetches stay outside the boundary.** A draft must never be cached, and a preview token is dynamic data. `getNavigation()` in `GetNavigation.ts` is the reference: the `previewToken` branch calls `request()` directly (with `cache: false` so Graph's CDN is bypassed too), and only the published branch goes through the cached function.
+- **Use `graphClient()` from `src/lib/optimizely/graphClient.ts`, not `getClient()` directly**, in anything reachable from `layout.tsx`. `getClient()` throws when `config()` has not run, and `config()` lives in `componentRegistry.ts`, which only **page routes** import — so site chrome calling `getClient()` directly throws on every route that skips the registry (all of `/demo/*`) and silently degrades to static fallback data.
+- `revalidateTag` **does** expire `"use cache"` entries, verified against the publish webhook with `NEXT_PRIVATE_DEBUG_CACHE=1` — the single-argument `revalidateTag` cast in `src/app/api/webhooks/route.ts` needed no change.
 
 | Use case | Recommended method |
 |---|---|
 | Fetch a content item by key | `getClient().getContent({ key })` |
 | Fetch a page by URL path | `getClient().getContentByPath(url)` |
-| Custom query needing ISR revalidation tags | `graphqlFetch(query, vars, { next: { revalidate, tags } })` |
-| Custom query, no ISR tags needed | Either works; `getClient().request()` avoids the extra wrapper |
-| Preview/draft content | Either — both accept `previewToken`; `graphqlFetch` sets `cache: "no-store"` automatically when a token is present |
+| Custom query needing tag revalidation | `"use cache"` + `cacheTag` over `graphClient().request()` |
+| Custom query, no caching wanted | `graphClient().request()` directly |
+| Preview/draft content | `request()` with a `previewToken`, never inside `"use cache"` |
 
 ### What Graph inline-expands vs. what needs a self-fetch
 `type: "content"` (single or `type: "array"`, e.g. `featuredBlock`, `faqItems`, `navItems`, `mainContent`) returns full typed fields from Graph in the page query. `type: "contentReference"` (single or array, e.g. `author`, `members`, `milestones`, and image fields) returns only `{ key, url }` and must be resolved by key in the parent. So: reach for `type: "content"` when you want Graph to inline the referenced block; expect a self-fetch only for `contentReference`.
@@ -355,7 +387,7 @@ Geo search works in Optimizely Graph (a common misconception says it doesn't). T
 
 **The `radius` argument is typed `Int`, not `Float`.** A `$radius: Float` variable is rejected with `Variable "$radius" of type "Float" used in position expecting type "Int"`. Declare `$radius: Int` and round the value before passing it.
 
-Graph returns only `location { lat lon }` — **no computed distance** — so compute the "X km away" label yourself with Haversine (see `src/lib/geo.ts`). Reference implementation: `BankLocation` source, `getNearbyLocations()` in `src/lib/graphql/queries/GetLocations.ts`, `/api/locations/nearby`, and the `/locations` page.
+Graph returns only `location { lat lon }` — **no computed distance** — so compute the "X km away" label yourself with Haversine (see `src/lib/geo.ts`). Reference implementation: `BankLocation` source, `getNearbyLocations()` in `src/lib/graphql/queries/GetLocations.ts`, `/api/locations/nearby` (takes `?q=<place>&radius=<km>`, geocodes the place, then runs the geo query), and the `BranchFinderBlock` rendered on `/locations` and `/en/help/branches`. Both pages are bound to the **same** shared block by `scripts/seed-branch-finder.ts`. Note `/locations` is a direct child of the root container, so Graph indexes it at the **bare** path `/locations/` - like `/about/`, `/help/` and `/mortgage/`. The `/en/` prefix only appears on the insights subtree, so several `// /en/...` comments in `PAGE_KEYS` are stale.
 
 ---
 
@@ -745,16 +777,20 @@ Add a similar early-return whenever a new non-CMS route is introduced (landing p
 
 ## Graph Caching
 
-| Content | TTL | Tag | Revalidation |
-|---------|-----|-----|-------------|
-| Published pages | `revalidate: 3600` | `"page"` | Publish webhook |
-| Navigation | `revalidate: 3600` | `"navigation"` | Publish webhook |
-| External content | `revalidate: 3600` | source-specific | Re-sync script |
-| Draft/preview | `no-store` | — | Never cached |
+| Content | Mechanism | TTL | Tag | Revalidation |
+|---------|-----------|-----|-----|-------------|
+| Published pages | page-output ISR | `revalidate: 3600` | `"page"` | Publish webhook |
+| The homepage `/` alone | **none** — its ODP branch calls `noStore()` | — | — | Server-rendered per request |
+| Site chrome + content data | `"use cache"` + `cacheTag` | `cacheLife({ revalidate: 3600 })` | `"navigation"` / `"footer"` / `"settings"` / `"banner"` / `"quotes"` / `"quote-blocks"` / `"redirects"` / `"locations"` / `"page"` | Publish webhook |
+| FX datafile | fetch-level `next` options | `next: { revalidate: 60 }` | — | Automatic |
+| Search, autocomplete, nearby-branch lookup | uncached — args are unbounded user input | — | — | Never cached (Graph's own CDN still applies) |
+| Draft/preview | uncached, outside any cache boundary | — | — | Never cached |
 
-Time-based TTL is 1 hour (`CACHE_TTL = 3600` in `src/lib/optimizely/client.ts`) across page output, site chrome, and content data. Freshness is driven by the publish webhook (`revalidatePath`/`revalidateTag`); the 1-hour window is only the fallback ceiling. The FX datafile stays at 60s (see below) and search/preview stay `no-store` — those are deliberately excluded from the 1-hour policy.
+Time-based TTL is 1 hour (`CACHE_TTL = 3600` in `src/lib/optimizely/client.ts`) across page output, site chrome, and content data — it is the single source of truth, feeding both `cacheLife({ revalidate })` and the catch-all's `export const revalidate`. No Graph query uses fetch-level `next` options any more; the SDK client discards them (see above), so the FX datafile is the only remaining fetch-level consumer. Freshness is driven by the publish webhook (`revalidatePath`/`revalidateTag`); the 1-hour window is only the fallback ceiling. The FX datafile stays at 60s (see below) and search/preview stay uncached — those are deliberately excluded from the 1-hour policy.
 
-Use `graphqlFetch` from `src/lib/optimizely/client.ts` for all manual queries — it handles auth mode (published vs draft) automatically. New cacheable published-content fetches should pass `next: { revalidate: CACHE_TTL, tags: [...] }` rather than a hardcoded number.
+Every tag listed above is busted by `src/app/api/webhooks/route.ts`. **Adding a new `cacheTag()` means adding a matching `revalidateTag()` there** — a tag with no webhook line silently pins that data to the 1-hour ceiling.
+
+For a new manual query, write a `"use cache"` function over `graphClient().request()` — see the section above.
 
 ### `_metadata.url.graph` — graph:// reference string
 Every content item's `_metadata.url` now includes a `graph` field (e.g. `graph://cms/Page/abc123?loc=en`). Pass it directly to `getClient().getContent(graphRef)` to fetch that item without constructing a `GraphReference` object manually.
@@ -860,7 +896,8 @@ src/
   app/demo/            — SDK documentation pages, do NOT change content unless explicitly asked
   components/blocks/   — each block: index.tsx (type + component) + *.fragment.ts
   lib/optimizely/
-    client.ts          — graphqlFetch wrapper (handles published vs draft auth)
+    client.ts          — CACHE_TTL only, the shared 1-hour TTL constant
+    graphClient.ts     — graphClient() — getClient() that is guaranteed configured; use it in anything reachable from layout.tsx
     auth.ts            — OAuth token cache for Management API
     experimentation.ts — FX SDK wrapper (low-level: getOptimizelyClient, getDecision, etc.)
     visitor.ts         — getVisitorContext() — reads optimizelyEndUserId, demo_persona, demo_bucketing_id cookies; derives device from User-Agent

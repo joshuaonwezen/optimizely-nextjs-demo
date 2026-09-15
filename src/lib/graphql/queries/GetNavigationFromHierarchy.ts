@@ -1,5 +1,7 @@
 // Demo reference implementation for /demo/navigation - production nav uses GetNavigation.ts
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface HierarchyNavItem {
   label: string;
@@ -50,27 +52,62 @@ const FALLBACK_RESULT: HierarchyNavResult = {
   fromCms: false,
 };
 
+// Two cached functions rather than one, because the second query depends on the
+// first: the children lookup needs the parent key. Each gets its own cache entry
+// keyed on its own arguments - fetchChildren on parentKey, fetchParent on nothing.
+// The boundary is the function because the SDK client does not forward
+// next: { revalidate, tags } to its fetch.
+async function fetchParent(): Promise<{
+  _Page?: { items?: Array<{ _metadata?: { key?: string; displayName?: string } }> };
+}> {
+  "use cache";
+  cacheTag("navigation");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_PARENT_KEY_QUERY, {});
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchParent] Graph query failed:", error);
+    return {};
+  }
+}
+
+async function fetchChildren(parentKey: string): Promise<{
+  _Page?: { items?: Array<{ _metadata?: { displayName?: string; url?: { default?: string } } }> };
+}> {
+  "use cache";
+  cacheTag("navigation");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_CHILDREN_BY_ANCESTOR_QUERY, { parentKey });
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchChildren] Graph query failed:", error);
+    return {};
+  }
+}
+
 export async function getNavigationFromHierarchy(): Promise<HierarchyNavResult> {
   try {
-    const parentResult = await graphqlFetch<{
-      _Page?: { items?: Array<{ _metadata?: { key?: string; displayName?: string } }> };
-    }>(GET_PARENT_KEY_QUERY, {}, { next: { revalidate: CACHE_TTL, tags: ["navigation"] } });
+    const parentResult = await fetchParent();
 
-    const parent = parentResult.data?._Page?.items?.[0];
+    const parent = parentResult?._Page?.items?.[0];
     const parentKey = parent?._metadata?.key;
     const parentLabel = parent?._metadata?.displayName ?? "Personal Banking";
 
     if (!parentKey) return FALLBACK_RESULT;
 
-    const childResult = await graphqlFetch<{
-      _Page?: { items?: Array<{ _metadata?: { displayName?: string; url?: { default?: string } } }> };
-    }>(
-      GET_CHILDREN_BY_ANCESTOR_QUERY,
-      { parentKey },
-      { next: { revalidate: CACHE_TTL, tags: ["navigation"] } }
-    );
+    const childResult = await fetchChildren(parentKey);
 
-    const raw = childResult.data?._Page?.items ?? [];
+    const raw = childResult?._Page?.items ?? [];
     const items: HierarchyNavItem[] = raw
       .filter((i) => i._metadata?.url?.default)
       .map((i) => ({

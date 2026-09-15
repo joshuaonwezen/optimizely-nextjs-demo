@@ -1,4 +1,6 @@
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import type { TaxonomyTermMeta } from "@/lib/taxonomy";
 
 export const GET_TAXONOMY_TERMS_QUERY = /* GraphQL */ `
@@ -69,6 +71,51 @@ export interface ContentTaxonomyResult {
 
 const EMPTY_CONTENT_TAXONOMY: ContentTaxonomyResult = { uris: [], terms: [] };
 
+// Both queries cache at the function, not the fetch: the SDK's request() does
+// not forward next: { revalidate, tags }. Args form the cache key, so they must
+// stay serializable.
+async function fetchContentTaxonomy(
+  key: string,
+  locale: string
+): Promise<{
+  _Content?: {
+    items?: Array<{ _itemMetadata?: { categories?: string[] | null } | null }> | null;
+  } | null;
+  _TaxonomyTerm?: GraphResponse["_TaxonomyTerm"];
+}> {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_CONTENT_TAXONOMY_QUERY, { key, locale: [locale] });
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchContentTaxonomy] Graph query failed:", error);
+    return {};
+  }
+}
+
+async function fetchTaxonomyTerms(locale: string): Promise<GraphResponse> {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_TAXONOMY_TERMS_QUERY, { locale: [locale] });
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchTaxonomyTerms] Graph query failed:", error);
+    return {};
+  }
+}
+
 export async function getContentTaxonomy(
   key: string | null | undefined,
   options?: { locale?: string }
@@ -76,20 +123,11 @@ export async function getContentTaxonomy(
   if (!key) return EMPTY_CONTENT_TAXONOMY;
   const { locale = "en" } = options ?? {};
   try {
-    const res = await graphqlFetch<{
-      _Content?: {
-        items?: Array<{ _itemMetadata?: { categories?: string[] | null } | null }> | null;
-      } | null;
-      _TaxonomyTerm?: GraphResponse["_TaxonomyTerm"];
-    }>(
-      GET_CONTENT_TAXONOMY_QUERY,
-      { key, locale: [locale] },
-      { next: { revalidate: CACHE_TTL, tags: ["page"] } }
-    );
+    const res = await fetchContentTaxonomy(key, locale);
 
-    const uris = res.data?._Content?.items?.[0]?._itemMetadata?.categories ?? [];
+    const uris = res?._Content?.items?.[0]?._itemMetadata?.categories ?? [];
     const byKey = new Map<string, TaxonomyTermMeta>();
-    for (const item of res.data?._TaxonomyTerm?.items ?? []) {
+    for (const item of res?._TaxonomyTerm?.items ?? []) {
       const m = item?._metadata;
       if (!m?.key || byKey.has(m.key)) continue;
       byKey.set(m.key, {
@@ -110,13 +148,9 @@ export async function getTaxonomyTerms(options?: {
 }): Promise<TaxonomyTermsResult> {
   const { locale = "en" } = options ?? {};
   try {
-    const res = await graphqlFetch<GraphResponse>(
-      GET_TAXONOMY_TERMS_QUERY,
-      { locale: [locale] },
-      { next: { revalidate: CACHE_TTL, tags: ["page"] } }
-    );
+    const res = await fetchTaxonomyTerms(locale);
 
-    const items = res.data?._TaxonomyTerm?.items ?? [];
+    const items = res?._TaxonomyTerm?.items ?? [];
     // Graph stores one term document per locale, so the same key can come back
     // more than once even with a locale filter. Keep the first of each key.
     const byKey = new Map<string, TaxonomyTermMeta>();

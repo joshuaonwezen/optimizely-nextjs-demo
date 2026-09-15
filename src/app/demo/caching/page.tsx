@@ -10,8 +10,12 @@ import Link from "next/link";
 
 export const metadata: Metadata = { title: "ISR Caching & Webhooks Demo" };
 
-const clientTs = fs.readFileSync(
-  path.join(process.cwd(), "src/lib/optimizely/client.ts"),
+const getFooterTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/graphql/queries/GetFooter.ts"),
+  "utf8"
+);
+const getNavigationTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/graphql/queries/GetNavigation.ts"),
   "utf8"
 );
 const webhookRouteTs = fs.readFileSync(
@@ -29,42 +33,26 @@ const registerWebhookMjs = fs.readFileSync(
 export const revalidate = 30;
 
 
-const GRAPHQL_FETCH_SNIPPET = `// src/lib/optimizely/client.ts
+const CALLER_SNIPPET = `// Each data source gets its own tag, so a webhook can bust one
+// without re-rendering everything else.
 
-export async function graphqlFetch<T>(
-  query: string,
-  variables?: Record<string, unknown>,
-  options: GraphQLRequestOptions = {}
-): Promise<GraphQLResponse<T>> {
-  const { previewToken, next, cache } = options;
+// Navigation - 1-hour TTL + "navigation" tag
+async function fetchNavigationCached(key, locale) {
+  "use cache";
+  cacheTag("navigation");
+  cacheLife({ stale: 300, revalidate: 3600, expire: 86400 });
+  return graphClient().request(GET_NAV_QUERY, { locale: [locale] });
+}
 
-  const fetchOptions: RequestInit = { method: "POST", headers, body };
+// Search - never cached (user-typed queries must always be fresh),
+// so there is no cache boundary at all:
+graphClient().request(SEARCH_QUERY, { query: q }, undefined, false);
 
-  if (cache) {
-    fetchOptions.cache = cache;               // explicit override (e.g. "no-store")
-  } else if (next) {
-    fetchOptions.next = next;                 // caller-specified TTL + tags
-  } else if (!previewToken) {
-    fetchOptions.next = { revalidate: 3600 }; // published default: 1-hour ISR
-  } else {
-    fetchOptions.cache = "no-store";          // draft/preview: always fresh
-  }
-  // ...
-}`;
-
-const CALLER_SNIPPET = `// Callers override the default per their staleness tolerance:
-
-// Navigation - 1-hour TTL + "navigation" tag so webhooks can bust it instantly
-graphqlFetch(GET_NAV_QUERY, {}, { next: { revalidate: 3600, tags: ["navigation"] } });
-
-// Banner - 1-hour TTL + "banner" tag
-graphqlFetch(GET_BANNER_QUERY, {}, { next: { revalidate: 3600, tags: ["banner"] } });
-
-// Search - always fresh (user-typed queries must never be stale)
-graphqlFetch(SEARCH_QUERY, { query: q }, { cache: "no-store" });
-
-// Preview - always fresh (draft content must bypass ISR entirely)
-graphqlFetch(QUERY, vars, { previewToken: token }); // → cache: "no-store"`;
+// Preview - a draft must never be cached, and a preview token is dynamic
+// data that cannot cross a cache boundary. Call request() directly:
+graphClient().request(QUERY, vars, previewToken, false);
+//                                  ↑ token     ↑ cache=false also bypasses
+//                                               Graph's own CDN`;
 
 const REVALIDATE_SNIPPET = `// POST /api/revalidate
 // Header: x-revalidate-secret: <OPTIMIZELY_REVALIDATE_SECRET>
@@ -180,16 +168,82 @@ async request(query, variables, previewToken, cache = true, slot) {
     method: "POST",
     headers,
     body: JSON.stringify({ query, variables }),
-    // ↑ No "next" property here. Next.js never sees this as an ISR fetch.
+    // ↑ No "next" property here, so Next applies autoNoCache: this call is never
+    //   registered in the FETCH DATA CACHE and revalidateTag cannot reach it.
   });
 }
 
-// Consequence: you cannot tag this fetch or give it a revalidate window.
-// revalidateTag("navigation") has no effect on a fetch made via request().
+// That is the precise limit: no per-fetch tag, no per-fetch revalidate window.
+// It does NOT mean "no ISR" - the result is still captured by page-output ISR
+// (export const revalidate), and during build-time prerendering the fetch IS
+// cached and shared between export workers.
 
-// Use graphqlFetch instead when you need ISR:
-graphqlFetch(QUERY, vars, { next: { revalidate: 3600, tags: ["navigation"] } });
-// ↑ Next.js registers this fetch in its data cache and respects the tags.`;
+// The fix is not a fetch wrapper. "use cache" caches the RETURNED VALUE, so how
+// the data was fetched stops mattering:
+async function fetchFooter(locale) {
+  "use cache";
+  cacheTag("footer");
+  cacheLife({ stale: 300, revalidate: 3600, expire: 86400 });
+  return graphClient().request(GET_FOOTER_QUERY, { locale: [locale] });
+}
+// ↑ revalidateTag("footer") DOES expire this entry - verified with
+//   NEXT_PRIVATE_DEBUG_CACHE=1: the entry re-sets on the next render.`;
+
+const USE_CACHE_SNIPPET = `// next.config.ts - required, or cacheTag() throws E886.
+// NOT cacheComponents: true, which would also force ppr: true and demand
+// Suspense boundaries around every dynamic read.
+experimental: { useCache: true }
+// Caveat: this forbids "export const runtime" anywhere in app/.
+
+// src/lib/graphql/queries/GetFooter.ts
+import { cacheLife, cacheTag } from "next/cache";
+import { graphClient } from "@/lib/optimizely/graphClient";
+
+async function fetchFooter(locale: string): Promise<GetFooterResult> {
+  "use cache";
+  cacheTag("footer");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_FOOTER_QUERY, { locale: [locale] });
+  } catch (error) {
+    // The catch goes INSIDE, which is the opposite of the instinct. A rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and NO try/catch at the call site can
+    // rescue it - the boundary swallows the rejection before it gets there.
+    console.error("[fetchFooter] Graph query failed:", error);
+    return {};   // caller's existing fallback path takes over
+  }
+}
+
+export async function getFooter(options: { locale?: string } = {}) {
+  const { locale = "en" } = options;
+  try {
+    const data = await fetchFooter(locale);   // args are the cache key
+    // ... unchanged mapping
+  } catch (error) {
+    // Still worth keeping, but it now only catches MAPPING errors - Graph
+    // failures were already handled above.
+  }
+}
+
+// Four rules this imposes:
+// 1. Catch inside the boundary, not outside (above). The price is real: a Graph
+//    outage during a render is written into the cache entry and served for the
+//    rest of the revalidate window. Accept it, or shorten cacheLife on the
+//    queries where an hour of empty is worse than an hour of stale.
+// 2. No cookies()/headers()/draftMode() inside - it throws. Read them outside
+//    and pass the value in as an argument.
+// 3. Args and return value must be serializable. They form the cache key:
+//    fetchNavigationCached(undefined, "en") keys as ["$undefined","en"].
+// 4. Preview fetches stay outside the boundary entirely. See GetNavigation.ts:
+//    the previewToken branch calls request() directly, uncached.
+
+// Use graphClient(), not getClient(): getClient() throws when config() has not
+// run, and config() lives in componentRegistry.ts, which only PAGE routes
+// import. Site chrome renders from layout.tsx, so a direct getClient() call
+// throws on every route that skips the registry (all of /demo/*) and silently
+// degrades to static fallback data.`;
 
 const SDK_METHOD_COMPARISON = [
   {
@@ -202,19 +256,19 @@ const SDK_METHOD_COMPARISON = [
     method: "getClient().getContent({ key })",
     when: "Resolve a content reference by CMS key inside a component",
     isrLevel: "page" as const,
-    isrNote: "Same as getContentByPath()  -  benefits from the page's revalidate window; next/tags options are silently discarded by the SDK",
+    isrNote: "Same as getContentByPath()  -  benefits from the page's revalidate window. Its next/tags options are discarded, so wrap the call in a \"use cache\" function when you want a tag",
   },
   {
-    method: "graphqlFetch(query)",
-    when: "Only when you need per-fetch tags or a different TTL to data sources with a different update cadence (nav, banner, external data)",
+    method: '"use cache" + graphClient().request(query)',
+    when: "Any custom query that needs its own tag or TTL - nav, footer, site settings, external data",
     isrLevel: "fetch" as const,
-    isrNote: "Full next: { revalidate, tags } support - wraps fetch() directly so Next.js registers each call in its data cache",
+    isrNote: "cacheTag()/cacheLife() on the function, so the client's cache-awareness is irrelevant. revalidateTag expires the entry",
   },
   {
-    method: "getClient().request(query)",
-    when: "Escape hatch for queries where ISR is not needed - preview fetches, server actions, one-off no-store calls",
+    method: "graphClient().request(query)",
+    when: "Uncached by design - preview/draft fetches and user-typed search, which must never be cached",
     isrLevel: "none" as const,
-    isrNote: "cache param appends ?cache=true/false to the Graph URL - Next.js fetch cache never sees it",
+    isrNote: "cache param appends ?cache=true/false to the Graph URL, which is Graph's own CDN. The Next data cache never sees it, though page-output ISR still applies",
   },
 ];
 
@@ -314,12 +368,14 @@ const PREFETCH_SNIPPET = `// Next.js <Link> prefetch behaviour in App Router (pr
 
 const CACHE_TABLE = [
   { data: "CMS page content",  location: "getClient().getContentByPath()", ttl: "3600s (1 hr)", tag: "-",            revalidatedBy: "revalidatePath('/', 'layout') in /api/webhooks (page-output ISR only)" },
-  { data: "Navigation tree",   location: "getNavigation()",                ttl: "3600s (1 hr)", tag: "navigation",    revalidatedBy: "revalidateTag('navigation') in /api/webhooks" },
+  { data: "Homepage (/) only",  location: "same, but noStore()",           ttl: "none",         tag: "-",            revalidatedBy: "Not cached at all - the ODP branch reads cookies(), so / server-renders per request while every other CMS route is ISR" },
+  { data: "Navigation tree",   location: "getNavigation()",                ttl: "3600s (1 hr)", tag: "navigation",    revalidatedBy: "revalidateTag('navigation') in /api/webhooks - \"use cache\" entry, preview branch uncached" },
   { data: "Site banner",       location: "getSiteBanner()",                ttl: "3600s (1 hr)", tag: "banner",        revalidatedBy: "revalidateTag('banner') in /api/webhooks" },
-  { data: "Site footer",       location: "getFooter()",                    ttl: "3600s (1 hr)", tag: "footer",        revalidatedBy: "revalidateTag('footer') in /api/webhooks" },
-  { data: "Site settings",     location: "getSiteSettings()",              ttl: "3600s (1 hr)", tag: "settings",      revalidatedBy: "revalidateTag('settings') in /api/webhooks" },
+  { data: "Site footer",       location: "getFooter()",                    ttl: "3600s (1 hr)", tag: "footer",        revalidatedBy: "revalidateTag('footer') in /api/webhooks - \"use cache\" entry" },
+  { data: "Site settings",     location: "getSiteSettings()",              ttl: "3600s (1 hr)", tag: "settings",      revalidatedBy: "revalidateTag('settings') in /api/webhooks - \"use cache\" entry" },
   { data: "External quotes",   location: "getQuotes()",                    ttl: "3600s (1 hr)", tag: "quotes",        revalidatedBy: "revalidateTag('quotes') in /api/webhooks" },
   { data: "Quote blocks",      location: "getQuoteBlocks()",               ttl: "3600s (1 hr)", tag: "quote-blocks",  revalidatedBy: "revalidateTag('quote-blocks') in /api/webhooks" },
+  { data: "Branch locations",  location: "getLocations()",                 ttl: "3600s (1 hr)", tag: "locations",     revalidatedBy: "revalidateTag('locations') in /api/webhooks - the nearby search is NOT cached, its lat/lon args come from user input" },
   { data: "Page metadata",     location: "generateMetadata()",             ttl: "3600s (1 hr)", tag: "-",           revalidatedBy: "All three webhooks via revalidatePath('/', 'layout')" },
   { data: "Static page paths", location: "generateStaticParams()",         ttl: "3600s (1 hr)", tag: "-",           revalidatedBy: "Next.js build / deploy" },
   { data: "FX datafile",       location: "middleware.ts + experimentation.ts", ttl: "60s",    tag: "-",            revalidatedBy: "Automatic (fetch cache, next: { revalidate: 60 })" },
@@ -512,15 +568,15 @@ export default function CachingDemoPage() {
               <code className="bg-surface-low px-1 rounded text-xs font-mono">getContentByPath()</code>,{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">getContent()</code>, and{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">request()</code> for querying
-              Optimizely Graph. These cover most cases. This project also includes a thin custom{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">graphqlFetch()</code> wrapper
-              in <code className="bg-surface-low px-1 rounded text-xs font-mono">src/lib/optimizely/client.ts</code>{" "}
-              that wraps the native{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">fetch()</code> directly  -  the
-              only way in Next.js to attach{" "}
+              Optimizely Graph. These cover most cases. None of them forward{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">next: {"{ revalidate, tags }"}</code>{" "}
-              options for per-fetch ISR tagging. Use it only when data sources have different update cadences
-              and you want to bust them independently.
+              to the underlying fetch, so none of them can be tagged at the fetch level. That is not a problem
+              to work around with a fetch wrapper: put the query inside a{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">&quot;use cache&quot;</code>{" "}
+              function instead. It caches the returned value rather than the fetch, so{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">cacheTag()</code> and{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">cacheLife()</code> work over any
+              client at all  -  including the SDK&apos;s.
             </p>
           </div>
 
@@ -573,34 +629,38 @@ export default function CachingDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">fetch()</code> call,
             because both methods route through{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">this.request()</code> which does not
-            forward Next.js fetch options. They participate in page-output ISR only  -  not fetch-level tag revalidation.
+            forward Next.js fetch options. On their own they participate in page-output ISR only  -  not
+            fetch-level tag revalidation. To give either one a tag, call it inside a{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">&quot;use cache&quot;</code> function
+            and put <code className="bg-surface-low px-1 rounded font-mono text-xs">cacheTag()</code> there
+            instead  -  the cache boundary is the function, so the SDK&apos;s fetch options never come into it.
           </Callout>
 
-          <Callout label="When does the custom wrapper add value?">
-            Only when you need <strong>per-fetch cache tags</strong> with different TTLs per data source  -  for example,
-            navigation at 5 minutes and banners at 60 seconds, each bust-able independently via{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">revalidateTag()</code> without
-            re-rendering every page. For CMS page content fetched via{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">getContentByPath()</code>,
-            page-output ISR combined with{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">revalidatePath(&apos;/&apos;, &apos;layout&apos;)</code>{" "}
-            in the webhook is sufficient and simpler. The custom wrapper exists for the cases where you
-            want surgical invalidation by data source rather than a full-site re-render on every publish.
+          <Callout label="Do not reach for a fetch wrapper">
+            Wrapping the native{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">fetch()</code> to attach{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">next: {"{ revalidate, tags }"}</code>{" "}
+            is the obvious move once you notice the SDK will not tag its own fetch, and it is the wrong one:
+            it re-implements the auth-mode switching{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">getClient()</code> already does,
+            and it gives up the typed query building along with it. A{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">&quot;use cache&quot;</code> function
+            caches the returned value instead, so you keep the SDK client and still get per-source tags.
           </Callout>
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
-              The custom graphqlFetch wrapper (caching logic)
+              Caching a query - &quot;use cache&quot; over the SDK client
             </p>
             <div className="grid md:grid-cols-2 gap-6">
-              <CodeBlock code={GRAPHQL_FETCH_SNIPPET} className="h-full" />
-              <CodeBlock code={CALLER_SNIPPET} className="h-full" />
+              <CodeBlock code={USE_CACHE_SNIPPET} className="h-full" label="GetFooter.ts - cache the returned value, not the fetch" />
+              <CodeBlock code={CALLER_SNIPPET} className="h-full" label="Per-source tags, and the paths that must stay uncached" />
             </div>
           </div>
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
-              Why getClient().request() cannot participate in Next.js ISR
+              What getClient().request() can and cannot cache
             </p>
             <CodeBlock code={SDK_REQUEST_SNIPPET} />
           </div>
@@ -628,21 +688,22 @@ export default function CachingDemoPage() {
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-3">
                 <StepBadge>1</StepBadge>
-                <h3 className="font-display font-semibold text-on-surface">Next.js Fetch Cache</h3>
+                <h3 className="font-display font-semibold text-on-surface">Next.js Data Cache</h3>
               </div>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
-                Lives in the Node.js / Vercel infrastructure layer. Controlled by the{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">next</code> options passed
-                to the underlying{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">fetch()</code> call  -  either
-                directly or via the custom{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">graphqlFetch()</code> wrapper.
+                Lives in the Node.js / Vercel infrastructure layer. For a Graph query it is controlled by{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">cacheTag()</code> /{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">cacheLife()</code> inside the{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">&quot;use cache&quot;</code>{" "}
+                function that wraps it  -  the SDK client never passes{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">next</code> options to its own{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">fetch()</code>.
               </p>
               <div className="space-y-1.5 text-xs">
                 {[
-                  ["Cache with TTL", "next: { revalidate: 3600 }"],
-                  ["Cache with tag", "next: { tags: ['navigation'] }"],
-                  ["Bypass", "cache: \"no-store\""],
+                  ["Cache with TTL", "cacheLife({ revalidate: 3600 })"],
+                  ["Cache with tag", "cacheTag('navigation')"],
+                  ["Bypass", "no \"use cache\" boundary"],
                 ].map(([label, value]) => (
                   <div key={label} className="flex items-center gap-2">
                     <span className="text-on-surface-variant w-24 shrink-0">{label}</span>
@@ -1000,9 +1061,14 @@ export default function CachingDemoPage() {
           heading="Source files"
           files={[
             {
-              label: "client.ts",
-              path: "src/lib/optimizely/client.ts",
-              content: clientTs,
+              label: "GetFooter.ts",
+              path: "src/lib/graphql/queries/GetFooter.ts",
+              content: getFooterTs,
+            },
+            {
+              label: "GetNavigation.ts",
+              path: "src/lib/graphql/queries/GetNavigation.ts",
+              content: getNavigationTs,
             },
             {
               label: "api/webhooks/route.ts",

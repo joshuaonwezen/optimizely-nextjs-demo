@@ -3,7 +3,9 @@ import {
   getPreviewUtils,
   type StructureContainerProps,
 } from "@optimizely/cms-sdk/react/server";
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
 interface OptiFormsContainerData {
   key?: string | null;
@@ -45,18 +47,44 @@ function Column({ children, node }: StructureContainerProps) {
   return <div {...pa(node)}>{children}</div>;
 }
 
+type FormPropsResult = { OptiFormsContainerData?: { items?: OptiFormsContainerData[] } };
+
+// Only the display name crosses the cache boundary. The component's own props
+// hold SDK composition nodes and the Row/Column React components, none of which
+// are serializable, so never pass `node` or `props` in here.
+async function fetchFormProps(name: string): Promise<FormPropsResult> {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(FORM_PROPS_QUERY, { name });
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchFormProps] Graph query failed:", error);
+    return {};
+  }
+}
+
 export default async function OptiFormsContainer(props: OptiFormsContainerProps) {
   const node = props.content ?? props;
   const nodes: any[] = node.nodes ?? [];
 
   let data: OptiFormsContainerData = node;
   if (node.displayName && node.SubmitUrl === undefined && node.Title === undefined) {
-    const res = await graphqlFetch<{
-      OptiFormsContainerData?: { items?: OptiFormsContainerData[] };
-    }>(FORM_PROPS_QUERY, { name: node.displayName }, { next: { revalidate: CACHE_TTL, tags: ["page"] } }).catch(
-      () => null
-    );
-    const item = res?.data?.OptiFormsContainerData?.items?.[0];
+    // In the Visual Builder the editor must see live values, so skip the cache
+    // entirely there - otherwise a cached entry could serve up-to-an-hour-stale
+    // form properties while they are being edited. Same split as the preview
+    // branch in GetNavigation.ts.
+    const isEditing = Boolean((node as { __context?: { edit?: boolean } }).__context?.edit);
+    const res = await (isEditing
+      ? graphClient().request(FORM_PROPS_QUERY, { name: node.displayName }, undefined, false)
+      : fetchFormProps(node.displayName)
+    ).catch(() => null);
+    const item = res?.OptiFormsContainerData?.items?.[0];
     if (item) data = { ...node, ...item };
   }
 

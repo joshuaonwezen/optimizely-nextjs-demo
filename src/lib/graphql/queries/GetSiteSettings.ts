@@ -1,4 +1,6 @@
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import { DEFAULT_SITE_SETTINGS, type SiteSettingsStrings } from "@/lib/siteSettings";
 
 interface SiteSettingsItem {
@@ -33,11 +35,30 @@ const GET_SITE_SETTINGS_QUERY = /* GraphQL */ `
   }
 `;
 
+// See fetchFooter in GetFooter.ts: the SDK's request() does not forward Next.js
+// fetch options, so the cache boundary is the function, not the fetch.
+async function fetchSiteSettings(locale: string): Promise<GetSiteSettingsResult> {
+  "use cache";
+  cacheTag("settings");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_SITE_SETTINGS_QUERY, { locale: [locale] });
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchSiteSettings] Graph query failed:", error);
+    return {};
+  }
+}
+
 /**
  * Fetch the SiteSettings singleton and merge it field-wise onto the hardcoded
  * defaults, so consumers always get a complete object and never null-check.
  *
- * Cached for 5 minutes with a "settings" tag - the publish webhook calls
+ * Cached for 1 hour with a "settings" tag - the publish webhook calls
  * revalidateTag("settings") to bust on demand.
  */
 export async function getSiteSettings(options: { locale?: string } = {}): Promise<{
@@ -46,12 +67,8 @@ export async function getSiteSettings(options: { locale?: string } = {}): Promis
 }> {
   const { locale = "en" } = options;
   try {
-    const result = await graphqlFetch<GetSiteSettingsResult>(
-      GET_SITE_SETTINGS_QUERY,
-      { locale: [locale] },
-      { next: { revalidate: CACHE_TTL, tags: ["settings"] } }
-    );
-    const item = result.data?.SiteSettings?.items?.[0];
+    const data = await fetchSiteSettings(locale);
+    const item = data?.SiteSettings?.items?.[0];
     if (!item) return { settings: DEFAULT_SITE_SETTINGS, fromCms: false };
     return {
       settings: {
@@ -64,7 +81,8 @@ export async function getSiteSettings(options: { locale?: string } = {}): Promis
       },
       fromCms: true,
     };
-  } catch {
+  } catch (error) {
+    console.error("[getSiteSettings] Falling back to default settings:", error);
     return { settings: DEFAULT_SITE_SETTINGS, fromCms: false };
   }
 }

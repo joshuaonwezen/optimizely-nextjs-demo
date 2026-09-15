@@ -45,16 +45,29 @@ const GET_SITE_SETTINGS_QUERY = /* GraphQL */ \`
   }
 \`;
 
-export async function getSiteSettings() {
+async function fetchSiteSettings(locale: string) {
+  "use cache";
+  cacheTag("settings");                       // webhook busts just this tag
+  cacheLife({ stale: 300, revalidate: 3600, expire: 86400 });
   try {
-    const res = await graphqlFetch(GET_SITE_SETTINGS_QUERY, {}, {
-      next: { revalidate: 300, tags: ["site-settings"] },
-    });
-    return res.data?.SiteSettings?.items?.[0] ?? null;
+    return await graphClient().request(GET_SITE_SETTINGS_QUERY, { locale: [locale] });
+  } catch {
+    return {};   // ← INSIDE the boundary, see the note below
+  }
+}
+
+export async function getSiteSettings(locale = "en") {
+  try {
+    const data = await fetchSiteSettings(locale);
+    return data?.SiteSettings?.items?.[0] ?? null;
   } catch {
     return null;   // ← never crash the page if settings are unavailable
   }
-}`;
+}
+// The catch goes INSIDE the cached function. A rejected promise inside
+// "use cache" fails static generation outright, and a try/catch at the call
+// site cannot rescue it. The trade-off: a Graph failure IS written into the
+// cache entry and served for the rest of the revalidate window.`;
 
 const THREE_QUERY_PATTERNS_SNIPPET = `// Three ways to fetch a singleton from Graph:
 
@@ -89,19 +102,35 @@ const CACHE_SNIPPET = `// Cache strategy for global settings - long TTL + revali
 // without invalidating every other cached query on the site.
 
 // src/lib/graphql/queries/GetSiteBanner.ts
-export async function getSiteBanner(): Promise<SiteBannerItem | null> {
+async function fetchSiteBanner(locale: string) {
+  "use cache";
+  cacheTag("banner");             // webhook calls revalidateTag("banner") on publish
+  cacheLife({
+    stale: 300,
+    revalidate: 3600,             // the site-wide CACHE_TTL
+    expire: 86400,                // must be greater than revalidate
+  });
   try {
-    const result = await graphqlFetch(GET_SITE_BANNER_QUERY, {}, {
-      next: {
-        revalidate: 60,           // re-fetch at most once per minute
-        tags: ["banner"],         // webhook calls revalidateTag("banner") on publish
-      },
-    });
-    return result.data?.SiteBanner?.items?.[0] ?? null;
+    return await graphClient().request(GET_SITE_BANNER_QUERY, { locale: [locale] });
+  } catch {
+    return {};                    // catch INSIDE - see the error-handling demo
+  }
+}
+
+export async function getSiteBanner(locale = "en"): Promise<SiteBannerItem | null> {
+  try {
+    const data = await fetchSiteBanner(locale);
+    return data?.SiteBanner?.items?.[0] ?? null;
   } catch {
     return null;  // Graph unavailable → banner absent → page still renders
   }
 }
+
+// Because the catch is inside the boundary, an outage is cached for the
+// revalidate window. If an hour of "no banner" is unacceptable for a channel
+// this visible, shorten THIS query's cacheLife (e.g. revalidate: 60) rather
+// than moving the catch - per-source TTLs are exactly what the tag split buys
+// you.
 
 // src/app/api/webhooks/route.ts - bust on publish:
 revalidateTag("banner");

@@ -22,7 +22,7 @@ if (!data.heading && data._metadata?.key) {
 ```
 
 **Fix — Option B (self-fetch + URL detection):**
-1. Make the target component self-fetch via `graphqlFetch` when it receives no useful data
+1. Make the target component self-fetch via a `"use cache"` query over `graphClient().request()` when it receives no useful data
 2. Detect which page should render the block by URL, not by the reference field value:
 
 ```tsx

@@ -111,8 +111,8 @@ const CURSOR_SNIPPET = `# Cursor pagination - Graph returns an opaque cursor str
 const PAGE_SIZE = 12;
 
 // Page 1 - no cursor
-const res1 = await graphqlFetch(GET_ARTICLES_QUERY, { limit: PAGE_SIZE });
-const { items, cursor, total } = res1.data.ArticlePage;
+const res1 = await graphClient().request(GET_ARTICLES_QUERY, { limit: PAGE_SIZE });
+const { items, cursor, total } = res1.ArticlePage;
 // cursor = "eyJza2lwIjoxMn0="  (opaque - never parse it)
 
 // Page 2 - add cursor to the query variable
@@ -126,7 +126,7 @@ const GET_ARTICLES_WITH_CURSOR = \`
   }
 \`;
 
-const res2 = await graphqlFetch(GET_ARTICLES_WITH_CURSOR, {
+const res2 = await graphClient().request(GET_ARTICLES_WITH_CURSOR, {
   limit: PAGE_SIZE,
   cursor: cursor,   // ← cursor from page 1 response
 });`;
@@ -167,8 +167,8 @@ export default async function ArticleListPage({ params }) {
   const pageNum = parseInt(params.page, 10) || 1;
   const cursor  = await getCursorForPage(pageNum, PAGE_SIZE);
 
-  const res = await graphqlFetch(GET_ARTICLES_QUERY, { cursor, limit: PAGE_SIZE });
-  return <ArticleList items={res.data.ArticlePage.items} />;
+  const res = await graphClient().request(GET_ARTICLES_QUERY, { cursor, limit: PAGE_SIZE });
+  return <ArticleList items={res.ArticlePage.items} />;
 }
 
 // Option B - force-dynamic: always serve fresh results.
@@ -250,13 +250,13 @@ export default async function ArticleListPage({
 
   const since = sp.since ?? undefined;
 
-  const res = await graphqlFetch(GET_ARTICLES_FACETS_QUERY, {
+  const res = await graphClient().request(GET_ARTICLES_FACETS_QUERY, {
     tag: tags,
     since,
     limit: 12,
   });
 
-  const { items, facets, total } = res.data.ArticlePage;
+  const { items, facets, total } = res.ArticlePage;
 
   return (
     <div className="grid grid-cols-[240px_1fr] gap-8">

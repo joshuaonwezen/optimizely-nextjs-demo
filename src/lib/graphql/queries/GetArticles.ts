@@ -1,4 +1,6 @@
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import { resolveCategoryUris } from "@/lib/taxonomy";
 
 export interface ArticleListItem {
@@ -112,6 +114,33 @@ function mapResponse(data: GraphResponse | null): ArticleListResult {
   };
 }
 
+// Cached at the function, not the fetch: the SDK's request() does not forward
+// next: { revalidate, tags }. The three args form the cache key.
+async function fetchArticles(
+  limit: number,
+  cursor: string | null | undefined,
+  categories: string[] | null
+): Promise<GraphResponse> {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_ARTICLES_QUERY, {
+    limit,
+    cursor: cursor ?? undefined,
+    categories,
+  });
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchArticles] Graph query failed:", error);
+    return {};
+  }
+}
+
 export async function getArticles(options?: {
   limit?: number;
   cursor?: string | null;
@@ -120,17 +149,10 @@ export async function getArticles(options?: {
 }): Promise<ArticleListResult> {
   const { limit = 6, cursor, category } = options ?? {};
   try {
-    const res = await graphqlFetch<GraphResponse>(
-      GET_ARTICLES_QUERY,
-      {
-        limit,
-        cursor: cursor ?? undefined,
-        categories: category?.length ? category : null,
-      },
-      { next: { revalidate: CACHE_TTL, tags: ["page"] } }
-    );
-    return mapResponse(res.data);
-  } catch {
+    const res = await fetchArticles(limit, cursor, category?.length ? category : null);
+    return mapResponse(res);
+  } catch (error) {
+    console.error("[getArticles] Returning empty result:", error);
     return EMPTY;
   }
 }

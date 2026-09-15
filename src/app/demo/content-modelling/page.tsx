@@ -97,9 +97,12 @@ const REFERENCE_SNIPPET = `// type: "contentReference" - the one type Graph does
 // src/components/pages/ArticlePage.tsx
 export default async function ArticlePage({ content }) {
   // content.author is a type:"contentReference" - only { key, url } arrived
+  // getContent() routes through request(), which forwards no Next.js fetch
+  // options - so do NOT pass next: { revalidate, tags } here; it is discarded.
+  // To cache and tag this, wrap the call in a "use cache" function.
   const author = content.author?._metadata?.key
     ? await getClient()
-        .getContent({ key: content.author._metadata.key }, { next: { revalidate: 300 } })
+        .getContent({ key: content.author._metadata.key })
         .catch(() => null)
     : null;
 
@@ -159,9 +162,7 @@ const GET_CONTENT_ARRAY = `// src/components/blocks/TimelineBlock/index.tsx
 import { getClient } from "@optimizely/cms-sdk";
 
 const milestones = await Promise.all(
-  keys.map((key) =>
-    getClient().getContent({ key }, { next: { revalidate: 300 } })
-  )
+  keys.map((key) => getClient().getContent({ key }))
 );`;
 
 const INDEXING_SNIPPET = `// indexingType controls how Graph indexes a property.

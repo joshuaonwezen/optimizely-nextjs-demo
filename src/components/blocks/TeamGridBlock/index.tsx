@@ -1,8 +1,10 @@
-import { contentType, displayTemplate, getClient } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { cacheLife, cacheTag } from "next/cache";
 import { TeamMemberBlockType } from "@/components/blocks/TeamMemberBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
 export const TeamGridBlockType = contentType({
@@ -70,14 +72,60 @@ type TeamGridBlockProps = TeamGridData & {
   displaySettings?: Record<string, string | boolean>;
 };
 
+// One batched query for every member, not one getContent() per key: a 10-member
+// grid was 10 sequential round-trips, each with its own cache entry keyed on a
+// single member key.
+//
+// `photo` is deliberately absent from the selection - it is declared
+// indexingType: "disabled", so Graph has no such field on TeamMemberBlock and
+// selecting it 400s the whole query. The SDK's own generated query drops it for
+// the same reason, so this matches the previous behaviour exactly.
+const MEMBERS_BY_KEYS_QUERY = /* GraphQL */ `
+  query TeamMembersByKeys($keys: [String!]) {
+    TeamMemberBlock(where: { _metadata: { key: { in: $keys } } }, limit: 100) {
+      items {
+        _metadata { key types displayName locale }
+        name
+        role
+        bio
+        linkedinUrl { default }
+      }
+    }
+  }
+`;
+
+type MembersResult = { TeamMemberBlock?: { items?: MemberData[] } };
+
+async function fetchMembers(keys: string[]): Promise<MembersResult> {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(MEMBERS_BY_KEYS_QUERY, { keys });
+  } catch (error) {
+    // Caught inside the cache scope: a rejected promise inside "use cache"
+    // fails static generation outright and no call-site try/catch can rescue
+    // it. The cost is that an outage is cached for the revalidate window.
+    console.error("[fetchMembers] Graph query failed:", error);
+    return {};
+  }
+}
+
 async function loadMembers(keys: string[]): Promise<MemberData[]> {
   if (keys.length === 0) return [];
-  const results = await Promise.all(
-    keys.map((key) =>
-      getClient().getContent({ key }, { next: { revalidate: CACHE_TTL } } as any).catch(() => null)
-    )
-  );
-  return results.filter((item): item is MemberData => Boolean(item));
+  const res = await fetchMembers(keys);
+  const items = res?.TeamMemberBlock?.items ?? [];
+
+  // Graph returns one document per locale, so keep the first of each key, then
+  // map back over `keys` to preserve the editor's display order - the query
+  // itself gives no ordering guarantee.
+  const byKey = new Map<string, MemberData>();
+  for (const item of items) {
+    const k = item?._metadata?.key;
+    if (k && !byKey.has(k)) byKey.set(k, item);
+  }
+  return keys.map((k) => byKey.get(k)).filter((m): m is MemberData => Boolean(m));
 }
 
 export default async function TeamGridBlock(props: TeamGridBlockProps) {

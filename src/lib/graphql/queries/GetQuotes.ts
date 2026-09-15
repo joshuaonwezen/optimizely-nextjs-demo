@@ -1,4 +1,6 @@
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface Quote {
   author: string;
@@ -18,7 +20,7 @@ interface GetQuotesResult {
 
 export const GET_QUOTES_QUERY = /* GraphQL */ `
   query GetQuotes {
-    Quote(limit: 100, orderBy: { author: { value: ASC } }) {
+    Quote(limit: 100, orderBy: { author: ASC }) {
       items {
         author
         text
@@ -34,15 +36,30 @@ export function toQuote(raw: RawQuote): Quote {
   };
 }
 
+// Cached at the function, not the fetch: the SDK's request() does not forward
+// next: { revalidate, tags }.
+async function fetchQuotes(): Promise<GetQuotesResult> {
+  "use cache";
+  cacheTag("quotes");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_QUOTES_QUERY, {});
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchQuotes] Graph query failed:", error);
+    return {};
+  }
+}
+
 export async function getQuotes(): Promise<{ items: Quote[]; fromGraph: boolean }> {
   try {
-    const result = await graphqlFetch<GetQuotesResult>(
-      GET_QUOTES_QUERY,
-      {},
-      { next: { revalidate: CACHE_TTL, tags: ["quotes"] } }
-    );
+    const result = await fetchQuotes();
 
-    const raw = result.data?.Quote?.items ?? [];
+    const raw = result?.Quote?.items ?? [];
     const items = raw
       .filter((q): q is RawQuote => q !== null)
       .map(toQuote)
@@ -50,7 +67,8 @@ export async function getQuotes(): Promise<{ items: Quote[]; fromGraph: boolean 
 
     if (items.length === 0) return { items: DEMO_QUOTES, fromGraph: false };
     return { items, fromGraph: true };
-  } catch {
+  } catch (error) {
+    console.error("[getQuotes] Falling back to DEMO_QUOTES:", error);
     return { items: DEMO_QUOTES, fromGraph: false };
   }
 }

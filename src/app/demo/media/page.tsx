@@ -485,7 +485,7 @@ export default function MediaDemoPage() {
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
               <p className="text-xs font-semibold text-on-surface mb-2">Direct page query</p>
               <p className="text-xs text-on-surface-variant leading-relaxed mb-2">
-                Block queried with a custom <code className="bg-surface px-1 rounded font-mono">graphqlFetch</code> call that
+                Block queried with a custom <code className="bg-surface px-1 rounded font-mono">request()</code> call that
                 requests the reference field explicitly.
               </p>
               <code className="text-xs font-mono text-brand block">image.url.default</code>

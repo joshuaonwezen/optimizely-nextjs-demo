@@ -3,7 +3,6 @@ import Link from "next/link";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getClient } from "@optimizely/cms-sdk";
-import { CACHE_TTL } from "@/lib/optimizely/client";
 import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
 
@@ -54,9 +53,12 @@ interface ArticleContent {
 // Category labels come from the CMS taxonomy, so adding a term in
 // Settings > Categories needs no code change here.
 
+// No next: { revalidate, tags } - getContent() routes through request(), which
+// forwards no Next.js fetch options, so the option was always discarded. The
+// author resolution rides the page's own ISR window.
 async function loadAuthor(key: string | null | undefined): Promise<AuthorData | null> {
   if (!key) return null;
-  return getClient().getContent({ key }, { next: { revalidate: CACHE_TTL } } as any).catch(() => null);
+  return getClient().getContent({ key }).catch(() => null);
 }
 
 function formatDate(input: string | null | undefined): string | null {

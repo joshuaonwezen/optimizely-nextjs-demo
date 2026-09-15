@@ -1,7 +1,10 @@
 import type { RedirectRule } from "@/lib/graphql/queries/GetRedirectRules";
 
 // Edge-safe. Mirrors datafile.ts: a dependency-free helper shared by middleware
-// and route handlers. No import of graphqlFetch (type-only import above).
+// and route handlers. The import above is type-only and therefore erased, so the
+// Graph client never enters the middleware bundle - middleware reaches the rules
+// over HTTP via /api/redirects instead. Keep it that way: "use cache" and
+// cacheTag() do not work in the middleware runtime.
 
 const TTL_MS = 30_000;
 

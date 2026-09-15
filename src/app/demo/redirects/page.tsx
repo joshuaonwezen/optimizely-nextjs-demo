@@ -67,10 +67,19 @@ const GET_REDIRECT_RULES_QUERY = /* GraphQL */ \`
   }
 \`;
 
+// The Graph call sits in its own "use cache" function: the SDK client does not
+// forward next: { revalidate, tags } to its fetch, so the tag has to go here.
+// revalidateTag("redirects") from the publish webhook busts this entry.
+async function fetchRedirectConfig() {
+  "use cache";
+  cacheTag("redirects");
+  cacheLife({ stale: 300, revalidate: 3600, expire: 86400 });
+  return graphClient().request(GET_REDIRECT_RULES_QUERY, {});
+}
+
 export async function getRedirectRules() {
-  const result = await graphqlFetch(GET_REDIRECT_RULES_QUERY, {},
-    { next: { revalidate: 3600, tags: ["redirects"] } });
-  return (result.data?.RedirectConfig?.items?.[0]?.rules ?? [])
+  const result = await fetchRedirectConfig();
+  return (result?.RedirectConfig?.items?.[0]?.rules ?? [])
     .filter((r) => r && r.enabled !== false && r.fromPath && r.toPath)
     .sort((a, b) => b.fromPath.length - a.fromPath.length); // exact beats prefix
 }`;

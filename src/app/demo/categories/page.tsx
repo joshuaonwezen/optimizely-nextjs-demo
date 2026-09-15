@@ -2,7 +2,9 @@ import fs from "fs";
 import path from "path";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import { getTaxonomyTerms } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import {
   buildTermTree,
@@ -68,6 +70,29 @@ const BROWSE_QUERY = /* GraphQL */ `
     }
   }
 `;
+
+// Cached per (limit, categories) - both serializable, so they form the cache key.
+// The selected filter is read from searchParams in the page and passed in here,
+// because searchParams cannot be read inside a "use cache" function.
+async function fetchBrowse(
+  limit: number,
+  categories: string[] | null
+): Promise<BrowseResponse> {
+  "use cache";
+  cacheTag("page");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(BROWSE_QUERY, { limit, categories });
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchBrowse] Graph query failed:", error);
+    return {};
+  }
+}
 
 const TERMS_QUERY_SNIPPET = `# Every category is indexed as its own _TaxonomyTerm document.
 # The tree is reconstructed client-side from the parent field.
@@ -308,25 +333,17 @@ export default async function CategoriesDemoPage({
   const terms = taxonomy.terms;
 
   const [browse, unfiltered] = await Promise.all([
-    graphqlFetch<BrowseResponse>(
-      BROWSE_QUERY,
-      { limit: 8, categories: active.length ? expandToUris(terms, active) : null },
-      { next: { revalidate: CACHE_TTL, tags: ["page"] } }
-    ),
-    graphqlFetch<BrowseResponse>(
-      BROWSE_QUERY,
-      { limit: 1, categories: null },
-      { next: { revalidate: CACHE_TTL, tags: ["page"] } }
-    ),
+    fetchBrowse(8, active.length ? expandToUris(terms, active) : null),
+    fetchBrowse(1, null),
   ]);
 
   const tree = buildTermTree(terms);
-  const results = browse.data?._Content;
+  const results = browse?._Content;
   // Facet counts come from the UNFILTERED result so buckets do not vanish as
   // soon as a filter is applied. Rolling them up through the tree is what lets
   // grouping nodes appear at all: with leaf-only tagging, Graph never returns a
   // bucket for a parent like "Loans and Overdrafts".
-  const buckets = unfiltered.data?._Content?.facets?._itemMetadata?.categories ?? [];
+  const buckets = unfiltered?._Content?.facets?._itemMetadata?.categories ?? [];
   const rows = rollUpCounts(terms, buckets).filter((row) => row.totalCount > 0);
   const hasTaxonomy = terms.length > 0;
 

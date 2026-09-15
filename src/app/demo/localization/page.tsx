@@ -55,9 +55,9 @@ query GetLocalizedPage($url: String!, $locale: [Locales]) {
   }
 }
 
-# In graphqlFetch - pass locale from the request:
+# In the query call - pass locale from the request:
 const locale = params.lang ?? "en";
-const res = await graphqlFetch(GET_LOCALIZED_PAGE, { url, locale: [locale] });`;
+const res = await graphClient().request(GET_LOCALIZED_PAGE, { url, locale: [locale] });`;
 
 const ROUTING_SNIPPET = `// Option A - [lang] URL segment
 // URL structure: /en/about, /fr/about, /de/about
@@ -68,11 +68,11 @@ export default async function Page({ params }) {
   const { lang, slug } = params;
   const url = \`/\${slug?.join("/") ?? ""}\`;
 
-  const res = await graphqlFetch(GET_LOCALIZED_PAGE, {
+  const res = await graphClient().request(GET_LOCALIZED_PAGE, {
     url: \`/\${lang}/\${slug?.join("/")}\`,
     locale: [lang],
   });
-  return <OptimizelyComponent content={res.data._Content.items[0]} />;
+  return <OptimizelyComponent content={res._Content.items[0]} />;
 }
 
 // Middleware generates the lang segment from Accept-Language:
@@ -174,8 +174,8 @@ const GENERATE_STATIC_SNIPPET = `// generateStaticParams for multi-locale pages
 // Enumerate all locale + slug combinations to pre-render at build time.
 
 export async function generateStaticParams() {
-  const res = await graphqlFetch(GET_ALL_PAGE_PATHS_QUERY);
-  const pages = res.data._Page.items ?? [];
+  const res = await graphClient().request(GET_ALL_PAGE_PATHS_QUERY);
+  const pages = res._Page.items ?? [];
 
   return pages
     .filter((p) => p._metadata?.url?.default && p._metadata?.locale)

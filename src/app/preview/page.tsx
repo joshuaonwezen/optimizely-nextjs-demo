@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import Script from "next/script";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { getPreviewClient } from "@/lib/optimizely/previewClient";
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import { PREVIEW_DIAGNOSTIC_QUERY } from "@/lib/graphql/queries/PreviewDiagnostic";
 import { buildExternalPreviewQuery } from "@/lib/preview/shareLink";
 import PreviewToolbar, {
@@ -77,11 +77,33 @@ async function PreviewPage({ searchParams }: Props) {
 
   const previewToken = typeof params.preview_token === "string" ? params.preview_token : undefined;
   const contentKey = typeof params.key === "string" ? params.key : undefined;
-  const diagnosticResult = contentKey
-    ? await graphqlFetch(PREVIEW_DIAGNOSTIC_QUERY, { key: contentKey }, { previewToken }).catch(
-        (e) => ({ data: null, errors: [{ message: String(e) }] })
-      )
-    : null;
+  // Deliberately uncached, with no "use cache" boundary: a draft must never be
+  // cached, and the preview token is dynamic data that cannot cross one. The 4th
+  // arg (cache: false) also bypasses Graph's own CDN, so the diagnostic always
+  // reflects the live draft. Previously an absent preview_token silently fell
+  // through to a 1-hour cached diagnostic.
+  //
+  // The result is rendered verbatim in the toolbar's diagnostics panel via
+  // JSON.stringify, so the error path must keep the SAME shape as the success
+  // path - request() resolves to Graph's `data` payload, hence { ...data } here.
+  //
+  // Wrapped in try/catch rather than .catch(): graphClient() calls config(),
+  // which THROWS synchronously on an empty API key, so a missing
+  // OPTIMIZELY_GRAPH_SINGLE_KEY would blow past a promise-only handler and 500
+  // the whole preview route instead of surfacing in the diagnostics panel.
+  let diagnosticResult: unknown = null;
+  if (contentKey) {
+    try {
+      diagnosticResult = await graphClient().request(
+        PREVIEW_DIAGNOSTIC_QUERY,
+        { key: contentKey },
+        previewToken,
+        false
+      );
+    } catch (e) {
+      diagnosticResult = { errors: [{ message: String(e) }] };
+    }
+  }
 
   const redactedParams: Record<string, string> = {};
   for (const [k, v] of Object.entries(params)) {

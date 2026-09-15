@@ -700,6 +700,11 @@ const PAGE_KEYS = {
   about:                  stableKey("mb-page", "about"),                                          // /en/about/
   // Level-1 product pages (DynamicExperience, direct children of CONTAINER)
   mortgage:               stableKey("mb-page", "mortgage"),                                        // /en/mortgage/ - also URL prefix for mortgage sub-pages
+  // Branch locator. Top level, so Graph indexes it at the bare path /locations/
+  // (same as /about/, /help/, /mortgage/ - the /en/ prefix only appears on the
+  // insights subtree). That is the path the "Find a branch" card links to.
+  // seed-branch-finder.ts binds the shared BranchFinderBlock into its mainContent.
+  locations:              stableKey("mb-page", "locations"),                                       // /locations/
   // Level-2 product pages (DynamicExperience, children of category pages)
   currentAccount:         stableKey("mb-page", "personal/current-account"),                        // /en/personal/current-account/
   savings:                stableKey("mb-page", "personal/savings"),                                // /en/personal/savings/
@@ -1072,6 +1077,33 @@ const pages: PageDef[] = [
 
   // ── Level-1: Mortgage (product + URL prefix for its sub-pages) ────────────
 
+  {
+    key: PAGE_KEYS.locations,
+    displayName: "Locations",
+    routeSegment: "locations",
+    // No `container` - createTraditionalPage falls back to the root CONTAINER,
+    // which is only known at run time. A direct child of the root is indexed at
+    // the bare path /locations/, matching the "Find a branch" card on the help
+    // page (seed-content.ts linkUrl: "/locations").
+    properties: {
+      metaTitle: "Branch Locations | Mosey Bank",
+      metaDescription: "Find your nearest Mosey Bank branch, check which services it offers, and see how far away it is.",
+    },
+    traditional: buildTraditionalProduct(
+      "Branches",
+      "Locations",
+      "Search for a city or address to find the Mosey branches closest to you, with distances and available services.",
+      "Find a Branch",
+      "/locations",
+      [
+        { title: "140+ UK branches", description: "From city centres to market towns, there is a Mosey branch near you with real people ready to help." },
+        { title: "Search by city or address", description: "Type where you are and see the nearest branches ranked by distance, calculated from their mapped coordinates." },
+        { title: "Services before you travel", description: "Check which branches offer business banking, mortgage appointments, and private banking before you set off." },
+      ],
+      "Branch coordinates are indexed in Optimizely Graph as a GeoPoint field, so the search below is a real geo query - not a client-side filter. The distances come from a Haversine calculation over the coordinates Graph returns.",
+      "Search branches"
+    ),
+  },
   {
     key: PAGE_KEYS.mortgage,
     displayName: "Mortgage",

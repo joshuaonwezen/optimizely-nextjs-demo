@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { graphqlFetch } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 import {
   SEARCH_FACETED_QUERY,
   SEARCH_RELEVANCE_QUERY,
@@ -36,13 +36,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await graphqlFetch<any>(
+    // No "use cache" boundary: a user-typed query must never be cached, or every
+    // unique phrase becomes a permanent entry that is never read again.
+    const result = await graphClient().request(
       mode === "semantic" ? SEARCH_SEMANTIC_QUERY : SEARCH_RELEVANCE_QUERY,
-      mode === "semantic" ? { query: q, weight, locale, fuzzy } : { query: q, locale, fuzzy },
-      { cache: "no-store" }
+      mode === "semantic" ? { query: q, weight, locale, fuzzy } : { query: q, locale, fuzzy }
     );
 
-    const raw = result.data?.SEO ?? { total: 0, items: [] };
+    const raw = result?.SEO ?? { total: 0, items: [] };
 
     const items = (raw.items ?? [])
       .filter((item: any) => item?._metadata?.displayName && item?._metadata?.url?.default)
@@ -69,13 +70,15 @@ export async function GET(request: NextRequest) {
 
 async function facetedSearch(q: string, categories: string[] | null, tags: string[] | null, locale: string[] = ["en"], fuzzy = true) {
   try {
-    const result = await graphqlFetch<any>(
-      SEARCH_FACETED_QUERY,
-      { query: q, categories, tags, locale, fuzzy },
-      { cache: "no-store" }
-    );
+    const result = await graphClient().request(SEARCH_FACETED_QUERY, {
+      query: q,
+      categories,
+      tags,
+      locale,
+      fuzzy,
+    });
 
-    const raw = result.data?.ArticlePage ?? { total: 0, items: [], facets: {} };
+    const raw = result?.ArticlePage ?? { total: 0, items: [], facets: {} };
 
     const items = (raw.items ?? [])
       .filter((item: any) => item?._metadata?.displayName && item?._metadata?.url?.default)

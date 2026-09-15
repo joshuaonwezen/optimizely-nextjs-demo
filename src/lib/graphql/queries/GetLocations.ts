@@ -1,4 +1,6 @@
-import { graphqlFetch, CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheLife, cacheTag } from "next/cache";
+import { CACHE_TTL } from "@/lib/optimizely/client";
+import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface BankLocation {
   branchName: string;
@@ -73,15 +75,43 @@ function toLocation(raw: RawLocation): BankLocation {
   };
 }
 
+// Cached at the function, not the fetch: the SDK's request() does not forward
+// next: { revalidate, tags }.
+async function fetchLocations(): Promise<GetLocationsResult> {
+  "use cache";
+  cacheTag("locations");
+  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+
+  try {
+    return await graphClient().request(GET_LOCATIONS_QUERY, {});
+  } catch (error) {
+    // Caught HERE, inside the cache scope, not at the call site: a rejected
+    // promise inside "use cache" fails static generation outright ("Error
+    // occurred prerendering page") and no downstream try/catch can rescue it.
+    // Returning an empty result lets the caller's existing fallback path run.
+    console.error("[fetchLocations] Graph query failed:", error);
+    return {};
+  }
+}
+
+// Deliberately NOT cached, unlike fetchLocations above. The arguments are a
+// geocoded lat/lon pair derived from whatever place the visitor typed into
+// /api/locations/nearby, so a cache boundary here would mint a permanent entry
+// per distinct search - the same anti-pattern /api/search avoids. Graph's own
+// CDN still serves repeat searches for the same place.
+async function fetchNearbyLocations(
+  lat: number,
+  lon: number,
+  radius: number
+): Promise<GetLocationsResult> {
+  return graphClient().request(GET_NEARBY_LOCATIONS_QUERY, { lat, lon, radius });
+}
+
 export async function getLocations(): Promise<{ items: BankLocation[]; fromGraph: boolean }> {
   try {
-    const result = await graphqlFetch<GetLocationsResult>(
-      GET_LOCATIONS_QUERY,
-      {},
-      { next: { revalidate: CACHE_TTL, tags: ["locations"] } }
-    );
+    const result = await fetchLocations();
 
-    const raw   = result.data?.BankLocation?.items ?? [];
+    const raw   = result?.BankLocation?.items ?? [];
     const items = raw
       .filter((l): l is RawLocation => l !== null)
       .map(toLocation)
@@ -100,13 +130,9 @@ export async function getNearbyLocations(
   radiusKm: number
 ): Promise<{ items: BankLocation[]; fromGraph: boolean }> {
   try {
-    const result = await graphqlFetch<GetLocationsResult>(
-      GET_NEARBY_LOCATIONS_QUERY,
-      { lat, lon, radius: Math.round(radiusKm) },
-      { next: { revalidate: CACHE_TTL, tags: ["locations"] } }
-    );
+    const result = await fetchNearbyLocations(lat, lon, Math.round(radiusKm));
 
-    const raw   = result.data?.BankLocation?.items ?? [];
+    const raw   = result?.BankLocation?.items ?? [];
     const items = raw
       .filter((l): l is RawLocation => l !== null)
       .map(toLocation)
