@@ -61,6 +61,14 @@ export const metadata: Metadata = {
 
 const themeScript = `(function(){var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');})();`;
 
+// Optimizely Web Experimentation snippet. Falls back to the Mosey Bank demo
+// project so a checkout with no env config still loads the snippet.
+const webSnippetId =
+  process.env.NEXT_PUBLIC_OPTIMIZELY_WEB_SNIPPET_ID ?? "23338860169";
+
+const odpTrackerId =
+  process.env.NEXT_PUBLIC_OPTIMIZELY_ODP_TRACKER_ID ?? "dWs2ejwWekVGmZj9JoOIcA";
+
 // Inlined in <head> so the zaius queue exists synchronously during HTML
 // parsing — before React hydration, before any useEffect fires.
 const odpInitScript = [
@@ -69,7 +77,7 @@ const odpInitScript = [
   "zaius.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);zaius.push(t);return zaius}};",
   "(function(){",
   "for(var i=0;i<zaius.methods.length;i++){var method=zaius.methods[i];zaius[method]=zaius.factory(method)}",
-  "var e=document.createElement('script');e.type='text/javascript';e.async=true;e.src=('https:'===document.location.protocol?'https://':'http://')+'d1igp3oop3iho5.cloudfront.net/v2/dWs2ejwWekVGmZj9JoOIcA/zaius-min.js';",
+  `var e=document.createElement('script');e.type='text/javascript';e.async=true;e.src=('https:'===document.location.protocol?'https://':'http://')+'d1igp3oop3iho5.cloudfront.net/v2/${odpTrackerId}/zaius-min.js';`,
   "var t=document.getElementsByTagName('script')[0];t.parentNode.insertBefore(e,t);",
   "})();",
 ].join("");
@@ -92,7 +100,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script src="https://cdn.optimizely.com/js/23338860169.js" />
+        <script src={`https://cdn.optimizely.com/js/${webSnippetId}.js`} />
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-2MTP98PSWL" />
         <script dangerouslySetInnerHTML={{ __html: gtagInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: gtmInitScript }} />

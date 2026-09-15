@@ -118,6 +118,8 @@ Copy `.env.example` to `.env.local` and fill in the values. Never commit `.env.l
 | `OPTIMIZELY_PREVIEW_SECRET` | Secret token for draft/preview mode |
 | `OPTIMIZELY_REVALIDATE_SECRET` | Shared secret for the `/api/revalidate` and `/api/publish` webhook endpoints |
 | `OPTIMIZELY_FX_SDK_KEY` | Feature Experimentation SDK key |
+| `NEXT_PUBLIC_OPTIMIZELY_WEB_SNIPPET_ID` | Web Experimentation snippet project ID (optional - defaults to the demo project) |
+| `NEXT_PUBLIC_OPTIMIZELY_ODP_TRACKER_ID` | ODP public tracker ID for the client-side tag (optional - defaults to the demo tracker) |
 
 ## Scripts
 
@@ -173,7 +175,8 @@ src/
 
   lib/
     optimizely/
-      client.ts          graphqlFetch() - typed GraphQL wrapper with ISR/no-store/preview logic
+      client.ts          GRAPH_ENDPOINT + CACHE_TTL, the shared 1-hour TTL constant
+      graphClient.ts     graphClient() - a guaranteed-configured getClient(); use in anything reachable from layout.tsx
       auth.ts            OAuth token cache for Management API
       experimentation.ts FX SDK wrapper (getOptimizelyClient, getDecision)
       visitor.ts         getVisitorContext() - reads userId, device, persona, logged_in from cookies
@@ -201,7 +204,7 @@ Two independent cache layers sit between a CMS publish and a user seeing fresh c
 
 | Layer | Controlled by | Bypassed with |
 |-------|--------------|---------------|
-| Next.js fetch cache (ISR) | `next.revalidate`, `tags`, `cache: "no-store"` in `graphqlFetch()` | `revalidatePath` / `revalidateTag` via webhooks |
+| Next.js data cache | `cacheTag()` / `cacheLife()` in a `"use cache"` function, or `next.revalidate` / `tags` on a direct `fetch()` | `revalidatePath` / `revalidateTag` via webhooks |
 | Graph CDN cache | Optimizely infrastructure | `?cache=false` on the endpoint URL, or `{ cache: false }` in SDK methods |
 
 The catch-all CMS page route (`[[...slug]]`) uses ISR: it exports `revalidate = 3600` and tags its Graph requests with `next: { revalidate: CACHE_TTL, tags: ["page"] }`. Pages serve from cache for up to an hour and revalidate immediately when the publish webhook calls `revalidateTag("page")`.
