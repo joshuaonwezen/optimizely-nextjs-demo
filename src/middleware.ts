@@ -8,9 +8,14 @@ import {
 import { fetchDatafile } from "@/lib/optimizely/datafile";
 import { appendVisitorCookie } from "@/lib/optimizely/visitorCookie";
 import { loadRedirectRules, matchRedirect } from "@/lib/redirects";
-
-export const VARIATION_MARKER = "__v_";
-export const FLAG_VAR_SEP = "--";
+import {
+  formatVariationSegment,
+  isKnownVariation,
+  isVariationSegment,
+  parseVariationSegment,
+  VARIATION_MARKER,
+  type FlagVariation,
+} from "@/lib/optimizely/variationPath";
 
 // Safety backstop against a pathological config that scopes many CMS experiments
 // to the same route. Route-scoping (cms_route) is the primary control; this only
@@ -49,40 +54,68 @@ const noOpRequestHandler = {
   }),
 };
 
-export async function middleware(request: NextRequest) {
-  const response = NextResponse.next();
+// A datafile-known variation for a `flagKey--variationKey` string, else null.
+function knownVariation(datafile: string, value: string): FlagVariation | null {
+  const variation = parseVariationSegment(`${VARIATION_MARKER}${value}`);
+  return variation && isKnownVariation(datafile, variation) ? variation : null;
+}
 
+export async function middleware(request: NextRequest) {
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
   const existingId = request.cookies.get("optimizelyEndUserId")?.value;
   const userId = existingId ?? crypto.randomUUID();
+  // A first-time visitor has no cookie on THIS request, so forward the new id to the
+  // render too - otherwise server components fall back to "anonymous" for FX and ODP
+  // until the second page view.
+  if (!existingId) request.cookies.set("optimizelyEndUserId", userId);
+  const forwardRequest = { headers: request.headers };
+
+  const response = NextResponse.next({ request: forwardRequest });
   // Always (re)write the visitor id domain-wide and purge any legacy host-only
   // duplicate, so it stays a single cookie shared with the Optimizely Web snippet and
   // the client re-buckets correctly after a reset. See visitorCookie.ts.
-  appendVisitorCookie(response.headers, userId, request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "");
+  appendVisitorCookie(response.headers, userId, host);
 
-  // Skip API routes, preview, demo pages, variation-rewritten paths, and Next.js 16 .segments/ prefetch URLs (rewriting them produces a cached 404).
-  if (request.nextUrl.pathname.startsWith("/api/")) return response;
-  if (request.nextUrl.pathname.startsWith("/preview")) return response;
-  if (/^\/demo(\/|$)/.test(request.nextUrl.pathname)) return response;
-  if (request.nextUrl.pathname.includes(VARIATION_MARKER)) return response;
-  if (request.nextUrl.pathname.includes(".segments/")) return response;
+  const { pathname } = request.nextUrl;
+  // Skip API routes, preview, demo pages and Next.js 16 .segments/ prefetch URLs (rewriting them produces a cached 404).
+  if (pathname.startsWith("/api/")) return response;
+  if (pathname.startsWith("/preview")) return response;
+  if (/^\/demo(\/|$)/.test(pathname)) return response;
+  if (pathname.includes(".segments/")) return response;
+
+  // Middleware never sees its own rewrites, so a __v_ path here was requested
+  // directly. Keep segments the datafile knows (variation URLs stay shareable for
+  // demos) and redirect away the rest, so made-up segments can't mint ISR entries.
+  if (pathname.includes(VARIATION_MARKER)) {
+    const datafile = await fetchDatafile(3000);
+    if (!datafile) return response;
+    const segments = pathname.split("/");
+    const kept = segments.filter((segment) => {
+      if (!isVariationSegment(segment)) return true;
+      const variation = parseVariationSegment(segment);
+      return variation !== null && isKnownVariation(datafile, variation);
+    });
+    if (kept.length === segments.length) return response;
+    const url = request.nextUrl.clone();
+    url.pathname = kept.join("/") || "/";
+    const redirect = NextResponse.redirect(url, 307);
+    appendVisitorCookie(redirect.headers, userId, host);
+    return redirect;
+  }
 
   // CMS-driven redirects. Runs on the clean path, BEFORE the FX rewrite appends
   // any /__v_ segment (which would break plain-path matching). The /api/ guard
   // above returns first, so the /api/redirects lookup can't recurse.
   try {
     const rules = await loadRedirectRules(request.nextUrl.origin);
-    const hit = rules.length ? matchRedirect(request.nextUrl.pathname, rules) : null;
+    const hit = rules.length ? matchRedirect(pathname, rules) : null;
     if (hit) {
       const dest = /^https?:\/\//i.test(hit.toPath)
         ? new URL(hit.toPath)
         : new URL(hit.toPath, request.nextUrl.origin);
       if (!dest.search && request.nextUrl.search) dest.search = request.nextUrl.search;
       const redirect = NextResponse.redirect(dest, hit.status);
-      appendVisitorCookie(
-        redirect.headers,
-        userId,
-        request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? ""
-      );
+      appendVisitorCookie(redirect.headers, userId, host);
       return redirect;
     }
   } catch {
@@ -96,7 +129,7 @@ export async function middleware(request: NextRequest) {
     const ua = request.headers.get("user-agent") ?? "";
     const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
     // Strip any :port so this matches window.location.hostname on the client.
-    const hostname = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(":")[0];
+    const hostname = host.split(":")[0];
     const demoPersona = request.cookies.get("demo_persona")?.value;
     const bucketingId = request.cookies.get("demo_bucketing_id")?.value;
 
@@ -123,7 +156,7 @@ export async function middleware(request: NextRequest) {
     const activeDecisions = Object.values(decisions)
       .filter((d) => d.enabled && d.variationKey && d.variationKey !== "off")
       .filter((d) => d.variables?.cms_flag === true)
-      .filter((d) => routeMatches(request.nextUrl.pathname, d.variables?.cms_route as string | undefined))
+      .filter((d) => routeMatches(pathname, d.variables?.cms_route as string | undefined))
       .sort((a, b) => (a.variationKey as string).localeCompare(b.variationKey as string))
       .slice(0, MAX_CMS_VARIATIONS);
 
@@ -131,31 +164,27 @@ export async function middleware(request: NextRequest) {
     // Append one __v_ segment per active decision encoding flagKey--variationKey.
     // e.g. /savings → /savings/__v_homepage--business
     // The page reads flagKey from the segment — no extra SDK call needed client-side.
-    const cmsVariationSegments = activeDecisions.map(
-      (d) => `${VARIATION_MARKER}${d.flagKey}${FLAG_VAR_SEP}${d.variationKey}`
+    const cmsVariationSegments = activeDecisions.map((d) =>
+      formatVariationSegment({ flagKey: d.flagKey, variationKey: d.variationKey as string })
     );
 
     // Web Experimentation cookie-bridge: if a WX custom JS action wrote
     // opti_wx_variation=<flagKey>--<variationKey>, inject it as a __v_ segment on the
     // next request (the cookie is written client-side so the first page load always
     // serves base content). FX takes precedence — WX only applies when FX has no
-    // active decision for the same flagKey.
-    const wxVariation = request.cookies.get("opti_wx_variation")?.value;
-    if (wxVariation && wxVariation.includes(FLAG_VAR_SEP)) {
-      const [wxFlagKey] = wxVariation.split(FLAG_VAR_SEP);
-      const covered = cmsVariationSegments.some(
-        (s) => s.startsWith(`${VARIATION_MARKER}${wxFlagKey}${FLAG_VAR_SEP}`)
-      );
-      if (!covered) {
-        cmsVariationSegments.push(`${VARIATION_MARKER}${wxVariation}`);
-      }
+    // active decision for the same flagKey. The cookie is visitor-writable, so it only
+    // applies when the datafile defines that flag and variation.
+    const wxCookie = request.cookies.get("opti_wx_variation")?.value;
+    const wxVariation = wxCookie ? knownVariation(datafile, wxCookie) : null;
+    if (wxVariation && !activeDecisions.some((d) => d.flagKey === wxVariation.flagKey)) {
+      cmsVariationSegments.push(formatVariationSegment(wxVariation));
     }
 
     if (cmsVariationSegments.length === 0) return response;
 
     const url = request.nextUrl.clone();
     url.pathname = url.pathname.replace(/\/$/, "") + `/${cmsVariationSegments.join("/")}`;
-    return NextResponse.rewrite(url, { headers: response.headers });
+    return NextResponse.rewrite(url, { request: forwardRequest, headers: response.headers });
   } catch {
     // Never fail a request due to FX errors.
     return response;

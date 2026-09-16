@@ -1,5 +1,5 @@
-import { cacheLife, cacheTag } from "next/cache";
-import { CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheTag } from "next/cache";
+import { cachePublishedContent } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 const GET_SUPPORTED_LOCALES_QUERY = /* GraphQL */ `
@@ -45,7 +45,7 @@ interface SiteDefinitionResult {
 async function fetchSupportedLocales(): Promise<SiteDefinitionResult> {
   "use cache";
   cacheTag("navigation");
-  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  cachePublishedContent();
 
   try {
     // request() takes variables as a required positional - pass {}, not undefined.

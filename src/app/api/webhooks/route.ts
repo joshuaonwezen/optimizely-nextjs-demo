@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag as _revalidateTag } from "next/cache";
+import { isValidRevalidateSecret } from "@/lib/security/verifySecret";
 
 // Next.js 16 requires a second `profile` arg in its types, but route handlers
 // have no valid profile to pass (updateTag is Server Actions only). Cast to the
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     request.nextUrl.searchParams.get("secret") ??
     request.headers.get("x-revalidate-secret");
 
-  if (secret !== process.env.OPTIMIZELY_REVALIDATE_SECRET) {
+  if (!isValidRevalidateSecret(secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

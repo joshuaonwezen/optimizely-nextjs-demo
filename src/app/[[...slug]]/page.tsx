@@ -6,10 +6,10 @@ import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/s
 import { supportsProductLanding } from "@/lib/optimizely/productLandingInstances";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
-import { cacheLife, cacheTag } from "next/cache";
-import { CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheTag } from "next/cache";
+import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
-import { VARIATION_MARKER, FLAG_VAR_SEP } from "@/middleware";
+import { isVariationSegment, parseVariationSegment, type FlagVariation } from "@/lib/optimizely/variationPath";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
 import { queryOdpSegments, resolveVariationKey } from "@/lib/optimizely/odp";
@@ -44,35 +44,25 @@ type KeyResult = {
 async function fetchPageKeys(urls: string[]): Promise<KeyResult> {
   "use cache";
   cacheTag("page");
-  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  cachePublishedContent();
 
   try {
     return await graphClient().request(KEY_QUERY, { urls });
   } catch (error) {
-    // Caught HERE, inside the cache scope, not at the call site: a rejected
-    // promise inside "use cache" fails static generation outright ("Error
-    // occurred prerendering page") and no downstream try/catch can rescue it.
-    // Returning an empty result lets the caller's existing fallback path run.
-    console.error("[fetchPageKeys] Graph query failed:", error);
-    return {};
+    return cachedQueryFailed("fetchPageKeys", error);
   }
 }
 
 async function fetchAllPagePaths(): Promise<{ _Page?: { items?: unknown[] } }> {
   "use cache";
   cacheTag("page");
-  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  cachePublishedContent();
 
   // request() takes variables as a required positional - pass {}, not undefined.
   try {
     return await graphClient().request(GET_ALL_PAGE_PATHS_QUERY, {});
   } catch (error) {
-    // Caught HERE, inside the cache scope, not at the call site: a rejected
-    // promise inside "use cache" fails static generation outright ("Error
-    // occurred prerendering page") and no downstream try/catch can rescue it.
-    // Returning an empty result lets the caller's existing fallback path run.
-    console.error("[fetchAllPagePaths] Graph query failed:", error);
-    return {};
+    return cachedQueryFailed("fetchAllPagePaths", error);
   }
 }
 
@@ -85,7 +75,7 @@ async function fetchPageMeta(
 ): Promise<PageMetaResult> {
   "use cache";
   cacheTag("page");
-  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  cachePublishedContent();
 
   try {
     return await graphClient().request(
@@ -93,12 +83,7 @@ async function fetchPageMeta(
       { urls }
     );
   } catch (error) {
-    // Caught HERE, inside the cache scope, not at the call site: a rejected
-    // promise inside "use cache" fails static generation outright ("Error
-    // occurred prerendering page") and no downstream try/catch can rescue it.
-    // Returning an empty result lets the caller's existing fallback path run.
-    console.error("[fetchPageMeta] Graph query failed:", error);
-    return {};
+    return cachedQueryFailed("fetchPageMeta", error);
   }
 }
 
@@ -113,21 +98,16 @@ const KEY_QUERY = /* GraphQL */ `
   }
 `;
 
-interface FlagVariation { flagKey: string; variationKey: string }
-
 function extractVariations(slug?: string[]): {
   cleanSlug?: string[];
   activeVariations: string[];
   flagVariations: FlagVariation[];
 } {
   if (!slug) return { cleanSlug: undefined, activeVariations: [], flagVariations: [] };
-  const cleanSlug = slug.filter((s) => !s.startsWith(VARIATION_MARKER));
+  const cleanSlug = slug.filter((s) => !isVariationSegment(s));
   const flagVariations = slug
-    .filter((s) => s.startsWith(VARIATION_MARKER))
-    .map((s) => {
-      const [flagKey, variationKey] = s.slice(VARIATION_MARKER.length).split(FLAG_VAR_SEP);
-      return { flagKey, variationKey };
-    });
+    .map(parseVariationSegment)
+    .filter((fv): fv is FlagVariation => fv !== null);
   return {
     cleanSlug: cleanSlug.length > 0 ? cleanSlug : undefined,
     activeVariations: flagVariations.map((fv) => fv.variationKey),
@@ -191,8 +171,10 @@ async function CmsPage({
     // cache the route output, resolving the conflict with export const revalidate.
     noStore();
     const { userId } = await getVisitorContext();
-    const key = resolveVariationKey(await queryOdpSegments(userId));
-    if (key) variationValues = [key];
+    if (userId !== "anonymous") {
+      const key = resolveVariationKey(await queryOdpSegments(userId));
+      if (key) variationValues = [key];
+    }
   }
 
   // When a variation is active (from FX or ODP), pass it as a Graph filter so Graph returns

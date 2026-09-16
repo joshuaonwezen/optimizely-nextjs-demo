@@ -1,5 +1,5 @@
-import { cacheLife, cacheTag } from "next/cache";
-import { CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheTag } from "next/cache";
+import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface RedirectRule {
@@ -63,17 +63,12 @@ function normalizeRedirectPath(input: string): string {
 async function fetchRedirectConfig(): Promise<GetRedirectConfigResult> {
   "use cache";
   cacheTag("redirects");
-  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  cachePublishedContent();
 
   try {
     return await graphClient().request(GET_REDIRECT_RULES_QUERY, {});
   } catch (error) {
-    // Caught HERE, inside the cache scope, not at the call site: a rejected
-    // promise inside "use cache" fails static generation outright ("Error
-    // occurred prerendering page") and no downstream try/catch can rescue it.
-    // Returning an empty result lets the caller's existing fallback path run.
-    console.error("[fetchRedirectConfig] Graph query failed:", error);
-    return {};
+    return cachedQueryFailed("fetchRedirectConfig", error);
   }
 }
 

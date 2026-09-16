@@ -1,5 +1,5 @@
-import { cacheLife, cacheTag } from "next/cache";
-import { CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheTag } from "next/cache";
+import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 // Public tree type — used by NestedNavMenu and the demo page
@@ -136,7 +136,7 @@ export function toNavNode(raw: RawNavItem): NavNode {
 async function fetchNavigationCached(key: string | undefined, locale: string): Promise<GetNavigationResult> {
   "use cache";
   cacheTag("navigation");
-  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  cachePublishedContent();
 
   try {
     return await graphClient().request(
@@ -144,12 +144,7 @@ async function fetchNavigationCached(key: string | undefined, locale: string): P
       key ? { key, locale: [locale] } : { locale: [locale] }
     );
   } catch (error) {
-    // Caught HERE, inside the cache scope, not at the call site: a rejected
-    // promise inside "use cache" fails static generation outright ("Error
-    // occurred prerendering page") and no downstream try/catch can rescue it.
-    // Returning an empty result lets the caller's existing fallback path run.
-    console.error("[fetchNavigationCached] Graph query failed:", error);
-    return {};
+    return cachedQueryFailed("fetchNavigationCached", error);
   }
 }
 

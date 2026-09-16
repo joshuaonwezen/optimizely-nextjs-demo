@@ -306,19 +306,18 @@ That is a statement about the *fetch data cache only*. An earlier version of thi
 async function fetchFooter(locale: string): Promise<GetFooterResult> {
   "use cache";
   cacheTag("footer");
-  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  cachePublishedContent();              // src/lib/optimizely/cacheProfile.ts
   try {
     return await graphClient().request(GET_FOOTER_QUERY, { locale: [locale] });
   } catch (error) {
-    console.error("[fetchFooter] Graph query failed:", error);
-    return {};   // caller's existing fallback path takes over
+    return cachedQueryFailed("fetchFooter", error);   // logs, shortens the entry, returns {}
   }
 }
 ```
 
 Rules this imposes:
 
-- **The `try`/`catch` goes INSIDE the cached function, not outside.** This is the opposite of the instinct and of what an earlier version of this file said. A rejected promise inside `"use cache"` fails static generation outright (*"Error occurred prerendering page"*) and **no `try`/`catch` at the call site can rescue it** — the boundary swallows the rejection first. The price is real and worth knowing: a Graph outage during a render is **written into the cache entry** and served for the rest of the `revalidate` window. Where an hour of empty is worse than an hour of stale, shorten that query's `cacheLife` rather than moving the catch. Call-site `try`/`catch` blocks are still worth keeping — after this change they only catch *mapping* errors.
+- **The `try`/`catch` goes INSIDE the cached function, not outside.** This is the opposite of the instinct and of what an earlier version of this file said. A rejected promise inside `"use cache"` fails static generation outright (*"Error occurred prerendering page"*) and **no `try`/`catch` at the call site can rescue it** — the boundary swallows the rejection first. The empty result of an outage is still **written into the cache entry**, so `cachedQueryFailed()` lowers that entry's lifetime to `revalidate: 30` / `expire: 300` (cacheLife keeps the smallest value per field; `expire` must not go below 300s or a prerender treats the entry as dynamic). Use it in every catch; the one deliberate exception is `GetSupportedLocales.ts`, whose failure is a permanent property of the instance. Call-site `try`/`catch` blocks are still worth keeping — after this change they only catch *mapping* errors.
 - **Nothing keyed on unbounded user input goes inside a boundary.** Arguments are the cache key, so a `"use cache"` function taking a search phrase or a geocoded lat/lon mints a permanent entry per distinct input that is never read again. `/api/search`, `/api/search/autocomplete` and `getNearbyLocations()` all call `request()` directly for this reason; `getLocations()` (no arguments) is cached.
 
 - **`experimental.useCache: true` must stay in `next.config.ts`.** `cacheTag()` throws `E886` without it. This is deliberately *not* `cacheComponents: true`, which would also force `ppr: true` and require Suspense boundaries around every dynamic read.
@@ -768,11 +767,13 @@ The middleware appends variation segments to the URL path (e.g. `/savings/__v_ho
 
 Current exclusions in `src/middleware.ts`:
 ```ts
-if (request.nextUrl.pathname.startsWith("/api/")) return response;
-if (request.nextUrl.pathname.startsWith("/preview")) return response;
-if (/^\/demo(\/|$)/.test(request.nextUrl.pathname)) return response;
-if (request.nextUrl.pathname.includes(VARIATION_MARKER)) return response;
+if (pathname.startsWith("/api/")) return response;
+if (pathname.startsWith("/preview")) return response;
+if (/^\/demo(\/|$)/.test(pathname)) return response;
+if (pathname.includes(".segments/")) return response;
 ```
+
+A path that already contains `__v_` was requested directly (middleware never sees its own rewrites). Segments the FX datafile knows are kept, anything else is 307-redirected away, and the `opti_wx_variation` cookie is validated the same way - so visitors cannot mint arbitrary ISR entries. Segment parsing/formatting lives in `src/lib/optimizely/variationPath.ts`, shared by middleware and the catch-all page.
 
 Add a similar early-return whenever a new non-CMS route is introduced (landing pages, auth flows, etc.).
 

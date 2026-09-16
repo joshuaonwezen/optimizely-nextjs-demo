@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
+import { isValidRevalidateSecret } from "@/lib/security/verifySecret";
 
 /**
  * On-demand ISR revalidation webhook.
@@ -11,9 +12,7 @@ import { type NextRequest, NextResponse } from "next/server";
  * Header: x-revalidate-secret must match OPTIMIZELY_REVALIDATE_SECRET
  */
 export async function POST(request: NextRequest) {
-  const secret = request.headers.get("x-revalidate-secret");
-
-  if (secret !== process.env.OPTIMIZELY_REVALIDATE_SECRET) {
+  if (!isValidRevalidateSecret(request.headers.get("x-revalidate-secret"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

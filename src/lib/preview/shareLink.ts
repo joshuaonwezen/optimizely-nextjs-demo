@@ -2,9 +2,11 @@ import { createHmac, timingSafeEqual } from "crypto";
 
 // External preview links let anyone (no CMS login) open a draft in the front end.
 // The link carries NO Graph credential - only key/loc/(ver) plus an HMAC signature
-// this app generates with OPTIMIZELY_PREVIEW_SECRET. The signature exists purely so
-// a recipient cannot edit the query string to pull a different content key. Links
-// never expire; rotating OPTIMIZELY_PREVIEW_SECRET invalidates every outstanding one.
+// this app generates with OPTIMIZELY_PREVIEW_SECRET. The signature only stops a link
+// from being edited to point at a different key/locale/version; it does not limit who
+// can obtain one - /preview mints a link for whatever key it is asked about, by design.
+// The Graph app key/secret never leave the server, and the share page is read-only.
+// Links never expire; rotating OPTIMIZELY_PREVIEW_SECRET invalidates every outstanding one.
 
 export type ExternalPreviewTarget = {
   key: string;

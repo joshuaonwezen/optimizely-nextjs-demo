@@ -1,9 +1,9 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { cacheLife, cacheTag } from "next/cache";
+import { cacheTag } from "next/cache";
+import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
-import { CACHE_TTL } from "@/lib/optimizely/client";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { extractKey, type ContentRef } from "../_shared/contentRefs";
@@ -77,16 +77,12 @@ type MilestonesResult = { TimelineMilestoneBlock?: { items?: MilestoneData[] } }
 async function fetchMilestones(keys: string[]): Promise<MilestonesResult> {
   "use cache";
   cacheTag("page");
-  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  cachePublishedContent();
 
   try {
     return await graphClient().request(MILESTONES_BY_KEYS_QUERY, { keys });
   } catch (error) {
-    // Caught inside the cache scope: a rejected promise inside "use cache"
-    // fails static generation outright and no call-site try/catch can rescue
-    // it. The cost is that an outage is cached for the revalidate window.
-    console.error("[fetchMilestones] Graph query failed:", error);
-    return {};
+    return cachedQueryFailed("fetchMilestones", error);
   }
 }
 

@@ -1,6 +1,6 @@
 // Demo reference implementation for /demo/navigation - production nav uses GetNavigation.ts
-import { cacheLife, cacheTag } from "next/cache";
-import { CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheTag } from "next/cache";
+import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface ContentTypeNavItem {
@@ -58,17 +58,12 @@ interface ContentTypeNavGraphResult {
 async function fetchArticleNav(): Promise<ContentTypeNavGraphResult> {
   "use cache";
   cacheTag("page");
-  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  cachePublishedContent();
 
   try {
     return await graphClient().request(GET_NAVIGATION_FROM_CONTENT_TYPE_QUERY, {});
   } catch (error) {
-    // Caught HERE, inside the cache scope, not at the call site: a rejected
-    // promise inside "use cache" fails static generation outright ("Error
-    // occurred prerendering page") and no downstream try/catch can rescue it.
-    // Returning an empty result lets the caller's existing fallback path run.
-    console.error("[fetchArticleNav] Graph query failed:", error);
-    return {};
+    return cachedQueryFailed("fetchArticleNav", error);
   }
 }
 

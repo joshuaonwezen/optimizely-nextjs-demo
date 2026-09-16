@@ -1,5 +1,5 @@
-import { cacheLife, cacheTag } from "next/cache";
-import { CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheTag } from "next/cache";
+import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface EditorialItem {
@@ -57,17 +57,12 @@ const EMPTY = { items: [] as EditorialItem[], fromCms: false };
 async function fetchEditorialContent(limit: number): Promise<GraphResponse> {
   "use cache";
   cacheTag("page");
-  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  cachePublishedContent();
 
   try {
     return await graphClient().request(GET_EDITORIAL_CONTENT_QUERY, { limit });
   } catch (error) {
-    // Caught HERE, inside the cache scope, not at the call site: a rejected
-    // promise inside "use cache" fails static generation outright ("Error
-    // occurred prerendering page") and no downstream try/catch can rescue it.
-    // Returning an empty result lets the caller's existing fallback path run.
-    console.error("[fetchEditorialContent] Graph query failed:", error);
-    return {};
+    return cachedQueryFailed("fetchEditorialContent", error);
   }
 }
 

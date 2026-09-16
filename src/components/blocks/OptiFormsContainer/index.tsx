@@ -2,8 +2,8 @@ import {
   OptimizelyGridSection,
   getPreviewUtils,
 } from "@optimizely/cms-sdk/react/server";
-import { cacheLife, cacheTag } from "next/cache";
-import { CACHE_TTL } from "@/lib/optimizely/client";
+import { cacheTag } from "next/cache";
+import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { NodeWrapper } from "@/components/experience/CompositionExperience";
 
@@ -47,17 +47,12 @@ type FormPropsResult = { OptiFormsContainerData?: { items?: OptiFormsContainerDa
 async function fetchFormProps(name: string): Promise<FormPropsResult> {
   "use cache";
   cacheTag("page");
-  cacheLife({ stale: 300, revalidate: CACHE_TTL, expire: CACHE_TTL * 24 });
+  cachePublishedContent();
 
   try {
     return await graphClient().request(FORM_PROPS_QUERY, { name });
   } catch (error) {
-    // Caught HERE, inside the cache scope, not at the call site: a rejected
-    // promise inside "use cache" fails static generation outright ("Error
-    // occurred prerendering page") and no downstream try/catch can rescue it.
-    // Returning an empty result lets the caller's existing fallback path run.
-    console.error("[fetchFormProps] Graph query failed:", error);
-    return {};
+    return cachedQueryFailed("fetchFormProps", error);
   }
 }
 
