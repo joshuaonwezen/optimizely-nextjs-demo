@@ -985,16 +985,12 @@ Do not use em dashes (`—`) anywhere in the demo pages: prose, JSX text, code s
 
 ## Adding a New Block — Checklist
 
-1. `src/components/blocks/<Name>/index.tsx` — export `NameType` (contentType) + default component. Add `data-component="Name"` as the first attribute on the outermost rendered element of the default export.
-2. `src/components/blocks/<Name>/Name.fragment.ts` — GraphQL fragment, co-located with the block component
-3. `src/lib/optimizely/componentRegistry.ts` — three edits:
-   - Import the block and its type
-   - Add `NameType` to `initContentTypeRegistry([...])` array
-   - Add `Name` to `initReactComponentRegistry({ resolver: { ... } })` object (use `{ default: Name, tags: { Variant: Name } }` pattern if display template variants exist)
-4. `scripts/cleanup-types.ts` — two edits (prevents accidental CMS deletion):
+1. `src/components/blocks/<Name>/index.tsx` — export exactly one `NameType` (`contentType()`), its `displayTemplate()`s, and the component as the default export. Add `data-component="Name"` as the first attribute on the outermost rendered element of the default export.
+2. `src/lib/optimizely/componentRegistry.ts` — one import and one entry: `import * as NameModule from "@/components/blocks/Name";` plus `NameModule` in `BLOCK_MODULES`. The registry derives the content type, every display template and the component (keyed by the type's `.key`) from the module's exports; it throws if the module exports zero or several content types.
+3. `scripts/cleanup-types.ts` — two edits (prevents accidental CMS deletion):
    - Add the type's `.key` string (e.g. `"MyBlock"`) to the `KEEP` set — use the actual `.key` value from `contentType({ key: "..." })`, **not** the TypeScript variable name
    - If the block exports display template variants, add each template's `.key` string (e.g. `"MyBlockCompactTemplate"`) to `KEEP_TEMPLATES`
-5. Run `npm run opti:push` with credentials injected
+4. Run `npm run opti:push` with credentials injected
 
 ### Adding a display template to `optimizely.config.mjs`
 
@@ -1061,14 +1057,7 @@ Rule of thumb: if the block's `resolveStyleClasses(ds, { background: "transparen
 
 If a block has more than one visual layout (e.g. card vs minimal, horizontal vs vertical), create a separate `displayTemplate()` for each with a `tag` value matching the resolver entry in `componentRegistry.ts`. Always set one template as `isDefault: true`.
 
-In `componentRegistry.ts`, register tag variants like this:
-
-```ts
-MyBlock: {
-  default: MyBlock,
-  tags: { Card: MyBlock, Minimal: MyBlock },
-},
-```
+Registering the block module is enough: every block renders all of its own templates (branching on `displayTemplateKey`), so `componentRegistry.ts` has no per-tag entries.
 
 ### cleanup-types.ts
 

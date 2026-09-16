@@ -9,70 +9,51 @@ import {
 import { initReactComponentRegistry } from "@optimizely/cms-sdk/react/server";
 import type { ComponentType } from "react";
 
-import HeroBlock, { HeroBlockType, HeroBlockDefaultTemplate } from "@/components/blocks/HeroBlock";
-import CallToActionBlock, { CallToActionType, CallToActionOutlineTemplate, CallToActionSurfaceTemplate, CallToActionGhostTemplate } from "@/components/blocks/CallToActionBlock";
-import { CallToActionDefaultTemplate } from "@/components/blocks/CallToActionBlock";
-import TextBlock, { TextBlockType, TextBlockNarrowTemplate } from "@/components/blocks/RichTextBlock";
-import { TextBlockDefaultTemplate } from "@/components/blocks/RichTextBlock";
-import ProductCardBlock, { ProductCardBlockType, ProductCardDefaultTemplate, ProductCardFeaturedTemplate } from "@/components/blocks/ProductCardBlock";
-import ProductHeroBlock, { ProductHeroBlockType, ProductHeroCompactTemplate } from "@/components/blocks/ProductHeroBlock";
-import { ProductHeroBlockDefaultTemplate } from "@/components/blocks/ProductHeroBlock";
-import FeatureItemBlock, { FeatureItemBlockType, FeatureItemOutlinedTemplate, FeatureItemFlatTemplate, FeatureItemBrandTemplate } from "@/components/blocks/FeatureItemBlock";
-import { FeatureItemBlockDefaultTemplate } from "@/components/blocks/FeatureItemBlock";
-import SectionHeadingBlock, { SectionHeadingBlockType, SectionHeadingDefaultTemplate, SectionHeadingCenteredTemplate } from "@/components/blocks/SectionHeadingBlock";
-import TestimonialBlock, { TestimonialBlockType, TestimonialCardTemplate, TestimonialMinimalTemplate } from "@/components/blocks/TestimonialBlock";
-import { TestimonialBlockDefaultTemplate } from "@/components/blocks/TestimonialBlock";
-import StatsCounterBlock, { StatsCounterBlockType, StatsCounterAccentTemplate, StatsCounterHighlightTemplate } from "@/components/blocks/StatsCounterBlock";
-import { StatsCounterBlockDefaultTemplate } from "@/components/blocks/StatsCounterBlock";
-import ImageBlock, { ImageBlockType, ImageBlockRoundedTemplate } from "@/components/blocks/ImageBlock";
-import { ImageBlockDefaultTemplate } from "@/components/blocks/ImageBlock";
-import RenditionImageBlock, { RenditionImageBlockType } from "@/components/blocks/RenditionImageBlock";
-import { RenditionImageBlockDefaultTemplate } from "@/components/blocks/RenditionImageBlock";
+type ContentTypeDef = Parameters<typeof initContentTypeRegistry>[0][number];
+type DisplayTemplateDef = Parameters<typeof initDisplayTemplateRegistry>[0][number];
+
+import * as HeroBlockModule from "@/components/blocks/HeroBlock";
+import * as CallToActionBlockModule from "@/components/blocks/CallToActionBlock";
+import * as RichTextBlockModule from "@/components/blocks/RichTextBlock";
+import * as ProductCardBlockModule from "@/components/blocks/ProductCardBlock";
+import * as ProductHeroBlockModule from "@/components/blocks/ProductHeroBlock";
+import * as FeatureItemBlockModule from "@/components/blocks/FeatureItemBlock";
+import * as SectionHeadingBlockModule from "@/components/blocks/SectionHeadingBlock";
+import * as TestimonialBlockModule from "@/components/blocks/TestimonialBlock";
+import * as StatsCounterBlockModule from "@/components/blocks/StatsCounterBlock";
+import * as ImageBlockModule from "@/components/blocks/ImageBlock";
+import * as RenditionImageBlockModule from "@/components/blocks/RenditionImageBlock";
+import * as FaqItemBlockModule from "@/components/blocks/FaqItemBlock";
+import * as FaqContainerBlockModule from "@/components/blocks/FaqContainerBlock";
+import * as FeaturedContentBlockModule from "@/components/blocks/FeaturedContentBlock";
+import * as LogoGridBlockModule from "@/components/blocks/LogoGridBlock";
+import * as AuthorBlockModule from "@/components/blocks/AuthorBlock";
+import * as OutcomeItemBlockModule from "@/components/blocks/OutcomeItemBlock";
+import * as PricingTierBlockModule from "@/components/blocks/PricingTierBlock";
+import * as TimelineMilestoneBlockModule from "@/components/blocks/TimelineMilestoneBlock";
+import * as TimelineBlockModule from "@/components/blocks/TimelineBlock";
+import * as TeamMemberBlockModule from "@/components/blocks/TeamMemberBlock";
+import * as TeamGridBlockModule from "@/components/blocks/TeamGridBlock";
+import * as ComparisonTableBlockModule from "@/components/blocks/ComparisonTableBlock";
+import * as CalloutBlockModule from "@/components/blocks/CalloutBlock";
+import * as RawHtmlBlockModule from "@/components/blocks/RawHtmlBlock";
+import * as ContactFormBlockModule from "@/components/blocks/ContactFormBlock";
+import * as BranchFinderBlockModule from "@/components/blocks/BranchFinderBlock";
+import * as QuoteBlockModule from "@/components/blocks/QuoteBlock";
+import * as CustomerVoicesBlockModule from "@/components/blocks/CustomerVoicesBlock";
+import * as SpotlightBlockModule from "@/components/blocks/SpotlightBlock";
+import * as RedirectRuleModule from "@/components/blocks/RedirectRule";
+import * as RedirectConfigModule from "@/components/blocks/RedirectConfig";
 import OptiFormsContainer from "@/components/blocks/OptiFormsContainer";
 import OptiFormsTextbox from "@/components/blocks/OptiFormsTextbox";
 import OptiFormsTextarea from "@/components/blocks/OptiFormsTextarea";
 import OptiFormsSelection from "@/components/blocks/OptiFormsSelection";
 import OptiFormsSubmit from "@/components/blocks/OptiFormsSubmit";
+import ArticleListBlock from "@/components/blocks/ArticleListBlock";
 import { NavigationItemType, NavigationType, NavigationBlock, NavigationItemPreview } from "@/components/blocks/NavigationItemBlock";
 import { FooterType, FooterPreview } from "@/components/layout/Footer";
 import { SiteSettingsType, SiteSettingsPreview } from "@/components/layout/SiteSettings";
 import { SiteBannerType, SiteBannerBlock } from "@/components/layout/GlobalBanner";
-import FaqItemBlock, { FaqItemBlockType, FaqItemFlatTemplate } from "@/components/blocks/FaqItemBlock";
-import { FaqItemBlockDefaultTemplate } from "@/components/blocks/FaqItemBlock";
-import FaqContainerBlock, { FaqContainerBlockType } from "@/components/blocks/FaqContainerBlock";
-import { FaqContainerBlockDefaultTemplate } from "@/components/blocks/FaqContainerBlock";
-import FeaturedContentBlock, { FeaturedContentBlockType, FeaturedContentCardTemplate } from "@/components/blocks/FeaturedContentBlock";
-import { FeaturedContentBlockDefaultTemplate } from "@/components/blocks/FeaturedContentBlock";
-import LogoGridBlock, { LogoGridBlockType, LogoGridColorTemplate } from "@/components/blocks/LogoGridBlock";
-import { LogoGridBlockDefaultTemplate } from "@/components/blocks/LogoGridBlock";
-import AuthorBlock, { AuthorBlockType, AuthorInlineTemplate, AuthorProfileTemplate } from "@/components/blocks/AuthorBlock";
-import { AuthorBlockDefaultTemplate } from "@/components/blocks/AuthorBlock";
-import OutcomeItemBlock, { OutcomeItemBlockType, OutcomeItemBrandTemplate, OutcomeItemInlineTemplate } from "@/components/blocks/OutcomeItemBlock";
-import { OutcomeItemBlockDefaultTemplate } from "@/components/blocks/OutcomeItemBlock";
-import PricingTierBlock, { PricingTierBlockType, PricingTierCompactTemplate } from "@/components/blocks/PricingTierBlock";
-import { PricingTierBlockDefaultTemplate } from "@/components/blocks/PricingTierBlock";
-import TimelineMilestoneBlock, { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
-import { TimelineMilestoneBlockDefaultTemplate } from "@/components/blocks/TimelineMilestoneBlock";
-import TimelineBlock, { TimelineBlockType } from "@/components/blocks/TimelineBlock";
-import { TimelineBlockDefaultTemplate } from "@/components/blocks/TimelineBlock";
-import TeamMemberBlock, { TeamMemberBlockType, TeamMemberHorizontalTemplate } from "@/components/blocks/TeamMemberBlock";
-import { TeamMemberBlockDefaultTemplate } from "@/components/blocks/TeamMemberBlock";
-import TeamGridBlock, { TeamGridBlockType } from "@/components/blocks/TeamGridBlock";
-import { TeamGridBlockDefaultTemplate } from "@/components/blocks/TeamGridBlock";
-import ComparisonTableBlock, { ComparisonTableBlockType } from "@/components/blocks/ComparisonTableBlock";
-import { ComparisonTableBlockDefaultTemplate } from "@/components/blocks/ComparisonTableBlock";
-import CalloutBlock, { CalloutBlockType } from "@/components/blocks/CalloutBlock";
-import { CalloutBlockDefaultTemplate } from "@/components/blocks/CalloutBlock";
-import RawHtmlBlock, { RawHtmlBlockType, RawHtmlBlockDefaultTemplate } from "@/components/blocks/RawHtmlBlock";
-import ContactFormBlock, { ContactFormBlockType } from "@/components/blocks/ContactFormBlock";
-import { ContactFormBlockDefaultTemplate } from "@/components/blocks/ContactFormBlock";
-import BranchFinderBlock, { BranchFinderBlockType, BranchFinderBlockDefaultTemplate } from "@/components/blocks/BranchFinderBlock";
-import QuoteBlock, { QuoteBlockType, QuoteBlockDefaultTemplate } from "@/components/blocks/QuoteBlock";
-import CustomerVoicesBlock, { CustomerVoicesBlockType, CustomerVoicesBlockDefaultTemplate } from "@/components/blocks/CustomerVoicesBlock";
-import SpotlightBlock, { SpotlightBlockType, SpotlightBlockDefaultTemplate } from "@/components/blocks/SpotlightBlock";
-import RedirectRule, { RedirectRuleType } from "@/components/blocks/RedirectRule";
-import RedirectConfig, { RedirectConfigType } from "@/components/blocks/RedirectConfig";
-import ArticleListBlock from "@/components/blocks/ArticleListBlock";
 
 import DynamicExperience from "@/components/experience/DynamicExperience";
 import BlogExperience from "@/components/experience/BlogExperience";
@@ -190,6 +171,62 @@ const OptiFormsSubmitElementType = contentType({
   },
 });
 
+// Standard blocks. Each module under src/components/blocks exports exactly one
+// contentType(), its displayTemplate()s and the React component as default, so
+// registering a new block is one import plus one entry here (the SDK tags those
+// exports with __type, which is how they are picked out below).
+const BLOCK_MODULES = [
+  HeroBlockModule,
+  CallToActionBlockModule,
+  RichTextBlockModule,
+  ProductCardBlockModule,
+  ProductHeroBlockModule,
+  FeatureItemBlockModule,
+  SectionHeadingBlockModule,
+  TestimonialBlockModule,
+  StatsCounterBlockModule,
+  ImageBlockModule,
+  RenditionImageBlockModule,
+  FaqItemBlockModule,
+  FaqContainerBlockModule,
+  FeaturedContentBlockModule,
+  LogoGridBlockModule,
+  AuthorBlockModule,
+  OutcomeItemBlockModule,
+  PricingTierBlockModule,
+  TimelineMilestoneBlockModule,
+  TimelineBlockModule,
+  TeamMemberBlockModule,
+  TeamGridBlockModule,
+  ComparisonTableBlockModule,
+  CalloutBlockModule,
+  RawHtmlBlockModule,
+  ContactFormBlockModule,
+  BranchFinderBlockModule,
+  QuoteBlockModule,
+  CustomerVoicesBlockModule,
+  SpotlightBlockModule,
+  RedirectRuleModule,
+  RedirectConfigModule,
+] as const;
+
+type BlockModule = (typeof BLOCK_MODULES)[number];
+
+function exportsOfKind<T>(mod: BlockModule, kind: "contentType" | "displayTemplate"): T[] {
+  return Object.values(mod).filter(
+    (value): value is T =>
+      typeof value === "object" && value !== null && (value as { __type?: string }).__type === kind
+  );
+}
+
+function blockContentType(mod: BlockModule): ContentTypeDef {
+  const [type, ...extra] = exportsOfKind<ContentTypeDef>(mod, "contentType");
+  if (!type || extra.length > 0) {
+    throw new Error(`Block module must export exactly one contentType(); got ${extra.length + (type ? 1 : 0)}`);
+  }
+  return type;
+}
+
 let initialized = false;
 
 export function initComponentRegistry() {
@@ -202,17 +239,10 @@ export function initComponentRegistry() {
     DynamicExperienceType,
     BlogExperienceType,
     LandingPageType,
-    HeroBlockType,
-    ProductHeroBlockType,
-    SectionHeadingBlockType,
-    TextBlockType,
-    CallToActionType,
-    ProductCardBlockType,
-    FeatureItemBlockType,
-    TestimonialBlockType,
-    StatsCounterBlockType,
-    ImageBlockType,
-    RenditionImageBlockType,
+    ArticlePageType,
+    CaseStudyPageType,
+    ConsultantPageType,
+    ...BLOCK_MODULES.map(blockContentType),
     OptiFormsContainerDataType,
     OptiFormsTextboxElementType,
     OptiFormsTextareaElementType,
@@ -223,97 +253,22 @@ export function initComponentRegistry() {
     FooterType,
     SiteSettingsType,
     SiteBannerType,
-    FaqItemBlockType,
-    FaqContainerBlockType,
-    FeaturedContentBlockType,
-    LogoGridBlockType,
-    AuthorBlockType,
-    OutcomeItemBlockType,
-    PricingTierBlockType,
-    TimelineMilestoneBlockType,
-    TimelineBlockType,
-    TeamMemberBlockType,
-    TeamGridBlockType,
-    ComparisonTableBlockType,
-    CalloutBlockType,
-    RawHtmlBlockType,
-    ContactFormBlockType,
-    BranchFinderBlockType,
-    QuoteBlockType,
-    CustomerVoicesBlockType,
-    SpotlightBlockType,
-    RedirectRuleType,
-    RedirectConfigType,
-    ArticlePageType,
-    CaseStudyPageType,
-    ConsultantPageType,
     ...(PRODUCT_LANDING ? PRODUCT_LANDING_CONTENT_TYPES : []),
   ]);
 
   // Display templates
   initDisplayTemplateRegistry([
-    HeroBlockDefaultTemplate,
-    ProductHeroCompactTemplate,
-    SectionHeadingDefaultTemplate,
-    SectionHeadingCenteredTemplate,
-    TextBlockNarrowTemplate,
-    CallToActionOutlineTemplate,
-    CallToActionSurfaceTemplate,
-    CallToActionGhostTemplate,
-    BranchFinderBlockDefaultTemplate,
-    QuoteBlockDefaultTemplate,
-    CustomerVoicesBlockDefaultTemplate,
-    ProductCardDefaultTemplate,
-    ProductCardFeaturedTemplate,
-    FeatureItemOutlinedTemplate,
-    FeatureItemFlatTemplate,
-    FeatureItemBrandTemplate,
-    TestimonialCardTemplate,
-    TestimonialMinimalTemplate,
-    StatsCounterHighlightTemplate,
-    StatsCounterAccentTemplate,
-    AuthorInlineTemplate,
-    AuthorProfileTemplate,
-    FaqItemFlatTemplate,
-    LogoGridColorTemplate,
-    ImageBlockRoundedTemplate,
-    OutcomeItemBrandTemplate,
-    OutcomeItemInlineTemplate,
-    PricingTierCompactTemplate,
-    TeamMemberHorizontalTemplate,
-    FeaturedContentCardTemplate,
-    RawHtmlBlockDefaultTemplate,
-    SpotlightBlockDefaultTemplate,
-    AuthorBlockDefaultTemplate,
-    CallToActionDefaultTemplate,
-    CalloutBlockDefaultTemplate,
-    ComparisonTableBlockDefaultTemplate,
-    ContactFormBlockDefaultTemplate,
-    FaqContainerBlockDefaultTemplate,
-    FaqItemBlockDefaultTemplate,
-    FeatureItemBlockDefaultTemplate,
-    FeaturedContentBlockDefaultTemplate,
-    ImageBlockDefaultTemplate,
-    LogoGridBlockDefaultTemplate,
-    OutcomeItemBlockDefaultTemplate,
-    PricingTierBlockDefaultTemplate,
-    ProductHeroBlockDefaultTemplate,
-    RenditionImageBlockDefaultTemplate,
-    TextBlockDefaultTemplate,
-    StatsCounterBlockDefaultTemplate,
-    TeamGridBlockDefaultTemplate,
-    TeamMemberBlockDefaultTemplate,
-    TestimonialBlockDefaultTemplate,
-    TimelineBlockDefaultTemplate,
-    TimelineMilestoneBlockDefaultTemplate,
+    ...BLOCK_MODULES.flatMap((mod) => exportsOfKind<DisplayTemplateDef>(mod, "displayTemplate")),
     DefaultRowTemplate,
     DefaultColumnTemplate,
     DefaultSectionTemplate,
     ...(PRODUCT_LANDING ? [ArticleListBlockDefaultTemplate] : []),
   ]);
 
-  // React components — display template variants use the tags pattern so the SDK
-  // dispatches to the right component based on the editor-selected template.
+  // React components, keyed by content type key. Display template variants need no
+  // entries of their own: every block renders all of its templates itself (branching
+  // on displayTemplateKey), so the resolver ignores the template tag.
+  //
   // Registered via a resolver function (not a plain map): SDK 2.1.0's
   // OptimizelyGridSection calls getComponent(undefined) for node types other
   // than row/column, and the object-map path crashes on undefined
@@ -322,139 +277,54 @@ export function initComponentRegistry() {
   // Re-verified against cms-sdk 2.2.0: getComponent now short-circuits to the
   // function resolver before reaching getEntryWithFallback (and that method also
   // guards `typeof resolver === 'function'`), so the crash path is bypassed and the
-  // `if (!name)` guard below still absorbs the getComponent(undefined) call — keep.
+  // `if (!name)` guard below still absorbs the getComponent(undefined) call - keep.
+  // Values are loosely typed: each component declares its own props, which the
+  // SDK passes at render time.
   const componentMap: Record<string, unknown> = {
-      // Experience / page types
-      DynamicExperience,
-      BlogExperience,
-      ProductLandingExperience,
-      BlankExperience,
-      BlankSection,
-      TraditionalPage,
-      LandingPage: TraditionalPage,
-      ArticlePage,
-      CaseStudyPage,
-      ConsultantPage,
+    // Experience / page types
+    DynamicExperience,
+    BlogExperience,
+    ProductLandingExperience,
+    BlankExperience,
+    BlankSection,
+    TraditionalPage,
+    LandingPage: TraditionalPage,
+    ArticlePage,
+    CaseStudyPage,
+    ConsultantPage,
 
-      // Blocks — variants registered via tags so the SDK routes by displayTemplateKey
-      HeroBlock,
-      Hero: HeroBlock,
-      CallToAction: {
-        default: CallToActionBlock,
-        tags: {
-          Outline: CallToActionBlock,
-          Surface: CallToActionBlock,
-          Ghost: CallToActionBlock,
-        },
-      },
-      TextBlock: {
-        default: TextBlock,
-        tags: { Narrow: TextBlock },
-      },
-      ProductCardBlock: {
-        default: ProductCardBlock,
-        tags: { Featured: ProductCardBlock },
-      },
-      ProductHeroBlock: {
-        default: ProductHeroBlock,
-        tags: { Compact: ProductHeroBlock },
-      },
-      FeatureItemBlock: {
-        default: FeatureItemBlock,
-        tags: {
-          Outlined: FeatureItemBlock,
-          Flat: FeatureItemBlock,
-          Brand: FeatureItemBlock,
-        },
-      },
-      SectionHeadingBlock: {
-        default: SectionHeadingBlock,
-        tags: { Centered: SectionHeadingBlock },
-      },
-      TestimonialBlock: {
-        default: TestimonialBlock,
-        tags: { Card: TestimonialBlock, Minimal: TestimonialBlock },
-      },
-      StatsCounterBlock: {
-        default: StatsCounterBlock,
-        tags: { Highlight: StatsCounterBlock, Accent: StatsCounterBlock },
-      },
-      ImageBlock: {
-        default: ImageBlock,
-        tags: { Rounded: ImageBlock },
-      },
-      RenditionImageBlock,
-      OptiFormsContainerData: OptiFormsContainer,
-      OptiFormsTextboxElement: OptiFormsTextbox,
-      OptiFormsTextareaElement: OptiFormsTextarea,
-      OptiFormsSelectionElement: OptiFormsSelection,
-      OptiFormsSubmitElement: OptiFormsSubmit,
-      FaqItemBlock: {
-        default: FaqItemBlock,
-        tags: { Flat: FaqItemBlock },
-      },
-      FaqContainerBlock,
-      ArticleListBlock,
-      FeaturedContentBlock: {
-        default: FeaturedContentBlock,
-        tags: { Card: FeaturedContentBlock },
-      },
-      LogoGridBlock: {
-        default: LogoGridBlock,
-        tags: { Color: LogoGridBlock },
-      },
-      AuthorBlock: {
-        default: AuthorBlock,
-        tags: { Inline: AuthorBlock, Profile: AuthorBlock },
-      },
-      OutcomeItemBlock: {
-        default: OutcomeItemBlock,
-        tags: { Brand: OutcomeItemBlock, Inline: OutcomeItemBlock },
-      },
-      PricingTierBlock: {
-        default: PricingTierBlock,
-        tags: { Compact: PricingTierBlock },
-      },
-      TimelineMilestoneBlock,
-      TimelineBlock,
-      TeamMemberBlock: {
-        default: TeamMemberBlock,
-        tags: { Horizontal: TeamMemberBlock },
-      },
-      TeamGridBlock,
-      ComparisonTableBlock,
-      CalloutBlock,
-      RawHtmlBlock,
-      ContactFormBlock,
-      BranchFinderBlock,
-      QuoteBlock,
-      CustomerVoicesBlock,
-      spotlightBlock: SpotlightBlock,
-      Navigation: NavigationBlock,
-      NavigationItem: NavigationItemPreview,
-      Footer: FooterPreview,
-      SiteSettings: SiteSettingsPreview,
-      SiteBanner: SiteBannerBlock,
-      // Data-only redirect types — render nothing (consumed by src/middleware.ts).
-      RedirectRule,
-      RedirectConfig,
-      // Fallback: unknown types from the CMS (stale seeds, deleted types) — render nothing
-      _Component: () => null,
+    ...Object.fromEntries(
+      BLOCK_MODULES.map((mod) => [blockContentType(mod).key, mod.default])
+    ),
+    // Legacy key still referenced by older CMS entries.
+    Hero: HeroBlockModule.default,
+    ArticleListBlock,
+
+    // Native Optimizely Forms
+    OptiFormsContainerData: OptiFormsContainer,
+    OptiFormsTextboxElement: OptiFormsTextbox,
+    OptiFormsTextareaElement: OptiFormsTextarea,
+    OptiFormsSelectionElement: OptiFormsSelection,
+    OptiFormsSubmitElement: OptiFormsSubmit,
+
+    // Shared blocks previewed on their own in the CMS
+    Navigation: NavigationBlock,
+    NavigationItem: NavigationItemPreview,
+    Footer: FooterPreview,
+    SiteSettings: SiteSettingsPreview,
+    SiteBanner: SiteBannerBlock,
+
+    // The resolver's last resort for a composition node Graph returns only as the
+    // base _Component type (e.g. a type this app doesn't register): render nothing.
+    _Component: () => null,
   };
 
   initReactComponentRegistry({
-    resolver: (name, options) => {
+    resolver: (name) => {
       if (!name) return undefined;
       // Mirror the SDK's map semantics, including the "Property"-suffix fallback
-      const entry =
-        componentMap[name] ??
-        (name.endsWith("Property") ? componentMap[name.slice(0, -8)] : undefined);
-      if (!entry) return undefined;
-      if (typeof entry === "object" && entry !== null && "tags" in entry) {
-        const variants = entry as { default?: ComponentType; tags: Record<string, ComponentType> };
-        return (options?.tag ? variants.tags[options.tag] : undefined) ?? variants.default;
-      }
-      return entry as ComponentType;
+      const entry = componentMap[name] ?? (name.endsWith("Property") ? componentMap[name.slice(0, -8)] : undefined);
+      return entry as ComponentType | undefined;
     },
   });
 
