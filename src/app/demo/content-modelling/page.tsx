@@ -156,14 +156,17 @@ const author = await getClient().getContent(
   { next: { revalidate: 300 } }
 );`;
 
-const GET_CONTENT_ARRAY = `// src/components/blocks/TimelineBlock/index.tsx
-// milestones is a contentReference array - each item arrives as a key only.
-// Fetch all in parallel; order is preserved by Promise.all.
+const GET_CONTENT_ARRAY = `// A contentReference array - each item arrives as a key only.
+// The simplest resolution: fetch all in parallel; order is preserved by Promise.all.
 import { getClient } from "@optimizely/cms-sdk";
 
 const milestones = await Promise.all(
   keys.map((key) => getClient().getContent({ key }))
-);`;
+);
+
+// That is one Graph round-trip per key. TimelineBlock and TeamGridBlock instead
+// run ONE batched query (key: { in: $keys }) inside "use cache" and map results
+// back over keys to keep the order - see the batch pattern on /demo/graph-queries.`;
 
 const INDEXING_SNIPPET = `// indexingType controls how Graph indexes a property.
 // Only three values exist - and not all are valid on every type.

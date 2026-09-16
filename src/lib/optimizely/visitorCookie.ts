@@ -3,13 +3,13 @@
 // name at the registrable-domain scope) instead of a host-only duplicate that resets
 // can't reach. No imports — safe to use from Edge middleware and route handlers.
 
-export const VISITOR_COOKIE = "optimizelyEndUserId";
+const VISITOR_COOKIE = "optimizelyEndUserId";
 const VISITOR_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 // Registrable domain (dotted, e.g. ".joshuaonwezen.dev") for real custom domains;
 // undefined (host-only) for localhost, IPs, and platform public suffixes where a
 // shared parent-domain cookie is invalid or undesirable (e.g. *.vercel.app).
-export function visitorCookieDomain(host: string): string | undefined {
+function visitorCookieDomain(host: string): string | undefined {
   const h = (host || "").split(":")[0].toLowerCase();
   if (!h || h === "localhost" || /^[0-9.]+$/.test(h)) return undefined;
   const parts = h.split(".");

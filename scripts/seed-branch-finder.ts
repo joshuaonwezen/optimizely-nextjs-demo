@@ -15,8 +15,8 @@
  */
 
 import { config } from "dotenv";
-import { randomUUID } from "crypto";
 import {
+  noHyphens,
   createContent,
   ensureSubfolder,
   discoverRootContainer,
@@ -28,10 +28,6 @@ import {
 } from "./_shared";
 
 config({ path: ".env.local" });
-
-function noHyphens(): string {
-  return randomUUID().replace(/-/g, "");
-}
 
 /**
  * Fetch the current mainContent references of a TraditionalPage, excluding any

@@ -4,6 +4,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { resolveImageUrl, resolveUrl, type ImageRef } from "../_shared/contentRefs";
 
 export const AuthorBlockType = contentType({
   key: "AuthorBlock",
@@ -73,10 +74,6 @@ export const AuthorProfileTemplate = displayTemplate({
   },
 });
 
-type ImageRef =
-  | { url?: { default?: string | null } | null; _metadata?: { url?: { default?: string | null } | null } | null }
-  | null;
-
 interface AuthorData {
   name?:        string | null;
   role?:        string | null;
@@ -84,17 +81,6 @@ interface AuthorData {
   avatar?:      ImageRef;
   linkedinUrl?: string | { default?: string | null } | null;
   __context?:   { edit?: boolean } | null;
-}
-
-function resolveUrl(value: string | { default?: string | null } | null | undefined): string | null {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  return value.default ?? null;
-}
-
-function resolveImageUrl(ref: ImageRef | undefined): string | null {
-  if (!ref) return null;
-  return ref.url?.default ?? ref._metadata?.url?.default ?? null;
 }
 
 type AuthorBlockProps = AuthorData & {

@@ -5,11 +5,7 @@ import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/
 import { getClient } from "@optimizely/cms-sdk";
 import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
-
-interface ImageRef {
-  url?: { default?: string | null } | null;
-  _metadata?: { url?: { default?: string | null } | null } | null;
-}
+import { extractKey, type ContentRef, type ImageRef } from "@/components/blocks/_shared/contentRefs";
 
 interface OutcomeData {
   __typename?: string;
@@ -39,10 +35,6 @@ interface RelatedRef {
   clientName?: string | null;
 }
 
-// References in a Graph-fetched page expose `.key` directly; inline composition
-// reads put the same key under `_metadata.key`. Accept both.
-type ContentRefShape = { key?: string | null; _metadata?: { key?: string | null } | null };
-
 interface CaseStudyContent {
   _metadata?: { key?: string | null; displayName?: string | null } | null;
   title?: string | null;
@@ -52,14 +44,10 @@ interface CaseStudyContent {
   heroImage?: ImageRef | null;
   challenge?: { json?: unknown; html?: string | null } | null;
   solution?: { json?: unknown; html?: string | null } | null;
-  outcomes?: Array<ContentRefShape | null> | null;
-  testimonial?: ContentRefShape | null;
+  outcomes?: Array<ContentRef | null> | null;
+  testimonial?: ContentRef | null;
   tags?: string[] | null;
   relatedCaseStudies?: RelatedRef[] | null;
-}
-
-function refKey(ref: ContentRefShape | null | undefined): string | null {
-  return ref?.key ?? ref?._metadata?.key ?? null;
 }
 
 // Category labels come from the CMS taxonomy, so adding a term in
@@ -99,11 +87,11 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
   }));
 
   const outcomeKeys = (content.outcomes ?? [])
-    .map(refKey)
+    .map(extractKey)
     .filter((k): k is string => Boolean(k));
   const outcomes = await loadOutcomes(outcomeKeys);
 
-  const testimonial = await loadTestimonial(refKey(content.testimonial));
+  const testimonial = await loadTestimonial(extractKey(content.testimonial));
   const tags = (content.tags ?? []).filter(Boolean);
   const related = (content.relatedCaseStudies ?? []).filter((r) => r?._metadata?.url?.default);
 

@@ -47,7 +47,7 @@ const GET_REDIRECT_RULES_QUERY = /* GraphQL */ `
 
 // Leading slash, collapse repeated slashes, drop the trailing slash (except
 // root). Absolute http(s) destinations are left untouched.
-export function normalizeRedirectPath(input: string): string {
+function normalizeRedirectPath(input: string): string {
   let s = (input ?? "").trim();
   if (!s) return "";
   if (/^https?:\/\//i.test(s)) return s;

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/tracking";
 import { clearSegment, PERSONA_LABELS, useCurrentSegment, writeSegment, type Persona } from "@/lib/segment";
+import { readCookie } from "@/lib/tracking/cookies";
 
 // Segment options mirror the personas the homepage can serve. new_visitor is the
 // default (no persona / base experience, before any section has been browsed).
@@ -17,10 +18,6 @@ async function hashEmail(email: string): Promise<string> {
   return Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
-
-function getCookie(name: string): string {
-  return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1] ?? "";
 }
 
 // One live ODP audience the visitor qualifies for. Mapped audiences (those in
@@ -79,11 +76,11 @@ export default function AudienceSwitcher() {
   }, [open]);
 
   useEffect(() => {
-    const bid = getCookie("demo_bucketing_id");
+    const bid = readCookie("demo_bucketing_id");
     setBucketingId(bid);
     setLoggedIn(!!bid);
-    setUserId(getCookie("optimizelyEndUserId") || "anonymous");
-    setFrequentCustomer(!!getCookie("demo_page_views"));
+    setUserId(readCookie("optimizelyEndUserId") || "anonymous");
+    setFrequentCustomer(!!readCookie("demo_page_views"));
 
     function handleOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);

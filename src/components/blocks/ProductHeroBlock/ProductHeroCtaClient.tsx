@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getOptimizelyBrowserClient } from "@/lib/optimizely/browser-client";
 import { Button } from "@/components/ui/Button";
+import { readCookie } from "@/lib/tracking/cookies";
 
 // Keys are stored in CMS content, so they stay put even though the brand
 // palette they now map onto has nothing to do with the original color names.
@@ -21,10 +22,6 @@ const STYLE_MODIFIERS: Record<string, string> = {
 
 const DEFAULT_CLASS = "bg-surface-lowest text-brand";
 
-function getCookie(name: string): string | undefined {
-  return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1];
-}
-
 interface Props {
   href?: string | null;
   label?: string | null;
@@ -39,14 +36,14 @@ export function ProductHeroCtaClient({ href, label, isEditMode, ctaUrlDisplay, p
 
   useEffect(() => {
     void (async () => {
-      const userId = getCookie("optimizelyEndUserId");
+      const userId = readCookie("optimizelyEndUserId");
       if (!userId) return;
       const client = await getOptimizelyBrowserClient();
       if (!client) return;
       const ua = navigator.userAgent;
       const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
-      const demoPersona = getCookie("demo_persona");
-      const bucketingId = getCookie("demo_bucketing_id");
+      const demoPersona = readCookie("demo_persona");
+      const bucketingId = readCookie("demo_bucketing_id");
       const ctx = client.createUserContext(userId, {
         device,
         hostname: window.location.hostname,

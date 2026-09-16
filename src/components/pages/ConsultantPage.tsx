@@ -1,11 +1,7 @@
 import Image from "next/image";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-
-interface ImageRef {
-  url?: { default?: string | null } | null;
-  _metadata?: { url?: { default?: string | null } | null } | null;
-}
+import type { ImageRef } from "@/components/blocks/_shared/contentRefs";
 
 interface ConsultantContent {
   _metadata?: { key?: string | null } | null;

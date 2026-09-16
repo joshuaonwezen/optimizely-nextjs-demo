@@ -24,9 +24,8 @@
  */
 
 import { config } from "dotenv";
-import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
-import { discoverRootContainer, wrapProps, pageRefForUrl } from "./_shared";
+import { discoverRootContainer, uid, wrapProps, pageRefForUrl } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -52,10 +51,6 @@ interface CompNode {
   nodes?: CompNode[];
   layoutType?: string;
   displaySettings?: DisplaySettings;
-}
-
-function uid(): string {
-  return randomUUID();
 }
 
 // Base-matching display settings. The base homepage's nodes carry NO display settings, so

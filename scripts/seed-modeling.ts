@@ -15,8 +15,8 @@
  */
 
 import { config } from "dotenv";
-import { randomUUID } from "crypto";
 import {
+  uid,
   createContent,
   deleteContentByKey,
   deletePageByUrlIfExists,
@@ -333,10 +333,6 @@ interface CompNode {
   component?: { contentType: string; properties: Record<string, unknown> };
   nodes?: CompNode[];
   layoutType?: string;
-}
-
-function uid(): string {
-  return randomUUID();
 }
 
 function singleSectionHeading(heading: string, subheading: string): CompNode[] {

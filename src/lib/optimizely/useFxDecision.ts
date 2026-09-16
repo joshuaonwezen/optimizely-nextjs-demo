@@ -3,15 +3,12 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { OptimizelyDecideOption } from "@optimizely/optimizely-sdk";
 import { getOptimizelyBrowserClient } from "./browser-client";
+import { readCookie } from "@/lib/tracking/cookies";
 
 export interface ClientFxDecision {
   enabled: boolean;
   variationKey: string | null;
   variables: Record<string, unknown>;
-}
-
-function getCookie(name: string): string | undefined {
-  return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1];
 }
 
 // Resolves an FX flag in the browser using the same attributes as the server-side
@@ -35,23 +32,23 @@ export function useFxDecision(flagKey: string): ClientFxDecision | null {
     }
 
     let cancelled = false;
-    const userId = getCookie("optimizelyEndUserId");
+    const userId = readCookie("optimizelyEndUserId");
     if (!userId) return;
 
     void getOptimizelyBrowserClient().then((client) => {
       if (!client || cancelled) return;
       const ua = navigator.userAgent;
       const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
-      const demoPersona = getCookie("demo_persona");
-      const bucketingId = getCookie("demo_bucketing_id");
-      const demoPageViews = getCookie("demo_page_views");
+      const demoPersona = readCookie("demo_persona");
+      const bucketingId = readCookie("demo_bucketing_id");
+      const demoPageViews = readCookie("demo_page_views");
 
       const ctx = client.createUserContext(userId, {
         device,
         hostname: window.location.hostname,
         logged_in: !!bucketingId,
         ...(demoPersona ? { persona: demoPersona } : {}),
-        ...(demoPageViews !== undefined ? { page_views: Number(demoPageViews) } : {}),
+        ...(demoPageViews !== "" ? { page_views: Number(demoPageViews) } : {}),
       });
       if (!ctx) return;
 

@@ -3,6 +3,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { resolveImageUrl, type ImageRef } from "../_shared/contentRefs";
 
 export const SpotlightBlockType = contentType({
   key: "spotlightBlock",
@@ -38,11 +39,6 @@ export const SpotlightBlockDefaultTemplate = displayTemplate({
   },
 });
 
-type ImageRef = {
-  url?: { default?: string | null } | null;
-  _metadata?: { url?: { default?: string | null } | null } | null;
-} | null;
-
 interface SpotlightData {
   person?:    string | null;
   quote?:     string | null;
@@ -56,11 +52,6 @@ type SpotlightBlockProps = SpotlightData & {
   content?: SpotlightData;
   displaySettings?: Record<string, string | boolean>;
 };
-
-function resolveImageUrl(ref: ImageRef | undefined): string | null {
-  if (!ref) return null;
-  return ref.url?.default ?? ref._metadata?.url?.default ?? null;
-}
 
 export default function SpotlightBlock(props: SpotlightBlockProps) {
   const data = props.content ?? props;

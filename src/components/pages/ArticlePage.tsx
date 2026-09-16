@@ -3,13 +3,10 @@ import Link from "next/link";
 import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getClient } from "@optimizely/cms-sdk";
+import { formatDate } from "@/lib/formatDate";
 import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
-
-interface ImageRef {
-  url?: { default?: string | null } | null;
-  _metadata?: { url?: { default?: string | null } | null } | null;
-}
+import type { ImageRef } from "@/components/blocks/_shared/contentRefs";
 
 interface AuthorData {
   name?: string | null;
@@ -59,13 +56,6 @@ interface ArticleContent {
 async function loadAuthor(key: string | null | undefined): Promise<AuthorData | null> {
   if (!key) return null;
   return getClient().getContent({ key }).catch(() => null);
-}
-
-function formatDate(input: string | null | undefined): string | null {
-  if (!input) return null;
-  const d = new Date(input);
-  if (isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
 }
 
 export default async function ArticlePage({ content }: { content: ArticleContent }) {

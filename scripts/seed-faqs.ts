@@ -10,6 +10,7 @@ import { config } from "dotenv";
 import { getManagementToken } from "../src/lib/optimizely/auth";
 import {
   CONTENT_ENDPOINT,
+  apiFetch,
   createContent,
   ensureSubfolder,
   discoverRootContainer,
@@ -31,13 +32,13 @@ let BLOCKS_CONTAINER = "";
 // FAQ item definitions live in ./faq-data and are shared with seed-content.ts
 // (the homepage). Both reference the same standalone items via stable keys.
 
-async function apiFetch(
+async function cmsRequest(
   path: string,
   options: RequestInit & { skipAuth?: boolean } = {}
 ): Promise<{ ok: boolean; status: number; text: string; json: unknown }> {
   const token = await getManagementToken();
   const url = path.startsWith("http") ? path : `${CONTENT_ENDPOINT}${path}`;
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -124,7 +125,7 @@ async function wireFaqsPage(): Promise<void> {
   // Create a fresh draft (copying the published page), patch featuredBlock onto
   // it, then publish. The page's latest version is usually already published,
   // and a published version cannot be patched directly - so we make a new draft.
-  const { ok: newOk, status: newStatus, text: newText, json: newVer } = await apiFetch(
+  const { ok: newOk, status: newStatus, text: newText, json: newVer } = await cmsRequest(
     `/${faqsKey}/versions?locale=en`,
     { method: "POST", body: JSON.stringify({ displayName: "FAQs" }) }
   );
@@ -134,7 +135,7 @@ async function wireFaqsPage(): Promise<void> {
   }
   let version = (newVer as Record<string, unknown>)?.version as string | undefined;
   if (!version) {
-    const vRes = await apiFetch(`/${faqsKey}/locales/en?pageSize=1`);
+    const vRes = await cmsRequest(`/${faqsKey}/locales/en?pageSize=1`);
     version = ((vRes.json as Record<string, unknown>)?.items as Array<{ version?: string }> | undefined)?.[0]?.version;
   }
   if (!version) {
@@ -142,7 +143,7 @@ async function wireFaqsPage(): Promise<void> {
     return;
   }
 
-  const { ok, status, text } = await apiFetch(`/${faqsKey}/versions/${version}`, {
+  const { ok, status, text } = await cmsRequest(`/${faqsKey}/versions/${version}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/merge-patch+json" },
     body: JSON.stringify({
@@ -159,7 +160,7 @@ async function wireFaqsPage(): Promise<void> {
     return;
   }
 
-  await apiFetch(`/${faqsKey}/versions/${version}:publish`, { method: "POST" });
+  await cmsRequest(`/${faqsKey}/versions/${version}:publish`, { method: "POST" });
   console.log(`  [patched] FAQs page featuredBlock → FaqContainerBlock (version ${version})`);
 }
 

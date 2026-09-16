@@ -3,6 +3,7 @@ import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { resolveImageUrl, resolveUrl, type ImageRef } from "../_shared/contentRefs";
 
 export const TeamMemberBlockType = contentType({
   key: "TeamMemberBlock",
@@ -43,10 +44,6 @@ export const TeamMemberHorizontalTemplate = displayTemplate({
   },
 });
 
-type ImageRef =
-  | { url?: { default?: string | null } | null; _metadata?: { url?: { default?: string | null } | null } | null }
-  | null;
-
 interface TeamMemberData {
   name?:        string | null;
   role?:        string | null;
@@ -56,22 +53,11 @@ interface TeamMemberData {
   __context?: { edit?: boolean } | null;
 }
 
-function resolveImageUrl(ref: ImageRef | undefined): string | null {
-  if (!ref) return null;
-  return ref.url?.default ?? ref._metadata?.url?.default ?? null;
-}
-
 type TeamMemberBlockProps = TeamMemberData & {
   content?: TeamMemberData;
   displaySettings?: Record<string, string | boolean>;
   displayTemplateKey?: string;
 };
-
-function resolveUrl(value: string | { default?: string | null } | null | undefined): string | null {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  return value.default ?? null;
-}
 
 export default function TeamMemberBlock(props: TeamMemberBlockProps) {
   const data = props.content ?? props;

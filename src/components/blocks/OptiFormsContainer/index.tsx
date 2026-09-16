@@ -1,11 +1,11 @@
 import {
   OptimizelyGridSection,
   getPreviewUtils,
-  type StructureContainerProps,
 } from "@optimizely/cms-sdk/react/server";
 import { cacheLife, cacheTag } from "next/cache";
 import { CACHE_TTL } from "@/lib/optimizely/client";
 import { graphClient } from "@/lib/optimizely/graphClient";
+import { NodeWrapper } from "@/components/experience/CompositionExperience";
 
 interface OptiFormsContainerData {
   key?: string | null;
@@ -37,20 +37,12 @@ type OptiFormsContainerProps = OptiFormsContainerData & {
 // Form fields nest inside the container as composition child nodes. The native
 // CMS structure is section (OptiFormsContainerData) → row → column → elements,
 // so the container renders its grid like a section. Stacked, full-width layout.
-function Row({ children, node }: StructureContainerProps) {
-  const { pa } = getPreviewUtils(node);
-  return <div {...pa(node)}>{children}</div>;
-}
-
-function Column({ children, node }: StructureContainerProps) {
-  const { pa } = getPreviewUtils(node);
-  return <div {...pa(node)}>{children}</div>;
-}
+// Rows and columns carry no styling of their own - plain preview-attributed divs.
 
 type FormPropsResult = { OptiFormsContainerData?: { items?: OptiFormsContainerData[] } };
 
 // Only the display name crosses the cache boundary. The component's own props
-// hold SDK composition nodes and the Row/Column React components, none of which
+// hold SDK composition nodes and the NodeWrapper component, none of which
 // are serializable, so never pass `node` or `props` in here.
 async function fetchFormProps(name: string): Promise<FormPropsResult> {
   "use cache";
@@ -124,7 +116,7 @@ export default async function OptiFormsContainer(props: OptiFormsContainerProps)
         )}
       </div>
       {nodes.length > 0 && (
-        <OptimizelyGridSection nodes={nodes} row={Row} column={Column} />
+        <OptimizelyGridSection nodes={nodes} row={NodeWrapper} column={NodeWrapper} />
       )}
     </section>
   );

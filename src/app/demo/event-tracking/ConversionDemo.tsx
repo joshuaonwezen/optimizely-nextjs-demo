@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { trackEvent, subscribe, type DispatchRecord } from "@/lib/tracking";
+import { readCookie } from "@/lib/tracking/cookies";
 
 const MAX_LOG_ENTRIES = 8;
 
@@ -9,10 +10,6 @@ const STATUS_STYLES: Record<string, string> = {
   skipped: "bg-error/10 text-error border-error/30",
   error:   "bg-error/10 text-error border-error/30",
 };
-
-function readCookie(name: string): string {
-  return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1] ?? "";
-}
 
 export default function ConversionDemo() {
   const [userId, setUserId] = useState("");

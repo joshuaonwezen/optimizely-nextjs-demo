@@ -1,22 +1,8 @@
 import Image from "next/image";
 import { getClient } from "@optimizely/cms-sdk";
-import {
-  OptimizelyComposition,
-  getPreviewUtils,
-  type ComponentContainerProps,
-} from "@optimizely/cms-sdk/react/server";
-
-function ComponentWrapper({ children, node }: ComponentContainerProps) {
-  const { pa } = getPreviewUtils(node);
-  return <div {...pa(node)}>{children}</div>;
-}
-
-function formatDate(input: string | null | undefined): string | null {
-  if (!input) return null;
-  const d = new Date(input);
-  if (isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
-}
+import { OptimizelyComposition, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { formatDate } from "@/lib/formatDate";
+import { NodeWrapper } from "./CompositionExperience";
 
 export default async function BlogExperience({ content }: { content: any }) {
   const { pa, src } = getPreviewUtils(content);
@@ -121,7 +107,7 @@ export default async function BlogExperience({ content }: { content: any }) {
         </div>
       </header>
 
-      <OptimizelyComposition nodes={nodes} ComponentWrapper={ComponentWrapper} />
+      <OptimizelyComposition nodes={nodes} ComponentWrapper={NodeWrapper} />
     </div>
   );
 }

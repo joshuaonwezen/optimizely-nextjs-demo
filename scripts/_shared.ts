@@ -175,7 +175,7 @@ export async function discoverRootContainer(): Promise<string> {
   if (envKey) return envKey;
 
   const token = await getManagementToken();
-  const res = await fetch(`${API_BASE}/v1/applications`, {
+  const res = await apiFetch(`${API_BASE}/v1/applications`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
@@ -255,7 +255,7 @@ export async function discoverGlobalRoot(): Promise<string> {
  * to the well-known key when the listing fails.
  */
 async function findSharedBlocksFolder(token: string, topRoot: string): Promise<string> {
-  const res = await fetch(`${CONTENT_ENDPOINT}/${topRoot}/items?pageSize=100`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${topRoot}/items?pageSize=100`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.ok) {
@@ -329,7 +329,7 @@ export async function ensureSubfolder(id: SharedBlockSubfolder): Promise<string>
   const token = await getManagementToken();
   const parent = await discoverGlobalRoot();
 
-  const res = await fetch(CONTENT_ENDPOINT, {
+  const res = await apiFetch(CONTENT_ENDPOINT, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     // SysContentFolder is non-localized: the CMS rejects initialVersion.locale
@@ -353,7 +353,7 @@ export async function ensureSubfolder(id: SharedBlockSubfolder): Promise<string>
         Record<string, unknown> | undefined)?.version as string | undefined;
     }
     if (!versionId) {
-      const vRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=1`, {
+      const vRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=1`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (vRes.ok) {
@@ -362,7 +362,7 @@ export async function ensureSubfolder(id: SharedBlockSubfolder): Promise<string>
       }
     }
     if (versionId) {
-      await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${versionId}:publish`, {
+      await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${versionId}:publish`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -410,7 +410,7 @@ export async function migrateFlatSharedBlocksToSubfolders(): Promise<void> {
 
   const items: Array<{ key: string; contentType?: string }> = [];
   for (let pageIndex = 0; ; pageIndex++) {
-    const res = await fetch(`${CONTENT_ENDPOINT}/${blocksFolder}/items?pageSize=100&pageIndex=${pageIndex}`, {
+    const res = await apiFetch(`${CONTENT_ENDPOINT}/${blocksFolder}/items?pageSize=100&pageIndex=${pageIndex}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) break;
@@ -422,7 +422,7 @@ export async function migrateFlatSharedBlocksToSubfolders(): Promise<void> {
   let deleted = 0;
   for (const item of items) {
     if (!RELOCATED_BLOCK_TYPES.has(item.contentType ?? "")) continue;
-    const del = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
+    const del = await apiFetch(`${CONTENT_ENDPOINT}/${item.key}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
     });
@@ -438,7 +438,7 @@ export async function migrateFlatSharedBlocksToSubfolders(): Promise<void> {
  * the folder root).
  */
 async function listSubfolderKeys(token: string, parent: string): Promise<string[]> {
-  const res = await fetch(`${CONTENT_ENDPOINT}/${parent}/items?pageSize=100`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${parent}/items?pageSize=100`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return [];
@@ -478,7 +478,7 @@ export async function sweepMisplacedSharedBlocks(
     // Page through the full listing so items past the first page aren't missed.
     const items: Array<{ key: string; contentType?: string }> = [];
     for (let pageIndex = 0; ; pageIndex++) {
-      const res = await fetch(`${CONTENT_ENDPOINT}/${container}/items?pageSize=100&pageIndex=${pageIndex}`, {
+      const res = await apiFetch(`${CONTENT_ENDPOINT}/${container}/items?pageSize=100&pageIndex=${pageIndex}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) break;
@@ -488,7 +488,7 @@ export async function sweepMisplacedSharedBlocks(
     }
     for (const item of items) {
       if (!wanted.has(item.contentType ?? "")) continue;
-      const del = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
+      const del = await apiFetch(`${CONTENT_ENDPOINT}/${item.key}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
       });
@@ -526,7 +526,7 @@ export async function sweepSeededBlocks(
     // a single pageSize=100 fetch would miss our block if it sorts past page 1.
     const items: Array<{ key: string; contentType?: string }> = [];
     for (let pageIndex = 0; ; pageIndex++) {
-      const res = await fetch(`${CONTENT_ENDPOINT}/${container}/items?pageSize=100&pageIndex=${pageIndex}`, {
+      const res = await apiFetch(`${CONTENT_ENDPOINT}/${container}/items?pageSize=100&pageIndex=${pageIndex}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) break;
@@ -537,7 +537,7 @@ export async function sweepSeededBlocks(
 
     for (const item of items) {
       if (!wantedTypes.has(item.contentType ?? "")) continue;
-      const vRes = await fetch(`${CONTENT_ENDPOINT}/${item.key}/versions?pageSize=1`, {
+      const vRes = await apiFetch(`${CONTENT_ENDPOINT}/${item.key}/versions?pageSize=1`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       let displayName = "";
@@ -546,7 +546,7 @@ export async function sweepSeededBlocks(
         displayName = vData.items?.[0]?.displayName ?? "";
       }
       if (!wantedNames.has(displayName)) continue; // custom block (other name) - preserve
-      const del = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
+      const del = await apiFetch(`${CONTENT_ENDPOINT}/${item.key}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
       });
@@ -575,7 +575,7 @@ async function walkToGlobalRoot(token: string, startKey: string): Promise<string
   const seen = new Set<string>();
   for (let i = 0; i < 12 && key && !seen.has(key); i++) {
     seen.add(key);
-    const r = await fetch(`${CONTENT_ENDPOINT}/${key}`, { headers: { Authorization: `Bearer ${token}` } });
+    const r = await apiFetch(`${CONTENT_ENDPOINT}/${key}`, { headers: { Authorization: `Bearer ${token}` } });
     if (!r.ok) return "";
     const c = (await r.json()) as { container?: string };
     const parent = (c.container ?? "").replace(/-/g, "");
@@ -587,7 +587,7 @@ async function walkToGlobalRoot(token: string, startKey: string): Promise<string
 
 /** Point the given application's start page (entry point) at a content key. */
 async function patchEntryPoint(token: string, appKey: string, contentKey: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/v1/applications/${appKey}`, {
+  const res = await apiFetch(`${API_BASE}/v1/applications/${appKey}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/merge-patch+json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ entryPoint: `cms://content/${contentKey}` }),
@@ -624,7 +624,7 @@ async function patchEntryPoint(token: string, appKey: string, contentKey: string
 export async function ensureExperienceStartPage(): Promise<string> {
   const token = await getManagementToken();
 
-  const appsRes = await fetch(`${API_BASE}/v1/applications`, {
+  const appsRes = await apiFetch(`${API_BASE}/v1/applications`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!appsRes.ok) {
@@ -647,7 +647,7 @@ export async function ensureExperienceStartPage(): Promise<string> {
   // must be an existing DynamicExperience; we point the app start page at it.
   const envKey = (process.env.OPTIMIZELY_ROOT_CONTAINER ?? "").replace(/-/g, "");
   if (envKey) {
-    const cRes = await fetch(`${CONTENT_ENDPOINT}/${envKey}`, {
+    const cRes = await apiFetch(`${CONTENT_ENDPOINT}/${envKey}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!cRes.ok) {
@@ -674,7 +674,7 @@ export async function ensureExperienceStartPage(): Promise<string> {
   // a DynamicExperience, use it as-is (fresh or populated instance).
   let globalRoot = "";
   if (entryKey) {
-    const cRes = await fetch(`${CONTENT_ENDPOINT}/${entryKey}`, {
+    const cRes = await apiFetch(`${CONTENT_ENDPOINT}/${entryKey}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (cRes.ok) {
@@ -710,7 +710,7 @@ export async function ensureExperienceStartPage(): Promise<string> {
   // (from a prior recovery), so repeated recovery runs don't pile up duplicate start
   // pages. Otherwise create a fresh one.
   let newKey = "";
-  const itemsRes = await fetch(`${CONTENT_ENDPOINT}/${globalRoot}/items?pageSize=100`, {
+  const itemsRes = await apiFetch(`${CONTENT_ENDPOINT}/${globalRoot}/items?pageSize=100`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (itemsRes.ok) {
@@ -808,7 +808,7 @@ export async function createContent(
   if (container !== undefined) body.container = container;
   if (owner !== undefined)     body.owner     = owner;
 
-  const res = await fetch(CONTENT_ENDPOINT, {
+  const res = await apiFetch(CONTENT_ENDPOINT, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -839,7 +839,7 @@ export async function createContent(
     const inferredKey = body.key as string | undefined;
     if (!inferredKey) throw new Error(`POST ${context}: 201 with empty body and no key in request`);
     contentKey = inferredKey;
-    const vRes = await fetch(`${CONTENT_ENDPOINT}/${contentKey}/versions?pageSize=1`, {
+    const vRes = await apiFetch(`${CONTENT_ENDPOINT}/${contentKey}/versions?pageSize=1`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (vRes.ok) {
@@ -855,7 +855,7 @@ export async function createContent(
   }
 
   if (versionId && !options.skipPublish) {
-    const pubRes = await fetch(
+    const pubRes = await apiFetch(
       `${CONTENT_ENDPOINT}/${contentKey}/versions/${versionId}:publish`,
       {
         method: "POST",
@@ -888,14 +888,14 @@ export async function deleteAllInContainer(
   const token = await getManagementToken();
   const undeletable = new Map<string, string>();
 
-  const res = await fetch(`${CONTENT_ENDPOINT}/${container}/items`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${container}/items`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return undeletable;
 
   const data = (await res.json()) as { items?: Array<{ key: string }> };
   for (const item of data.items ?? []) {
-    const delRes = await fetch(`${CONTENT_ENDPOINT}/${item.key}`, {
+    const delRes = await apiFetch(`${CONTENT_ENDPOINT}/${item.key}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
     });
@@ -911,7 +911,7 @@ export async function deleteAllInContainer(
  */
 export async function deleteContentByKey(key: string): Promise<void> {
   const token = await getManagementToken();
-  await fetch(`${CONTENT_ENDPOINT}/${key}`, {
+  await apiFetch(`${CONTENT_ENDPOINT}/${key}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
   });
@@ -1014,7 +1014,7 @@ export async function patchContentProperties(
   const token = await getManagementToken();
 
   // Find the latest version for this locale (any status).
-  const vRes = await fetch(
+  const vRes = await apiFetch(
     `${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=1`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
@@ -1029,7 +1029,7 @@ export async function patchContentProperties(
 
   const { version } = versionItem;
 
-  const patchRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
+  const patchRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -1050,7 +1050,7 @@ export async function patchContentProperties(
   // Always republish after patching (original may have been draft or published).
   if (patched.status !== "published") {
     const vToPublish = patched.version ?? version;
-    const pubRes = await fetch(
+    const pubRes = await apiFetch(
       `${CONTENT_ENDPOINT}/${key}/versions/${vToPublish}:publish`,
       {
         method: "POST",
@@ -1159,7 +1159,7 @@ export async function pageRefForUrl(url: string): Promise<string> {
 /** True if a content item with this key currently resolves in the Management API. */
 export async function contentKeyExists(key: string): Promise<boolean> {
   const token = await getManagementToken();
-  const res = await fetch(`${CONTENT_ENDPOINT}/${key}`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${key}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.ok;
@@ -1191,7 +1191,7 @@ export async function findItemsInContainerByName(
   // first page (they'd never be cleaned up and would duplicate on every re-seed).
   const items: Array<{ key: string }> = [];
   for (let pageIndex = 0; ; pageIndex++) {
-    const res = await fetch(`${CONTENT_ENDPOINT}/${container}/items?pageSize=100&pageIndex=${pageIndex}`, {
+    const res = await apiFetch(`${CONTENT_ENDPOINT}/${container}/items?pageSize=100&pageIndex=${pageIndex}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) break;
@@ -1203,7 +1203,7 @@ export async function findItemsInContainerByName(
   const result: Array<{ key: string; displayName: string }> = [];
 
   for (const item of items) {
-    const vRes = await fetch(
+    const vRes = await apiFetch(
       `${CONTENT_ENDPOINT}/${item.key}/versions?pageSize=1`,
       { headers: { Authorization: `Bearer ${token}` } }
     );

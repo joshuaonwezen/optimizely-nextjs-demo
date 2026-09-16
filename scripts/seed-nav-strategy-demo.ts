@@ -1,7 +1,6 @@
 import { config } from "dotenv";
-import { randomUUID } from "crypto";
 import { getManagementToken } from "../src/lib/optimizely/auth";
-import { discoverRootContainer, wrapProps } from "./_shared";
+import { discoverRootContainer, noHyphens, wrapProps } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -11,10 +10,6 @@ let CONTAINER = process.env.OPTIMIZELY_ROOT_CONTAINER ?? "";
 
 const GRAPH_ENDPOINT = process.env.OPTIMIZELY_GRAPH_GATEWAY ?? "https://cg.optimizely.com/content/v2";
 const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
-
-function noHyphens(): string {
-  return randomUUID().replace(/-/g, "");
-}
 
 async function findKeyByUrl(url: string): Promise<string | null> {
   const query = `{ _Page(where:{_metadata:{url:{default:{eq:"${url}"}}}},limit:1) { items { _metadata { key } } } }`;

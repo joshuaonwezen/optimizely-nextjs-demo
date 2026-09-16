@@ -1,13 +1,5 @@
-import {
-  OptimizelyComposition,
-  getPreviewUtils,
-  type ComponentContainerProps,
-} from "@optimizely/cms-sdk/react/server";
-
-function ComponentWrapper({ children, node }: ComponentContainerProps) {
-  const { pa } = getPreviewUtils(node);
-  return <div {...pa(node)}>{children}</div>;
-}
+import { OptimizelyComposition, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { NodeWrapper } from "./CompositionExperience";
 
 // Three stacked compositions: topComposition (hero + sub-hero grid only),
 // middleComposition (open), and the experience's built-in composition as the
@@ -24,12 +16,12 @@ export default function ProductLandingExperience({ content }: { content: any }) 
   return (
     <div data-component="ProductLandingExperience">
       <div {...pa("topComposition")}>
-        <OptimizelyComposition nodes={top} ComponentWrapper={ComponentWrapper} />
+        <OptimizelyComposition nodes={top} ComponentWrapper={NodeWrapper} />
       </div>
       <div {...pa("middleComposition")}>
-        <OptimizelyComposition nodes={middle} ComponentWrapper={ComponentWrapper} />
+        <OptimizelyComposition nodes={middle} ComponentWrapper={NodeWrapper} />
       </div>
-      <OptimizelyComposition nodes={bottom} ComponentWrapper={ComponentWrapper} />
+      <OptimizelyComposition nodes={bottom} ComponentWrapper={NodeWrapper} />
     </div>
   );
 }

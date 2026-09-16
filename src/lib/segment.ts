@@ -1,11 +1,12 @@
 import { useSyncExternalStore } from "react";
+import { readCookie } from "@/lib/tracking/cookies";
 
 // Browsing-derived audience segment. Reuses the existing `persona` FX attribute
 // (the middleware, visitor.ts, useFxDecision and FxBucketingEvent all read the
 // `demo_persona` cookie into `persona`), so nothing else needs new wiring: as the
 // visitor browses a section we set demo_persona and FX serves the matching homepage
 // variation. `new_visitor` is the default before any section has been visited.
-export const PERSONA_SEGMENTS = [
+const PERSONA_SEGMENTS = [
   "personal",
   "business",
   "mortgages",
@@ -73,7 +74,7 @@ export function personaFromPath(pathname: string | null | undefined): Persona | 
 // mirrored from it so the edge middleware / server can read it. The cookie is
 // session-scoped (no Max-Age) to match sessionStorage - a new browser session
 // resets to new_visitor.
-export const SEGMENT_STORAGE_KEY = "mb_segment";
+const SEGMENT_STORAGE_KEY = "mb_segment";
 const SEGMENT_EVENT = "mb:segment";
 
 const listeners = new Set<() => void>();
@@ -126,11 +127,6 @@ export function clearSegment(): void {
   window.dispatchEvent(new CustomEvent(SEGMENT_EVENT, { detail: "new_visitor" }));
 }
 
-function getCookie(name: string): string {
-  if (typeof document === "undefined") return "";
-  return document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))?.[1] ?? "";
-}
-
 // Reconciles sessionStorage (per-tab source of truth) with the demo_persona
 // cookie (per browser session) on mount. If this tab has no stored segment yet
 // but a segment cookie exists (e.g. opened from another tab in the same session),
@@ -145,12 +141,12 @@ export function reconcileSegment(): void {
     /* storage unavailable */
   }
   if (stored && isPersona(stored)) {
-    if (getCookie("demo_persona") !== stored) {
+    if (readCookie("demo_persona") !== stored) {
       document.cookie = `demo_persona=${stored}; Path=/; SameSite=Lax`;
     }
     return;
   }
-  const cookie = getCookie("demo_persona");
+  const cookie = readCookie("demo_persona");
   if (cookie && isPersona(cookie)) writeSegment(cookie);
 }
 

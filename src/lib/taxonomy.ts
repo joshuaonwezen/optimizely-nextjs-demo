@@ -190,7 +190,7 @@ export function rollUpCounts(
 export const INTERNAL_ROOT_KEYS = ["lifecycle"];
 
 /** Walks up the parent chain and returns the key of the term's root ancestor. */
-export function rootKeyOf(terms: TaxonomyTermMeta[], key: string): string {
+function rootKeyOf(terms: TaxonomyTermMeta[], key: string): string {
   const byKey = new Map(terms.map((t) => [t.key, t]));
   let current = byKey.get(key);
   const seen = new Set<string>();
@@ -204,7 +204,7 @@ export function rootKeyOf(terms: TaxonomyTermMeta[], key: string): string {
 }
 
 /** True when a term is safe to show to a site visitor. */
-export function isPublicTerm(terms: TaxonomyTermMeta[], keyOrUri: string): boolean {
+function isPublicTerm(terms: TaxonomyTermMeta[], keyOrUri: string): boolean {
   const key = toTermKey(keyOrUri);
   const term = terms.find((t) => t.key === key);
   if (term?.usage === "Internal") return false;

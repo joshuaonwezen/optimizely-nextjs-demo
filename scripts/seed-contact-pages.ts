@@ -17,9 +17,9 @@
  */
 
 import { config } from "dotenv";
-import { randomUUID } from "crypto";
 import {
   uid,
+  noHyphens,
   stableKey,
   createContent,
   ensureSubfolder,
@@ -35,10 +35,6 @@ import {
 } from "./_shared";
 
 config({ path: ".env.local" });
-
-function noHyphens(): string {
-  return randomUUID().replace(/-/g, "");
-}
 
 const CONTACT_KEY = stableKey("mb-page", "help/contact");
 const HELP_KEY    = stableKey("mb-page", "help");

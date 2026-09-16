@@ -6,6 +6,7 @@ import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { CACHE_TTL } from "@/lib/optimizely/client";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { extractKey, type ContentRef } from "../_shared/contentRefs";
 
 export const TeamGridBlockType = contentType({
   key: "TeamGridBlock",
@@ -35,12 +36,6 @@ export const TeamGridBlockDefaultTemplate = displayTemplate({
   },
 });
 
-// See TimelineBlock for the three shapes Graph returns for contentReference
-// arrays. extractKey unifies them.
-type MemberRef =
-  | string
-  | { key?: string | null; _metadata?: { key?: string | null } | null };
-
 interface MemberData {
   __typename?: string;
   _metadata?: { key?: string | null } | null;
@@ -54,17 +49,9 @@ interface MemberData {
 interface TeamGridData {
   heading?:    string | null;
   subheading?: string | null;
-  members?:    Array<MemberRef | null> | null;
+  // contentReference arrays arrive in three shapes - see ContentRef.
+  members?:    Array<ContentRef | null> | null;
   __context?: { edit?: boolean } | null;
-}
-
-function extractKey(ref: MemberRef | null | undefined): string | null {
-  if (!ref) return null;
-  if (typeof ref === "string") {
-    const m = /cms:\/\/content\/([a-f0-9-]+)/i.exec(ref);
-    return m?.[1] ?? null;
-  }
-  return ref.key ?? ref._metadata?.key ?? null;
 }
 
 type TeamGridBlockProps = TeamGridData & {
