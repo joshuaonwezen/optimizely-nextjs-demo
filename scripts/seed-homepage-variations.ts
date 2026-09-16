@@ -25,7 +25,7 @@
 
 import { config } from "dotenv";
 import { getManagementToken } from "../src/lib/optimizely/auth";
-import { discoverRootContainer, uid, wrapProps, pageRefForUrl } from "./_shared";
+import { discoverRootContainer, uid, wrapProps, pageRefForUrl, apiFetch } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -160,7 +160,7 @@ function heroComponent(
 }
 
 async function detectHeroType(token: string): Promise<"Hero" | "HeroBlock"> {
-  const res = await fetch(`${API_BASE}/v1/contenttypes/Hero`, {
+  const res = await apiFetch(`${API_BASE}/v1/contenttypes/Hero`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.ok ? "Hero" : "HeroBlock";
@@ -596,7 +596,7 @@ async function findHomepageKey(): Promise<string | null> {
     }
   }`;
   try {
-    const res = await fetch(GRAPH_ENDPOINT, {
+    const res = await apiFetch(GRAPH_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
       body: JSON.stringify({ query }),
@@ -633,7 +633,7 @@ async function createVariation(
   };
 
   // Attempt 1: POST a new content item with variation field inside initialVersion.
-  const res1 = await fetch(CONTENT_ENDPOINT, {
+  const res1 = await apiFetch(CONTENT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({
@@ -652,7 +652,7 @@ async function createVariation(
     const result = await res1.json() as Record<string, unknown>;
     const versionId = ((result.initialVersion as Record<string, unknown> | undefined)?.version) as string | undefined;
     if (versionId) {
-      await fetch(`${CONTENT_ENDPOINT}/${result.key as string}/versions/${versionId}:publish`, {
+      await apiFetch(`${CONTENT_ENDPOINT}/${result.key as string}/versions/${versionId}:publish`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -667,7 +667,7 @@ async function createVariation(
   // Attempt 2: List all versions and find the one whose variation name matches.
   // This works when the variation was created in Visual Builder (each named variation
   // creates its own version). List up to 50 versions and match by the variation field.
-  const vRes = await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/locales/en?pageSize=50`, {
+  const vRes = await apiFetch(`${CONTENT_ENDPOINT}/${homepageKey}/locales/en?pageSize=50`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   type VersionItem = { version?: string; variation?: string; status?: string };
@@ -689,7 +689,7 @@ async function createVariation(
   console.log(`  [found] version ${versionId} (variation="${variation.variationKey}", status=${matched?.status})`);
 
 
-  const res2 = await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/versions/${versionId}`, {
+  const res2 = await apiFetch(`${CONTENT_ENDPOINT}/${homepageKey}/versions/${versionId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/merge-patch+json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ displayName: variation.displayName, composition }),
@@ -701,7 +701,7 @@ async function createVariation(
     const publishVersion = (patched.version as string | undefined) ?? versionId;
     const patchedStatus = patched.status as string | undefined;
     if (!patchedStatus || patchedStatus !== "published") {
-      const pubRes = await fetch(`${CONTENT_ENDPOINT}/${homepageKey}/versions/${publishVersion}:publish`, {
+      const pubRes = await apiFetch(`${CONTENT_ENDPOINT}/${homepageKey}/versions/${publishVersion}:publish`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });

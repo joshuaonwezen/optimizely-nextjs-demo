@@ -37,7 +37,7 @@ async function fetchPages(): Promise<PageRow[]> {
   let cursor: string | undefined;
 
   for (;;) {
-    const res = await fetch(GRAPH_ENDPOINT, {
+    const res = await apiFetch(GRAPH_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

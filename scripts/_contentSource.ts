@@ -7,6 +7,7 @@
 // Optimizely) - surfaced loudly, not thrown, so callers stay optional-friendly.
 
 import { config } from "dotenv";
+import { apiFetch } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -53,7 +54,7 @@ async function registerType(opts: SeedExternalSourceOptions, auth: string): Prom
     preset: "next",
     useTypedFieldNames: true,
   };
-  const res = await fetch(`${GRAPH_BASE}/api/content/v3/types?id=${opts.sourceId}`, {
+  const res = await apiFetch(`${GRAPH_BASE}/api/content/v3/types?id=${opts.sourceId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", Authorization: auth },
     body: JSON.stringify(body),
@@ -78,7 +79,7 @@ async function pushData(opts: SeedExternalSourceOptions, auth: string): Promise<
       Language: { DisplayName: "English", Name: "en" },
     }));
   }
-  const res = await fetch(`${GRAPH_BASE}/api/content/v2/data?id=${opts.sourceId}`, {
+  const res = await apiFetch(`${GRAPH_BASE}/api/content/v2/data?id=${opts.sourceId}`, {
     method: "POST",
     headers: { "Content-Type": "text/plain", "og-job-id": `seed-${opts.sourceId}-${Date.now()}`, Authorization: auth },
     body: lines.join("\n"),
@@ -89,7 +90,7 @@ async function pushData(opts: SeedExternalSourceOptions, auth: string): Promise<
 }
 
 async function countIndexed(typeName: string, singleKey: string): Promise<number> {
-  const res = await fetch(GRAPH_GATEWAY, {
+  const res = await apiFetch(GRAPH_GATEWAY, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${singleKey}` },
     body: JSON.stringify({ query: `query{ ${typeName}(limit: 1){ total } }` }),
@@ -102,7 +103,7 @@ async function countIndexed(typeName: string, singleKey: string): Promise<number
 async function deleteSource(sourceId: string, auth: string): Promise<void> {
   // id is ALWAYS explicit - an empty id deletes ALL sources.
   if (!sourceId) throw new Error("refusing to DELETE with empty sourceId (would delete ALL sources)");
-  const res = await fetch(`${GRAPH_BASE}/api/content/v3/sources?id=${sourceId}`, {
+  const res = await apiFetch(`${GRAPH_BASE}/api/content/v3/sources?id=${sourceId}`, {
     method: "DELETE",
     headers: { Authorization: auth },
   });

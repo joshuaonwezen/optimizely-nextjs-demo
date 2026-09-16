@@ -1,6 +1,6 @@
 import { config } from "dotenv";
 import { getManagementToken } from "../src/lib/optimizely/auth";
-import { discoverRootContainer, noHyphens, wrapProps } from "./_shared";
+import { discoverRootContainer, noHyphens, wrapProps, apiFetch } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -13,7 +13,7 @@ const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 
 async function findKeyByUrl(url: string): Promise<string | null> {
   const query = `{ _Page(where:{_metadata:{url:{default:{eq:"${url}"}}}},limit:1) { items { _metadata { key } } } }`;
-  const res = await fetch(GRAPH_ENDPOINT, {
+  const res = await apiFetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
     body: JSON.stringify({ query }),
@@ -24,7 +24,7 @@ async function findKeyByUrl(url: string): Promise<string | null> {
 }
 
 async function softDelete(key: string, token: string): Promise<void> {
-  const res = await fetch(`${CONTENT_ENDPOINT}/${key}`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${key}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
   });
@@ -46,7 +46,7 @@ async function createItem(body: Record<string, unknown>, token: string, label: s
   if (key !== undefined)       reqBody.key       = key;
   if (container !== undefined) reqBody.container = container;
 
-  const res = await fetch(CONTENT_ENDPOINT, {
+  const res = await apiFetch(CONTENT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify(reqBody),
@@ -64,7 +64,7 @@ async function createItem(body: Record<string, unknown>, token: string, label: s
     // v1 API returns 201 with no body - look up the version separately
     if (!inferredKey) return null;
     contentKey = inferredKey;
-    const vRes = await fetch(`${CONTENT_ENDPOINT}/${contentKey}/versions?pageSize=1`, {
+    const vRes = await apiFetch(`${CONTENT_ENDPOINT}/${contentKey}/versions?pageSize=1`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (vRes.ok) {
@@ -78,7 +78,7 @@ async function createItem(body: Record<string, unknown>, token: string, label: s
   }
 
   if (versionId) {
-    await fetch(`${CONTENT_ENDPOINT}/${contentKey}/versions/${versionId}:publish`, {
+    await apiFetch(`${CONTENT_ENDPOINT}/${contentKey}/versions/${versionId}:publish`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });

@@ -91,7 +91,7 @@ cp .env.example .env.local
 # 3. Push content types to CMS
 npm run opti:push
 
-# 4. Seed everything (schema push + content + nav + modeling demo + webhook)
+# 4. Seed everything (schema push + content + nav + modeling demo)
 npm run seed:all
 
 # 5. Start the dev server
@@ -115,9 +115,11 @@ Copy `.env.example` to `.env.local` and fill in the values. Never commit `.env.l
 | `OPTIMIZELY_CMS_CLIENT_ID` | Management API client ID (used by seed scripts) |
 | `OPTIMIZELY_CMS_CLIENT_SECRET` | Management API client secret |
 | `OPTIMIZELY_ROOT_CONTAINER` | Key of the root CMS container for seeded content (create manually in CMS UI) |
-| `OPTIMIZELY_PREVIEW_SECRET` | Secret token for draft/preview mode |
-| `OPTIMIZELY_REVALIDATE_SECRET` | Shared secret for the `/api/revalidate` and `/api/publish` webhook endpoints |
-| `OPTIMIZELY_FX_SDK_KEY` | Feature Experimentation SDK key |
+| `OPTIMIZELY_PREVIEW_SECRET` | Signs external preview links (`/preview/share`); unset disables the feature |
+| `NEXT_PUBLIC_SITE_URL` | Absolute origin for `sitemap.xml` / `robots.txt` (optional) |
+| `OPTIMIZELY_REVALIDATE_SECRET` | Shared secret for the `/api/webhooks`, `/api/revalidate` and `/api/publish` endpoints |
+| `OPTIMIZELY_FX_SDK_KEY` | Feature Experimentation SDK key (server) |
+| `NEXT_PUBLIC_OPTIMIZELY_FX_SDK_KEY` | Same key for client-side flag decisions |
 | `NEXT_PUBLIC_OPTIMIZELY_WEB_SNIPPET_ID` | Web Experimentation snippet project ID (optional - defaults to the demo project) |
 | `NEXT_PUBLIC_OPTIMIZELY_ODP_TRACKER_ID` | ODP public tracker ID for the client-side tag (optional - defaults to the demo tracker) |
 
@@ -134,7 +136,7 @@ npm run opti:login       # Authenticate with the CMS CLI
 npm run opti:push        # Push content type schema to CMS
 
 # Content seeding
-npm run seed:all         # One-shot: schema push + all content + webhook (recommended)
+npm run seed:all         # One-shot: schema push + all content (recommended; webhook is separate)
 npm run seed             # Seed page content (home, about, product pages)
 npm run seed:nav         # Seed navigation structure + TraditionalPage leaf pages
 npm run seed:modeling    # Seed content modeling demo (articles, case studies, team, pricing, etc.)
@@ -170,7 +172,7 @@ src/
     demo/                27 annotated SDK demo pages (read-only, do not edit content)
 
   components/
-    blocks/              One directory per block - index.tsx (type + component) + *.fragment.ts
+    blocks/              One directory per block - index.tsx (type + templates + component)
     layout/              NavigationHeader, Footer, GlobalBanner
 
   lib/
@@ -178,25 +180,26 @@ src/
       client.ts          GRAPH_ENDPOINT + CACHE_TTL, the shared 1-hour TTL constant
       graphClient.ts     graphClient() - a guaranteed-configured getClient(); use in anything reachable from layout.tsx
       auth.ts            OAuth token cache for Management API
-      experimentation.ts FX SDK wrapper (getOptimizelyClient, getDecision)
+      experimentation.ts FX SDK wrapper (getOptimizelyClient)
+      fxAttributes.ts    Visitor attributes shared by middleware, server and browser FX decisions
       visitor.ts         getVisitorContext() - reads userId, device, persona, logged_in from cookies
       user.ts            getOptimizelyUser() - request-scoped FX user context via React cache()
       componentRegistry.ts Registers all content types and React components with the CMS SDK
     graphql/
-      queries/           Named Graph queries with ISR tags and fallback data
+      queries/           Named Graph queries in "use cache" functions, with fallback data
 
 scripts/
   seed-*.ts              Management API content creation scripts
   seed-quotes.ts         Content Source API (external data sync, not Management API)
   register-webhook.mjs   Registers /api/webhooks with the Graph webhook API
+  maintenance/           One-off repair and diagnostic scripts (see its README)
 ```
 
 ## Adding a new block
 
-1. `src/components/blocks/<Name>/index.tsx` - export `NameType` (contentType definition) + default React component
-2. `src/components/blocks/<Name>/Name.fragment.ts` - GraphQL fragment, co-located with the block component
-3. `src/lib/optimizely/componentRegistry.ts` - three edits: import the block and its type, add `NameType` to `initContentTypeRegistry([...])`, add `Name` to `initReactComponentRegistry({ resolver: { ... } })`
-4. `npm run opti:push` - push the updated schema to CMS
+1. `src/components/blocks/<Name>/index.tsx` - export one `NameType` (contentType definition), its display templates, and the React component as the default export
+2. `src/lib/optimizely/componentRegistry.ts` - `import * as NameModule from "@/components/blocks/<Name>"` and add `NameModule` to `BLOCK_MODULES`
+3. `npm run opti:push` - push the updated schema to every CMS instance
 
 ## Caching
 
@@ -207,7 +210,7 @@ Two independent cache layers sit between a CMS publish and a user seeing fresh c
 | Next.js data cache | `cacheTag()` / `cacheLife()` in a `"use cache"` function, or `next.revalidate` / `tags` on a direct `fetch()` | `revalidatePath` / `revalidateTag` via webhooks |
 | Graph CDN cache | Optimizely infrastructure | `?cache=false` on the endpoint URL, or `{ cache: false }` in SDK methods |
 
-The catch-all CMS page route (`[[...slug]]`) uses ISR: it exports `revalidate = 3600` and tags its Graph requests with `next: { revalidate: CACHE_TTL, tags: ["page"] }`. Pages serve from cache for up to an hour and revalidate immediately when the publish webhook calls `revalidateTag("page")`.
+The catch-all CMS page route (`[[...slug]]`) uses ISR: it exports `revalidate = 3600`, and its Graph lookups run in `"use cache"` functions tagged `CACHE_TAGS.page` (the SDK client does not forward `next: { revalidate, tags }` to fetch, so the cache boundary is the function). Pages serve from cache for up to an hour and revalidate immediately when the publish webhook revalidates the tags. A failed Graph query is cached for only 30 seconds (`cachedQueryFailed` in `src/lib/optimizely/cacheProfile.ts`).
 
 Other ISR content (navigation, banners, etc.) uses the same tag-based revalidation via the `/api/webhooks` endpoint, which Optimizely Graph calls on every `bulk.completed`, `doc.updated`, and `doc.expired` event.
 

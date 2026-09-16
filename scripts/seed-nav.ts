@@ -228,7 +228,7 @@ async function fetchPageKeyMap(): Promise<Map<string, string>> {
       }
     }
   `;
-  const res = await fetch(GRAPH_ENDPOINT, {
+  const res = await apiFetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
     body: JSON.stringify({ query }),

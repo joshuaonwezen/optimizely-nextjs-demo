@@ -73,7 +73,7 @@ export async function queryAllQualifiedSegments(userId: string, fresh = false): 
 
 // The explicit contract between ODP audience identifiers and CMS variation names.
 // This is the only place to update when either side renames something. Keys are the exact
-// ODP audience `name` (case-sensitive - list them with `npx tsx scripts/test-odp.ts`);
+// ODP audience `name` (case-sensitive - list them with `npx tsx scripts/maintenance/test-odp.ts`);
 // values are the CMS variation names, which must match the homepage CMS Variations exactly.
 //
 // Today the two sides are named differently (`business_banking_customer` -> `business`), so an
@@ -81,11 +81,11 @@ export async function queryAllQualifiedSegments(userId: string, fresh = false): 
 // `business`), you can leave the value blank ("") - resolveVariationKey falls back to the
 // audience name itself, so identical naming needs no paired value. Either style works.
 //
-// The homepage in the CMS carries four variations: business, personal, mortgages, investments.
-// ODP only has audiences for business/personal, so only those two resolve today. Mortgages and
-// investments are seeded in the CMS but have no backing ODP audience yet - the variation exists
-// but is never selected. That "half-configured" state is intentional (see below); create the
-// audiences in ODP and add their identifiers here to light them up.
+// The homepage in the CMS carries variations for returning, business, personal, mortgages and
+// investments. Every one except investments has a backing ODP audience or segment below; the
+// investments variation is seeded in the CMS but never selected until an audience exists. That
+// "half-configured" state is intentional - create the audience in ODP and add its identifier
+// here to light it up.
 export const ODP_SEGMENT_TO_VARIATION: Record<string, string> = {
   // Identity / lifecycle (cross-session). Qualifying on mb_customer_identified (has_email=true)
   // means we recognise a known customer on a later visit - serve the welcome-back experience.

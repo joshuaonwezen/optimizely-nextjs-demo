@@ -1,6 +1,6 @@
 // Product Landing (ProductLandingExperience + ArticleListBlock) is rolled out per
-// CMS instance: the instance must support `type: "composition"` properties - apjCMS
-// does not - and the types must have been pushed there
+// CMS instance: the instance must support `type: "composition"` properties (apjCMS
+// only gained that on 2026-09-16) - and the types must have been pushed there
 // (scripts/push-product-landing-types.ts) and picked up by Graph's schema sync.
 //
 // Registering the types against an instance whose Graph does not have them yet adds

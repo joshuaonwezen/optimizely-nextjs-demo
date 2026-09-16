@@ -18,7 +18,7 @@
  */
 
 import { config } from "dotenv";
-import { uid, wrapProps, getManagementToken, CONTENT_ENDPOINT, GRAPH_ENDPOINT, SINGLE_KEY } from "./_shared";
+import { uid, wrapProps, GRAPH_ENDPOINT, SINGLE_KEY, apiFetch, publishComposition } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -89,7 +89,7 @@ async function discoverFormKey(): Promise<string | null> {
   const envKey = (process.env.OPTIMIZELY_CONTACT_FORM_KEY ?? "").replace(/-/g, "");
   if (envKey) return envKey;
   const query = `{ OptiFormsContainerData(limit: 5) { items { _metadata { key displayName } } } }`;
-  const res = await fetch(GRAPH_ENDPOINT, {
+  const res = await apiFetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
     body: JSON.stringify({ query }),
@@ -114,48 +114,18 @@ async function main() {
   }
   console.log(`  form block key: ${key}`);
 
-  const token = await getManagementToken();
-
-  // Create a fresh draft of the form block (published versions can't be patched).
-  await fetch(`${CONTENT_ENDPOINT}/${key}/versions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ locale: "en", displayName: "Shared Form Container" }),
-  }).then((r) => r.text());
-
-  const vd = (await (
-    await fetch(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=30`, { headers: { Authorization: `Bearer ${token}` } })
-  ).json()) as { items?: Array<{ version?: string; status?: string }> };
-  const version = (vd.items ?? [])
-    .filter((i) => i.status === "draft" && i.version)
-    .sort((a, b) => Number(b.version) - Number(a.version))[0]?.version;
-  if (!version) throw new Error(`Could not find a draft version for ${key}`);
-  console.log(`  draft version: ${version}`);
-
-  const patchRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/merge-patch+json" },
-    body: JSON.stringify({
-      properties: wrapProps({
-        Title: "Send us a message",
-        Description: "Have a question or need help with your account? We'll reply within one business day.",
-        SubmitUrl: "/api/form-submit",
-        SubmitConfirmationMessage: "Thank you! We'll be in touch within one business day.",
-      }),
-      composition: buildComposition(),
+  // Shared block: no routeSegment. The draft starts without properties, so the
+  // container's own fields are patched together with the composition.
+  const version = await publishComposition(key, buildComposition(), {
+    displayName: "Shared Form Container",
+    properties: wrapProps({
+      Title: "Send us a message",
+      Description: "Have a question or need help with your account? We'll reply within one business day.",
+      SubmitUrl: "/api/form-submit",
+      SubmitConfirmationMessage: "Thank you! We'll be in touch within one business day.",
     }),
   });
-  if (!patchRes.ok) {
-    throw new Error(`PATCH form block composition: ${patchRes.status} ${(await patchRes.text()).slice(0, 600)}`);
-  }
-  console.log("  patched composition with 5 native form elements");
-
-  const pubRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}:publish`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!pubRes.ok) throw new Error(`Publish: ${pubRes.status} ${(await pubRes.text()).slice(0, 300)}`);
-  console.log(`  published version ${version}`);
+  console.log(`  published version ${version} with 5 native form elements`);
 
   console.log("\nDone - form block built out. The /en/help/contact reference picks it up after ~30-60s Graph reindex.");
 }

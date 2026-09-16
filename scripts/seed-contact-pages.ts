@@ -7,8 +7,10 @@
  * On re-runs the block is swept and recreated; the page composition is patched
  * each time so both form sections stay current.
  *
- * If the contact page was previously a TraditionalPage (legacy seed), it is
- * permanently deleted and replaced with a DynamicExperience at the same route.
+ * If the contact page key is already another type (seed-content creates it as a
+ * TraditionalPage), it is left untouched: a permanently deleted key stays reserved,
+ * so it cannot be recreated as an experience. seed-contact-form.ts builds the
+ * experience page that shows both forms.
  *
  * Also creates/updates a "Contact (Classic)" TraditionalPage at
  * /en/help/contact-classic that carries the custom form via featuredBlock.
@@ -27,11 +29,13 @@ import {
   findPageKeyByUrl,
   patchPublishedPageProperties,
   sweepMisplacedSharedBlocks,
-  deleteContentByKey,
   getManagementToken,
   CONTENT_ENDPOINT,
+  publishComposition,
+  wrapProps,
   GRAPH_ENDPOINT,
   SINGLE_KEY,
+  apiFetch,
 } from "./_shared";
 
 config({ path: ".env.local" });
@@ -44,7 +48,7 @@ async function findNativeFormKey(): Promise<string | null> {
   const envKey = (process.env.OPTIMIZELY_CONTACT_FORM_KEY ?? "").replace(/-/g, "");
   if (envKey) return envKey;
   const query = `{ OptiFormsContainerData(limit: 5) { items { _metadata { key displayName } } } }`;
-  const res = await fetch(GRAPH_ENDPOINT, {
+  const res = await apiFetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
     body: JSON.stringify({ query }),
@@ -59,16 +63,25 @@ async function findNativeFormKey(): Promise<string | null> {
   return items[0]._metadata?.key ?? null;
 }
 
+const CONTACT_META = {
+  metaTitle: "Contact Us | Mosey Bank",
+  metaDescription:
+    "Get in touch with Mosey Bank via in-app chat, phone, or our online form. Real people, seven days a week.",
+};
+
 /**
- * Ensure the contact page exists as a DynamicExperience.
- * Deletes any existing TraditionalPage at the same stable key so the
- * DynamicExperience can be created at the same route.
+ * Ensure the contact page exists as a DynamicExperience. Returns false (and leaves
+ * the page alone) when another type already owns the key - seed-content creates
+ * /help/contact as a TraditionalPage, and a permanently deleted key stays reserved
+ * in the CMS, so deleting it to recreate an experience at the same key cannot work
+ * and would lose the page. The combined custom + native form page is
+ * seed-contact-form.ts's "Contact (Form)" experience instead.
  */
-async function ensureContactExperience(): Promise<void> {
+async function ensureContactExperience(): Promise<boolean> {
   const token = await getManagementToken();
 
   // Check what type the existing page is (if it exists).
-  const checkRes = await fetch(`${CONTENT_ENDPOINT}/${CONTACT_KEY}`, {
+  const checkRes = await apiFetch(`${CONTENT_ENDPOINT}/${CONTACT_KEY}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -76,11 +89,13 @@ async function ensureContactExperience(): Promise<void> {
     const data = (await checkRes.json()) as { contentType?: string };
     if (data.contentType === "DynamicExperience") {
       console.log(`  [exists] Contact page is already a DynamicExperience - skipping recreation`);
-      return;
+      return true;
     }
-    // TraditionalPage (or any other type): delete it so we can recreate as DynamicExperience.
-    console.log(`  [migrate] Deleting legacy ${data.contentType ?? "page"} at key=${CONTACT_KEY}`);
-    await deleteContentByKey(CONTACT_KEY);
+    console.warn(
+      `  [skip] Contact page key=${CONTACT_KEY} is a ${data.contentType ?? "different type"}, not a DynamicExperience - ` +
+        "leaving it as is (see seed-contact-form.ts for the page with both forms)"
+    );
+    return false;
   }
 
   // Create the DynamicExperience (empty composition — patched below).
@@ -92,47 +107,24 @@ async function ensureContactExperience(): Promise<void> {
       locale: "en",
       displayName: "Contact Us",
       routeSegment: "contact",
-      properties: {
-        metaTitle: "Contact Us | Mosey Bank",
-        metaDescription:
-          "Get in touch with Mosey Bank via in-app chat, phone, or our online form. Real people, seven days a week.",
-      },
+      properties: CONTACT_META,
     },
     "Contact Us page"
   );
   console.log(`  [created] Contact Us DynamicExperience → key=${CONTACT_KEY}`);
+  return true;
 }
 
 /** Patch the contact DynamicExperience composition with form sections and publish. */
 async function patchContactComposition(blockKey: string, nativeFormKey: string | null): Promise<void> {
-  const token = await getManagementToken();
-
-  // Create a fresh draft (the published version cannot be patched directly).
-  await fetch(`${CONTENT_ENDPOINT}/${CONTACT_KEY}/versions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ locale: "en", displayName: "Contact Us", routeSegment: "contact" }),
-  }).then((r) => r.text());
-
-  const vd = (await (
-    await fetch(`${CONTENT_ENDPOINT}/${CONTACT_KEY}/versions?pageSize=30`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json()) as { items?: Array<{ version?: string; status?: string }> };
-
-  const version = (vd.items ?? [])
-    .filter((i) => i.status === "draft" && i.version)
-    .sort((a, b) => Number(b.version) - Number(a.version))[0]?.version;
-
-  if (!version) throw new Error(`Could not find a draft version for contact page key=${CONTACT_KEY}`);
-  console.log(`  [draft] version ${version}`);
-
-  // Build composition: custom form first, native form second (if available).
+  // Custom form first, native form second (if available). A sectionEnabled
+  // _component sits at the experience root as a "component" node; only true
+  // _section types (the native form container) can be "section" nodes.
   const nodes = [
     {
       id: uid(),
       displayName: "Contact Form",
-      nodeType: "section",
+      nodeType: "component",
       component: { reference: `cms://content/${blockKey}` },
     },
     ...(nativeFormKey
@@ -148,29 +140,14 @@ async function patchContactComposition(blockKey: string, nativeFormKey: string |
       : []),
   ];
 
-  const composition = {
-    id: uid(),
-    displayName: "Contact Us",
-    nodeType: "experience",
-    layoutType: "outline",
-    nodes,
-  };
-
-  const patchRes = await fetch(`${CONTENT_ENDPOINT}/${CONTACT_KEY}/versions/${version}`, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/merge-patch+json" },
-    body: JSON.stringify({ composition }),
-  });
-  if (!patchRes.ok) {
-    throw new Error(`PATCH composition: ${patchRes.status} ${(await patchRes.text()).slice(0, 400)}`);
-  }
-
-  const pubRes = await fetch(`${CONTENT_ENDPOINT}/${CONTACT_KEY}/versions/${version}:publish`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!pubRes.ok) throw new Error(`Publish: ${pubRes.status} ${(await pubRes.text()).slice(0, 300)}`);
-  console.log(`  [patched] Contact page composition - ${nodes.length} form section(s), published`);
+  const version = await publishComposition(
+    CONTACT_KEY,
+    { id: uid(), displayName: "Contact Us", nodeType: "experience", layoutType: "outline", nodes },
+    // A new draft starts without properties; carry the SEO fields so publishing
+    // doesn't wipe them.
+    { displayName: "Contact Us", routeSegment: "contact", properties: wrapProps(CONTACT_META) }
+  );
+  console.log(`  [patched] Contact page composition - ${nodes.length} form section(s), published version ${version}`);
 }
 
 async function main() {
@@ -208,8 +185,9 @@ async function main() {
   if (!nativeFormKey) {
     console.log("  [info] No native OptiFormsContainerData found in Graph - contact page will have 1 form section (custom only)");
   }
-  await ensureContactExperience();
-  await patchContactComposition(blockKey, nativeFormKey);
+  if (await ensureContactExperience()) {
+    await patchContactComposition(blockKey, nativeFormKey);
+  }
 
   // Step 3: create/update the Contact (Classic) TraditionalPage at /en/help/contact-classic.
   const existingPageKey = await findPageKeyByUrl(["/en/help/contact-classic", "/en/help/contact-classic/"]);

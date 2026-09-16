@@ -9,10 +9,10 @@
 import { config } from "dotenv";
 import { execSync } from "child_process";
 import { getManagementToken } from "../src/lib/optimizely/auth";
+import { API_BASE, apiFetch } from "./_shared";
 
 config({ path: ".env.local" });
 
-const API_BASE = "https://api.cms.optimizely.com";
 const TYPES_ENDPOINT = `${API_BASE}/v1/contenttypes`;
 const CONTENT_ENDPOINT = `${API_BASE}/v1/content`;
 
@@ -189,7 +189,7 @@ function isKeyInSource(key: string): boolean {
 }
 
 async function deleteItem(token: string, key: string, label: string): Promise<"deleted" | "gone" | "error"> {
-  const res = await fetch(`${CONTENT_ENDPOINT}/${key}?permanent=true`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${key}?permanent=true`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -211,7 +211,7 @@ async function deleteItem(token: string, key: string, label: string): Promise<"d
 async function cleanupContentTypes(token: string): Promise<void> {
   console.log("--- Part 1: Content type audit ---");
 
-  const listRes = await fetch(TYPES_ENDPOINT, {
+  const listRes = await apiFetch(TYPES_ENDPOINT, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!listRes.ok) {
@@ -259,7 +259,7 @@ async function cleanupContentTypes(token: string): Promise<void> {
   console.log(`  Removing ${safeToDelete.length} unused type(s):`);
   const needsRecycleBinClear: string[] = [];
   for (const type of safeToDelete) {
-    const res = await fetch(`${TYPES_ENDPOINT}/${type.key}`, {
+    const res = await apiFetch(`${TYPES_ENDPOINT}/${type.key}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -314,7 +314,7 @@ async function cleanupDisplayTemplates(token: string): Promise<void> {
   console.log("--- Part 3: Display template audit ---");
 
   const TEMPLATES_ENDPOINT = `${API_BASE}/v1/displaytemplates`;
-  const listRes = await fetch(`${TEMPLATES_ENDPOINT}?limit=200`, {
+  const listRes = await apiFetch(`${TEMPLATES_ENDPOINT}?limit=200`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!listRes.ok) {
@@ -357,7 +357,7 @@ async function cleanupDisplayTemplates(token: string): Promise<void> {
   console.log(`  Removing ${safeStale.length} stale template(s):`);
   let totalDeleted = 0, totalErrors = 0;
   for (const tmpl of safeStale) {
-    const delRes = await fetch(`${TEMPLATES_ENDPOINT}/${tmpl.key}`, {
+    const delRes = await apiFetch(`${TEMPLATES_ENDPOINT}/${tmpl.key}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });

@@ -152,8 +152,8 @@ async function fetchNavigationCached(key: string | undefined, locale: string): P
  * Fetch the Navigation shared block and map its navItems into a typed NavNode
  * tree.
  *
- * By default queries by the sentinel name written by seed-nav.ts ("Seeded
- * Navigation") so re-seeding with a new CMS key is transparent. Pass `key` to
+ * By default fetches the newest Navigation block by type (the display name is
+ * not used), so re-seeding with a new CMS key is transparent. Pass `key` to
  * query a specific Navigation block (e.g. for preview).
  *
  * Cached for 1 hour with a "navigation" tag — call revalidateTag("navigation")

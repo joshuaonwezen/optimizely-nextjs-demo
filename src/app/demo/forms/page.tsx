@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
   // To send to Optimizely Data Platform as a customer event:
   // await fetch("https://api.zaius.com/v3/events", {
   //   method: "POST",
-  //   headers: { "x-api-key": process.env.ODP_API_KEY },
+  //   headers: { "x-api-key": process.env.OPTIMIZELY_ODP_API_KEY },
   //   body: JSON.stringify({ type: "form_submit", identifiers: { email: body.email }, data: body }),
   // });
 

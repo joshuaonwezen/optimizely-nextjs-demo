@@ -25,6 +25,7 @@ import {
   sweepMisplacedSharedBlocks,
   GRAPH_ENDPOINT,
   SINGLE_KEY,
+  apiFetch,
 } from "./_shared";
 
 config({ path: ".env.local" });
@@ -40,7 +41,7 @@ async function getMainContentKeys(pageKey: string): Promise<string[]> {
       items { mainContent { __typename _metadata { key } } }
     }
   }`;
-  const res = await fetch(GRAPH_ENDPOINT, {
+  const res = await apiFetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
     body: JSON.stringify({ query, variables: { key: pageKey } }),

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # claude
 .claude/openAPISpecs.json
+
+# Alternate local build output
+/.next-josh/

@@ -1,4 +1,4 @@
-import { CONTENT_ENDPOINT, GRAPH_ENDPOINT, SINGLE_KEY, getManagementToken } from "./_shared";
+import { CONTENT_ENDPOINT, GRAPH_ENDPOINT, SINGLE_KEY, getManagementToken, apiFetch } from "../_shared";
 
 // One-off repair. Creating a draft with POST /content/{key}/versions copies the
 // composition but NOT the properties bag, so any code that creates a draft and
@@ -13,20 +13,6 @@ const DRY = !process.argv.includes("--apply");
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-/**
- * The Management API rate-limits bulk work with 429 and a Retry-After header.
- * Every call here goes through this wrapper so a long repair run backs off
- * instead of aborting halfway.
- */
-async function api(url: string, init: RequestInit = {}, attempt = 0): Promise<Response> {
-  const res = await fetch(url, init);
-  if (res.status === 429 && attempt < 6) {
-    const retryAfter = Number(res.headers.get("retry-after")) || 2 ** attempt;
-    await sleep(Math.min(retryAfter, 30) * 1000);
-    return api(url, init, attempt + 1);
-  }
-  return res;
-}
 
 interface VersionRow {
   version: string;
@@ -49,7 +35,7 @@ async function allPages(): Promise<Array<{ key: string; url: string }>> {
   const out: Array<{ key: string; url: string }> = [];
   let cursor: string | undefined;
   for (;;) {
-    const res = await fetch(GRAPH_ENDPOINT, {
+    const res = await apiFetch(GRAPH_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -79,7 +65,7 @@ async function allPages(): Promise<Array<{ key: string; url: string }>> {
 
 async function versions(key: string, locale = "en"): Promise<VersionRow[]> {
   const token = await getManagementToken();
-  const res = await api(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=50`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=50`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   // Graph can keep serving a doc for content that has since been deleted, so a
@@ -91,7 +77,7 @@ async function versions(key: string, locale = "en"): Promise<VersionRow[]> {
 
 async function fullVersion(key: string, version: string): Promise<VersionRow> {
   const token = await getManagementToken();
-  const res = await api(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error(`GET version ${key}/${version}: ${res.status}`);
@@ -123,7 +109,7 @@ async function repair(key: string): Promise<string> {
     if (DRY) return `WOULD DROP ${stale.length} empty draft(s)`;
     const token = await getManagementToken();
     for (const s of stale) {
-      await api(`${CONTENT_ENDPOINT}/${key}/versions/${s.version}`, {
+      await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${s.version}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -143,7 +129,7 @@ async function repair(key: string): Promise<string> {
   if (DRY) return `WOULD RESTORE ${summary}`;
 
   const token = await getManagementToken();
-  const draftRes = await api(`${CONTENT_ENDPOINT}/${key}/versions`, {
+  const draftRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -166,7 +152,7 @@ async function repair(key: string): Promise<string> {
   }
   if (!draft) return "FAIL: no draft created";
 
-  const patch = await api(`${CONTENT_ENDPOINT}/${key}/versions/${draft.version}`, {
+  const patch = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${draft.version}`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -176,7 +162,7 @@ async function repair(key: string): Promise<string> {
   });
   if (!patch.ok) return `FAIL patch: ${patch.status} ${(await patch.text()).slice(0, 160)}`;
 
-  const pub = await api(`${CONTENT_ENDPOINT}/${key}/versions/${draft.version}:publish`, {
+  const pub = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${draft.version}:publish`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });

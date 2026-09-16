@@ -9,7 +9,7 @@
  *   OPTIMIZELY_FX_PROJECT_ID=23385830076
  *
  * Run:
- *   npx tsx scripts/seed-fx-flags.ts
+ *   npx tsx scripts/maintenance/seed-fx-flags.ts
  */
 
 import { config } from "dotenv";

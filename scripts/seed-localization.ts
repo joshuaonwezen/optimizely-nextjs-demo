@@ -19,6 +19,7 @@ import {
   GRAPH_ENDPOINT,
   SINGLE_KEY,
   getManagementToken,
+  apiFetch,
 } from "./_shared";
 import { NL } from "./translations-nl";
 
@@ -90,7 +91,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function api(path: string, init: RequestInit = {}): Promise<Response> {
   for (let attempt = 0; ; attempt++) {
     const token = await getManagementToken();
-    const res = await fetch(`${CONTENT_ENDPOINT}${path}`, {
+    const res = await apiFetch(`${CONTENT_ENDPOINT}${path}`, {
       ...init,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -155,7 +156,7 @@ interface DiscoveredItem {
 const HOMEPAGE_URL_RE = /^\/([a-z]{2}\/)?$/;
 
 async function discover(): Promise<DiscoveredItem[]> {
-  const res = await fetch(GRAPH_ENDPOINT, {
+  const res = await apiFetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

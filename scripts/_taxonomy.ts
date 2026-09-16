@@ -1,4 +1,4 @@
-import { API_BASE, getManagementToken } from "./_shared";
+import { API_BASE, getManagementToken, apiFetch } from "./_shared";
 
 // The CMS ships exactly one taxonomy today. Any other key is rejected by the API
 // with "The taxonomy '<key>' is not supported."
@@ -62,7 +62,7 @@ export async function listTerms(parent?: string): Promise<TaxonomyTerm[]> {
       pageSize: String(pageSize),
     });
     if (parent) query.set("parent", parent);
-    const res = await fetch(`${TAXONOMY_ENDPOINT}?${query}`, {
+    const res = await apiFetch(`${TAXONOMY_ENDPOINT}?${query}`, {
       headers: await authHeaders(),
     });
     if (!res.ok) {
@@ -106,7 +106,7 @@ export async function createTerm(
       `Invalid term key "${term.key}" - must match ${TERM_KEY_PATTERN} (letters, digits, underscores; no hyphens)`
     );
   }
-  const res = await fetch(TAXONOMY_ENDPOINT, {
+  const res = await apiFetch(TAXONOMY_ENDPOINT, {
     method: "POST",
     headers: await authHeaders(),
     body: JSON.stringify(term),
@@ -128,7 +128,7 @@ export async function patchTerm(
   key: string,
   patch: Pick<TaxonomyTerm, "displayName" | "description" | "sortOrder" | "isAvailable" | "isSelectable">
 ): Promise<void> {
-  const res = await fetch(`${TAXONOMY_ENDPOINT}/${key}`, {
+  const res = await apiFetch(`${TAXONOMY_ENDPOINT}/${key}`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${await getManagementToken()}`,
@@ -145,7 +145,7 @@ export async function patchTerm(
 
 /** Deletes a term and its descendants. Content tagged with it loses that tag. */
 export async function deleteTerm(key: string): Promise<void> {
-  const res = await fetch(`${TAXONOMY_ENDPOINT}/${key}`, {
+  const res = await apiFetch(`${TAXONOMY_ENDPOINT}/${key}`, {
     method: "DELETE",
     headers: await authHeaders(),
   });

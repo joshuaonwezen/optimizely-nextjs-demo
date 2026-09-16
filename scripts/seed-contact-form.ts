@@ -22,7 +22,7 @@
  */
 
 import { config } from "dotenv";
-import { uid, noHyphens, createContent, sectionComponent, findPageKeyByUrl, discoverRootContainer, publishComposition, GRAPH_ENDPOINT, SINGLE_KEY, type CompNode } from "./_shared";
+import { uid, noHyphens, createContent, sectionComponent, findPageKeyByUrl, discoverRootContainer, publishComposition, GRAPH_ENDPOINT, SINGLE_KEY, type CompNode, apiFetch } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -32,7 +32,7 @@ const PAGE_ROUTE = "contact-form";
 /** Newest published block of a type via Graph, or null when none is indexed. */
 async function discoverBlockKey(typeName: string): Promise<string | null> {
   const query = `{ ${typeName}(limit: 5, orderBy: { _metadata: { lastModified: DESC } }) { items { _metadata { key displayName } } } }`;
-  const res = await fetch(GRAPH_ENDPOINT, {
+  const res = await apiFetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
     body: JSON.stringify({ query }),

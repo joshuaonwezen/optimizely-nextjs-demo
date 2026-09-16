@@ -1007,11 +1007,20 @@ export async function patchPublishedPageProperties(
  * merge-patches the composition, then publishes. displayName + routeSegment are
  * carried on the draft POST so the CMS doesn't re-derive the URL from the name;
  * omit routeSegment for shared blocks, which have none.
+ *
+ * `properties` (already wrapPropsed) are patched alongside the composition. The
+ * new draft starts with NO properties (see patchPublishedPageProperties), so pass
+ * every property the item should keep.
  */
 export async function publishComposition(
   key: string,
   composition: Record<string, unknown>,
-  { locale = "en", displayName, routeSegment }: { locale?: string; displayName?: string; routeSegment?: string } = {}
+  {
+    locale = "en",
+    displayName,
+    routeSegment,
+    properties,
+  }: { locale?: string; displayName?: string; routeSegment?: string; properties?: Record<string, unknown> } = {}
 ): Promise<string> {
   const token = await getManagementToken();
   const auth = { Authorization: `Bearer ${token}` };
@@ -1038,7 +1047,7 @@ export async function publishComposition(
   const patchRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
     method: "PATCH",
     headers: { ...auth, "Content-Type": "application/merge-patch+json" },
-    body: JSON.stringify({ composition }),
+    body: JSON.stringify(properties ? { properties, composition } : { composition }),
   });
   if (!patchRes.ok) {
     throw new Error(`PATCH composition ${key}/${version}: ${patchRes.status} ${(await patchRes.text()).slice(0, 400)}`);
@@ -1140,7 +1149,7 @@ export async function findPageKeyByUrl(urls: string[]): Promise<string | null> {
       items { _metadata { key } }
     }
   }`;
-  const res = await fetch(GRAPH_ENDPOINT, {
+  const res = await apiFetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

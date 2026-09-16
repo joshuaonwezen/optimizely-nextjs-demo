@@ -1,20 +1,18 @@
-import { readFileSync } from "fs";
-import { join } from "path";
+import { config } from "dotenv";
 
-// Load .env.local
-const envFile = readFileSync(join(process.cwd(), ".env.local"), "utf8");
-for (const line of envFile.split("\n")) {
-  const [key, ...rest] = line.split("=");
-  if (key && rest.length) process.env[key.trim()] = rest.join("=").trim();
+config({ path: ".env.local" });
+
+const host = process.env.OPTIMIZELY_ODP_API_HOST ?? "https://api.zaius.com";
+const apiKey = process.env.OPTIMIZELY_ODP_API_KEY;
+if (!apiKey) {
+  console.error("Missing OPTIMIZELY_ODP_API_KEY in .env.local");
+  process.exit(1);
 }
-
-const host = process.env.OPTIMIZELY_ODP_API_HOST!;
-const apiKey = process.env.OPTIMIZELY_ODP_API_KEY!;
 
 async function odp<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
   const res = await fetch(`${host}/v3/graphql`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-api-key": apiKey },
+    headers: { "Content-Type": "application/json", "x-api-key": apiKey! },
     body: JSON.stringify({ query, variables }),
   });
   const json = await res.json();
@@ -55,24 +53,29 @@ async function testVisitor(userId: string, subset: string[], idType: "vuid" | "f
 }
 
 // Usage:
-//   npx tsx scripts/test-odp.ts                       → list every account audience identifier
-//   npx tsx scripts/test-odp.ts <id> [names...]       → test one visitor by BOTH vuid and fs_user_id
-//   npx tsx scripts/test-odp.ts --vuid <id> [names]   → test only as a vuid
-//   npx tsx scripts/test-odp.ts --fsid <id> [names]   → test only as an fs_user_id
-//     e.g. npx tsx scripts/test-odp.ts abc-123 business_banking_customer personal_banking_customers
+//   npx tsx scripts/maintenance/test-odp.ts                       → list every account audience identifier
+//   npx tsx scripts/maintenance/test-odp.ts <id> [names...]       → test one visitor by BOTH vuid and fs_user_id
+//   npx tsx scripts/maintenance/test-odp.ts --vuid <id> [names]   → test only as a vuid
+//   npx tsx scripts/maintenance/test-odp.ts --fsid <id> [names]   → test only as an fs_user_id
+//     e.g. npx tsx scripts/maintenance/test-odp.ts abc-123 business_banking_customer personal_banking_customers
 const args = process.argv.slice(2);
 let only: "vuid" | "fs_user_id" | undefined;
 if (args[0] === "--vuid") { only = "vuid"; args.shift(); }
 else if (args[0] === "--fsid" || args[0] === "--fs_user_id") { only = "fs_user_id"; args.shift(); }
 
 const [id, ...names] = args;
-if (!id) {
-  listAllAudiences();
-} else {
+
+async function main() {
+  if (!id) {
+    await listAllAudiences();
+    return;
+  }
   const subset = names.length ? names : ["business_banking_customer", "personal_banking_customers"];
-  const run = async () => {
-    if (only !== "fs_user_id") await testVisitor(id, subset, "vuid");
-    if (only !== "vuid") await testVisitor(id, subset, "fs_user_id");
-  };
-  run();
+  if (only !== "fs_user_id") await testVisitor(id, subset, "vuid");
+  if (only !== "vuid") await testVisitor(id, subset, "fs_user_id");
 }
+
+main().catch((err) => {
+  console.error(err instanceof Error ? err.message : err);
+  process.exit(1);
+});

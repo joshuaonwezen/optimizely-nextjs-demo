@@ -12,19 +12,20 @@
  *
  * Dry-run by default (reports what would change). Pass --apply to write.
  *
- * Run:  npx tsx scripts/patch-link-refs.ts [--apply]
+ * Run:  npx tsx scripts/maintenance/patch-link-refs.ts [--apply]
  * Uses the base OPTIMIZELY_* vars in .env.local (target one instance at a time).
  */
 
 import { config } from "dotenv";
-import { getManagementToken } from "../src/lib/optimizely/auth";
+import { getManagementToken } from "../../src/lib/optimizely/auth";
 import {
   CONTENT_ENDPOINT,
   GRAPH_ENDPOINT,
   SINGLE_KEY,
   discoverGlobalRoot,
   findPageKeyByUrl,
-} from "./_shared";
+  apiFetch,
+} from "../_shared";
 
 config({ path: ".env.local" });
 
@@ -134,7 +135,7 @@ async function fixNodes(
 }
 
 async function getLatestVersion(token: string, key: string): Promise<ContentVersion | null> {
-  const res = await fetch(`${CONTENT_ENDPOINT}/${key}/locales/en?pageSize=1`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${key}/locales/en?pageSize=1`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return null;
@@ -148,13 +149,13 @@ async function patchVersion(
   version: string,
   body: Record<string, unknown>,
 ): Promise<void> {
-  const res = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/merge-patch+json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`PATCH ${key}/${version}: ${res.status} ${(await res.text()).slice(0, 200)}`);
-  const pub = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}:publish`, {
+  const pub = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}:publish`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -162,7 +163,7 @@ async function patchVersion(
 }
 
 async function graphKeys(query: string, pick: (d: GraphPageKeys) => string[]): Promise<string[]> {
-  const res = await fetch(GRAPH_ENDPOINT, {
+  const res = await apiFetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
     body: JSON.stringify({ query }),
@@ -190,7 +191,7 @@ async function allPageKeys(): Promise<string[]> {
 async function itemKeysUnder(token: string, container: string, out: Set<string>): Promise<void> {
   let pageIndex = 0;
   for (;;) {
-    const res = await fetch(
+    const res = await apiFetch(
       `${CONTENT_ENDPOINT}/${container}/items?pageSize=100&pageIndex=${pageIndex}`,
       { headers: { Authorization: `Bearer ${token}` } },
     );

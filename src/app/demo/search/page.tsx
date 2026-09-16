@@ -289,7 +289,8 @@ await fetch(\`\${process.env.OPTIMIZELY_GRAPH_GATEWAY}/resources/synonyms\`, {
   method: "PUT",
   headers: {
     "Content-Type": "application/x-www-form-urlencoded",
-    Authorization: \`Basic \${btoa(\`\${process.env.OPTIMIZELY_GRAPH_APP_KEY}:\`)}\`,
+    // Graph admin Basic auth: app key AND secret (key-only is rejected).
+    Authorization: \`Basic \${btoa(\`\${process.env.OPTIMIZELY_APP_KEY}:\${process.env.OPTIMIZELY_APP_SECRET}\`)}\`,
   },
   body: new URLSearchParams({
     synonym_slot: "ONE",

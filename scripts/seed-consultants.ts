@@ -1,5 +1,5 @@
 import { config } from "dotenv";
-import { createContent, discoverRootContainer, getManagementToken, CONTENT_ENDPOINT } from "./_shared";
+import { createContent, discoverRootContainer, getManagementToken, CONTENT_ENDPOINT, apiFetch } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -63,7 +63,7 @@ async function requestApproval(key: string, label: string): Promise<void> {
   const token = await getManagementToken();
 
   // Find the latest draft version for this item
-  const vRes = await fetch(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=1`, {
+  const vRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=1`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!vRes.ok) throw new Error(`GET versions for ${label}: ${vRes.status} ${await vRes.text()}`);
@@ -73,7 +73,7 @@ async function requestApproval(key: string, label: string): Promise<void> {
 
   // POST :ready transitions draft → ready. When an approval workflow is configured,
   // the CMS intercepts this and transitions to inReview instead, firing the workflow email.
-  const res = await fetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}:ready`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}:ready`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ comment: "Seeded via seed-consultants.ts - ready for review and publish." }),

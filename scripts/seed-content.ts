@@ -36,6 +36,7 @@ import {
   rootComponent,
   patchPublishedPageProperties,
   type CompNode,
+  apiFetch,
 } from "./_shared";
 import { FAQ_ITEMS, INVESTMENT_FAQ_ITEMS, HELP_FAQ_ITEMS } from "./faq-data";
 import { QUOTE_CARDS } from "./quote-card-data";
@@ -75,16 +76,6 @@ const MANAGED_BLOCK_TYPES = new Set([
 const SHARED_CALLOUT_KEY = "fbca0000000000000000000000000001";
 const SHARED_CTA_KEY = "fbca0000000000000000000000000002";
 
-// The Management API rate-limits bursts (429) - retry with backoff so a burst
-// of page creates doesn't abort the whole seed.
-async function fetchRetry(url: string, init: RequestInit = {}): Promise<Response> {
-  for (let attempt = 0; ; attempt++) {
-    const res = await fetch(url, init);
-    if (res.status !== 429 || attempt >= 4) return res;
-    const retryAfter = Number(res.headers.get("retry-after"));
-    await new Promise((r) => setTimeout(r, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2000 * (attempt + 1)));
-  }
-}
 
 /**
  * Ensure the latest version of a content item is published. createContent
@@ -98,7 +89,7 @@ async function ensurePublished(key: string): Promise<void> {
   // Publishing a version can 404 if the create hasn't committed yet, so retry
   // and verify the item actually reaches "published" before giving up.
   for (let attempt = 0; attempt < 6; attempt++) {
-    const vRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=1`, {
+    const vRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=1`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (vRes.ok) {
@@ -106,7 +97,7 @@ async function ensurePublished(key: string): Promise<void> {
       const v = vData.items?.[0];
       if (v?.status === "published") return;
       if (v?.version) {
-        const pubRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions/${v.version}:publish`, {
+        const pubRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${v.version}:publish`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -1472,7 +1463,7 @@ async function updateStartPageComposition(
 ): Promise<boolean | "not-an-experience"> {
   // 1. Create a new draft version WITH the composition, so the CMS does not copy the
   //    start page's current (possibly broken) composition and 400 on its stale refs.
-  const createRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions?locale=en`, {
+  const createRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions?locale=en`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({
@@ -1503,7 +1494,7 @@ async function updateStartPageComposition(
     ? (JSON.parse(createBody) as { version?: string }).version
     : undefined;
   if (!version) {
-    const vRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=1`, {
+    const vRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions?pageSize=1`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (vRes.ok) {
@@ -1517,7 +1508,7 @@ async function updateStartPageComposition(
   }
 
   // 2. Merge-PATCH the composition onto the draft.
-  const patchRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
+  const patchRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/merge-patch+json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ composition }),
@@ -1528,7 +1519,7 @@ async function updateStartPageComposition(
   }
 
   // 3. Publish the draft.
-  const pubRes = await fetchRetry(`${CONTENT_ENDPOINT}/${key}/versions/${version}:publish`, {
+  const pubRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}:publish`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -1620,7 +1611,7 @@ async function createPage(page: PageDef): Promise<void> {
     },
   };
 
-  const res = await fetchRetry(CONTENT_ENDPOINT, {
+  const res = await apiFetch(CONTENT_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -1648,7 +1639,7 @@ async function createPage(page: PageDef): Promise<void> {
 
   if (!text.trim()) {
     // v1 API returns 201 with no body for some content types - look up the version separately.
-    const vRes = await fetchRetry(`${CONTENT_ENDPOINT}/${page.key}/versions?pageSize=1`, {
+    const vRes = await apiFetch(`${CONTENT_ENDPOINT}/${page.key}/versions?pageSize=1`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (vRes.ok) {
@@ -1663,7 +1654,7 @@ async function createPage(page: PageDef): Promise<void> {
 
   // Publish the newly-created draft version.
   if (versionId) {
-    const pubRes = await fetchRetry(`${CONTENT_ENDPOINT}/${contentKey}/versions/${versionId}:publish`, {
+    const pubRes = await apiFetch(`${CONTENT_ENDPOINT}/${contentKey}/versions/${versionId}:publish`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -1706,7 +1697,7 @@ async function createPageStub(page: PageDef): Promise<void> {
     layoutType: "outline",
     nodes: [] as CompNode[],
   };
-  const res = await fetchRetry(CONTENT_ENDPOINT, {
+  const res = await apiFetch(CONTENT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({
@@ -1735,11 +1726,11 @@ async function createPageStub(page: PageDef): Promise<void> {
     ? ((JSON.parse(text) as Record<string, unknown>).initialVersion as Record<string, unknown> | undefined)?.version as string | undefined
     : undefined;
   if (!version) {
-    const vRes = await fetchRetry(`${CONTENT_ENDPOINT}/${page.key}/versions?pageSize=1`, { headers: { Authorization: `Bearer ${token}` } });
+    const vRes = await apiFetch(`${CONTENT_ENDPOINT}/${page.key}/versions?pageSize=1`, { headers: { Authorization: `Bearer ${token}` } });
     if (vRes.ok) version = ((await vRes.json()) as { items?: Array<{ version?: string }> }).items?.[0]?.version;
   }
   if (version) {
-    const pub = await fetchRetry(`${CONTENT_ENDPOINT}/${page.key}/versions/${version}:publish`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+    const pub = await apiFetch(`${CONTENT_ENDPOINT}/${page.key}/versions/${version}:publish`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
     if (!pub.ok) {
       const pt = await pub.text();
       if (!isApprovalRequired(pub.status, pt)) console.warn(`  [warn] publish stub ${page.displayName}: ${pub.status} ${pt.slice(0, 200)}`);
@@ -1778,7 +1769,7 @@ async function permanentDelete(key: string): Promise<boolean> {
   // so retry with backoff and pace the loop.
   let delRes: Response | null = null;
   for (let attempt = 0; attempt < 5; attempt++) {
-    delRes = await fetch(`${CONTENT_ENDPOINT}/${key}`, {
+    delRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}`, "cms-permanent-delete": "true" },
     });
@@ -1797,7 +1788,7 @@ async function permanentDelete(key: string): Promise<boolean> {
  *  root and are cleaned by cleanSharedBlocks(). */
 async function deleteExisting(): Promise<void> {
   const token = await getManagementToken();
-  const res = await fetch(`${CONTENT_ENDPOINT}/${CONTAINER}/items`, {
+  const res = await apiFetch(`${CONTENT_ENDPOINT}/${CONTAINER}/items`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return;
@@ -1830,7 +1821,7 @@ async function cleanSharedBlocks(globalRoot: string): Promise<void> {
 
   let items: Array<{ key: string; contentType?: string }> = [];
   for (let pageIndex = 0; ; pageIndex++) {
-    const res = await fetchRetry(`${CONTENT_ENDPOINT}/${globalRoot}/items?pageSize=100&pageIndex=${pageIndex}`, {
+    const res = await apiFetch(`${CONTENT_ENDPOINT}/${globalRoot}/items?pageSize=100&pageIndex=${pageIndex}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) break;
@@ -1853,7 +1844,7 @@ async function cleanSharedBlocks(globalRoot: string): Promise<void> {
 /** Find the CMS key of the savings page already in Graph. */
 async function findSavingsKey(): Promise<string | null> {
   const query = `{ _Page(where:{_metadata:{url:{default:{in:["/en/personal/savings/","/en/savings/","/savings/"]}}}},limit:1) { items { _metadata { key } } } }`;
-  const res = await fetch(GRAPH_ENDPOINT, {
+  const res = await apiFetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
     body: JSON.stringify({ query }),

@@ -13,7 +13,7 @@
  */
 
 import { config } from "dotenv";
-import { findPageKeyByUrl } from "./_shared";
+import { findPageKeyByUrl, apiFetch } from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -70,7 +70,7 @@ function getBasicAuth(): string {
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 async function storedPhrases(auth: string, collectionId: string): Promise<Set<string>> {
-  const res = await fetch(`${GRAPH_BASE}/api/pinned/collections/${collectionId}/items`, {
+  const res = await apiFetch(`${GRAPH_BASE}/api/pinned/collections/${collectionId}/items`, {
     headers: { Authorization: auth },
   });
   if (!res.ok) return new Set();
@@ -83,7 +83,7 @@ async function storedPhrases(auth: string, collectionId: string): Promise<Set<st
 // fired immediately after get swept. Wait until the collection reads back empty
 // before re-pinning.
 async function clearAndWaitEmpty(auth: string, collectionId: string): Promise<void> {
-  const res = await fetch(`${GRAPH_BASE}/api/pinned/collections/${collectionId}/items`, {
+  const res = await apiFetch(`${GRAPH_BASE}/api/pinned/collections/${collectionId}/items`, {
     method: "DELETE",
     headers: { Authorization: auth },
   });
@@ -102,7 +102,7 @@ async function clearAndWaitEmpty(auth: string, collectionId: string): Promise<vo
  * so every run leaves exactly one clean collection.
  */
 async function ensureCollection(auth: string): Promise<string> {
-  const res = await fetch(`${GRAPH_BASE}/api/pinned/collections`, { headers: { Authorization: auth } });
+  const res = await apiFetch(`${GRAPH_BASE}/api/pinned/collections`, { headers: { Authorization: auth } });
   if (!res.ok) throw new Error(`List pinned collections failed: ${res.status} ${await res.text()}`);
   const collections = (await res.json()) as Array<{ id: string; key?: string }>;
 
@@ -112,7 +112,7 @@ async function ensureCollection(auth: string): Promise<string> {
     if (c.key === PIN_COLLECTION.key) {
       targetId = c.id;
     } else {
-      const del = await fetch(`${GRAPH_BASE}/api/pinned/collections/${c.id}`, {
+      const del = await apiFetch(`${GRAPH_BASE}/api/pinned/collections/${c.id}`, {
         method: "DELETE",
         headers: { Authorization: auth },
       });
@@ -125,7 +125,7 @@ async function ensureCollection(auth: string): Promise<string> {
     return targetId;
   }
 
-  const created = await fetch(`${GRAPH_BASE}/api/pinned/collections`, {
+  const created = await apiFetch(`${GRAPH_BASE}/api/pinned/collections`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: auth },
     body: JSON.stringify(PIN_COLLECTION),
@@ -137,7 +137,7 @@ async function ensureCollection(auth: string): Promise<string> {
 }
 
 async function addPin(auth: string, collectionId: string, phrases: string, targetKey: string): Promise<boolean> {
-  const res = await fetch(`${GRAPH_BASE}/api/pinned/collections/${collectionId}/items`, {
+  const res = await apiFetch(`${GRAPH_BASE}/api/pinned/collections/${collectionId}/items`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: auth },
     body: JSON.stringify({ phrases, targetKey, priority: 1000, isActive: true, language: null }),
@@ -156,7 +156,7 @@ async function setSynonyms(auth: string): Promise<void> {
   // for localized content. Write both so non-locale queries also benefit.
   const body = SYNONYMS.join("\n");
   for (const routing of ["en", "standard"]) {
-    const res = await fetch(`${GRAPH_BASE}/resources/synonyms?language_routing=${routing}`, {
+    const res = await apiFetch(`${GRAPH_BASE}/resources/synonyms?language_routing=${routing}`, {
       method: "PUT",
       headers: { "Content-Type": "text/plain", Authorization: auth },
       body,

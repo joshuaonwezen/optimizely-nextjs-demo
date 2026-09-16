@@ -45,7 +45,7 @@
  *     FX console's per-experiment primary metric can be pointed at that event.
  *   - Both endpoints accept writes and return success regardless of whether the
  *     key is correct, so a green run is not proof by itself; verify in the FX
- *     Results dashboard and via scripts/test-odp.ts (see the plan's verification).
+ *     Results dashboard and via scripts/maintenance/test-odp.ts (see the plan's verification).
  */
 
 import { config } from "dotenv";
@@ -399,7 +399,7 @@ async function main() {
   if (DRY_RUN) {
     console.log("\nDry run: nothing was ingested. Re-run without --dry-run to send.");
   } else {
-    console.log("\nCheck the FX Results dashboard and run scripts/test-odp.ts on a seeded id to verify.");
+    console.log("\nCheck the FX Results dashboard and run scripts/maintenance/test-odp.ts on a seeded id to verify.");
   }
 }
 
