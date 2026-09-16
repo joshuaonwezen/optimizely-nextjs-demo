@@ -396,6 +396,7 @@ export const NL: Record<string, string> = {
   "FAQs": "Veelgestelde vragen",
   "Contact Us": "Contact",
   "Find a Branch": "Vind een filiaal",
+  "Locations": "Filialen",
   "About": "Over ons",
   "About Mosey": "Over Mosey",
   "Careers": "Werken bij",

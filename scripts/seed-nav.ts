@@ -153,7 +153,9 @@ const NAV_TREE: NavDef[] = [
     children: [
       { key: noHyphens(), label: "FAQs",          href: "/en/help/faqs",          existing: true, children: [] },
       { key: noHyphens(), label: "Contact Us",    href: "/en/help/contact",       existing: true, children: [] },
-      { key: noHyphens(), label: "Find a Branch", href: "/en/help/branches",      existing: true, children: [] },
+      // Branch locator moved under About as "Locations" → /locations. The
+      // /en/help/branches page still exists and keeps its own branch finder;
+      // it is just no longer linked from the nav.
       { key: noHyphens(), label: "Security & Fraud", href: "/en/help/security",   existing: true, children: [] },
       { key: noHyphens(), label: "Accessibility", href: "/en/help/accessibility", existing: true, children: [] },
     ],
@@ -166,6 +168,10 @@ const NAV_TREE: NavDef[] = [
       { key: noHyphens(), label: "Careers",        href: "/en/about/careers",        existing: true, children: [] },
       { key: noHyphens(), label: "Press",          href: "/en/about/press",          existing: true, children: [] },
       { key: noHyphens(), label: "Sustainability", href: "/en/about/sustainability", existing: true, children: [] },
+      // Bare "/locations", not "/en/locations": the page is a direct child of the
+      // root container, and buildPageKeyMap registers both prefixed and bare
+      // aliases, so this resolves whichever form the instance indexes.
+      { key: noHyphens(), label: "Locations",      href: "/locations",               existing: true, children: [] },
     ],
   },
 ];
