@@ -152,7 +152,7 @@ query GetArticlesCursor($cursor: String) {
   }
 }`;
 
-const STATIC_PARAMS_SNIPPET = `// src/app/articles/page/[page]/page.tsx
+const STATIC_PARAMS_SNIPPET = `// Example route (not part of this repo): src/app/articles/page/[page]/page.tsx
 //
 // Option A - ISG: pre-render page 1; render subsequent pages on demand.
 // Pages 2+ are generated on first request and cached as ISR.
@@ -232,7 +232,7 @@ query GetArticlesWithFacets($tag: [String], $since: DateTime) {
 const FACETS_FILTER_SNIPPET = `// Typical pattern: facet selection lives in URL search params so
 // the list page is shareable and server-rendered.
 //
-// src/app/articles/page.tsx
+// Example route (not part of this repo): src/app/articles/page.tsx
 
 type SearchParams = { category?: string | string[]; since?: string };
 

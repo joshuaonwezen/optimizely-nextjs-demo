@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import { StepBadge } from "@/components/ui/StepBadge";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const metadata: Metadata = { title: "Draft Mode & Preview Demo" };
 
@@ -179,9 +180,7 @@ export default function PreviewDemoPage() {
 
         {/* Two content modes */}
         <section id="content-modes">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Two Content Modes <a href="#content-modes" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="content-modes">Two Content Modes</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The app serves content in two distinct modes depending on context.
             The caching strategy and Graph auth header change accordingly.
@@ -226,9 +225,7 @@ export default function PreviewDemoPage() {
 
         {/* URL flow */}
         <section id="preview-url">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            The Preview URL Flow <a href="#preview-url" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="preview-url">The Preview URL Flow</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             The CMS is configured with a Preview URL pointing directly to{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code>.
@@ -264,9 +261,7 @@ export default function PreviewDemoPage() {
 
         {/* /preview render path */}
         <section id="preview-page">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            The /preview Page <a href="#preview-page" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="preview-page">The /preview Page</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             <code className="bg-surface-low px-1 rounded text-xs font-mono">getPreviewContent()</code> handles
             all content types - experience pages, traditional pages, and shared blocks - and returns
@@ -306,9 +301,7 @@ export default function PreviewDemoPage() {
 
         {/* communicationinjector scope */}
         <section id="communication-injector">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Where communicationinjector.js Lives <a href="#communication-injector" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="communication-injector">Where communicationinjector.js Lives</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             The script is injected on the <code className="bg-surface-low px-1 rounded text-xs font-mono">/preview</code> route only -
             not in the root layout. It is only needed when the page is rendered inside the
@@ -320,9 +313,7 @@ export default function PreviewDemoPage() {
 
         {/* External preview links */}
         <section id="external-preview">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Sharing a Preview Externally <a href="#external-preview" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="external-preview">Sharing a Preview Externally</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             The <code className="bg-surface-low px-1 rounded text-xs font-mono">preview_token</code> the
             CMS appends is a ~5 minute JWT and there is no way to extend it or issue a stable one - so

@@ -4,6 +4,8 @@ import CodeBlock from "@/components/demo/CodeBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import LiveDemoShell from "@/components/demo/LiveDemoShell";
 import { getEditorialContent, type EditorialItem } from "@/lib/graphql/queries/GetEditorialContent";
+import InlineCode from "@/components/demo/InlineCode";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const metadata: Metadata = {
   title: "Contracts, Mappings & Bindings Demo",
@@ -235,16 +237,6 @@ await fetch("https://api.cms.optimizely.com/v1/content", {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-function SectionHeading({ id, children }: { id: string; children: React.ReactNode }) {
-  return (
-    <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-      {children}{" "}
-      <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-        #
-      </a>
-    </h2>
-  );
-}
 
 function SubHeading({ id, children }: { id: string; children: React.ReactNode }) {
   return (
@@ -257,11 +249,6 @@ function SubHeading({ id, children }: { id: string; children: React.ReactNode })
   );
 }
 
-function Code({ children }: { children: React.ReactNode }) {
-  return (
-    <code className="bg-surface-low px-1 rounded text-xs font-mono">{children}</code>
-  );
-}
 
 function EditorialCard({ item }: { item: EditorialItem }) {
   const url = item._metadata?.url?.default ?? "#";
@@ -324,7 +311,7 @@ export default async function ContractsMappingsBindingsPage() {
             <Callout>
               <p className="text-xs font-semibold text-on-surface mb-2">Contracts</p>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                Like a TypeScript <Code>interface</Code>. Declare shared fields (SEO
+                Like a TypeScript <InlineCode>interface</InlineCode>. Declare shared fields (SEO
                 metadata, authoring dates, categories) and apply the contract to any
                 content type. Every implementing type gets those fields in the editor and
                 in Graph.
@@ -342,7 +329,7 @@ export default async function ContractsMappingsBindingsPage() {
               <p className="text-xs font-semibold text-on-surface mb-2">Mappings</p>
               <p className="text-xs text-on-surface-variant leading-relaxed">
                 The field-level connections <em>inside</em> a binding:{" "}
-                <Code>{"teaserImage: { from: \"hero.image\" }"}</Code>. Use dot
+                <InlineCode>{"teaserImage: { from: \"hero.image\" }"}</InlineCode>. Use dot
                 notation to reach into nested component properties. Type compatibility
                 rules determine which source/target combinations are valid.
               </p>
@@ -352,12 +339,12 @@ export default async function ContractsMappingsBindingsPage() {
 
         {/* ── Contracts ── */}
         <section id="contracts">
-          <SectionHeading id="contracts">Contracts</SectionHeading>
+          <DemoSectionHeading id="contracts">Contracts</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             A contract defines a named set of properties that content types can implement,
             analogous to an interface in TypeScript or Java. The CMS enforces that every
             implementing type exposes those fields. Optimizely Graph generates a shared
-            interface type (e.g. <Code>IEditorialContent</Code>) so you can query all
+            interface type (e.g. <InlineCode>IEditorialContent</InlineCode>) so you can query all
             implementing types in one request instead of one query per type.
           </p>
 
@@ -366,26 +353,26 @@ export default async function ContractsMappingsBindingsPage() {
             <div id="contracts-define" className="space-y-3">
               <SubHeading id="contracts-define">Defining a contract</SubHeading>
               <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
-                In this project, <Code>ArticlePage</Code> and <Code>CaseStudyPage</Code>{" "}
-                both need <Code>title</Code>, <Code>summary</Code>, <Code>heroImage</Code>,
-                and <Code>tags</Code>. Instead of duplicating those definitions, they live
-                in a single <Code>EditorialContentContract</Code> defined with{" "}
-                <Code>contract()</Code> in <Code>optimizely.config.mjs</Code>.
+                In this project, <InlineCode>ArticlePage</InlineCode> and <InlineCode>CaseStudyPage</InlineCode>{" "}
+                both need <InlineCode>title</InlineCode>, <InlineCode>summary</InlineCode>, <InlineCode>heroImage</InlineCode>,
+                and <InlineCode>tags</InlineCode>. Instead of duplicating those definitions, they live
+                in a single <InlineCode>EditorialContentContract</InlineCode> defined with{" "}
+                <InlineCode>contract()</InlineCode> in <InlineCode>optimizely.config.mjs</InlineCode>.
               </p>
               <CodeBlock code={CONTRACT_DEFINE_SNIPPET} label="optimizely.config.mjs" />
               <Callout variant="note" label="SDK version">
-                <Code>contract()</Code> requires <Code>@optimizely/cms-sdk</Code> 2.1.0 or
+                <InlineCode>contract()</InlineCode> requires <InlineCode>@optimizely/cms-sdk</InlineCode> 2.1.0 or
                 later. On 2.0.0 the import fails at runtime - there, fall back to defining
                 the shared properties as a plain object and spreading it into each
-                type&apos;s <Code>properties</Code> block.
+                type&apos;s <InlineCode>properties</InlineCode> block.
               </Callout>
             </div>
 
             <div id="contracts-extend" className="space-y-3">
               <SubHeading id="contracts-extend">Implementing the contract in content types</SubHeading>
               <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
-                Each type lists the contracts it implements in <Code>extends</Code>, then
-                adds its own type-specific fields in <Code>properties</Code>. A type can
+                Each type lists the contracts it implements in <InlineCode>extends</InlineCode>, then
+                adds its own type-specific fields in <InlineCode>properties</InlineCode>. A type can
                 extend a single contract or an array of them.
               </p>
               <CodeBlock code={CONTRACT_EXTEND_SNIPPET} label="optimizely.config.mjs" />
@@ -395,8 +382,8 @@ export default async function ContractsMappingsBindingsPage() {
               <SubHeading id="contracts-register">Registration</SubHeading>
               <CodeBlock code={CONTRACT_REGISTER_SNIPPET} label="src/lib/optimizely/componentRegistry.ts" />
               <Callout variant="note" label="No separate registration">
-                Only content types go in <Code>initContentTypeRegistry</Code>. Because{" "}
-                <Code>contentType()</Code> merges contract properties into the type object
+                Only content types go in <InlineCode>initContentTypeRegistry</InlineCode>. Because{" "}
+                <InlineCode>contentType()</InlineCode> merges contract properties into the type object
                 when it is defined, the registry and the SDK&apos;s query builder already
                 see every inherited field - no ordering constraints, no contract entries.
               </Callout>
@@ -405,8 +392,8 @@ export default async function ContractsMappingsBindingsPage() {
             <div id="contracts-graph" className="space-y-3">
               <SubHeading id="contracts-graph">Unified Graph interface queries</SubHeading>
               <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
-                Once the <Code>EditorialContent</Code> contract exists in the CMS, Graph
-                generates an <Code>IEditorialContent</Code> interface type. The query below
+                Once the <InlineCode>EditorialContent</InlineCode> contract exists in the CMS, Graph
+                generates an <InlineCode>IEditorialContent</InlineCode> interface type. The query below
                 compares what you write <em>before</em> the contract (two root fields, merged
                 in code) versus <em>after</em> (one interface field, sorted by Graph).
               </p>
@@ -420,9 +407,9 @@ export default async function ContractsMappingsBindingsPage() {
             <div id="contracts-live" className="space-y-3">
               <SubHeading id="contracts-live">Live demo: editorial content feed</SubHeading>
               <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
-                The cards below are fetched from <Code>ArticlePage</Code> and{" "}
-                <Code>CaseStudyPage</Code> in a single GraphQL request and merged by
-                publish date, matching what the <Code>IEditorialContent</Code> interface
+                The cards below are fetched from <InlineCode>ArticlePage</InlineCode> and{" "}
+                <InlineCode>CaseStudyPage</InlineCode> in a single GraphQL request and merged by
+                publish date, matching what the <InlineCode>IEditorialContent</InlineCode> interface
                 query would return once the contract is active in the CMS.
               </p>
               <LiveDemoShell label="ArticlePage + CaseStudyPage, merged by publish date">
@@ -450,7 +437,7 @@ export default async function ContractsMappingsBindingsPage() {
 
         {/* ── Bindings + Mappings ── */}
         <section id="bindings">
-          <SectionHeading id="bindings">Bindings &amp; Mappings</SectionHeading>
+          <DemoSectionHeading id="bindings">Bindings &amp; Mappings</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             A <strong>content type binding</strong> is a template that declares which source
             type feeds data into which target type. <strong>Mappings</strong> are the
@@ -468,7 +455,7 @@ export default async function ContractsMappingsBindingsPage() {
                 <code className="bg-surface-low px-1 rounded text-xs font-mono break-all">
                   https://api.cms.optimizely.com/v1/contenttypebindings
                 </code>{" "}
-                with the source type (<Code>from</Code>), target type (<Code>to</Code>), and
+                with the source type (<InlineCode>from</InlineCode>), target type (<InlineCode>to</InlineCode>), and
                 the property mappings. This is typically done once in a seeding script.
               </p>
               <CodeBlock code={BINDING_CREATE_SNIPPET} label="scripts/seed-bindings.ts" />
@@ -494,11 +481,11 @@ export default async function ContractsMappingsBindingsPage() {
 
         {/* ── Binding Content ── */}
         <section id="binding-content">
-          <SectionHeading id="binding-content">Applying Bindings to Content Instances</SectionHeading>
+          <DemoSectionHeading id="binding-content">Applying Bindings to Content Instances</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             Once the binding template exists, apply it to actual content by including a{" "}
-            <Code>binding</Code> object in the create or PATCH body. Reference the template
-            by key, and point <Code>source</Code> at the content instance to pull data from.
+            <InlineCode>binding</InlineCode> object in the create or PATCH body. Reference the template
+            by key, and point <InlineCode>source</InlineCode> at the content instance to pull data from.
           </p>
 
           <div className="space-y-8">
@@ -507,8 +494,8 @@ export default async function ContractsMappingsBindingsPage() {
               <SubHeading id="binding-content-instance">Binding a top-level content item</SubHeading>
               <CodeBlock code={BIND_INSTANCE_SNIPPET} label="scripts/bind-content.ts" />
               <Callout variant="note" label="Source URI format">
-                <Code>source</Code> uses the CMS permanent URI:{" "}
-                <Code>{"cms://content/<contentKey>?loc=<locale>"}</Code>. Use the
+                <InlineCode>source</InlineCode> uses the CMS permanent URI:{" "}
+                <InlineCode>{"cms://content/<contentKey>?loc=<locale>"}</InlineCode>. Use the
                 content key (not the route segment) so the reference survives URL changes.
                 Locale is required because properties are stored per locale.
               </Callout>
@@ -517,7 +504,7 @@ export default async function ContractsMappingsBindingsPage() {
             <div id="binding-content-component" className="space-y-3">
               <SubHeading id="binding-content-component">Binding a component property inside a page</SubHeading>
               <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
-                Bindings can target a single <Code>component</Code>-type property rather than
+                Bindings can target a single <InlineCode>component</InlineCode>-type property rather than
                 the whole content item, useful when only one slot on a page should pull from
                 an external source.
               </p>
@@ -525,10 +512,10 @@ export default async function ContractsMappingsBindingsPage() {
             </div>
 
             <Callout variant="note" label="Bindings vs. contentReference">
-              A <Code>contentReference</Code> stores a pointer: the editor picks any item
+              A <InlineCode>contentReference</InlineCode> stores a pointer: the editor picks any item
               and the frontend fetches it at render time. A binding copies mapped property
               values directly into the target at publish time. Use a{" "}
-              <Code>contentReference</Code> when the editor should choose freely; use a
+              <InlineCode>contentReference</InlineCode> when the editor should choose freely; use a
               binding when the target should always mirror specific fields from a specific
               source.
             </Callout>
@@ -538,7 +525,7 @@ export default async function ContractsMappingsBindingsPage() {
 
         {/* ── When to use each ── */}
         <section id="when-to-use">
-          <SectionHeading id="when-to-use">When to use each</SectionHeading>
+          <DemoSectionHeading id="when-to-use">When to use each</DemoSectionHeading>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
@@ -563,7 +550,7 @@ export default async function ContractsMappingsBindingsPage() {
                 </tr>
                 <tr className="border-b border-ghost-border/50">
                   <td className="py-3 pr-6">Editors need to pick any item from a list of content</td>
-                  <td className="py-3"><Code>contentReference</Code> property</td>
+                  <td className="py-3"><InlineCode>contentReference</InlineCode> property</td>
                 </tr>
                 <tr className="border-b border-ghost-border/50">
                   <td className="py-3 pr-6">External product catalog should sync into CMS content types</td>

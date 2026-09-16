@@ -4,21 +4,13 @@ import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import { StepBadge } from "@/components/ui/StepBadge";
+import { Chip, Pipeline } from "@/components/demo/Pipeline";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const metadata: Metadata = {
   title: "CMS MCP Server",
 };
 
-function SectionHeading({ id, children }: { id: string; children: React.ReactNode }) {
-  return (
-    <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-      {children}{" "}
-      <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-        #
-      </a>
-    </h2>
-  );
-}
 
 function ExampleCard({
   title,
@@ -53,39 +45,6 @@ function ExampleCard({
   );
 }
 
-function Pipeline({ steps }: { steps: { label: string; sub?: string; highlight?: boolean }[] }) {
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      {steps.map((step, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <div
-            className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${
-              step.highlight
-                ? "bg-brand/10 border border-brand/30"
-                : "bg-surface-low"
-            }`}
-          >
-            <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
-            {step.sub && (
-              <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
-            )}
-          </div>
-          {i < steps.length - 1 && (
-            <span className="text-on-surface-variant text-lg">→</span>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-surface-low border border-ghost-border text-on-surface">
-      {children}
-    </span>
-  );
-}
 
 export default function McpServerDemoPage() {
   return (
@@ -113,7 +72,7 @@ export default function McpServerDemoPage() {
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-16">
 
         <section id="setup">
-          <SectionHeading id="setup">Setup</SectionHeading>
+          <DemoSectionHeading id="setup">Setup</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Add one entry to your project&apos;s{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">.mcp.json</code>{" "}
@@ -176,7 +135,7 @@ export default function McpServerDemoPage() {
         </section>
 
         <section id="content-type-exploration">
-          <SectionHeading id="content-type-exploration">Content Type Exploration</SectionHeading>
+          <DemoSectionHeading id="content-type-exploration">Content Type Exploration</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Auditing content types in the CMS UI means navigating menus for each type individually.
             With MCP it is a single natural-language query. Useful when onboarding to an existing
@@ -228,7 +187,7 @@ export default function McpServerDemoPage() {
         </section>
 
         <section id="content-authoring">
-          <SectionHeading id="content-authoring">Content Authoring &amp; Seeding</SectionHeading>
+          <DemoSectionHeading id="content-authoring">Content Authoring &amp; Seeding</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Create and update content items through conversation instead of writing seed scripts
             or using the CMS UI. The MCP server handles the Management API authentication,
@@ -281,7 +240,7 @@ export default function McpServerDemoPage() {
         </section>
 
         <section id="querying-auditing">
-          <SectionHeading id="querying-auditing">Querying &amp; Auditing</SectionHeading>
+          <DemoSectionHeading id="querying-auditing">Querying &amp; Auditing</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Ask questions about your content library in plain language. The MCP server
             translates them into Graph queries with the correct filters, pagination, and locale
@@ -342,7 +301,7 @@ export default function McpServerDemoPage() {
         </section>
 
         <section id="developer-workflow">
-          <SectionHeading id="developer-workflow">Developer Workflow Integration</SectionHeading>
+          <DemoSectionHeading id="developer-workflow">Developer Workflow Integration</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The MCP server fits into common development tasks - not just one-off content
             operations. These examples show how it speeds up the feedback loop when building
@@ -430,7 +389,7 @@ export default function McpServerDemoPage() {
         </section>
 
         <section id="related">
-          <SectionHeading id="related">Related Demos</SectionHeading>
+          <DemoSectionHeading id="related">Related Demos</DemoSectionHeading>
           <div className="grid md:grid-cols-3 gap-4">
             <Link
               href="/demo/management-api"

@@ -6,6 +6,7 @@ import OptiFormsTextarea from "@/components/blocks/OptiFormsTextarea";
 import OptiFormsSelection from "@/components/blocks/OptiFormsSelection";
 import OptiFormsSubmit from "@/components/blocks/OptiFormsSubmit";
 import CodeBlock from "@/components/demo/CodeBlock";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const metadata: Metadata = {
   title: "Forms Demo",
@@ -200,9 +201,7 @@ export default function FormsPage() {
 
         {/* Live Demo */}
         <section id="demo">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Live Demo <a href="#demo" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="demo">Live Demo</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             The form below is rendered directly by the five{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">OptiFormsXxx</code> components
@@ -252,9 +251,7 @@ export default function FormsPage() {
 
         {/* Activation */}
         <section id="activation">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            1. Activate Forms in the CMS <a href="#activation" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="activation">1. Activate Forms in the CMS</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             Before creating forms, go to <strong>Settings &gt; Forms Settings &gt; Activate</strong> in the CMS admin.
             This is a one-time, irreversible step that enables the native form content types
@@ -275,9 +272,7 @@ export default function FormsPage() {
 
         {/* How it works */}
         <section id="how-it-works">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            2. How It Works <a href="#how-it-works" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="how-it-works">2. How It Works</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             Native form elements render as flat siblings in a Visual Builder experience. The submit
             element uses DOM-scoped field collection (the same approach as before) - no React
@@ -336,9 +331,7 @@ export default function FormsPage() {
 
         {/* Component registration */}
         <section id="registration">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            3. Component Registration <a href="#registration" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="registration">3. Component Registration</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             Native form types are already registered in the CMS after activation - no{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">opti:push</code> needed for them.
@@ -353,9 +346,7 @@ export default function FormsPage() {
 
         {/* Component implementations */}
         <section id="components">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            4. Component Implementations <a href="#components" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="components">4. Component Implementations</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             Each native form type maps to a React component in{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">src/components/blocks/OptiFormsXxx/index.tsx</code>.
@@ -371,9 +362,7 @@ export default function FormsPage() {
 
         {/* API route */}
         <section id="submit-handler">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            5. The Submit Handler <a href="#submit-handler" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="submit-handler">5. The Submit Handler</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             The route receives a flat JSON object keyed by slugified{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">Label</code> value (the native
@@ -387,9 +376,7 @@ export default function FormsPage() {
 
         {/* Personalization loop */}
         <section id="personalization-loop">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            6. Closing the Personalization Loop <a href="#personalization-loop" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="personalization-loop">6. Closing the Personalization Loop</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             A form submission is the beginning of a customer profile, not the end.
             Connect the submit handler to Optimizely Data Platform (ODP) and the

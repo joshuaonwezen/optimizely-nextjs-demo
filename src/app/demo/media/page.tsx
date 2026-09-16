@@ -141,20 +141,21 @@ const GRAPH_SHAPES_SNIPPET = `// Graph returns image references in two different
   url: { default: "https://cms.optimizely.com/globalassets/hero.jpg" }
 }
 
-// A defensive helper handles both shapes in one place:
+// A defensive helper handles both shapes in one place
+// (src/components/blocks/_shared/contentRefs.ts):
 type ImageRef =
-  | { url?: { default?: string | null } | null }
-  | { _metadata?: { url?: { default?: string | null } | null } | null }
+  | { url?: { default?: string | null } | null; _metadata?: { url?: { default?: string | null } | null } | null }
   | null;
 
-function resolveImageUrl(ref: ImageRef | undefined): string | null {
+function resolveImageUrl(ref: ImageRef | undefined, src?: (input: never) => string | undefined): string | null {
   if (!ref) return null;
-  if ("url" in ref) return ref.url?.default ?? null;
-  return ref._metadata?.url?.default ?? null;
+  // src() from getPreviewUtils resolves a DAM asset (item.Url) and adds the preview token.
+  return src?.(ref as never) ?? ref.url?.default ?? ref._metadata?.url?.default ?? null;
 }
 
 // Usage in the component:
-const avatarUrl = resolveImageUrl(data.avatar);`;
+const { src } = getPreviewUtils(data);
+const avatarUrl = resolveImageUrl(data.avatar, src);`;
 
 const NEXT_IMAGE_PATTERNS_SNIPPET = `// Three Next.js <Image> usage patterns for CMS images.
 

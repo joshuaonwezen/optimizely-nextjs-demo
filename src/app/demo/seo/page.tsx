@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Callout } from "@/components/blocks/CalloutBlock";
@@ -5,6 +7,7 @@ import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import SectionAnchor from "@/components/demo/SectionAnchor";
 import KeyPoints from "@/components/demo/KeyPoints";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const metadata: Metadata = {
   title: "SEO & Metadata",
@@ -95,41 +98,15 @@ export async function generateMetadata(
   };
 }`;
 
-const SITEMAP_SNIPPET = `// src/app/sitemap.ts
-//
-// Next.js calls this function and serves the result as /sitemap.xml.
-// Use the same GetAllPagePaths query used by generateStaticParams.
+// The sitemap and robots samples are the real files, read at build time, so they
+// can't drift from what the site serves.
+const readSource = (file: string) => fs.readFileSync(path.join(process.cwd(), file), "utf8");
 
-import type { MetadataRoute } from "next";
-import { graphClient } from "@/lib/optimizely/graphClient";
-import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
+const SITEMAP_SNIPPET = `// src/app/sitemap.ts - served at /sitemap.xml by Next.js.
+// Same page list as generateStaticParams (getAllPageRoutes), so the sitemap only
+// advertises URLs the catch-all route actually renders.
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const res   = await fetchAllPagePaths();   // "use cache" + cacheTag("page")
-  const pages = res?._Page?.items ?? [];
-
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://moseyfin.com";
-
-  return pages
-    .filter((p) => p._metadata?.url?.default)
-    .map((p) => ({
-      url:          \`\${baseUrl}\${p._metadata.url.default}\`,
-      lastModified: p._metadata.published ? new Date(p._metadata.published) : new Date(),
-      changeFrequency: "weekly" as const,
-      priority: p._metadata.url.default === "/" ? 1 : 0.8,
-    }));
-}
-
-// Output at /sitemap.xml:
-// <urlset>
-//   <url>
-//     <loc>https://moseyfin.com/en/about</loc>
-//     <lastmod>2025-06-01T00:00:00.000Z</lastmod>
-//     <changefreq>weekly</changefreq>
-//     <priority>0.8</priority>
-//   </url>
-//   ...
-// </urlset>`;
+${readSource("src/app/sitemap.ts")}`;
 
 const JSON_LD_SNIPPET = `// Structured data (JSON-LD) helps search engines understand page content.
 // Add it as a <script type="application/ld+json"> tag in generateMetadata
@@ -221,29 +198,8 @@ const { pa, src } = getPreviewUtils(content);
 
 const ROBOTS_SNIPPET = `// src/app/robots.ts - served at /robots.txt by Next.js
 
-import type { MetadataRoute } from "next";
-
-export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://moseyfin.com";
-
-  return {
-    rules: [
-      {
-        userAgent: "*",
-        allow: "/",
-        disallow: [
-          "/preview",       // editorial preview route - not for bots
-          "/api/",          // API routes
-          "/_next/",        // internal Next.js assets
-        ],
-      },
-    ],
-    sitemap: \`\${siteUrl}/sitemap.xml\`,
-    host:    siteUrl,
-  };
-}
-
-// Canonical URLs - add to generateMetadata for every page:
+${readSource("src/app/robots.ts")}
+// Canonical URLs - add to generateMetadata for every page (siteUrl = getSiteUrl()):
 alternates: {
   canonical: \`\${siteUrl}\${page._metadata.url.default}\`,
   // For multi-locale pages, add hreflang:
@@ -436,10 +392,7 @@ export default function SeoDemoPage() {
         ]} />
 
         <section id="opal-automation">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Automate the SEO cycle with Opal
-            <a href="#opal-automation" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="opal-automation">Automate the SEO cycle with Opal</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             Everything on this page - metadata fields, sitemap freshness, structured data, robots
             rules - can be audited and updated automatically. Opal ships a set of specialized agents

@@ -3,13 +3,15 @@ import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import { StepBadge } from "@/components/ui/StepBadge";
+import InlineCode from "@/components/demo/InlineCode";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const metadata: Metadata = {
   title: "Content Modelling Demo",
 };
 
 
-const ELEMENT_SNIPPET = `// src/components/blocks/StatsCounterBlock/index.tsx
+const ELEMENT_SNIPPET = `// Simplified from src/components/blocks/StatsCounterBlock/index.tsx
 export const StatsCounterBlockType = contentType({
   key: "StatsCounterBlock",
   baseType: "_component",
@@ -21,7 +23,7 @@ export const StatsCounterBlockType = contentType({
   },
 });`;
 
-const SECTION_SNIPPET = `// src/components/blocks/FaqContainerBlock/index.tsx
+const SECTION_SNIPPET = `// Simplified from src/components/blocks/FaqContainerBlock/index.tsx
 export const FaqContainerBlockType = contentType({
   key: "FaqContainerBlock",
   baseType: "_component",
@@ -45,7 +47,7 @@ export const BlueCardBlockType     = contentType({ key: "BlueCardBlock",     …
 export const BigBoldHeadingType    = contentType({ key: "BigBoldHeading",    … });
 export const ThreeColumnGridType   = contentType({ key: "ThreeColumnGrid",   … });`;
 
-const DISPLAY_TEMPLATE_SNIPPET = `// src/components/blocks/TestimonialBlock/index.tsx
+const DISPLAY_TEMPLATE_SNIPPET = `// Simplified from src/components/blocks/TestimonialBlock/index.tsx
 // One content type - identical fields - two visual presentations.
 export const TestimonialCardTemplate = displayTemplate({
   key: "TestimonialCardTemplate",
@@ -243,25 +245,7 @@ backgroundImage: {
 }`;
 
 
-function SectionHeading({ id, children }: { id: string; children: React.ReactNode }) {
-  return (
-    <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-      {children}{" "}
-      <a
-        href={`#${id}`}
-        className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg"
-      >
-        #
-      </a>
-    </h2>
-  );
-}
 
-function Code({ children }: { children: React.ReactNode }) {
-  return (
-    <code className="bg-surface-low px-1 rounded text-xs font-mono">{children}</code>
-  );
-}
 
 function Pill({ children }: { children: React.ReactNode }) {
   return (
@@ -296,7 +280,7 @@ export default function ContentModellingPage() {
 
         {/* 1. Content model strategies */}
         <section id="content-model-strategies">
-          <SectionHeading id="content-model-strategies">Content Model Strategies</SectionHeading>
+          <DemoSectionHeading id="content-model-strategies">Content Model Strategies</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Before choosing base types or composition behaviors, you pick an{" "}
             <em>approach</em> for discovering the model itself. Every approach serves
@@ -446,11 +430,11 @@ export default function ContentModellingPage() {
 
         {/* 2. Three tiers */}
         <section id="three-tiers">
-          <SectionHeading id="three-tiers">The Three-Tier Model</SectionHeading>
+          <DemoSectionHeading id="three-tiers">The Three-Tier Model</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Every piece of content in Visual Builder lives at one of three levels.
             Knowing these levels tells you which{" "}
-            <Code>compositionBehaviors</Code> to give a block, and how editors build
+            <InlineCode>compositionBehaviors</InlineCode> to give a block, and how editors build
             pages - before you write a single line of component code.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
@@ -468,7 +452,7 @@ export default function ContentModellingPage() {
               <p className="text-xs text-on-surface-variant leading-relaxed mb-3">
                 The page itself. Sets the URL, language, SEO metadata, and overall
                 layout. Registered with{" "}
-                <Code>baseType: &quot;_experience&quot;</Code>.
+                <InlineCode>baseType: &quot;_experience&quot;</InlineCode>.
               </p>
               <p className="text-xs text-on-surface-variant">
                 Examples:{" "}
@@ -480,9 +464,9 @@ export default function ContentModellingPage() {
               <p className="text-xs font-semibold text-on-surface mb-2">Section</p>
               <p className="text-xs text-on-surface-variant leading-relaxed mb-3">
                 A layout container inside the page. Groups elements into rows and
-                columns. Must have <Code>sectionEnabled</Code> in{" "}
-                <Code>compositionBehaviors</Code>. Can optionally hold a{" "}
-                <Code>type: &quot;array&quot;</Code> content area.
+                columns. Must have <InlineCode>sectionEnabled</InlineCode> in{" "}
+                <InlineCode>compositionBehaviors</InlineCode>. Can optionally hold a{" "}
+                <InlineCode>type: &quot;array&quot;</InlineCode> content area.
               </p>
               <p className="text-xs text-on-surface-variant">
                 Examples:{" "}
@@ -495,7 +479,7 @@ export default function ContentModellingPage() {
               <p className="text-xs text-on-surface-variant leading-relaxed mb-3">
                 A single content block with nothing inside it. Editors place it
                 inside sections in Visual Builder. Must have{" "}
-                <Code>elementEnabled</Code> in <Code>compositionBehaviors</Code>.
+                <InlineCode>elementEnabled</InlineCode> in <InlineCode>compositionBehaviors</InlineCode>.
               </p>
               <p className="text-xs text-on-surface-variant">
                 Examples:{" "}
@@ -530,20 +514,20 @@ export default function ContentModellingPage() {
             </div>
           </div>
           <p className="text-xs text-on-surface-variant mt-3 max-w-3xl leading-relaxed">
-            <Code>FaqContainerBlock</Code> has <Code>sectionEnabled</Code> and a{" "}
-            <Code>type: &quot;array&quot;</Code> property - so editors add{" "}
-            <Code>FaqItemBlock</Code> children directly on the section in Visual Builder.
-            The SDK&apos;s built-in <Code>BlankSection</Code> works the same way at the
-            layout level, but it accepts any <Code>elementEnabled</Code> block rather
+            <InlineCode>FaqContainerBlock</InlineCode> has <InlineCode>sectionEnabled</InlineCode> and a{" "}
+            <InlineCode>type: &quot;array&quot;</InlineCode> property - so editors add{" "}
+            <InlineCode>FaqItemBlock</InlineCode> children directly on the section in Visual Builder.
+            The SDK&apos;s built-in <InlineCode>BlankSection</InlineCode> works the same way at the
+            layout level, but it accepts any <InlineCode>elementEnabled</InlineCode> block rather
             than a fixed list of allowed types.
           </p>
         </section>
 
         {/* 3. Page types */}
         <section id="page-types">
-          <SectionHeading id="page-types">
+          <DemoSectionHeading id="page-types">
             Page Types - Experience vs Page
-          </SectionHeading>
+          </DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Optimizely SaaS CMS supports two base types for pages. Which one to use
             determines whether a page&apos;s layout is owned by the editor in Visual
@@ -554,13 +538,13 @@ export default function ContentModellingPage() {
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <div className="rounded-2xl border border-brand/20 bg-brand/5 p-6">
               <div className="flex items-center gap-2 mb-3">
-                <Code>_experience</Code>
+                <InlineCode>_experience</InlineCode>
                 <span className="text-xs text-on-surface-variant">base type</span>
               </div>
               <p className="text-xs font-semibold text-on-surface mb-3">Experience - editor-owned layout</p>
               <ul className="space-y-2 text-xs text-on-surface-variant leading-relaxed">
                 <li>The editor assembles the page in Visual Builder by placing blocks into sections and columns.</li>
-                <li>The React component (<Code>DynamicExperience</Code>) renders the layout the editor built using <Code>OptimizelyComposition</Code> - no layout logic lives in the component.</li>
+                <li>The React component (<InlineCode>DynamicExperience</InlineCode>) renders the layout the editor built using <InlineCode>OptimizelyComposition</InlineCode> - no layout logic lives in the component.</li>
                 <li>Best for marketing pages, landing pages, homepages - anything where an editor needs layout control.</li>
                 <li>Graph returns the full composition tree in one query - no extra fetches needed for composition nodes.</li>
               </ul>
@@ -576,15 +560,15 @@ export default function ContentModellingPage() {
 
             <div className="rounded-2xl border border-tertiary/20 bg-tertiary/5 p-6">
               <div className="flex items-center gap-2 mb-3">
-                <Code>_page</Code>
+                <InlineCode>_page</InlineCode>
                 <span className="text-xs text-on-surface-variant">base type</span>
               </div>
               <p className="text-xs font-semibold text-on-surface mb-3">Page - developer-owned layout</p>
               <ul className="space-y-2 text-xs text-on-surface-variant leading-relaxed">
                 <li>The React component defines the layout. The editor only fills in content fields (headline, body, heroImage, etc.).</li>
-                <li>Properties are defined with <Code>contentType()</Code> just like any block - Graph returns them as typed fields.</li>
+                <li>Properties are defined with <InlineCode>contentType()</InlineCode> just like any block - Graph returns them as typed fields.</li>
                 <li>Best for structured content with a consistent layout: article pages, team profiles, case studies.</li>
-                <li><Code>type: &quot;contentReference&quot;</Code> fields (e.g. <Code>author</Code>, images) return just <Code>{"{ key, url }"}</Code> from Graph - fetch the full item in the page component using <Code>getClient().getContent()</Code>. <Code>type: &quot;content&quot;</Code> fields, by contrast, arrive fully expanded.</li>
+                <li><InlineCode>type: &quot;contentReference&quot;</InlineCode> fields (e.g. <InlineCode>author</InlineCode>, images) return just <InlineCode>{"{ key, url }"}</InlineCode> from Graph - fetch the full item in the page component using <InlineCode>getClient().getContent()</InlineCode>. <InlineCode>type: &quot;content&quot;</InlineCode> fields, by contrast, arrive fully expanded.</li>
               </ul>
               <div className="mt-4 pt-4 border-t border-tertiary/10">
                 <p className="text-[10px] font-mono text-tertiary/60 mb-1">Examples in this repo</p>
@@ -599,18 +583,18 @@ export default function ContentModellingPage() {
 
           <Callout label="How both page types reach the screen">
             <p>
-              Both page types go through the same <Code>OptimizelyComponent</Code> - the part that picks the right React component to render. The catch-all route calls{" "}
-              <Code>getContentByPath()</Code>, which returns either a{" "}
-              <Code>DynamicExperience</Code> or a <Code>TraditionalPage</Code> (or any other registered type).{" "}
-              <Code>OptimizelyComponent</Code> reads <Code>__typename</Code> and sends it to the matching React
-              component - so there is no <Code>if/switch</Code> on the type in the route.
+              Both page types go through the same <InlineCode>OptimizelyComponent</InlineCode> - the part that picks the right React component to render. The catch-all route calls{" "}
+              <InlineCode>getContentByPath()</InlineCode>, which returns either a{" "}
+              <InlineCode>DynamicExperience</InlineCode> or a <InlineCode>TraditionalPage</InlineCode> (or any other registered type).{" "}
+              <InlineCode>OptimizelyComponent</InlineCode> reads <InlineCode>__typename</InlineCode> and sends it to the matching React
+              component - so there is no <InlineCode>if/switch</InlineCode> on the type in the route.
               The key difference is what that component does with its{" "}
-              <Code>content</Code> prop - and it is only one extra step.{" "}
+              <InlineCode>content</InlineCode> prop - and it is only one extra step.{" "}
               <strong>Both then render components.</strong> An Experience first loops over{" "}
-              <Code>content.composition.nodes</Code> (the blocks the editor arranged)
+              <InlineCode>content.composition.nodes</InlineCode> (the blocks the editor arranged)
               and renders the component for each one. A Page skips that loop and renders
-              its component straight from named fields like <Code>content.heading</Code>{" "}
-              and <Code>content.body</Code>. In this app that means React components; on a
+              its component straight from named fields like <InlineCode>content.heading</InlineCode>{" "}
+              and <InlineCode>content.body</InlineCode>. In this app that means React components; on a
               native app or another framework it is whatever view that platform renders.
             </p>
           </Callout>
@@ -696,9 +680,9 @@ export default function ContentModellingPage() {
 
         {/* 4. Governance - editor flexibility vs lockdown */}
         <section id="governance">
-          <SectionHeading id="governance">
+          <DemoSectionHeading id="governance">
             Governance - Editor Flexibility vs Lockdown
-          </SectionHeading>
+          </DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             A content model is also a set of guardrails. Too loose and editors can
             break brand and layout consistency; too tight and every small change needs
@@ -727,7 +711,7 @@ export default function ContentModellingPage() {
             <div className="rounded-2xl border border-on-surface-variant/15 bg-surface-lowest p-5">
               <p className="text-xs font-semibold text-on-surface mb-2">Freedom within guardrails</p>
               <p className="text-xs text-on-surface-variant leading-relaxed mb-3">
-                An Experience with curated <Code>allowedTypes</Code>{" "}
+                An Experience with curated <InlineCode>allowedTypes</InlineCode>{" "}
                 and a fixed set of display-template settings. Editors compose freely,
                 but only from an approved palette.
               </p>
@@ -775,8 +759,8 @@ export default function ContentModellingPage() {
             <Callout variant="do" label="Do - lock structure, open content">
               <ul className="space-y-1.5 text-xs">
                 <li>Fix the layout of transactional and legal pages where consistency is non-negotiable</li>
-                <li>Restrict content areas to the block types that belong there via <Code>allowedTypes</Code></li>
-                <li>Offer visual variety through curated display-template <Code>choices</Code>, not free-form styling</li>
+                <li>Restrict content areas to the block types that belong there via <InlineCode>allowedTypes</InlineCode></li>
+                <li>Offer visual variety through curated display-template <InlineCode>choices</InlineCode>, not free-form styling</li>
                 <li>Leave the actual copy, imagery, and ordering to editors</li>
               </ul>
             </Callout>
@@ -801,11 +785,11 @@ export default function ContentModellingPage() {
 
         {/* 5. compositionBehaviors - elementEnabled vs sectionEnabled */}
         <section id="composition-behaviors">
-          <SectionHeading id="composition-behaviors">
+          <DemoSectionHeading id="composition-behaviors">
             elementEnabled vs sectionEnabled
-          </SectionHeading>
+          </DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            <Code>compositionBehaviors</Code> is the single most important property
+            <InlineCode>compositionBehaviors</InlineCode> is the single most important property
             on a content type. It controls where editors can place a block in Visual
             Builder and whether it can contain other blocks.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/8-experience.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
@@ -814,27 +798,27 @@ export default function ContentModellingPage() {
           <div className="grid md:grid-cols-3 gap-4 mb-6">
             <Callout>
               <p className="text-xs font-semibold text-on-surface mb-2">
-                <Code>[&quot;elementEnabled&quot;]</Code>
+                <InlineCode>[&quot;elementEnabled&quot;]</InlineCode>
               </p>
               <p className="text-xs text-on-surface-variant leading-relaxed">
                 A single block with nothing inside it. Cannot have a{" "}
-                <Code>type: &quot;array&quot;</Code> content area property - the CMS
+                <InlineCode>type: &quot;array&quot;</InlineCode> content area property - the CMS
                 will silently ignore it. Editors place it inside sections.
               </p>
             </Callout>
             <Callout>
               <p className="text-xs font-semibold text-on-surface mb-2">
-                <Code>[&quot;sectionEnabled&quot;]</Code>
+                <InlineCode>[&quot;sectionEnabled&quot;]</InlineCode>
               </p>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                A container only. Can have <Code>type: &quot;array&quot;</Code>{" "}
+                A container only. Can have <InlineCode>type: &quot;array&quot;</InlineCode>{" "}
                 content areas. Cannot be placed inside another section. The SDK
-                lays out the child blocks for you via <Code>OptimizelyGridSection</Code>.
+                lays out the child blocks for you via <InlineCode>OptimizelyGridSection</InlineCode>.
               </p>
             </Callout>
             <Callout>
               <p className="text-xs font-semibold text-on-surface mb-2">
-                <Code>[&quot;sectionEnabled&quot;, &quot;elementEnabled&quot;]</Code>
+                <InlineCode>[&quot;sectionEnabled&quot;, &quot;elementEnabled&quot;]</InlineCode>
               </p>
               <p className="text-xs text-on-surface-variant leading-relaxed">
                 Flexible - editors can place it at either level. Use when a block
@@ -845,8 +829,8 @@ export default function ContentModellingPage() {
           </div>
 
           <p className="text-xs text-on-surface-variant mb-4 font-medium">
-            Rule of thumb: if the block has a <Code>type: &quot;array&quot;</Code> property → <Code>sectionEnabled</Code>.
-            A single block with nothing inside it → <Code>elementEnabled</Code>. Unsure → both.
+            Rule of thumb: if the block has a <InlineCode>type: &quot;array&quot;</InlineCode> property → <InlineCode>sectionEnabled</InlineCode>.
+            A single block with nothing inside it → <InlineCode>elementEnabled</InlineCode>. Unsure → both.
           </p>
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -857,7 +841,7 @@ export default function ContentModellingPage() {
 
         {/* 6. Naming */}
         <section id="naming">
-          <SectionHeading id="naming">Name for Purpose, Not Appearance</SectionHeading>
+          <DemoSectionHeading id="naming">Name for Purpose, Not Appearance</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Content type names should describe <em>what the content is</em>, not
             how it looks today. Visual names break the moment the design changes -
@@ -894,9 +878,9 @@ export default function ContentModellingPage() {
 
         {/* 7. Display templates vs new types */}
         <section id="display-templates-vs-types">
-          <SectionHeading id="display-templates-vs-types">
+          <DemoSectionHeading id="display-templates-vs-types">
             Display Template vs New Content Type
-          </SectionHeading>
+          </DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             The most common modelling decision: should a visual variation be a new
             content type or a display template on an existing one? It comes down to
@@ -927,9 +911,9 @@ export default function ContentModellingPage() {
 
         {/* 8. Reuse patterns */}
         <section id="reuse-patterns">
-          <SectionHeading id="reuse-patterns">
+          <DemoSectionHeading id="reuse-patterns">
             Content Reuse: Inline vs Referenced
-          </SectionHeading>
+          </DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Blocks can be <em>composed inline</em> - created inside a page&apos;s
             Visual Builder session - or <em>referenced</em> - existing as
@@ -941,38 +925,38 @@ export default function ContentModellingPage() {
           <div className="grid md:grid-cols-2 gap-4 mb-6">
             <Callout>
               <p className="text-xs font-semibold text-on-surface mb-3">
-                Inline composition - <Code>type: &quot;array&quot;</Code>
+                Inline composition - <InlineCode>type: &quot;array&quot;</InlineCode>
               </p>
               <ul className="text-xs text-on-surface-variant space-y-2 leading-relaxed">
                 <li>Block is created <em>inside</em> the page - editing it affects only this page</li>
-                <li>Graph includes the full data for <Code>type: &quot;array&quot;</Code> content areas automatically - no extra fetch needed</li>
+                <li>Graph includes the full data for <InlineCode>type: &quot;array&quot;</InlineCode> content areas automatically - no extra fetch needed</li>
                 <li>Best for page-specific content: hero text, feature lists, stats grids</li>
                 <li>Examples: <Pill>FeatureItemBlock</Pill> inside a business banking page, <Pill>StatsCounterBlock</Pill> in a grid</li>
               </ul>
             </Callout>
             <Callout>
               <p className="text-xs font-semibold text-on-surface mb-3">
-                Referenced content - <Code>type: &quot;contentReference&quot;</Code>
+                Referenced content - <InlineCode>type: &quot;contentReference&quot;</InlineCode>
               </p>
               <ul className="text-xs text-on-surface-variant space-y-2 leading-relaxed">
                 <li>Block exists as its own CMS item - editing it once updates everywhere it&apos;s used</li>
                 <li>Best for shared content: author bios, legal disclaimers, global FAQs</li>
-                <li>Graph returns just <Code>{"{ key, url }"}</Code> for a <Code>contentReference</Code> - fetch the full data in the parent page component using <Code>getClient().getContent()</Code></li>
-                <li>Examples: <Pill>AuthorBlock</Pill> linked from 10 articles via <Code>author</Code>, a hero image reused across pages</li>
+                <li>Graph returns just <InlineCode>{"{ key, url }"}</InlineCode> for a <InlineCode>contentReference</InlineCode> - fetch the full data in the parent page component using <InlineCode>getClient().getContent()</InlineCode></li>
+                <li>Examples: <Pill>AuthorBlock</Pill> linked from 10 articles via <InlineCode>author</InlineCode>, a hero image reused across pages</li>
               </ul>
             </Callout>
           </div>
 
           <Callout variant="warning" label="Gotcha">
-            <strong>The type that returns only the basics is <Code>type: &quot;contentReference&quot;</Code>, not <Code>type: &quot;content&quot;</Code>.</strong>{" "}
-            A <Code>type: &quot;content&quot;</Code> reference is inline-expanded by Graph -
+            <strong>The type that returns only the basics is <InlineCode>type: &quot;contentReference&quot;</InlineCode>, not <InlineCode>type: &quot;content&quot;</InlineCode>.</strong>{" "}
+            A <InlineCode>type: &quot;content&quot;</InlineCode> reference is inline-expanded by Graph -
             the SDK auto-generates a fragment for every allowed component type, so the
             block arrives fully typed in the page query with no extra fetch, whether it is a
-            single reference or a <Code>type: &quot;array&quot;</Code> content area. Only{" "}
-            <Code>type: &quot;contentReference&quot;</Code> comes back as just{" "}
-            <Code>{"{ key, url }"}</Code> - for those, resolve the full item in the{" "}
+            single reference or a <InlineCode>type: &quot;array&quot;</InlineCode> content area. Only{" "}
+            <InlineCode>type: &quot;contentReference&quot;</InlineCode> comes back as just{" "}
+            <InlineCode>{"{ key, url }"}</InlineCode> - for those, resolve the full item in the{" "}
             <strong>parent page component</strong> using{" "}
-            <Code>getClient().getContent({"{ key }"})</Code> before passing it
+            <InlineCode>getClient().getContent({"{ key }"})</InlineCode> before passing it
             down. Never add self-fetch logic inside the block itself.
           </Callout>
 
@@ -1063,9 +1047,9 @@ export default function ContentModellingPage() {
 
         {/* 8b. The four ways to relate content */}
         <section id="content-spectrum">
-          <SectionHeading id="content-spectrum">
+          <DemoSectionHeading id="content-spectrum">
             The four ways to relate content
-          </SectionHeading>
+          </DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             The inline-vs-referenced choice above is really a spectrum of four property types. They
             differ in how tightly the child is coupled to its parent, how Graph resolves them in
@@ -1094,7 +1078,7 @@ export default function ContentModellingPage() {
                   A single slot for an independent item. The editor can pick an existing item
                   or create a new inline block. Updating the referenced item affects every parent.
                 </p>
-                <p className="text-xs text-on-surface-variant"><span className="font-medium">Graph: </span>Returns <Code>_metadata</Code> only - must self-fetch</p>
+                <p className="text-xs text-on-surface-variant"><span className="font-medium">Graph: </span>Returns <InlineCode>_metadata</InlineCode> only - must self-fetch</p>
                 <p className="text-xs text-on-surface-variant"><span className="font-medium">Example: </span>Featured FAQ on a product page</p>
               </div>
               <CodeBlock code={SPECTRUM_CONTENT} />
@@ -1119,9 +1103,9 @@ export default function ContentModellingPage() {
                 <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
                   A reference to an existing item only - editors pick from the content tree,
                   they cannot create inline. The only reference type available on{" "}
-                  <Code>elementEnabled</Code> blocks.
+                  <InlineCode>elementEnabled</InlineCode> blocks.
                 </p>
-                <p className="text-xs text-on-surface-variant"><span className="font-medium">Graph: </span>Full object (specific type) or <Code>_metadata</Code> (allowedTypes)</p>
+                <p className="text-xs text-on-surface-variant"><span className="font-medium">Graph: </span>Full object (specific type) or <InlineCode>_metadata</InlineCode> (allowedTypes)</p>
                 <p className="text-xs text-on-surface-variant"><span className="font-medium">Example: </span>Background image on a hero</p>
               </div>
               <CodeBlock code={SPECTRUM_REFERENCE} />
@@ -1167,9 +1151,9 @@ export default function ContentModellingPage() {
 
         {/* 8c. Content drift and single source of truth */}
         <section id="content-drift">
-          <SectionHeading id="content-drift">
+          <DemoSectionHeading id="content-drift">
             Content drift and single source of truth
-          </SectionHeading>
+          </DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             The reason the reference-vs-embed choice matters editorially: embedded content diverges
             over time. The more pages that hold their own copy of a piece of content, the higher the
@@ -1190,7 +1174,7 @@ export default function ContentModellingPage() {
             <div className="bg-surface-lowest border border-error/30 rounded-2xl p-6">
               <p className="text-xs font-semibold text-error mb-3">Embedded - copied on save</p>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                The same promo is embedded as a <Code>type: &quot;component&quot;</Code> on each page.
+                The same promo is embedded as a <InlineCode>type: &quot;component&quot;</InlineCode> on each page.
                 To update the offer text, an editor must open and re-publish all 12 pages individually.
               </p>
               <p className="text-xs text-on-surface-variant italic">Edit count: 12. Risk of inconsistency: high.</p>
@@ -1222,7 +1206,7 @@ export default function ContentModellingPage() {
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-surface-lowest border border-brand/30 rounded-2xl p-6">
               <p className="text-xs font-semibold text-brand mb-4">
-                Content Area (<Code>type: &quot;array&quot;</Code>) when:
+                Content Area (<InlineCode>type: &quot;array&quot;</InlineCode>) when:
               </p>
               <ul className="space-y-2 text-sm text-on-surface-variant">
                 {[
@@ -1237,7 +1221,7 @@ export default function ContentModellingPage() {
             </div>
             <div className="bg-surface-lowest border border-brand/30 rounded-2xl p-6">
               <p className="text-xs font-semibold text-brand mb-4">
-                Reference (<Code>type: &quot;content&quot;</Code> / <Code>type: &quot;contentReference&quot;</Code>) when:
+                Reference (<InlineCode>type: &quot;content&quot;</InlineCode> / <InlineCode>type: &quot;contentReference&quot;</InlineCode>) when:
               </p>
               <ul className="space-y-2 text-sm text-on-surface-variant">
                 {[
@@ -1252,7 +1236,7 @@ export default function ContentModellingPage() {
             </div>
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
               <p className="text-xs font-semibold text-on-surface mb-4">
-                Embed (<Code>type: &quot;component&quot;</Code>) when:
+                Embed (<InlineCode>type: &quot;component&quot;</InlineCode>) when:
               </p>
               <ul className="space-y-2 text-sm text-on-surface-variant">
                 {[
@@ -1270,9 +1254,9 @@ export default function ContentModellingPage() {
 
         {/* 9. Property types */}
         <section id="property-types">
-          <SectionHeading id="property-types">
+          <DemoSectionHeading id="property-types">
             Choosing the Right Property Type
-          </SectionHeading>
+          </DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Each property type gives the editor a different input in the CMS,
             and comes back in a different shape from Graph. Choosing the right one
@@ -1317,8 +1301,8 @@ export default function ContentModellingPage() {
               <a href="#indexing-and-localization" className="text-brand hover:underline">
                 Graph Indexing and Localization
               </a>{" "}
-              section below for a full guide on <Code>indexingType</Code> values and{" "}
-              <Code>isLocalized</Code>.
+              section below for a full guide on <InlineCode>indexingType</InlineCode> values and{" "}
+              <InlineCode>isLocalized</InlineCode>.
             </p>
           </Callout>
 
@@ -1333,18 +1317,18 @@ export default function ContentModellingPage() {
 
         {/* 10. Fetching referenced content */}
         <section id="fragment-colocation">
-          <SectionHeading id="fragment-colocation">Fetching Referenced Content</SectionHeading>
+          <DemoSectionHeading id="fragment-colocation">Fetching Referenced Content</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             For most blocks you do not write a GraphQL query at all.{" "}
-            <Code>client.getContentByPath()</Code> in the catch-all page route fetches
+            <InlineCode>client.getContentByPath()</InlineCode> in the catch-all page route fetches
             the full composition - every section, every inline element - in one
             request automatically.
           </p>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             The exception is <em>referenced content</em>. Graph does not include the full
-            data for single <Code>type: &quot;contentReference&quot;</Code> properties - the component
+            data for single <InlineCode>type: &quot;contentReference&quot;</InlineCode> properties - the component
             receives just the basics (the item&apos;s key). To get the full field data, call{" "}
-            <Code>getClient().getContent(&#123; key &#125;)</Code> directly inside the
+            <InlineCode>getClient().getContent(&#123; key &#125;)</InlineCode> directly inside the
             component. No GraphQL query, no fragment file needed.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
@@ -1384,9 +1368,9 @@ export default function ContentModellingPage() {
 
           <Callout label="Which blocks use this in this demo" className="mt-4 max-w-3xl">
             <p>
-              <Code>TimelineBlock</Code>, <Code>TeamGridBlock</Code>,{" "}
-              <Code>ArticlePage</Code>, and <Code>CaseStudyPage</Code> all use{" "}
-              <Code>getClient().getContent()</Code> to fetch their referenced content.
+              <InlineCode>TimelineBlock</InlineCode>, <InlineCode>TeamGridBlock</InlineCode>,{" "}
+              <InlineCode>ArticlePage</InlineCode>, and <InlineCode>CaseStudyPage</InlineCode> all use{" "}
+              <InlineCode>getClient().getContent()</InlineCode> to fetch their referenced content.
               Blocks whose content already arrives in full through the page
               layout (most blocks) need no self-fetch at all.
             </p>
@@ -1395,13 +1379,13 @@ export default function ContentModellingPage() {
 
         {/* 11. Indexing and localization */}
         <section id="indexing-and-localization">
-          <SectionHeading id="indexing-and-localization">
+          <DemoSectionHeading id="indexing-and-localization">
             Graph Indexing and Localization
-          </SectionHeading>
+          </DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Two per-field settings control how Graph stores and serves your
-            content: <Code>indexingType</Code> decides whether a field can be
-            searched or filtered in Graph queries, and <Code>isLocalized</Code>{" "}
+            content: <InlineCode>indexingType</InlineCode> decides whether a field can be
+            searched or filtered in Graph queries, and <InlineCode>isLocalized</InlineCode>{" "}
             tells the CMS to store a separate value for each language.
           </p>
 
@@ -1410,12 +1394,12 @@ export default function ContentModellingPage() {
             indexingType
           </h3>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            Only three values exist. The main rule: <Code>&quot;searchable&quot;</Code>{" "}
-            and <Code>&quot;queryable&quot;</Code> work on basic value fields only
-            (<Code>string</Code>, <Code>richText</Code>, <Code>integer</Code>,{" "}
-            <Code>dateTime</Code>, <Code>boolean</Code>). The CMS rejects them on{" "}
-            <Code>contentReference</Code> fields - those only accept{" "}
-            <Code>&quot;disabled&quot;</Code>.
+            Only three values exist. The main rule: <InlineCode>&quot;searchable&quot;</InlineCode>{" "}
+            and <InlineCode>&quot;queryable&quot;</InlineCode> work on basic value fields only
+            (<InlineCode>string</InlineCode>, <InlineCode>richText</InlineCode>, <InlineCode>integer</InlineCode>,{" "}
+            <InlineCode>dateTime</InlineCode>, <InlineCode>boolean</InlineCode>). The CMS rejects them on{" "}
+            <InlineCode>contentReference</InlineCode> fields - those only accept{" "}
+            <InlineCode>&quot;disabled&quot;</InlineCode>.
           </p>
 
           <div className="overflow-auto rounded-2xl border border-ghost-border mb-6">
@@ -1467,7 +1451,7 @@ export default function ContentModellingPage() {
             isLocalized
           </h3>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            When <Code>isLocalized: true</Code> is set, the CMS stores a separate
+            When <InlineCode>isLocalized: true</InlineCode> is set, the CMS stores a separate
             value for each language - editors can provide a French headline and an
             English headline for the same block. Without it, all languages share
             a single value.
@@ -1476,17 +1460,17 @@ export default function ContentModellingPage() {
           <div className="grid md:grid-cols-2 gap-4 mb-6">
             <Callout variant="do" label="Localize">
               <ul className="space-y-1 text-xs">
-                <li>All <Code>string</Code> fields visible to site visitors (headlines, labels, CTA text, alt text)</li>
-                <li>All <Code>richText</Code> fields (bio, body, description)</li>
-                <li><Code>json</Code> fields containing display text (table columns/rows)</li>
+                <li>All <InlineCode>string</InlineCode> fields visible to site visitors (headlines, labels, CTA text, alt text)</li>
+                <li>All <InlineCode>richText</InlineCode> fields (bio, body, description)</li>
+                <li><InlineCode>json</InlineCode> fields containing display text (table columns/rows)</li>
               </ul>
             </Callout>
             <Callout variant="warning" label="Do NOT localize">
               <ul className="space-y-1 text-xs">
-                <li><Code>url</Code> fields - the same URL serves all languages</li>
-                <li><Code>boolean</Code>, <Code>integer</Code>, <Code>dateTime</Code> - behind-the-scenes values</li>
-                <li>Fixed-choice keys (<Code>category</Code>, <Code>industry</Code>) - the key is shared; the label shown to visitors is stored separately</li>
-                <li>Technical identifiers (<Code>fieldName</Code>, <Code>rendition</Code>, <Code>icon</Code>)</li>
+                <li><InlineCode>url</InlineCode> fields - the same URL serves all languages</li>
+                <li><InlineCode>boolean</InlineCode>, <InlineCode>integer</InlineCode>, <InlineCode>dateTime</InlineCode> - behind-the-scenes values</li>
+                <li>Fixed-choice keys (<InlineCode>category</InlineCode>, <InlineCode>industry</InlineCode>) - the key is shared; the label shown to visitors is stored separately</li>
+                <li>Technical identifiers (<InlineCode>fieldName</InlineCode>, <InlineCode>rendition</InlineCode>, <InlineCode>icon</InlineCode>)</li>
               </ul>
             </Callout>
           </div>
@@ -1495,9 +1479,9 @@ export default function ContentModellingPage() {
 
           <Callout label="Gotcha - breaking change" className="mt-4 max-w-3xl">
             <p>
-              Adding <Code>isLocalized: true</Code> to an existing field is a breaking
+              Adding <InlineCode>isLocalized: true</InlineCode> to an existing field is a breaking
               schema change. The CMS CLI will refuse to push without{" "}
-              <Code>--force</Code>. Existing content keeps its value in the default
+              <InlineCode>--force</InlineCode>. Existing content keeps its value in the default
               locale; other locales start empty. Plan accordingly before enabling
               localization on a field that already has published content.
             </p>

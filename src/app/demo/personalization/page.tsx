@@ -9,6 +9,7 @@ import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import { StepBadge } from "@/components/ui/StepBadge";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const dynamic = "force-dynamic";
 
@@ -58,9 +59,11 @@ useEffect(() => {
 const ODP_SEGMENT_QUERY_SNIPPET = `// src/lib/optimizely/odp.ts - server-side segment membership query.
 // Auth is the ODP API key in an x-api-key header (server-only env var).
 
+// Look up by fs_user_id: OdpSetup stitches the FX visitor id into ODP under
+// that identifier. Querying by vuid returns an empty customer.
 const SEGMENT_QUERY = \`
   query GetSegments($userId: String!, $segmentFilter: [String!]!) {
-    customer(vuid: $userId) {
+    customer(fs_user_id: $userId) {
       audiences(subset: $segmentFilter) {
         edges { node { name state } }
       }
@@ -227,10 +230,7 @@ export default async function PersonalizationDemoPage() {
 
         {/* Section A - three paths to personalized content */}
         <section id="how-it-works">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Four Paths to Personalized Content{" "}
-            <a href="#how-it-works" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="how-it-works">Four Paths to Personalized Content{" "}</DemoSectionHeading>
           <ul className="text-sm text-on-surface-variant mb-8 max-w-3xl space-y-2">
             <li><strong className="text-on-surface">Feature Experimentation (FX)</strong> - delivery engine: configures audiences, buckets traffic, runs A/B experiments, and produces statistical results. Managed in your source code, so the decision can run at the <strong className="text-on-surface">edge / server-side</strong> or <strong className="text-on-surface">client-side</strong> via an SDK.</li>
             <li><strong className="text-on-surface">ODP (Optimizely Data Platform)</strong> - audience layer only: builds behavioral profiles from cross-session events. No delivery role - plugs into FX as an audience source, or drives Graph directly.</li>
@@ -412,10 +412,7 @@ export default async function PersonalizationDemoPage() {
 
         {/* Section B - the two sources for FX audiences */}
         <section id="targeting-sources">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            FX Audience Sources: Native Attributes vs ODP Segments{" "}
-            <a href="#targeting-sources" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="targeting-sources">FX Audience Sources: Native Attributes vs ODP Segments{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             ODP is an audience layer, not a delivery engine - it plugs into FX&apos;s audience
             configuration to provide behavioral depth. Within the FX path, an audience condition
@@ -479,10 +476,7 @@ export default async function PersonalizationDemoPage() {
 
         {/* Audience attributes */}
         <section id="audience-attributes">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            FX Native Attributes in Depth{" "}
-            <a href="#audience-attributes" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="audience-attributes">FX Native Attributes in Depth{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The native path in detail. FX audiences are matched against the attributes you return from{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>,
@@ -721,10 +715,7 @@ const decision = userCtx.decide("homepage", [DISABLE_DECISION_EVENT]);
 
         {/* Extending the visitor context */}
         <section id="extending-visitor-context">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Extending the Visitor Context{" "}
-            <a href="#extending-visitor-context" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="extending-visitor-context">Extending the Visitor Context{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Adding a new audience signal is a one-file change. Once an attribute flows into{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>,
@@ -784,10 +775,7 @@ const decision = userCtx.decide("homepage", [DISABLE_DECISION_EVENT]);
 
         {/* Section D - ODP as the behavioral layer for deeper targeting */}
         <section id="odp-personalization">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            ODP: The Behavioral Layer for Deeper Targeting{" "}
-            <a href="#odp-personalization" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="odp-personalization">ODP: The Behavioral Layer for Deeper Targeting{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             ODP is a behavioral profile store - it remembers what a visitor did over time. You can
             use it in two ways: reference an ODP segment as an{" "}
@@ -876,10 +864,7 @@ ${mappingEntries.length > 0
 
         {/* How ODP builds the profiles: identity, events, segments, direct path */}
         <section id="odp">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            ODP: identity, events &amp; segments{" "}
-            <a href="#odp" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="odp">ODP: identity, events &amp; segments{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The segments above don&apos;t appear by magic - ODP (Optimizely Data Platform) builds a
             behavioral profile per visitor from events the browser sends, then evaluates segment
@@ -978,10 +963,7 @@ ${mappingEntries.length > 0
 
         {/* Web Experimentation bridge */}
         <section id="web-experimentation-bridge">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Web Experimentation → CMS Content: a Fallback Bridge{" "}
-            <a href="#web-experimentation-bridge" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="web-experimentation-bridge">Web Experimentation → CMS Content: a Fallback Bridge{" "}</DemoSectionHeading>
 
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
             Teams that already run Web Experimentation and then adopt a headless CMS almost always hit the
@@ -1229,10 +1211,7 @@ if (wxVariation && wxVariation.includes("--")) {
 
         {/* Audience Switcher */}
         <section id="audience-switcher">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Demo: Audience Switcher{" "}
-            <a href="#audience-switcher" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="audience-switcher">Demo: Audience Switcher{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             The floating pill in the bottom-right corner lets a presenter instantly switch
             between audience segments without waiting for FX bucketing - useful for showing
@@ -1324,10 +1303,7 @@ const bucketingId = cookieStore.get("demo_bucketing_id")?.value;
 
         {/* Your session */}
         <section id="your-session">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Your Session{" "}
-            <a href="#your-session" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="your-session">Your Session{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             The attributes below are what{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}

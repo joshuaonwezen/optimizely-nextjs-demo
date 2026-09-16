@@ -7,6 +7,7 @@ import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import { StepBadge } from "@/components/ui/StepBadge";
 import Link from "next/link";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const metadata: Metadata = { title: "ISR Caching & Webhooks Demo" };
 
@@ -414,9 +415,7 @@ export default function CachingDemoPage() {
 
         {/* Live proof */}
         <section id="live-proof">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Live Proof of ISR <a href="#live-proof" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="live-proof">Live Proof of ISR</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             This page is server-rendered with{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">export const revalidate = 30</code>.
@@ -436,9 +435,7 @@ export default function CachingDemoPage() {
 
         {/* Flow diagram */}
         <section id="revalidate-flow">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            How Publish → Cache Invalidation Works <a href="#revalidate-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="revalidate-flow">How Publish → Cache Invalidation Works</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             When an editor publishes, the ISR cache is invalidated automatically - no redeploy, no manual flush.
             Here&apos;s what actually happens, step by step.{" "}
@@ -504,9 +501,7 @@ export default function CachingDemoPage() {
 
         {/* Cache strategy table */}
         <section id="caching-strategy">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Caching Strategy <a href="#caching-strategy" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="caching-strategy">Caching Strategy</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             Every data source in the project has an explicit caching policy.
             TTL (Time To Live) is how long a cached version is kept before Next.js considers
@@ -559,10 +554,7 @@ export default function CachingDemoPage() {
         {/* Choosing the right method */}
         <section id="choosing-method" className="space-y-8">
           <div>
-            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              Choosing the Right Method{" "}
-              <a href="#choosing-method" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-            </h2>
+            <DemoSectionHeading id="choosing-method">Choosing the Right Method{" "}</DemoSectionHeading>
             <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
               The SDK provides{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">getContentByPath()</code>,{" "}
@@ -669,10 +661,7 @@ export default function CachingDemoPage() {
         {/* Graph CDN cache */}
         <section id="graph-cache" className="space-y-8">
           <div>
-            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              Graph&apos;s Response Cache - A Second Layer{" "}
-              <a href="#graph-cache" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-            </h2>
+            <DemoSectionHeading id="graph-cache">Graph&apos;s Response Cache - A Second Layer{" "}</DemoSectionHeading>
             <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
               Two independent cache layers sit between an editor publishing content and a user seeing
               it. They are bypassed with different mechanisms - and{" "}
@@ -813,10 +802,7 @@ export default function CachingDemoPage() {
         {/* What kills ISR */}
         <section id="no-store-killers" className="space-y-8">
           <div>
-            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              What kills ISR (and how to fix it){" "}
-              <a href="#no-store-killers" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-            </h2>
+            <DemoSectionHeading id="no-store-killers">What kills ISR (and how to fix it){" "}</DemoSectionHeading>
             <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
               Next.js detects any call to{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">cookies()</code> or{" "}
@@ -873,10 +859,7 @@ export default function CachingDemoPage() {
         {/* Link prefetching */}
         <section id="link-prefetch" className="space-y-8">
           <div>
-            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              Client-side Prefetching{" "}
-              <a href="#link-prefetch" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-            </h2>
+            <DemoSectionHeading id="link-prefetch">Client-side Prefetching{" "}</DemoSectionHeading>
             <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
               In production, Next.js{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">&lt;Link&gt;</code>{" "}
@@ -931,9 +914,7 @@ export default function CachingDemoPage() {
         {/* Webhook endpoints */}
         <section id="webhook-endpoints" className="space-y-12">
           <div>
-            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              Webhook Endpoints <a href="#webhook-endpoints" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-            </h2>
+            <DemoSectionHeading id="webhook-endpoints">Webhook Endpoints</DemoSectionHeading>
             <p className="text-sm text-on-surface-variant max-w-3xl">
               Three webhook routes handle different event sources. All return immediately -
               cache invalidation is synchronous but page regeneration is lazy (happens on
@@ -1001,9 +982,7 @@ export default function CachingDemoPage() {
         {/* Registering & testing webhooks */}
         <section id="webhook-registration" className="space-y-8">
           <div>
-            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              Registering &amp; testing webhooks <a href="#webhook-registration" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-            </h2>
+            <DemoSectionHeading id="webhook-registration">Registering &amp; testing webhooks</DemoSectionHeading>
             <p className="text-sm text-on-surface-variant max-w-3xl">
               The <code className="bg-surface-low px-1 rounded text-xs font-mono">/api/webhooks</code> receiver above only
               fires once Graph is told where to send events. Registration happens against Graph&apos;s management endpoint

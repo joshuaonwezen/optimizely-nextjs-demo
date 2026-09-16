@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import SourcePanel from "@/components/demo/SourcePanel";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 const heroBlockTs = fs.readFileSync(
   path.join(process.cwd(), "src/components/blocks/HeroBlock/index.tsx"),
@@ -125,7 +126,7 @@ async function CmsPage({ params }) {
 
 export default withAppContext(CmsPage);`;
 
-const EXPERIENCE_SNIPPET = `// src/components/experience/DynamicExperience.tsx
+const EXPERIENCE_SNIPPET = `// Simplified from src/components/experience/DynamicExperience.tsx + CompositionExperience.tsx
 import { OptimizelyComposition, getPreviewUtils, type ComponentContainerProps }
   from "@optimizely/cms-sdk/react/server";
 
@@ -148,7 +149,8 @@ export default function DynamicExperience({ content }: { content: any }) {
   );
 }`;
 
-const SECTION_SNIPPET = `// src/components/experience/BlankSection.tsx
+const SECTION_SNIPPET = `// Simplified from src/components/experience/BlankSection.tsx (the real one reads
+// every row, column and section setting from lookup tables)
 import { OptimizelyGridSection, getPreviewUtils, type StructureContainerProps }
   from "@optimizely/cms-sdk/react/server";
 
@@ -261,9 +263,7 @@ export default function VisualBuilderPage() {
 
         {/* Composition model */}
         <section id="composition-model">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Composition Model <a href="#composition-model" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="composition-model">Composition Model</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             Visual Builder pages are a tree. The SDK flattens and dispatches that
             tree through three components - one per level.
@@ -295,9 +295,7 @@ export default function VisualBuilderPage() {
 
         {/* Page route */}
         <section id="page-route">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Page Route <a href="#page-route" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="page-route">Page Route</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             <code className="bg-surface-low px-1 rounded text-xs font-mono">config()</code> sets the
             Graph credentials once at module init. Every page route then calls{" "}
@@ -315,9 +313,7 @@ export default function VisualBuilderPage() {
 
         {/* Registry */}
         <section id="component-registry">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Component Registry <a href="#component-registry" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="component-registry">Component Registry</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             <code className="bg-surface-low px-1 rounded text-xs font-mono">initComponentRegistry()</code>{" "}
             is called once (guarded by an <code className="bg-surface-low px-1 rounded text-xs font-mono">initialized</code> flag)
@@ -332,9 +328,7 @@ export default function VisualBuilderPage() {
 
         {/* Experience and Section components */}
         <section id="experience-section">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Experience & Section Components <a href="#experience-section" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="experience-section">Experience & Section Components</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             The SDK provides <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyComposition</code>{" "}
             and <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyGridSection</code> to walk
@@ -360,9 +354,7 @@ export default function VisualBuilderPage() {
 
         {/* Preview */}
         <section id="preview-route">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Preview Route <a href="#preview-route" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="preview-route">Preview Route</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             <code className="bg-surface-low px-1 rounded text-xs font-mono">getPreviewContent()</code>{" "}
             reads the <code className="bg-surface-low px-1 rounded text-xs font-mono">preview_token</code>,{" "}
@@ -382,9 +374,7 @@ export default function VisualBuilderPage() {
 
         {/* Building a block */}
         <section id="building-a-block">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Building a Block <a href="#building-a-block" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="building-a-block">Building a Block</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             Each block colocates its{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">contentType()</code> definition,
@@ -419,9 +409,7 @@ export default function VisualBuilderPage() {
 
         {/* Block registry */}
         <section id="registered-blocks">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Registered Blocks <a href="#registered-blocks" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="registered-blocks">Registered Blocks</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             All blocks registered in{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">componentRegistry.ts</code>.

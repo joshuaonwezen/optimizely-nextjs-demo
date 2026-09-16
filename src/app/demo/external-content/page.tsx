@@ -6,6 +6,7 @@ import { GET_LOCATIONS_QUERY } from "@/lib/graphql/queries/GetLocations";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import { StepBadge } from "@/components/ui/StepBadge";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const metadata: Metadata = {
   title: "External Content Sync Demo",
@@ -198,9 +199,7 @@ export default async function ExternalContentPage() {
 
         {/* Two ingestion paths - orientation */}
         <section id="two-paths">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Two Ways In - CMS-native vs External <a href="#two-paths" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="two-paths">Two Ways In - CMS-native vs External</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             There are two ways to make data queryable in Optimizely Graph, and they are not
             interchangeable. Both end up on the same GraphQL endpoint, but they differ in{" "}
@@ -312,9 +311,7 @@ export default async function ExternalContentPage() {
 
         {/* Live quote cards */}
         <section id="live-example">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Live Example - Quotes <a href="#live-example" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="live-example">Live Example - Quotes</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             Each card is a <code className="bg-surface-low px-1 rounded text-xs font-mono">Quote</code> item
             synced from an external source via the{" "}
@@ -365,10 +362,7 @@ export default async function ExternalContentPage() {
 
         {/* Sync paths */}
         <section id="sync-paths">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Sync Paths - Getting Data into Graph{" "}
-            <a href="#sync-paths" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="sync-paths">Sync Paths - Getting Data into Graph{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Three paths push external data straight into Optimizely Graph. All three end up in
             the same place - data queryable via GraphQL alongside CMS content - but differ in
@@ -759,10 +753,7 @@ export default async function ExternalContentPage() {
         {/* CMS-native vs External comparison */}
         <section id="cms-native-vs-external" className="space-y-10">
           <div>
-            <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-              CMS-native vs External Content{" "}
-              <a href="#cms-native-vs-external" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-            </h2>
+            <DemoSectionHeading id="cms-native-vs-external">CMS-native vs External Content{" "}</DemoSectionHeading>
             <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed">
               Data pushed via the Content Source API lands in Graph as <strong className="text-on-surface">read-only external content</strong>.
               Editors can browse and reference it in the CMS via{" "}

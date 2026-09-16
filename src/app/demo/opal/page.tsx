@@ -4,21 +4,13 @@ import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import { StepBadge } from "@/components/ui/StepBadge";
+import { Chip, Pipeline } from "@/components/demo/Pipeline";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const metadata: Metadata = {
   title: "Opal AI Agents",
 };
 
-function SectionHeading({ id, children }: { id: string; children: React.ReactNode }) {
-  return (
-    <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-      {children}{" "}
-      <a href={`#${id}`} className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">
-        #
-      </a>
-    </h2>
-  );
-}
 
 function AgentCard({
   name,
@@ -47,39 +39,6 @@ function AgentCard({
   );
 }
 
-function Pipeline({ steps }: { steps: { label: string; sub?: string; highlight?: boolean }[] }) {
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      {steps.map((step, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <div
-            className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${
-              step.highlight
-                ? "bg-brand/10 border border-brand/30"
-                : "bg-surface-low"
-            }`}
-          >
-            <p className="text-xs font-mono font-semibold text-on-surface">{step.label}</p>
-            {step.sub && (
-              <p className="text-[10px] font-mono text-on-surface-variant mt-1">{step.sub}</p>
-            )}
-          </div>
-          {i < steps.length - 1 && (
-            <span className="text-on-surface-variant text-lg">→</span>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-surface-low border border-ghost-border text-on-surface">
-      {children}
-    </span>
-  );
-}
 
 export default function OpalDemoPage() {
   return (
@@ -108,7 +67,7 @@ export default function OpalDemoPage() {
 
         {/* Platform Overview */}
         <section id="overview">
-          <SectionHeading id="overview">Platform Overview</SectionHeading>
+          <DemoSectionHeading id="overview">Platform Overview</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Opal sits above your entire Optimizely stack - reading content via Graph, writing
             updates back through the Management API, and triggering experiments via Feature
@@ -156,7 +115,7 @@ export default function OpalDemoPage() {
 
         {/* GEO & SEO Agents */}
         <section id="geo-seo-agents">
-          <SectionHeading id="geo-seo-agents">GEO &amp; SEO Agents</SectionHeading>
+          <DemoSectionHeading id="geo-seo-agents">GEO &amp; SEO Agents</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Traditional SEO optimizes content for search engine crawlers. GEO (Generative Engine
             Optimization) extends that to AI-powered search surfaces - ChatGPT, Perplexity, and
@@ -260,7 +219,7 @@ export default function OpalDemoPage() {
 
         {/* Content Creation & Review Agents */}
         <section id="content-agents">
-          <SectionHeading id="content-agents">Content Creation &amp; Review Agents</SectionHeading>
+          <DemoSectionHeading id="content-agents">Content Creation &amp; Review Agents</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Opal includes agents for the full content lifecycle - from generating first drafts and
             optimizing existing copy to checking for legal/compliance issues before publish. All
@@ -333,7 +292,7 @@ export default function OpalDemoPage() {
 
         {/* Workflow Orchestration */}
         <section id="workflows">
-          <SectionHeading id="workflows">Workflow Agents &amp; Orchestration</SectionHeading>
+          <DemoSectionHeading id="workflows">Workflow Agents &amp; Orchestration</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Individual agents answer one question or complete one task. Workflows chain them into
             autonomous pipelines that run without manual intervention - triggered by a schedule,
@@ -420,7 +379,7 @@ export default function OpalDemoPage() {
 
         {/* Developer Tools */}
         <section id="developer-sdk">
-          <SectionHeading id="developer-sdk">Developer Tools - Opal Tools SDK</SectionHeading>
+          <DemoSectionHeading id="developer-sdk">Developer Tools - Opal Tools SDK</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Opal&apos;s built-in agents can read from Graph and write via the Management API, but your
             internal systems - pricing databases, PIM, analytics APIs - are not reachable by default.
@@ -539,7 +498,7 @@ app.listen(3001);`} />
 
         {/* How Opal Complements This Stack */}
         <section id="stack-integration">
-          <SectionHeading id="stack-integration">How Opal Complements This Stack</SectionHeading>
+          <DemoSectionHeading id="stack-integration">How Opal Complements This Stack</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Opal does not replace any layer of the Optimizely stack - it orchestrates across all
             of them. Agents read content through Graph, write updates via the Management API,

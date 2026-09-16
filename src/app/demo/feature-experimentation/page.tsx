@@ -11,6 +11,7 @@ import CodeBlock from "@/components/demo/CodeBlock";
 import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 import { Callout } from "@/components/blocks/CalloutBlock";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const dynamic = "force-dynamic";
 
@@ -123,19 +124,17 @@ return <Hero headline={headline} subheadline={subheadline} variation={decision.v
 
 const VARIATIONS_SNIPPET = `// src/app/[[...slug]]/page.tsx
 // Middleware rewrites: /savings → /savings/__v_homepage--business
-//   VARIATION_MARKER = "__v_"   FLAG_VAR_SEP = "--"
 // Both flagKey and variationKey are encoded in the URL segment so the page
 // knows which flag to fire the bucketing event for - no extra SDK call needed.
-import { VARIATION_MARKER, FLAG_VAR_SEP } from "@/middleware";
+// Parsing lives in src/lib/optimizely/variationPath.ts, shared with middleware:
+// a malformed segment parses to null instead of an undefined variation key.
+import { isVariationSegment, parseVariationSegment } from "@/lib/optimizely/variationPath";
 
 function extractVariations(slug) {
-  const cleanSlug = slug?.filter((s) => !s.startsWith(VARIATION_MARKER));
+  const cleanSlug = slug?.filter((s) => !isVariationSegment(s));
   const flagVariations = slug
-    ?.filter((s) => s.startsWith(VARIATION_MARKER))
-    .map((s) => {
-      const [flagKey, variationKey] = s.slice(VARIATION_MARKER.length).split(FLAG_VAR_SEP);
-      return { flagKey, variationKey };
-    }) ?? [];
+    ?.map(parseVariationSegment)
+    .filter((fv) => fv !== null) ?? [];
   return {
     cleanSlug,
     activeVariations: flagVariations.map((fv) => fv.variationKey), // for Graph filter
@@ -445,9 +444,7 @@ export default async function FeatureFlagsDemoPage() {
 
         {/* Two experimentation paths - server-side FX (this demo) vs client-side Web Experimentation */}
         <section id="experimentation-paths">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Two Ways to Experiment <a href="#experimentation-paths" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="experimentation-paths">Two Ways to Experiment</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Optimizely Experimentation offers two mechanisms for testing content. They differ in
             where the decision runs: <strong>Feature Experimentation</strong> decides on the server
@@ -505,9 +502,7 @@ export default async function FeatureFlagsDemoPage() {
 
         {/* ── Architecture overview ── */}
         <section id="how-it-works">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            How It All Fits Together: Configure, Then Serve <a href="#how-it-works" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="how-it-works">How It All Fits Together: Configure, Then Serve</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The full lifecycle has two phases. <strong>Configure</strong> is one-time setup done
             entirely in the FX and CMS UIs - no code. <strong>Serve</strong> is what runs
@@ -564,9 +559,7 @@ export default async function FeatureFlagsDemoPage() {
 
         {/* ── CMS Variations - the connection ── */}
         <section id="cms-variations">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            CMS Variations - Connecting FX to Content <a href="#cms-variations" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="cms-variations">CMS Variations - Connecting FX to Content</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             FX variation keys and CMS content variations share a single string contract.
             When Graph receives an active variation key, it looks for a CMS content variant
@@ -701,9 +694,7 @@ export default async function FeatureFlagsDemoPage() {
 
         {/* ── Setup guide ── */}
         <section id="setup-guide">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Configure - Step by Step <a href="#setup-guide" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="setup-guide">Configure - Step by Step</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Once the integration code is in place (see below), editors can set up any number of
             content experiments without touching code. The variation key string is the only contract
@@ -777,9 +768,7 @@ export default async function FeatureFlagsDemoPage() {
 
         {/* ── Audience targeting ── */}
         <section id="audience-targeting">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Audience Targeting <a href="#audience-targeting" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="audience-targeting">Audience Targeting</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             An audience attached to a delivery rule (step 3) can be backed two ways:{" "}
             <strong>SDK attributes</strong> passed at decision time, or <strong>ODP segments</strong> the
@@ -855,9 +844,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
         </section>
 
         <section id="project-vs-cms-flag">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Organizing CMS Flags: cms_flag vs a Separate Project <a href="#project-vs-cms-flag" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="project-vs-cms-flag">Organizing CMS Flags: cms_flag vs a Separate Project</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             The middleware has to know which flags drive CMS content (and should rewrite the URL) versus
             component or client-side experiments that should not. There are two ways to draw that line - this
@@ -970,9 +957,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
 
         {/* ── Approach comparison ── */}
         <section id="approaches">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Choosing an Approach <a href="#approaches" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="approaches">Choosing an Approach</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             There are three ways to integrate Feature Experimentation with a Next.js CMS page route.
             The right choice depends on whether CDN caching matters for your traffic profile.
@@ -1063,9 +1048,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
 
         {/* ── Bucketing ID ── */}
         <section id="bucketing-id">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Bucketing ID Override <a href="#bucketing-id" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="bucketing-id">Bucketing ID Override</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
             By default the FX SDK buckets users by their <code className="bg-surface-low px-1 rounded font-mono text-xs">userId</code>.
             Setting the reserved <code className="bg-surface-low px-1 rounded font-mono text-xs">$opt_bucketing_id</code> attribute
@@ -1146,7 +1129,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
 
         {/* ── Your session ── */}
         <section id="all-decisions">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">All Flag Decisions (diagnostics) <a href="#all-decisions" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a></h2>
+          <DemoSectionHeading id="all-decisions">All Flag Decisions (diagnostics)</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-5 max-w-3xl">
             A stable <code className="bg-surface-low px-1 rounded text-xs font-mono">optimizelyEndUserId</code> cookie
             is set by Next.js middleware on first visit, and every flag is evaluated for it via{" "}

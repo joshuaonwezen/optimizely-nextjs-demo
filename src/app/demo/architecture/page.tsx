@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import DemoHero from "@/components/demo/DemoHero";
 import { StepBadge } from "@/components/ui/StepBadge";
+import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const metadata: Metadata = {
   title: "System Architecture",
@@ -80,10 +81,7 @@ export default function ArchitecturePage() {
       <div className="max-w-6xl mx-auto px-8 py-16 space-y-20">
 
         <section id="what-is-headless">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            What is a headless CMS?{" "}
-            <a href="#what-is-headless" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="what-is-headless">What is a headless CMS?{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             A CMS (Content Management System) is where editors write, organise, and publish content. &quot;Headless&quot; describes how it connects to your website. A CMS can be coupled (it renders the site itself), headless (it only serves content as data), or hybrid - one backend that does both. Optimizely CMS 13 enables that hybrid path.
           </p>
@@ -205,10 +203,7 @@ export default function ArchitecturePage() {
 
         {/* SaaS vs CMS 13 */}
         <section id="saas-vs-cms13">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            SaaS CMS vs CMS 13 - who maintains what{" "}
-            <a href="#saas-vs-cms13" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="saas-vs-cms13">SaaS CMS vs CMS 13 - who maintains what{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-2xl">
             SaaS CMS (what this demo runs) and CMS 13 are both Optimizely CMS with the same authoring experience. The choice between them is operational - who runs the backend, who owns versions and upgrades, and where the maintenance work lands.
           </p>
@@ -306,10 +301,7 @@ export default function ArchitecturePage() {
         </section>
 
         <section id="building-blocks">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            The building blocks of a headless site{" "}
-            <a href="#building-blocks" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="building-blocks">The building blocks of a headless site{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             A headless CMS site has more moving parts than a traditional coupled CMS because the concerns are separated. Here is every piece you need and what it does.
           </p>
@@ -359,10 +351,7 @@ export default function ArchitecturePage() {
         </section>
 
         <section id="diagram">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Architecture Diagram{" "}
-            <a href="#diagram" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="diagram">Architecture Diagram{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             Request flow left to right. The CDN serves pages from its ISR cache; on a miss it forwards to
             Next.js, which renders from Optimizely Graph. CMS publishes sync into Graph, which fires a
@@ -476,10 +465,7 @@ export default function ArchitecturePage() {
 
         {/* Component reference */}
         <section id="components">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            System Components{" "}
-            <a href="#components" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="components">System Components{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             What each box in the diagram is responsible for.
           </p>
@@ -546,10 +532,7 @@ export default function ArchitecturePage() {
 
         {/* Roles */}
         <section id="roles">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Who Interacts and How{" "}
-            <a href="#roles" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="roles">Who Interacts and How{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             Two distinct actors drive the system - content editors on the authoring side, and visitors on the delivery side. They never share a runtime.
           </p>
@@ -597,10 +580,7 @@ export default function ArchitecturePage() {
 
         {/* Request flow */}
         <section id="request-flow">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Request Flow{" "}
-            <a href="#request-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="request-flow">Request Flow{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             What happens between a browser request and the page appearing, step by step.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/5-fetching.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
@@ -641,10 +621,7 @@ export default function ArchitecturePage() {
 
         {/* Publish flow */}
         <section id="publish-flow">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Publish Flow{" "}
-            <a href="#publish-flow" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="publish-flow">Publish Flow{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             What happens when an editor publishes content in the CMS. For webhook endpoint details
             and ISR revalidation tag strategy, see the{" "}
@@ -691,10 +668,7 @@ export default function ArchitecturePage() {
 
         {/* Cache layers */}
         <section id="cache-layers">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            The Cache Layers{" "}
-            <a href="#cache-layers" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="cache-layers">The Cache Layers{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             A request can be answered at any of five layers between the visitor and the CMS. Each layer down adds latency, and each has its own invalidation story. This is the conceptual map - the{" "}
             <Link href="/demo/caching" className="text-brand hover:underline">ISR Caching demo</Link>{" "}
@@ -747,10 +721,7 @@ export default function ArchitecturePage() {
 
         {/* Failure modes */}
         <section id="failure-modes">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            What Happens When Something Is Down{" "}
-            <a href="#failure-modes" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="failure-modes">What Happens When Something Is Down{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             Separated concerns mean partial failure instead of total failure. What each outage actually does to the site - for the code-level patterns (error boundaries, fallbacks, not-found), see the{" "}
             <Link href="/demo/error-handling" className="text-brand hover:underline">Error Handling demo</Link>.
@@ -805,10 +776,7 @@ export default function ArchitecturePage() {
 
         {/* Media delivery */}
         <section id="media-delivery">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Media Has Its Own Delivery Path{" "}
-            <a href="#media-delivery" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="media-delivery">Media Has Its Own Delivery Path{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             Images and other assets do not flow through Graph or the ISR HTML cache - they are delivered on a separate path with an independent cache lifecycle. See the{" "}
             <Link href="/demo/media" className="text-brand hover:underline">Media & DAM demo</Link>{" "}
@@ -833,10 +801,7 @@ export default function ArchitecturePage() {
 
         {/* CDN compatibility */}
         <section id="cdn-compatibility">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            CDN Compatibility{" "}
-            <a href="#cdn-compatibility" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="cdn-compatibility">CDN Compatibility{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             The ISR full-route cache is the layer that absorbs visitor traffic. It relies only on standard, portable CDN behaviour.
           </p>
@@ -848,10 +813,7 @@ export default function ArchitecturePage() {
         </section>
 
         <section id="glossary">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Key Terms{" "}
-            <a href="#glossary" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
-          </h2>
+          <DemoSectionHeading id="glossary">Key Terms{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             Definitions of the technical terms used throughout this page.
           </p>
