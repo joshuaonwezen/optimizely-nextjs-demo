@@ -4,6 +4,7 @@ import {
   BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, TEXT_ALIGN, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
 } from "../_shared/displayTemplateSettings";
 import { Button } from "@/components/ui/Button";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const FeaturedContentBlockType = contentType({
   key: "FeaturedContentBlock",
@@ -73,7 +74,7 @@ type FeaturedContentBlockProps = FeaturedContentData & {
 export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
 
   const pageTitle = data.featuredPage?._metadata?.displayName;
   const pageUrl   = data.featuredPage?._metadata?.url?.default;

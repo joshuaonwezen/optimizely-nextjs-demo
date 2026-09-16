@@ -100,7 +100,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Must stay a blocking <script>: Web Experimentation applies variation changes
+            before first paint; async or next/script loading would flash the original. */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script src={`https://cdn.optimizely.com/js/${webSnippetId}.js`} />
+        {/* gtag + GTM bootstraps stay inline in <head>: both share this dataLayer and
+            must exist before any tracking call. */}
+        {/* eslint-disable-next-line @next/next/next-script-for-ga */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-2MTP98PSWL" />
         <script dangerouslySetInnerHTML={{ __html: gtagInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: gtmInitScript }} />
@@ -115,6 +121,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <div id="preview-topbar-slot" />
         <noscript>
           <iframe
+            title="Google Tag Manager"
             src="https://www.googletagmanager.com/ns.html?id=GTM-5SVM6NH"
             height="0"
             width="0"

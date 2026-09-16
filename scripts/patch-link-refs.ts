@@ -58,11 +58,33 @@ function isInternalPath(v: unknown): v is string {
 
 // A stored property value is either a raw scalar or the wrapped { value }.
 // Read/replace transparently, returning the (possibly new) wrapper.
+function isWrapped(p: unknown): p is { value: unknown } {
+  return !!p && typeof p === "object" && "value" in p;
+}
 function readProp(p: unknown): unknown {
-  return p && typeof p === "object" && "value" in (p as any) ? (p as any).value : p;
+  return isWrapped(p) ? p.value : p;
 }
 function writeProp(p: unknown, next: unknown): unknown {
-  return p && typeof p === "object" && "value" in (p as any) ? { ...(p as any), value: next } : next;
+  return isWrapped(p) ? { ...p, value: next } : next;
+}
+
+interface CompositionNode {
+  nodeType?: string;
+  component?: { contentType?: string; properties?: Record<string, unknown> } | null;
+  nodes?: CompositionNode[];
+}
+
+interface ContentVersion {
+  version?: string;
+  displayName?: string;
+  routeSegment?: string;
+  status?: string;
+  properties?: Record<string, unknown>;
+  composition?: { nodes?: CompositionNode[] } | null;
+}
+
+interface GraphPageKeys {
+  data?: { _Page?: { items?: Array<{ _metadata?: { key?: string } } | null> } };
 }
 
 interface Change {
@@ -95,7 +117,7 @@ async function fixProps(
 
 // Recurse a composition node tree, fixing component properties.
 async function fixNodes(
-  nodes: any[] | undefined,
+  nodes: CompositionNode[] | undefined,
   where: string,
   changes: Change[],
 ): Promise<boolean> {
@@ -111,12 +133,12 @@ async function fixNodes(
   return changed;
 }
 
-async function getLatestVersion(token: string, key: string): Promise<any | null> {
+async function getLatestVersion(token: string, key: string): Promise<ContentVersion | null> {
   const res = await fetch(`${CONTENT_ENDPOINT}/${key}/locales/en?pageSize=1`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return null;
-  const data = (await res.json()) as { items?: any[] };
+  const data = (await res.json()) as { items?: ContentVersion[] };
   return data.items?.[0] ?? null;
 }
 
@@ -139,14 +161,14 @@ async function patchVersion(
   if (!pub.ok) console.warn(`  [warn] republish ${key}: ${pub.status}`);
 }
 
-async function graphKeys(query: string, pick: (d: any) => string[]): Promise<string[]> {
+async function graphKeys(query: string, pick: (d: GraphPageKeys) => string[]): Promise<string[]> {
   const res = await fetch(GRAPH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
     body: JSON.stringify({ query }),
   });
   if (!res.ok) return [];
-  return pick(await res.json());
+  return pick((await res.json()) as GraphPageKeys);
 }
 
 // Every page key (compositions live here). Paginated - Graph caps limit/cost,
@@ -156,7 +178,7 @@ async function allPageKeys(): Promise<string[]> {
   for (let skip = 0; ; skip += 100) {
     const q = `query { _Page(limit: 100, skip: ${skip}) { items { _metadata { key } } } }`;
     const batch = await graphKeys(q, (d) =>
-      (d?.data?._Page?.items ?? []).map((i: any) => i?._metadata?.key).filter(Boolean),
+      (d?.data?._Page?.items ?? []).map((i) => i?._metadata?.key).filter((k): k is string => Boolean(k)),
     );
     out.push(...batch);
     if (batch.length < 100) break;

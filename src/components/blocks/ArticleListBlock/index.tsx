@@ -5,6 +5,7 @@ import { getTaxonomyTerms } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { expandToUris, LEGACY_CATEGORY_MAP } from "@/lib/taxonomy";
 import { resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { BlockHeader } from "../_shared/BlockHeader";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 // Content type + display template: src/lib/optimizely/productLandingTypes.mjs
 // (personal instance only, kept out of the opti:push glob on purpose).
@@ -26,7 +27,7 @@ type ArticleListBlockProps = ArticleListData & {
 
 export default async function ArticleListBlock(props: ArticleListBlockProps) {
   const data: ArticleListData = props.content ?? props;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   // The category enum still uses the legacy slugs; filter on the matching taxonomy

@@ -1,6 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const RawHtmlBlockType = contentType({
   key: "RawHtmlBlock",
@@ -67,7 +68,7 @@ const PADDING_CLASSES: Record<string, string> = {
 export default function RawHtmlBlock(props: RawHtmlBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
 
   if (typeof data.html !== "string" || !data.html) return null;
 

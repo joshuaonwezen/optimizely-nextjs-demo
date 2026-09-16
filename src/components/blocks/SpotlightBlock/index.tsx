@@ -4,6 +4,7 @@ import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveImageUrl, type ImageRef } from "../_shared/contentRefs";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const SpotlightBlockType = contentType({
   key: "spotlightBlock",
@@ -56,7 +57,7 @@ type SpotlightBlockProps = SpotlightData & {
 export default function SpotlightBlock(props: SpotlightBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
 
   const imageUrl = resolveImageUrl(data.image);
   const bg = resolveStyleClasses(ds, { background: "white" });

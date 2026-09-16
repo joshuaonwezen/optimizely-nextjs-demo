@@ -1,6 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const QuoteBlockType = contentType({
   key: "QuoteBlock",
@@ -41,7 +42,7 @@ type QuoteBlockProps = QuoteData & {
 export default function QuoteBlock(props: QuoteBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
 
   const s = resolveStyleClasses(ds, { background: "white", fontStyle: "classic" });
 

@@ -1,6 +1,7 @@
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { useId } from "react";
 import { isRequired, slugify } from "../_shared/formFields";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 const INPUT_CLASS =
   "w-full px-4 py-3 rounded-lg text-sm outline-none transition-shadow focus:ring-2 focus:ring-brand/30 bg-surface-lowest text-on-surface border border-ghost-border";
@@ -38,7 +39,7 @@ function parseOptions(raw?: unknown): SelectionItem[] {
 
 export default function OptiFormsSelection(props: OptiFormsSelectionProps) {
   const data = props.content ?? props;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   const name = slugify(data.Label);
   const required = isRequired(data.Validators);
   const items = parseOptions(data.Options);

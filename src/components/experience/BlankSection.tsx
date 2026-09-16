@@ -3,6 +3,7 @@ import {
   getPreviewUtils,
   type StructureContainerProps,
 } from "@optimizely/cms-sdk/react/server";
+import type { CompositionNode, SdkContent } from "@/components/cms/sdkTypes";
 
 const GAP: Record<string, string> = {
   compact:  "gap-4",
@@ -77,7 +78,7 @@ function Row({ children, node, displaySettings }: StructureContainerProps) {
   const { pa } = getPreviewUtils(node);
   const ds = displaySettings as Record<string, string | boolean> | undefined;
 
-  const count = (node as any).nodes?.length ?? 1;
+  const count = node.nodes?.length ?? 1;
   const gridCols =
     count === 2 ? "md:grid-cols-2" :
     count === 3 ? "md:grid-cols-3" :
@@ -127,12 +128,12 @@ export default function BlankSection({
   content,
   displaySettings,
 }: {
-  content: any;
+  content: SdkContent & { key?: string; nodes?: CompositionNode[] | null };
   displaySettings?: Record<string, string | boolean>;
 }) {
   const { pa } = getPreviewUtils(content);
   const ds = displaySettings;
-  const nodes: any[] = content?.nodes ?? [];
+  const nodes = content?.nodes ?? [];
 
   const bg      = SECTION_BG[ds?.background as string] ?? "";
   const py      = SECTION_PY[ds?.paddingY as string] ?? "";
@@ -143,7 +144,7 @@ export default function BlankSection({
   const className = [bg, py, divider, radius, text].filter(Boolean).join(" ");
 
   return (
-    <section data-component="BlankSection" className={className || undefined} {...pa(content)}>
+    <section data-component="BlankSection" className={className || undefined} {...pa(content.key ? { key: content.key } : undefined)}>
       <OptimizelyGridSection nodes={nodes} row={Row} column={Column} />
     </section>
   );

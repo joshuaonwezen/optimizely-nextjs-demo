@@ -3,6 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { Button } from "@/components/ui/Button";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const CallToActionType = contentType({
   key: "CallToAction",
@@ -86,7 +87,7 @@ interface CallToActionData {
   label?: string | null;
   // type:"url" link — Graph returns { default, hierarchical }.
   link?: { default?: string | null; hierarchical?: string | null } | null;
-  __context?: any;
+  __context?: { edit?: boolean } | null;
 }
 
 type CallToActionProps = CallToActionData & {
@@ -107,7 +108,7 @@ const VARIANT_CLASSES: Record<string, string> = {
 export default async function CallToActionBlock(props: CallToActionProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   const style = resolveStyleClasses(ds, { background: "transparent", textColor: "brand" });
   const surfaceClass = style.wrapper ? `${style.wrapper} rounded-2xl px-8` : "";
 

@@ -13,6 +13,22 @@ const SINGLE_KEY = process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "";
 // in the hundreds/thousands. 1e9 is an unambiguous cutoff for flagging a pinned hit.
 const PINNED_SCORE_THRESHOLD = 1_000_000_000;
 
+// The fields read from a Graph search hit; request() itself is untyped.
+interface SearchHit {
+  _metadata?: { displayName?: string | null; url?: { default?: string | null } | null } | null;
+  _itemMetadata?: { categories?: string[] | null } | null;
+  _score?: number | null;
+  _track?: string | null;
+  category?: string | null;
+  tags?: string[] | null;
+}
+
+type ListedHit = SearchHit & { _metadata: { displayName: string; url: { default: string } } };
+
+function isListed(hit: SearchHit | null | undefined): hit is ListedHit {
+  return Boolean(hit?._metadata?.displayName && hit._metadata.url?.default);
+}
+
 function listParam(value: string | null): string[] | null {
   const parsed = value?.split(",").map((v) => v.trim()).filter(Boolean) ?? [];
   return parsed.length > 0 ? parsed : null; // null = Graph ignores the filter
@@ -22,7 +38,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const q      = searchParams.get("q")?.trim() ?? "";
   const mode   = searchParams.get("mode") === "semantic" ? "semantic" : "relevance";
-  const weight = Math.min(1, Math.max(0, parseFloat(searchParams.get("weight") ?? "0.5")));
+  const rawWeight = parseFloat(searchParams.get("weight") ?? "0.5");
+  const weight = Number.isFinite(rawWeight) ? Math.min(1, Math.max(0, rawWeight)) : 0.5;
   const locale = [searchParams.get("locale") ?? "en"];
   // Fuzzy (typo-tolerant) matching is on by default; only an explicit fuzzy=0 disables it.
   const fuzzy  = searchParams.get("fuzzy") !== "0";
@@ -45,19 +62,17 @@ export async function GET(request: NextRequest) {
 
     const raw = result?.SEO ?? { total: 0, items: [] };
 
-    const items = (raw.items ?? [])
-      .filter((item: any) => item?._metadata?.displayName && item?._metadata?.url?.default)
-      .map((item: any) => {
-        const score = (item._score as number | null | undefined) ?? 0;
+    const items = ((raw.items ?? []) as Array<SearchHit | null>)
+      .filter(isListed)
+      .map((item) => {
+        const score = item._score ?? 0;
+        const track = item._track;
         return {
-          title:    item._metadata.displayName as string,
-          url:      item._metadata.url.default as string,
+          title:    item._metadata.displayName,
+          url:      item._metadata.url.default,
           score,
           pinned:   score >= PINNED_SCORE_THRESHOLD,
-          trackUrl: (() => {
-            const t = item._track as string | null | undefined;
-            return t && SINGLE_KEY ? `${t}&auth=${SINGLE_KEY}` : (t ?? null);
-          })(),
+          trackUrl: track && SINGLE_KEY ? `${track}&auth=${SINGLE_KEY}` : (track ?? null),
         };
       });
 
@@ -80,19 +95,16 @@ async function facetedSearch(q: string, categories: string[] | null, tags: strin
 
     const raw = result?.ArticlePage ?? { total: 0, items: [], facets: {} };
 
-    const items = (raw.items ?? [])
-      .filter((item: any) => item?._metadata?.displayName && item?._metadata?.url?.default)
-      .map((item: any) => ({
-        title:    item._metadata.displayName as string,
-        url:      item._metadata.url.default as string,
-        score:    (item._score as number | null | undefined) ?? 0,
+    const items = ((raw.items ?? []) as Array<SearchHit | null>)
+      .filter(isListed)
+      .map((item) => ({
+        title:    item._metadata.displayName,
+        url:      item._metadata.url.default,
+        score:    item._score ?? 0,
         // Category term URIs, falling back to the legacy enum for content that
         // has not been tagged in the CMS taxonomy yet.
-        categories: resolveCategoryUris(
-          item._itemMetadata?.categories as string[] | null | undefined,
-          item.category as string | null | undefined
-        ),
-        tags:     (item.tags as string[] | null | undefined) ?? [],
+        categories: resolveCategoryUris(item._itemMetadata?.categories, item.category),
+        tags:     item.tags ?? [],
       }));
 
     return NextResponse.json({

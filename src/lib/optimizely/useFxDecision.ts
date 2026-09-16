@@ -24,13 +24,12 @@ export function useFxDecision(flagKey: string): ClientFxDecision | null {
   const pathname = usePathname();
   const [decision, setDecision] = useState<ClientFxDecision | null>(null);
 
+  // No flag-driven global UI on the docs pages. Returning null (rather than the last
+  // decision) hides UI that was showing when client-side navigation enters /demo.
+  const onDemoPage = !!pathname && /^\/demo(\/|$)/.test(pathname);
+
   useEffect(() => {
-    // No flag-driven global UI on the docs pages. Clear any prior decision so
-    // client-side navigation into /demo hides UI that was showing on the last page.
-    if (pathname && /^\/demo(\/|$)/.test(pathname)) {
-      setDecision(null);
-      return;
-    }
+    if (onDemoPage) return;
 
     let cancelled = false;
     const userId = readCookie(VISITOR_ID_COOKIE);
@@ -69,7 +68,7 @@ export function useFxDecision(flagKey: string): ClientFxDecision | null {
     return () => {
       cancelled = true;
     };
-  }, [flagKey, pathname]);
+  }, [flagKey, pathname, onDemoPage]);
 
-  return decision;
+  return onDemoPage ? null : decision;
 }

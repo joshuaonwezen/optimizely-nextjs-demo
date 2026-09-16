@@ -8,6 +8,7 @@ import { graphClient } from "@/lib/optimizely/graphClient";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { extractKey, type ContentRef, orderByKeys } from "../_shared/contentRefs";
 import { BlockHeader } from "../_shared/BlockHeader";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const TimelineBlockType = contentType({
   key: "TimelineBlock",
@@ -96,7 +97,7 @@ async function loadMilestones(keys: string[]): Promise<MilestoneData[]> {
 
 export default async function TimelineBlock(props: TimelineBlockProps) {
   const data = props.content ?? props;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   const keys = (data.milestones ?? [])
@@ -117,7 +118,7 @@ export default async function TimelineBlock(props: TimelineBlockProps) {
         <ol {...pa("milestones")} className="list-none p-0">
           {milestones.map((m, i) => (
             <BlockErrorBoundary key={i}>
-              <OptimizelyComponent content={m as any} />
+              <OptimizelyComponent content={asSdkContent(m)} />
             </BlockErrorBoundary>
           ))}
         </ol>

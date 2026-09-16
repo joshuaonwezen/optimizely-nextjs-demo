@@ -311,7 +311,7 @@ export default function FormsPage() {
               <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4">
                 <p className="text-xs font-semibold text-on-surface mb-1">3. OptiFormsSubmitElement</p>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  A <code className="bg-surface px-1 rounded font-mono">"use client"</code> component.
+                  A <code className="bg-surface px-1 rounded font-mono">&quot;use client&quot;</code> component.
                   On click: reads <code className="bg-surface px-1 rounded font-mono">data-form-submit-url</code>,
                   collects all inputs in the page scope via DOM query, validates required fields, POSTs JSON,
                   shows success or error state.

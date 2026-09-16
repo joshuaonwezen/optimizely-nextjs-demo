@@ -4,6 +4,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, FONT_CLASSES, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const TextBlockType = contentType({
   key: "TextBlock",
@@ -72,7 +73,7 @@ const PADDING_CLASSES: Record<string, string> = {
 export default function TextBlock(props: TextBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
 
   const isNarrow = props.displayTemplateKey === "TextBlockNarrowTemplate";
   const paddingClass = PADDING_CLASSES[(ds?.verticalPadding as string) ?? "default"] ?? "py-16";

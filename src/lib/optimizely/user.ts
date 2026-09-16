@@ -30,7 +30,7 @@ const noDecision = (flagKey: string): FxDecision => ({
 const noOpUser = {
   userId: "anonymous" as string,
   bucketingId: undefined as string | undefined,
-  decide: (flagKey: string, _opts?: DecideOpts): FxDecision => noDecision(flagKey),
+  decide: (flagKey: string): FxDecision => noDecision(flagKey),
   decideAll: (): Record<string, FxDecision> => ({}),
 };
 

@@ -393,7 +393,7 @@ export default async function ExternalContentPage() {
                 Choose the source ID, schema, a CMS base type (Page, Component, Media, Image, or Video),
                 and the fields to use as the content ID and display name. CMS creates a read-only
                 connected content type editors can reference and browse in the Content Manager.
-                Note: the label is <em>Connect from Graph</em>, not "Import from Graph" - a common
+                Note: the label is <em>Connect from Graph</em>, not &quot;Import from Graph&quot; - a common
                 source of confusion in the UI. The Direct to CMS method below skips this entirely -
                 that content is already native CMS content.
               </p>
@@ -641,8 +641,8 @@ export default async function ExternalContentPage() {
               Graph ships three built-in base type contracts. Inherit from one when registering
               a content type - it adds the metadata property Graph needs to identify, index,
               and surface your items. All registrations require{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">"preset": "next"</code> and{" "}
-              <code className="bg-surface-low px-1 rounded text-xs font-mono">"useTypedFieldNames": true</code>.
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">&quot;preset&quot;: &quot;next&quot;</code> and{" "}
+              <code className="bg-surface-low px-1 rounded text-xs font-mono">&quot;useTypedFieldNames&quot;: true</code>.
             </p>
             <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed mt-3">
               When pushing data, the <code className="bg-surface-low px-1 rounded text-xs font-mono">displayName</code> field
@@ -660,7 +660,7 @@ export default async function ExternalContentPage() {
             <p className="text-sm text-on-surface-variant max-w-3xl leading-relaxed mt-3">
               Three additional payload rules apply to every push. First,{" "}
               <code className="bg-surface-low px-1 rounded text-xs font-mono">_rbac</code> must be the
-              string <code className="bg-surface-low px-1 rounded text-xs font-mono">"r:Everyone:Read"</code> - sending
+              string <code className="bg-surface-low px-1 rounded text-xs font-mono">&quot;r:Everyone:Read&quot;</code> - sending
               an object here (e.g. <code className="bg-surface-low px-1 rounded text-xs font-mono">{"{ read: [\"Everyone\"] }"}</code>) triggers an Elasticsearch
               mapper_parsing_exception that corrupts the index and silently drops every record; the
               only fix is to delete the entire source and re-register. Second, custom field names

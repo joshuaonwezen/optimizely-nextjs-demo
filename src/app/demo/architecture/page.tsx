@@ -85,7 +85,7 @@ export default function ArchitecturePage() {
             <a href="#what-is-headless" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            A CMS (Content Management System) is where editors write, organise, and publish content. "Headless" describes how it connects to your website. A CMS can be coupled (it renders the site itself), headless (it only serves content as data), or hybrid - one backend that does both. Optimizely CMS 13 enables that hybrid path.
+            A CMS (Content Management System) is where editors write, organise, and publish content. &quot;Headless&quot; describes how it connects to your website. A CMS can be coupled (it renders the site itself), headless (it only serves content as data), or hybrid - one backend that does both. Optimizely CMS 13 enables that hybrid path.
           </p>
           <div className="grid md:grid-cols-3 gap-5 mb-5">
             {[
@@ -143,7 +143,7 @@ export default function ArchitecturePage() {
           </div>
           <div className="grid md:grid-cols-3 gap-5">
             <div className="rounded-2xl border border-ghost-border bg-surface-lowest p-5">
-              <h3 className="font-display font-bold text-sm text-on-surface mb-1">Traditional ("coupled") CMS - e.g. CMS 12 / CMS 13</h3>
+              <h3 className="font-display font-bold text-sm text-on-surface mb-1">Traditional (&quot;coupled&quot;) CMS - e.g. CMS 12 / CMS 13</h3>
               <p className="text-xs text-on-surface-variant mb-3 leading-relaxed">
                 One system handles both authoring and rendering. Optimizely CMS 12 and CMS 13 are examples of this model.
               </p>
@@ -648,7 +648,7 @@ export default function ArchitecturePage() {
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             What happens when an editor publishes content in the CMS. For webhook endpoint details
             and ISR revalidation tag strategy, see the{" "}
-            <a href="/demo/caching#revalidate-flow" className="text-brand hover:underline">Caching demo</a>.
+            <Link href="/demo/caching#revalidate-flow" className="text-brand hover:underline">Caching demo</Link>.
           </p>
           <div className="space-y-2">
             {[
@@ -697,7 +697,7 @@ export default function ArchitecturePage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             A request can be answered at any of five layers between the visitor and the CMS. Each layer down adds latency, and each has its own invalidation story. This is the conceptual map - the{" "}
-            <a href="/demo/caching" className="text-brand hover:underline">ISR Caching demo</a>{" "}
+            <Link href="/demo/caching" className="text-brand hover:underline">ISR Caching demo</Link>{" "}
             covers the mechanics (tags, TTLs, and code).
           </p>
           <div className="space-y-2">
@@ -753,7 +753,7 @@ export default function ArchitecturePage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             Separated concerns mean partial failure instead of total failure. What each outage actually does to the site - for the code-level patterns (error boundaries, fallbacks, not-found), see the{" "}
-            <a href="/demo/error-handling" className="text-brand hover:underline">Error Handling demo</a>.
+            <Link href="/demo/error-handling" className="text-brand hover:underline">Error Handling demo</Link>.
           </p>
           <div className="grid md:grid-cols-2 gap-5">
             {[
@@ -811,7 +811,7 @@ export default function ArchitecturePage() {
           </h2>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             Images and other assets do not flow through Graph or the ISR HTML cache - they are delivered on a separate path with an independent cache lifecycle. See the{" "}
-            <a href="/demo/media" className="text-brand hover:underline">Media & DAM demo</a>{" "}
+            <Link href="/demo/media" className="text-brand hover:underline">Media & DAM demo</Link>{" "}
             for the asset workflow.
           </p>
           <div className="rounded-xl border border-ghost-border bg-surface-lowest p-5">

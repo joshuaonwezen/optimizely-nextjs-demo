@@ -3,6 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, HEADING_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const FaqItemBlockType = contentType({
   key: "FaqItemBlock",
@@ -56,7 +57,7 @@ type FaqItemBlockProps = FaqItemData & {
 export default function FaqItemBlock(props: FaqItemBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
 
   if (!data.question) return null;
 

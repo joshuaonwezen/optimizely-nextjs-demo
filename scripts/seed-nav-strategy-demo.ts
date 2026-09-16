@@ -32,7 +32,8 @@ async function softDelete(key: string, token: string): Promise<void> {
 }
 
 async function createItem(body: Record<string, unknown>, token: string, label: string): Promise<string | null> {
-  const { key, contentType, container, locale, displayName, routeSegment, status: _status, properties, composition } = body;
+  // `status` is read-only on create (publish is a separate call), so it is not forwarded.
+  const { key, contentType, container, locale, displayName, routeSegment, properties, composition } = body;
 
   const initialVersion: Record<string, unknown> = {};
   if (locale !== undefined)       initialVersion.locale       = locale;

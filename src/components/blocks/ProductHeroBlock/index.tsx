@@ -3,6 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { ProductHeroCtaClient } from "./ProductHeroCtaClient";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const ProductHeroBlockType = contentType({
   key: "ProductHeroBlock",
@@ -70,7 +71,7 @@ type ProductHeroBlockProps = ProductHeroData & {
 export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
 
   const isCompact = props.displayTemplateKey === "ProductHeroCompactTemplate";
   const isCentered = ds?.alignment === "center";

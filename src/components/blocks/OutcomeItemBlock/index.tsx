@@ -3,6 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND_NONE_DEFAULT, TEXT_COLOR, HEADING_SIZE_CARD, TEXT_ALIGN, FONT_STYLE, HEADING_CLASSES, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const OutcomeItemBlockType = contentType({
   key: "OutcomeItemBlock",
@@ -72,7 +73,7 @@ type OutcomeItemBlockProps = OutcomeData & {
 export default function OutcomeItemBlock(props: OutcomeItemBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   if (!data.stat && !data.label) return null;
 
   const isInline = props.displayTemplateKey === "OutcomeItemInlineTemplate";

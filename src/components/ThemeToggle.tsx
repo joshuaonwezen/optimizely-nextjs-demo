@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 function SunIcon() {
   return (
@@ -19,23 +19,31 @@ function MoonIcon() {
   );
 }
 
-export default function ThemeToggle() {
-  const [isDark, setIsDark] = useState(false);
-  const [mounted, setMounted] = useState(false);
+// The theme lives on <html data-theme> (set before hydration by the inline script
+// in layout.tsx), so subscribe to that attribute rather than mirroring it in state.
+// Every ThemeToggle instance (header + mobile drawer) stays in sync.
+function subscribeToTheme(onChange: () => void) {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  return () => observer.disconnect();
+}
 
-  useEffect(() => {
-    setMounted(true);
-    setIsDark(document.documentElement.getAttribute("data-theme") === "dark");
-  }, []);
+export default function ThemeToggle() {
+  // null on the server and during hydration: render a same-size placeholder.
+  const theme = useSyncExternalStore(
+    subscribeToTheme,
+    () => document.documentElement.getAttribute("data-theme"),
+    () => null
+  );
+  const isDark = theme === "dark";
 
   function toggle() {
     const next = isDark ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
     localStorage.setItem("theme", next);
-    setIsDark(!isDark);
   }
 
-  if (!mounted) return <div className="w-9 h-9" />;
+  if (theme === null) return <div className="w-9 h-9" />;
 
   return (
     <button

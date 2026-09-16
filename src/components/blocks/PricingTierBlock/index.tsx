@@ -3,6 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { Button } from "@/components/ui/Button";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const PricingTierBlockType = contentType({
   key: "PricingTierBlock",
@@ -73,7 +74,7 @@ type PricingTierBlockProps = PricingTierData & {
 export default async function PricingTierBlock(props: PricingTierBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   const features = (data.features ?? []).filter((f): f is string => Boolean(f));
 
   const isCompact = props.displayTemplateKey === "PricingTierCompactTemplate";

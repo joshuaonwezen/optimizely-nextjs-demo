@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
+import { useIsClient } from "@/lib/useIsClient";
 
 export function StickyOfferBarClient() {
   const decision = useFxDecision("sticky_offer_bar");
@@ -17,18 +18,17 @@ export function StickyOfferBarClient() {
   const mobileNav = useFxDecision("mobile_nav");
   const tabsActive = mobileNav?.enabled && mobileNav.variationKey === "bottom_tabs";
 
-  const [dismissed, setDismissed] = useState(true);
-
-  useEffect(() => {
-    if (!message) return;
-    if (!sessionStorage.getItem(`offer-dismissed:${message}`)) {
-      setDismissed(false);
-    }
-  }, [message]);
+  // Dismissal is remembered per offer message for the browser session. Read after
+  // hydration only (sessionStorage doesn't exist on the server): until then the bar
+  // counts as dismissed, which matches the server render.
+  const isClient = useIsClient();
+  const [dismissedMessage, setDismissedMessage] = useState<string | null>(null);
+  const dismissed =
+    !isClient || dismissedMessage === message || !!sessionStorage.getItem(`offer-dismissed:${message}`);
 
   function dismiss() {
     sessionStorage.setItem(`offer-dismissed:${message}`, "1");
-    setDismissed(true);
+    setDismissedMessage(message);
   }
 
   if (!decision?.enabled || !message) return null;

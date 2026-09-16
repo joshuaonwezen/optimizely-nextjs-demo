@@ -7,6 +7,7 @@ import { cacheTag } from "next/cache";
 import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { NodeWrapper } from "@/components/experience/CompositionExperience";
+import { asSdkContent, type CompositionNode } from "@/components/cms/sdkTypes";
 
 interface OptiFormsContainerData {
   key?: string | null;
@@ -16,7 +17,7 @@ interface OptiFormsContainerData {
   Description?: string | null;
   SubmitUrl?: { default?: string | null } | null;
   SubmitConfirmationMessage?: string | null;
-  nodes?: any[] | null;
+  nodes?: CompositionNode[] | null;
   __context?: { edit?: boolean } | null;
 }
 
@@ -61,7 +62,7 @@ async function fetchFormProps(name: string): Promise<FormPropsResult> {
 
 export default async function OptiFormsContainer(props: OptiFormsContainerProps) {
   const node = props.content ?? props;
-  const nodes: any[] = node.nodes ?? [];
+  const nodes = node.nodes ?? [];
 
   let data: OptiFormsContainerData = node;
   if (node.displayName && node.SubmitUrl === undefined && node.Title === undefined) {
@@ -78,7 +79,7 @@ export default async function OptiFormsContainer(props: OptiFormsContainerProps)
     if (item) data = { ...node, ...item };
   }
 
-  const { pa } = getPreviewUtils(node as any);
+  const { pa } = getPreviewUtils(asSdkContent(node));
 
   // A real <form> scopes OptiFormsSubmit to this container's fields (several forms
   // can share a page) and gives Enter-to-submit plus native required validation.

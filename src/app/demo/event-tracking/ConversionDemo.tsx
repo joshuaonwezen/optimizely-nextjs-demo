@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { trackEvent, subscribe, type DispatchRecord } from "@/lib/tracking";
 import { readCookie } from "@/lib/tracking/cookies";
+import { VISITOR_ID_COOKIE } from "@/lib/optimizely/cookieNames";
+import { useIsClient } from "@/lib/useIsClient";
 
 const MAX_LOG_ENTRIES = 8;
 
@@ -12,12 +14,12 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function ConversionDemo() {
-  const [userId, setUserId] = useState("");
+  // Read after hydration only, so the server render and first client render agree.
+  const userId = useIsClient() ? readCookie(VISITOR_ID_COOKIE) : "";
   const [clicks, setClicks] = useState(0);
   const [log, setLog] = useState<DispatchRecord[]>([]);
 
   useEffect(() => {
-    setUserId(readCookie("optimizelyEndUserId"));
     return subscribe((record) => {
       setLog((prev) => [record, ...prev].slice(0, MAX_LOG_ENTRIES));
     });

@@ -33,7 +33,7 @@ export async function generateMetadata({
   const client = getClient();
 
   const items = await client.getContentByPath(`/en/landing/${slug}/`);
-  const page = items[0] as any;
+  const page: { _metadata?: { displayName?: string | null } } | undefined = items[0];
 
   return {
     title: page?._metadata?.displayName ?? "Landing Page",

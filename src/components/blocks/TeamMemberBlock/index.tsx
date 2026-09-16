@@ -4,6 +4,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveImageUrl, resolveUrl, type ImageRef } from "../_shared/contentRefs";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const TeamMemberBlockType = contentType({
   key: "TeamMemberBlock",
@@ -63,7 +64,7 @@ type TeamMemberBlockProps = TeamMemberData & {
 export default function TeamMemberBlock(props: TeamMemberBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   const photoUrl = resolveImageUrl(data.photo);
   const linkedinHref = resolveUrl(data.linkedinUrl);
 

@@ -27,6 +27,9 @@ export default function DemoTableOfContents() {
         return label ? { id: el.id, label } : null;
       })
       .filter((e): e is TocEntry => e !== null);
+    // Syncing from the DOM the page just rendered: there is no render-time source
+    // for these headings, so setting state here is the intended use of the effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEntries(found);
     setActiveId(null);
   }, [pathname]);
@@ -40,7 +43,8 @@ export default function DemoTableOfContents() {
       (records) => {
         records.forEach((entry) => {
           const id = (entry.target as HTMLElement).id;
-          entry.isIntersecting ? intersectingIds.add(id) : intersectingIds.delete(id);
+          if (entry.isIntersecting) intersectingIds.add(id);
+          else intersectingIds.delete(id);
         });
         const first = entries.find((e) => intersectingIds.has(e.id));
         if (first) setActiveId(first.id);

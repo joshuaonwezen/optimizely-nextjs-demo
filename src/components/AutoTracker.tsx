@@ -28,7 +28,8 @@ export default function AutoTracker() {
   const pathname = usePathname();
   const scrollMarks = useRef(new Set<number>());
   const timeMarks = useRef(new Set<number>());
-  const pageStart = useRef(Date.now());
+  // Set when the page view starts (see the pathname effect); Date.now() during render is impure.
+  const pageStart = useRef(0);
   const lastPath = useRef<string | null>(null);
   // Tracks "elementKey:depthPct" pairs already fired to prevent repeat events.
   const viewedMarks = useRef(new Set<string>());

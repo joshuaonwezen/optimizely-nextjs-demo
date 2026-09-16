@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import {
   BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 // Product-card titles sit in a narrow column, so they render one step smaller than
 // the shared HEADING_CLASSES scale — otherwise a long word ("Current Account")
@@ -98,7 +99,7 @@ interface ProductCardData {
   description?: string | null;
   linkUrl?: { default?: string | null; hierarchical?: string | null } | null;
   linkText?: string | null;
-  __context?: any;
+  __context?: { edit?: boolean } | null;
 }
 
 type ProductCardBlockProps = ProductCardData & {
@@ -110,7 +111,7 @@ type ProductCardBlockProps = ProductCardData & {
 export default async function ProductCardBlock(props: ProductCardBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   // No "#" fallback: an unset or unresolvable link renders a non-navigating card.
   const href = data.__context?.edit ? undefined : await resolveLinkHref(data.linkUrl);
   const icon = data.icon ? (ICON_MAP[data.icon] ?? ICON_MAP.account) : ICON_MAP.account;

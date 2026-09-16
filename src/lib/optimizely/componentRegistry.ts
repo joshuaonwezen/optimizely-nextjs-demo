@@ -9,9 +9,6 @@ import {
 import { initReactComponentRegistry } from "@optimizely/cms-sdk/react/server";
 import type { ComponentType } from "react";
 
-type ContentTypeDef = Parameters<typeof initContentTypeRegistry>[0][number];
-type DisplayTemplateDef = Parameters<typeof initDisplayTemplateRegistry>[0][number];
-
 import * as HeroBlockModule from "@/components/blocks/HeroBlock";
 import * as CallToActionBlockModule from "@/components/blocks/CallToActionBlock";
 import * as RichTextBlockModule from "@/components/blocks/RichTextBlock";
@@ -84,6 +81,9 @@ import {
   PRODUCT_LANDING_CONTENT_TYPES,
   ProductLandingExperienceType,
 } from "./productLandingTypes.mjs";
+
+type ContentTypeDef = Parameters<typeof initContentTypeRegistry>[0][number];
+type DisplayTemplateDef = Parameters<typeof initDisplayTemplateRegistry>[0][number];
 
 // Configure the Graph client once for the whole app — all getClient() calls use this.
 config({

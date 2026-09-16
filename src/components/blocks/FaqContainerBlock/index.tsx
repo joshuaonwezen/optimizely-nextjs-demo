@@ -4,6 +4,7 @@ import { FaqItemBlockType } from "@/components/blocks/FaqItemBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { BlockHeader } from "../_shared/BlockHeader";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const FaqContainerBlockType = contentType({
   key: "FaqContainerBlock",
@@ -49,7 +50,7 @@ type FaqContainerBlockProps = FaqContainerData & {
 
 export default function FaqContainerBlock(props: FaqContainerBlockProps) {
   const data: FaqContainerData = props.content ?? props;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   return (
@@ -65,7 +66,7 @@ export default function FaqContainerBlock(props: FaqContainerBlockProps) {
         <div {...pa("faqItems")} className="space-y-2">
           {data.faqItems.map((item, i) => (
             <BlockErrorBoundary key={i}>
-              <OptimizelyComponent content={item as any} />
+              <OptimizelyComponent content={asSdkContent(item)} />
             </BlockErrorBoundary>
           ))}
         </div>

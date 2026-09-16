@@ -3,6 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
 import { resolveImageUrl } from "../_shared/contentRefs";
+import { asDamContent, asSdkContent, asSdkReference } from "@/components/cms/sdkTypes";
 
 export const ImageBlockType = contentType({
   key: "ImageBlock",
@@ -99,7 +100,7 @@ const CROP_RATIOS: Record<string, number> = {
 
 // DAM FocalPoint (when present) is normalized 0-1; the CDN wants 0-100 percentages.
 function focalPercent(image: unknown): { centerWidth?: number; centerHeight?: number } {
-  const fp = (image as any)?.item?.FocalPoint;
+  const fp = (image as { item?: { FocalPoint?: { x?: unknown; y?: unknown } | null } | null } | null)?.item?.FocalPoint;
   if (!fp || typeof fp.x !== "number" || typeof fp.y !== "number") return {};
   const pct = (n: number) => Math.round((n <= 1 ? n * 100 : n));
   return { centerWidth: pct(fp.x), centerHeight: pct(fp.y) };
@@ -108,8 +109,8 @@ function focalPercent(image: unknown): { centerWidth?: number; centerHeight?: nu
 export default function ImageBlock(props: ImageBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa, src } = getPreviewUtils(data as any);
-  const { getSrcset, getAlt } = damAssets(data as any);
+  const { pa, src } = getPreviewUtils(asSdkContent(data));
+  const { getSrcset, getAlt } = damAssets(asDamContent(data));
 
   // src() resolves the DAM asset URL (image.item.Url) and appends the preview
   // token in edit mode; the fallbacks cover CMS globalassets (no DAM item).
@@ -117,7 +118,7 @@ export default function ImageBlock(props: ImageBlockProps) {
 
   if (!imageUrl) return null;
 
-  const altText = getAlt(data.image as any, data.altText ?? "");
+  const altText = getAlt(asSdkReference(data.image), data.altText ?? "");
 
   const isRounded = props.displayTemplateKey === "ImageBlockRoundedTemplate";
   const ratioKey = (ds?.aspectRatio as string) ?? "auto";
@@ -135,7 +136,7 @@ export default function ImageBlock(props: ImageBlockProps) {
       ? { action: "crop", aspectRatio: cropRatio, ...focalPercent(data.image) }
       : {},
   );
-  const srcSet = cdnSrcSet ?? getSrcset(data.image as any);
+  const srcSet = cdnSrcSet ?? getSrcset(asSdkReference(data.image));
   // Cap the base src (the srcSet fallback) so it is never the full-res original.
   const baseSrc = damImageUrl(imageUrl, { width: 1280 });
   const style = resolveStyleClasses(ds, { background: "transparent" });

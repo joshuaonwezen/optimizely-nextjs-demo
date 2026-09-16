@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 
@@ -21,12 +22,12 @@ export default function RatesBar() {
             <span className="font-semibold text-on-surface">{apy} APY</span>
             {" "}on {productLabel}
           </p>
-          <a
+          <Link
             href="/personal/savings"
             className="text-sm font-semibold text-brand hover:underline flex-shrink-0"
           >
             Open a savings account &rarr;
-          </a>
+          </Link>
         </div>
       </div>
       <FxBucketingEvent flagKey="rates_bar" />

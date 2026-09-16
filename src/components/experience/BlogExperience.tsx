@@ -2,10 +2,27 @@ import Image from "next/image";
 import { getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComposition, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { formatDate } from "@/lib/formatDate";
-import { resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
+import { resolveImageUrl, type ImageRef } from "@/components/blocks/_shared/contentRefs";
+import type { ExperienceContent } from "@/components/cms/sdkTypes";
 import { NodeWrapper } from "./CompositionExperience";
 
-export default async function BlogExperience({ content }: { content: any }) {
+interface BlogAuthor {
+  key?: string | null;
+  _metadata?: { key?: string | null } | null;
+  name?: string | null;
+  role?: string | null;
+  avatar?: ImageRef;
+}
+
+type BlogExperienceContent = ExperienceContent & {
+  heading?: string | null;
+  subheading?: string | null;
+  heroImage?: ImageRef;
+  publishedDate?: string | null;
+  author?: BlogAuthor | null;
+};
+
+export default async function BlogExperience({ content }: { content: BlogExperienceContent }) {
   const { pa, src } = getPreviewUtils(content);
 
   const heroUrl = resolveImageUrl(content?.heroImage, src);
@@ -14,22 +31,22 @@ export default async function BlogExperience({ content }: { content: any }) {
   // (__typename AuthorBlock, name set, key null); a reference to an existing
   // AuthorBlock arrives as base metadata only (__typename _Content) and must be
   // resolved by key. Handle both.
-  let author: any = content?.author ?? null;
+  let author: BlogAuthor | null = content?.author ?? null;
   const authorKey = author?.key ?? author?._metadata?.key ?? null;
   if (author && !author.name && authorKey) {
     // No next: { revalidate, tags } - getContent() routes through request(),
     // which forwards no Next.js fetch options, so the option was always
     // discarded. The author resolution rides the page's own ISR window.
-    author = await getClient()
+    author = (await getClient()
       .getContent({ key: authorKey })
-      .catch(() => null);
+      .catch(() => null)) as BlogAuthor | null;
   }
   const authorName = author?.name ?? null;
   const authorRole = author?.role ?? null;
   const authorAvatarUrl = resolveImageUrl(author?.avatar, src);
 
   const formattedDate = formatDate(content?.publishedDate);
-  const nodes: any[] = content?.composition?.nodes ?? [];
+  const nodes = content?.composition?.nodes ?? [];
 
   return (
     <div data-component="BlogExperience">

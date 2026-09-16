@@ -6,6 +6,7 @@ import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/s
 import { supportsProductLanding } from "@/lib/optimizely/productLandingInstances";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { getAllPageRoutes } from "@/lib/graphql/queries/GetAllPagePaths";
+import type { SdkContent } from "@/components/cms/sdkTypes";
 import { LOCALE_RE } from "@/lib/localeUrl";
 import { cacheTag } from "next/cache";
 import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
@@ -170,7 +171,8 @@ async function CmsPage({
       ? { variation: { include: "SOME" as const, value: variationValues, includeOriginal: true } }
       : undefined;
 
-  let page: any = null;
+  // getContentByPath/getContent are untyped (any); pin down the fields read here.
+  let page: (SdkContent & { _metadata?: { variation?: string | null } | null }) | null = null;
 
   // Step 1: URL-based lookup. Graph returns one item for pages with a single
   // published version; for multi-version pages (e.g. homepage) it returns all
@@ -184,7 +186,8 @@ async function CmsPage({
       const items = await client.getContentByPath(url, variationFilter);
       if (items.length > 0) {
         const variationMatch = variationFilter
-          ? items.find((item: any) => variationValues.includes(item._metadata?.variation))
+          ? items.find((item: { _metadata?: { variation?: string | null } }) =>
+              variationValues.includes(item._metadata?.variation ?? ""))
           : null;
         page = variationMatch ?? items[0];
         break;

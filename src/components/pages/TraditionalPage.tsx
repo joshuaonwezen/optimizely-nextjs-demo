@@ -2,9 +2,20 @@ import Image from "next/image";
 import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
-import { resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
+import { resolveImageUrl, type ImageRef } from "@/components/blocks/_shared/contentRefs";
+import type { RichTextValue } from "@/components/cms/CmsRichText";
+import type { SdkContent } from "@/components/cms/sdkTypes";
 
-export default function TraditionalPage({ content }: { content: any }) {
+type TraditionalPageContent = SdkContent & {
+  heading?: string | null;
+  subheading?: string | null;
+  heroImage?: ImageRef;
+  body?: RichTextValue;
+  featuredBlock?: SdkContent | null;
+  mainContent?: Array<SdkContent | null> | null;
+};
+
+export default function TraditionalPage({ content }: { content: TraditionalPageContent }) {
   const { pa, src } = getPreviewUtils(content);
   const heroUrl = resolveImageUrl(content.heroImage, src);
 
@@ -21,7 +32,7 @@ export default function TraditionalPage({ content }: { content: any }) {
 
   // Free content area: an array of type:"content" blocks, inline-expanded by Graph,
   // so each item arrives fully typed and dispatches through OptimizelyComponent directly.
-  const mainContent: any[] = (content.mainContent ?? []).filter(Boolean);
+  const mainContent = (content.mainContent ?? []).filter((item): item is SdkContent => Boolean(item));
 
   return (
     <div data-component="TraditionalPage" className="max-w-4xl mx-auto px-8 py-24">

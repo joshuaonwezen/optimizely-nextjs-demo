@@ -5,6 +5,7 @@ import {
   BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 import { BlockHeader } from "../_shared/BlockHeader";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const LogoGridBlockType = contentType({
   key: "LogoGridBlock",
@@ -101,7 +102,7 @@ const FLEX_ALIGN: Record<string, string> = {
 export default function LogoGridBlock(props: LogoGridBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
 
   const isColor = props.displayTemplateKey === "LogoGridColorTemplate";
   const showNames = ds?.showNames === true;

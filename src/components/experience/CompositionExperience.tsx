@@ -4,6 +4,7 @@ import {
   type ComponentContainerProps,
   type StructureContainerProps,
 } from "@optimizely/cms-sdk/react/server";
+import type { ExperienceContent } from "@/components/cms/sdkTypes";
 
 /**
  * Wraps a composition node in a div carrying its preview attributes, so the
@@ -20,8 +21,8 @@ export function NodeWrapper({ children, node }: ComponentContainerProps | Struct
  * DynamicExperience and BlankExperience are both exactly this, differing only in
  * the `data-component` name they emit.
  */
-export function CompositionExperience({ name, content }: { name: string; content: any }) {
-  const nodes: any[] = content?.composition?.nodes ?? [];
+export function CompositionExperience({ name, content }: { name: string; content: ExperienceContent }) {
+  const nodes = content?.composition?.nodes ?? [];
   return (
     <div data-component={name}>
       <OptimizelyComposition nodes={nodes} ComponentWrapper={NodeWrapper} />

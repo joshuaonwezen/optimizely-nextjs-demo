@@ -5,6 +5,7 @@ import { resolveImageUrl, type ImageRef } from "../_shared/contentRefs";
 import {
   BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const TestimonialBlockType = contentType({
   key: "TestimonialBlock",
@@ -75,7 +76,7 @@ type TestimonialBlockProps = TestimonialData & {
 export default function TestimonialBlock(props: TestimonialBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
 
   const isCard = props.displayTemplateKey === "TestimonialCardTemplate";
   const isMinimal = props.displayTemplateKey === "TestimonialMinimalTemplate";

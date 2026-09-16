@@ -3,6 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND_NONE_DEFAULT, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const SectionHeadingBlockType = contentType({
   key: "SectionHeadingBlock",
@@ -61,7 +62,7 @@ type SectionHeadingBlockProps = SectionHeadingData & {
 export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
 
   const isCentered = props.displayTemplateKey === "SectionHeadingCenteredTemplate";
   const showAccent = ds?.showAccent === true;

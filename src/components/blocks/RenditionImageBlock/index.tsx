@@ -3,6 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
 import { resolveImageUrl } from "../_shared/contentRefs";
+import { asDamContent, asSdkContent, asSdkReference } from "@/components/cms/sdkTypes";
 
 // The rendition enum implies a shape; ask the CDN to crop to it (as height/width)
 // so the intended crop holds even when the named rendition is missing on the asset.
@@ -67,8 +68,8 @@ type RenditionImageBlockProps = RenditionImageBlockData & {
 
 export default function RenditionImageBlock(props: RenditionImageBlockProps) {
   const data = props.content ?? props;
-  const { pa, src } = getPreviewUtils(data as any);
-  const { getSrcset, getAlt } = damAssets(data as any);
+  const { pa, src } = getPreviewUtils(asSdkContent(data));
+  const { getSrcset, getAlt } = damAssets(asDamContent(data));
   const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   // src() resolves the DAM asset URL + preview token; fallbacks cover globalassets.
@@ -85,7 +86,7 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
     undefined,
     cropRatio ? { action: "crop", aspectRatio: cropRatio } : {},
   );
-  const srcSet = cdnSrcSet ?? getSrcset(data.image as any);
+  const srcSet = cdnSrcSet ?? getSrcset(asSdkReference(data.image));
   const baseSrc = damImageUrl(imageUrl, { width: 1280 });
 
   return (
@@ -99,7 +100,7 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
           src={baseSrc}
           srcSet={srcSet}
           sizes="(max-width: 1280px) 100vw, 1280px"
-          alt={getAlt(data.image as any, data.altText ?? "")}
+          alt={getAlt(asSdkReference(data.image), data.altText ?? "")}
           className="w-full h-auto block"
         />
       </div>

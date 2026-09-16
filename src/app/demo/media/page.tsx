@@ -8,6 +8,7 @@ import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 import { damAssets } from "@optimizely/cms-sdk";
 import { damImageUrl, buildDamSrcset } from "@/lib/optimizely/damImage";
+import { asSdkReference } from "@/components/cms/sdkTypes";
 
 export const dynamic = "force-dynamic";
 
@@ -49,12 +50,12 @@ const OTTERS_IMAGE_REF = {
 };
 
 const { getSrcset: getDamSrcset, getAlt: getDamAlt } = damAssets({});
-const pandasRenditionSrcset = getDamSrcset(PANDAS_IMAGE_REF as any) ?? "";
+const pandasRenditionSrcset = getDamSrcset(asSdkReference(PANDAS_IMAGE_REF)) ?? "";
 const pandasSrcset = [
   pandasRenditionSrcset,
   `${PANDAS_IMAGE_REF.item.Url} ${PANDAS_IMAGE_REF.item.Width}w`,
 ].filter(Boolean).join(", ");
-const pandasAlt = getDamAlt(PANDAS_IMAGE_REF as any, "Pandas");
+const pandasAlt = getDamAlt(asSdkReference(PANDAS_IMAGE_REF), "Pandas");
 
 // Build Otters srcset from renditions (smallest-to-largest) then append the original as
 // the largest candidate - demonstrating the pattern of including the full-resolution original.
@@ -855,7 +856,7 @@ export default function MediaDemoPage() {
             controls the dimensions (hero backgrounds, logo grids). Use fixed{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">width</code> and{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">height</code> for thumbnails
-            and avatars. Use natural dimensions for editorial images where the asset's own
+            and avatars. Use natural dimensions for editorial images where the asset&apos;s own
             aspect ratio should flow into the layout. Always provide a{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">sizes</code> prop with{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">fill</code> so the browser

@@ -8,6 +8,7 @@ import { graphClient } from "@/lib/optimizely/graphClient";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { extractKey, orderByKeys, type ContentRef, type ImageRef } from "../_shared/contentRefs";
 import { BlockHeader } from "../_shared/BlockHeader";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const TeamGridBlockType = contentType({
   key: "TeamGridBlock",
@@ -100,7 +101,7 @@ async function loadMembers(keys: string[]): Promise<MemberData[]> {
 
 export default async function TeamGridBlock(props: TeamGridBlockProps) {
   const data = props.content ?? props;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   const keys = (data.members ?? [])
@@ -117,7 +118,7 @@ export default async function TeamGridBlock(props: TeamGridBlockProps) {
         <div {...pa("members")} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {members.map((m, i) => (
             <BlockErrorBoundary key={i}>
-              <OptimizelyComponent content={m as any} />
+              <OptimizelyComponent content={asSdkContent(m)} />
             </BlockErrorBoundary>
           ))}
         </div>

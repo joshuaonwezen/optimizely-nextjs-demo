@@ -2,6 +2,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { BlockHeader } from "../_shared/BlockHeader";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 // Columns and rows are modelled as JSON because the table shape is a
 // structured matrix — a row is a label + N values matched to columns by index.
@@ -69,7 +70,7 @@ function parseJson<T>(value: T[] | string | null | undefined): T[] {
 
 export default function ComparisonTableBlock(props: ComparisonTableBlockProps) {
   const data = props.content ?? props;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
   const columns = parseJson<ColumnDef>(data.columns);
   const rows = parseJson<RowDef>(data.rows);

@@ -5,6 +5,7 @@ import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveImageUrl, resolveUrl, type ImageRef } from "../_shared/contentRefs";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const AuthorBlockType = contentType({
   key: "AuthorBlock",
@@ -92,7 +93,7 @@ type AuthorBlockProps = AuthorData & {
 export default function AuthorBlock(props: AuthorBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   const avatarUrl = resolveImageUrl(data.avatar);
   const linkedinHref = resolveUrl(data.linkedinUrl);
 

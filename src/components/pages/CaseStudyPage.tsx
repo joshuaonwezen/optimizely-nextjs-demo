@@ -6,6 +6,7 @@ import { getClient } from "@optimizely/cms-sdk";
 import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
 import { extractKey, type ContentRef, type ImageRef, resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 interface OutcomeData {
   __typename?: string;
@@ -70,7 +71,7 @@ async function loadTestimonial(key: string | null | undefined): Promise<Testimon
 }
 
 export default async function CaseStudyPage({ content }: { content: CaseStudyContent }) {
-  const { pa, src } = getPreviewUtils(content as any);
+  const { pa, src } = getPreviewUtils(asSdkContent(content));
 
   const heroUrl = resolveImageUrl(content.heroImage, src);
   // Categories live on _itemMetadata, which the SDK's page query does not
@@ -144,7 +145,7 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
       {outcomes.length > 0 && (
         <section className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12 py-8 border-y border-ghost-border">
           {outcomes.map((o, i) => (
-            <OptimizelyComponent key={i} content={o as any} />
+            <OptimizelyComponent key={i} content={asSdkContent(o)} />
           ))}
         </section>
       )}
@@ -169,7 +170,7 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
 
       {testimonial && (
         <section className="my-12">
-          <OptimizelyComponent content={testimonial as any} />
+          <OptimizelyComponent content={asSdkContent(testimonial)} />
         </section>
       )}
 

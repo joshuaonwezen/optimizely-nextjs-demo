@@ -2,6 +2,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const CalloutBlockType = contentType({
   key: "CalloutBlock",
@@ -78,7 +79,7 @@ type CalloutBlockProps = CalloutBlockData & {
 
 export default function CalloutBlock(props: CalloutBlockProps) {
   const data = props.content ?? props;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
   const variant = (data.variant as CalloutVariant | null | undefined) ?? "note";
   const style = resolveStyleClasses(props.displaySettings, { background: "white" });
 

@@ -21,6 +21,8 @@ export function isRequired(validators?: unknown): boolean {
   }
   return (
     Array.isArray(parsed) &&
-    parsed.some((v: any) => v?.Type === "RequiredValidator" || v?.type === "RequiredValidator")
+    (parsed as Array<{ Type?: unknown; type?: unknown } | null>).some(
+      (v) => v?.Type === "RequiredValidator" || v?.type === "RequiredValidator"
+    )
   );
 }

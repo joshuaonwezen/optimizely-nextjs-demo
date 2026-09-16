@@ -4,6 +4,7 @@ import { HeroBlockClient } from "./HeroBlockClient";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveImageUrl } from "../_shared/contentRefs";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const HeroBlockType = contentType({
   key: "HeroBlock",
@@ -98,7 +99,7 @@ type HeroBlockProps = HeroBlockData & {
 export default async function HeroBlock(props: HeroBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa, src } = getPreviewUtils(data as any);
+  const { pa, src } = getPreviewUtils(asSdkContent(data));
   const title = data.headline ?? data.heading;
   const subtitle = data.subheadline ?? data.summary;
   // src() resolves the DAM asset URL + preview token; fallbacks cover globalassets.

@@ -3,6 +3,7 @@ import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import type { ImageRef } from "@/components/blocks/_shared/contentRefs";
 import { resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 interface ConsultantContent {
   _metadata?: { key?: string | null } | null;
@@ -16,7 +17,7 @@ interface ConsultantContent {
 }
 
 export default function ConsultantPage({ content }: { content: ConsultantContent }) {
-  const { pa, src } = getPreviewUtils(content as any);
+  const { pa, src } = getPreviewUtils(asSdkContent(content));
 
   const photoUrl = resolveImageUrl(content.photo, src);
   const expertise = (content.expertise ?? []).filter(Boolean);

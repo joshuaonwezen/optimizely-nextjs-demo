@@ -3,6 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, TEXT_ALIGN, FONT_STYLE, HEADING_CLASSES, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const StatsCounterBlockType = contentType({
   key: "StatsCounterBlock",
@@ -95,7 +96,7 @@ const ACCENT_COLOR_CLASSES: Record<string, string> = {
 export default function StatsCounterBlock(props: StatsCounterBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(data as any);
+  const { pa } = getPreviewUtils(asSdkContent(data));
 
   const isHighlight = props.displayTemplateKey === "StatsCounterHighlightTemplate";
   const isAccent = props.displayTemplateKey === "StatsCounterAccentTemplate";

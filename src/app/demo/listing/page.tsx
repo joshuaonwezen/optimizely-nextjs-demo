@@ -12,7 +12,7 @@ import SourcePanel from "@/components/demo/SourcePanel";
 import FacetedSearchDemo from "./FacetedSearchDemo";
 import ArticleCard from "@/components/articles/ArticleCard";
 import { getTaxonomyTerms } from "@/lib/graphql/queries/GetTaxonomyTerms";
-import { expandToUris, rollUpCounts, termLabel, toTermKey, type TaxonomyTermMeta } from "@/lib/taxonomy";
+import { expandToUris, rollUpCounts, termLabel, type TaxonomyTermMeta } from "@/lib/taxonomy";
 
 export const metadata: Metadata = {
   title: "Content Listing & Discovery",
@@ -790,7 +790,7 @@ export default async function ListingDemoPage({
           <><strong className="text-on-surface">List queries should fetch only metadata + summary fields.</strong> Avoid fetching composition, content areas, or block fragments - that data is for detail pages, not list cards.</>,
           <><strong className="text-on-surface">Use the specific content type, not _Content,</strong> when you need custom fields (summary, category, heroImage). _Content only exposes base _metadata fields.</>,
           <><strong className="text-on-surface">Cursor pagination is stable under concurrent publishes.</strong> Offset pagination re-numbers rows when new items are inserted - users on page 2 can see duplicates or miss items.</>,
-          <><strong className="text-on-surface">cursor: null means there are no more pages.</strong> Always check before rendering a "Load more" or "Next page" control.</>,
+          <><strong className="text-on-surface">cursor: null means there are no more pages.</strong> Always check before rendering a &quot;Load more&quot; or &quot;Next page&quot; control.</>,
           <><strong className="text-on-surface">Pre-render page 1 with generateStaticParams; leave pages 2+ on-demand.</strong> This gives the most-visited page zero TTFB without pre-building every paginated offset at deploy time.</>,
           <><strong className="text-on-surface">_metadata.published is the canonical sort key for recency.</strong> It reflects the last publish date, not the creation date - republishing updates it, which is the right behaviour for editors who update old articles.</>,
           <><strong className="text-on-surface">Facet counts are scoped to the active where clause.</strong> If a user has filtered by category, the date histogram counts only articles in that category - not the whole index. Request facets in the same query as items so you pay one round trip.</>,

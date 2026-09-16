@@ -8,6 +8,7 @@ import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
 import type { ImageRef } from "@/components/blocks/_shared/contentRefs";
 import { resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
+import { asSdkContent } from "@/components/cms/sdkTypes";
 
 interface AuthorData {
   name?: string | null;
@@ -60,7 +61,7 @@ async function loadAuthor(key: string | null | undefined): Promise<AuthorData | 
 }
 
 export default async function ArticlePage({ content }: { content: ArticleContent }) {
-  const { pa, src } = getPreviewUtils(content as any);
+  const { pa, src } = getPreviewUtils(asSdkContent(content));
 
   const heroUrl = resolveImageUrl(content.heroImage, src);
   const authorKey = content.author?.key ?? content.author?._metadata?.key ?? null;
