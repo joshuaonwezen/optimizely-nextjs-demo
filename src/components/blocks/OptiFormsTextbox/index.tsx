@@ -1,4 +1,5 @@
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { useId } from "react";
 import { isRequired, slugify } from "../_shared/formFields";
 
 const INPUT_CLASS =
@@ -20,6 +21,8 @@ export default function OptiFormsTextbox(props: OptiFormsTextboxProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as any);
   const name = slugify(data.Label);
+  // Not derived from the label: two fields with the same label would share an id.
+  const id = useId();
   const required = isRequired(data.Validators);
 
   return (
@@ -27,7 +30,7 @@ export default function OptiFormsTextbox(props: OptiFormsTextboxProps) {
       {data.Label && (
         <label
           {...pa("Label")}
-          htmlFor={name}
+          htmlFor={id}
           className="block text-sm font-medium mb-2 text-on-surface"
         >
           {data.Label}
@@ -35,7 +38,7 @@ export default function OptiFormsTextbox(props: OptiFormsTextboxProps) {
         </label>
       )}
       <input
-        id={name}
+        id={id}
         name={name}
         type="text"
         placeholder={data.Placeholder ?? undefined}

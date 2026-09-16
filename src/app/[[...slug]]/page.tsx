@@ -5,7 +5,7 @@ import { getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/server";
 import { supportsProductLanding } from "@/lib/optimizely/productLandingInstances";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
-import { GET_ALL_PAGE_PATHS_QUERY } from "@/lib/graphql/queries/GetAllPagePaths";
+import { getAllPageRoutes } from "@/lib/graphql/queries/GetAllPagePaths";
 import { cacheTag } from "next/cache";
 import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
@@ -34,7 +34,7 @@ type KeyResult = {
   _Page?: { items?: Array<{ _metadata: { key: string; version: string | number; variation: string | null } }> };
 };
 
-// These three Graph calls sit in module-level "use cache" functions rather than
+// These Graph calls sit in module-level "use cache" functions rather than
 // inline, for two separate reasons. First, the SDK client does not forward
 // next: { revalidate, tags } to its fetch, so the cache boundary has to be the
 // function. Second, CmsPage itself calls noStore() and getVisitorContext()
@@ -50,19 +50,6 @@ async function fetchPageKeys(urls: string[]): Promise<KeyResult> {
     return await graphClient().request(KEY_QUERY, { urls });
   } catch (error) {
     return cachedQueryFailed("fetchPageKeys", error);
-  }
-}
-
-async function fetchAllPagePaths(): Promise<{ _Page?: { items?: unknown[] } }> {
-  "use cache";
-  cacheTag("page");
-  cachePublishedContent();
-
-  // request() takes variables as a required positional - pass {}, not undefined.
-  try {
-    return await graphClient().request(GET_ALL_PAGE_PATHS_QUERY, {});
-  } catch (error) {
-    return cachedQueryFailed("fetchAllPagePaths", error);
   }
 }
 
@@ -277,44 +264,19 @@ export async function generateStaticParams(): Promise<PageParams[]> {
   // behave like a seeded one; the render still notFound()s until content exists.
   const HOMEPAGE: PageParams = { slug: undefined };
 
-  let result;
+  let routes: string[][];
   try {
-    result = await fetchAllPagePaths();
+    routes = await getAllPageRoutes();
   } catch (error) {
     console.error("[generateStaticParams] Falling back to homepage only:", error);
     return [HOMEPAGE];
   }
 
-  const pages = result?._Page?.items ?? [];
-
-  const params: PageParams[] = pages
-    .map((page: any) => {
-      const url: string = page?._metadata?.url?.default ?? "";
-      if (!url || url === "/") return { slug: undefined };
-
-      // English homepage variants → root route (no slug)
-      if (url === "/en/" || url === "/en/homepage/") return { slug: undefined };
-
-      // For English pages, strip the /en/ prefix so URLs stay clean (/savings not /en/savings).
-      // For all other locales, keep the full path (/nl/savings stays /nl/savings).
-      const locale = url.split("/").filter(Boolean)[0] ?? "";
-      const effective =
-        locale === "en" ? url.replace(/^\/en\//, "/") : url;
-
-      const segments = effective.replace(/^\/|\/$/g, "").split("/").filter(Boolean);
-      if (segments.length === 0) return { slug: undefined };
-      return { slug: segments };
-    })
-    .filter(Boolean);
-
-  // De-dupe: "/", "/en/" and "/en/homepage/" all map to the homepage param.
-  const seen = new Set<string>();
-  return [HOMEPAGE, ...params].filter((p) => {
-    const key = (p.slug ?? []).join("/");
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  // Routes are already de-duplicated; skip the homepage entry since it is pinned above.
+  return [
+    HOMEPAGE,
+    ...routes.filter((slug) => slug.length > 0).map((slug) => ({ slug })),
+  ];
 }
 
 // SEO fields come from the SEO contract spread into every page type in

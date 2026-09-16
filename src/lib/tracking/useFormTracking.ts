@@ -15,6 +15,7 @@ export function useFormTracking(formName: string): {
   const formRef = useRef<HTMLFormElement>(null);
   const started = useRef(false);
   const submitted = useRef(false);
+  const abandoned = useRef(false);
 
   useEffect(() => {
     const form = formRef.current;
@@ -30,12 +31,13 @@ export function useFormTracking(formName: string): {
 
   useEffect(() => {
     function onAbandon() {
-      if (!started.current || submitted.current) return;
+      if (!started.current || submitted.current || abandoned.current) return;
+      abandoned.current = true;
       trackEvent("mb_form_abandon", { form: formName });
     }
     // visibilitychange fires when the tab goes to background; beforeunload
     // fires on navigation away or tab close. Both are reasonable abandonment
-    // signals — fire once, don't spam.
+    // signals; `abandoned` makes it fire once per form, not on every tab switch.
     function onVisibility() {
       if (document.visibilityState === "hidden") onAbandon();
     }

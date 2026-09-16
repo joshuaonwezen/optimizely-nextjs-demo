@@ -1,4 +1,5 @@
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { useId } from "react";
 import { isRequired, slugify } from "../_shared/formFields";
 
 const INPUT_CLASS =
@@ -41,13 +42,21 @@ export default function OptiFormsSelection(props: OptiFormsSelectionProps) {
   const name = slugify(data.Label);
   const required = isRequired(data.Validators);
   const items = parseOptions(data.Options);
+  // Not derived from the label: two fields with the same label would share an id.
+  const id = useId();
+  const multiple = data.AllowMultiSelect ?? false;
+  const optionValue = (item: SelectionItem) => item.value ?? item.label ?? "";
+  // `selected` is applied through the <select>'s defaultValue; React ignores
+  // per-<option> defaults.
+  const selectedValues = items.filter((item) => item.selected).map(optionValue);
+  const defaultValue = multiple ? selectedValues : (selectedValues[0] ?? "");
 
   return (
     <div data-component="OptiFormsSelection" className="max-w-2xl mx-auto px-8 py-3">
       {data.Label && (
         <label
           {...pa("Label")}
-          htmlFor={name}
+          htmlFor={id}
           className="block text-sm font-medium mb-2 text-on-surface"
         >
           {data.Label}
@@ -55,19 +64,16 @@ export default function OptiFormsSelection(props: OptiFormsSelectionProps) {
         </label>
       )}
       <select
-        id={name}
+        id={id}
         name={name}
         required={required}
-        multiple={data.AllowMultiSelect ?? false}
+        multiple={multiple}
+        defaultValue={defaultValue}
         className={INPUT_CLASS}
       >
-        {!data.AllowMultiSelect && <option value="">Select...</option>}
+        {!multiple && <option value="">Select...</option>}
         {items.map((item, idx) => (
-          <option
-            key={idx}
-            value={item.value ?? item.label ?? ""}
-            defaultChecked={item.selected ?? false}
-          >
+          <option key={idx} value={optionValue(item)}>
             {item.label ?? item.value ?? ""}
           </option>
         ))}

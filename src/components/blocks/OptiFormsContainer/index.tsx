@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   OptimizelyGridSection,
   getPreviewUtils,
@@ -32,6 +33,8 @@ const FORM_PROPS_QUERY = /* GraphQL */ `
 
 type OptiFormsContainerProps = OptiFormsContainerData & {
   content?: OptiFormsContainerData;
+  /** Field blocks rendered directly (the /demo/forms page); the CMS passes `nodes` instead. */
+  children?: ReactNode;
 };
 
 // Form fields nest inside the container as composition child nodes. The native
@@ -77,8 +80,11 @@ export default async function OptiFormsContainer(props: OptiFormsContainerProps)
 
   const { pa } = getPreviewUtils(node as any);
 
+  // A real <form> scopes OptiFormsSubmit to this container's fields (several forms
+  // can share a page) and gives Enter-to-submit plus native required validation.
+  // OptiFormsSubmit intercepts the submit event, so the form never navigates.
   return (
-    <section
+    <form
       data-component="OptiFormsContainer"
       className="py-16"
       data-form-submit-url={data.SubmitUrl?.default ?? "/api/form-submit"}
@@ -113,6 +119,7 @@ export default async function OptiFormsContainer(props: OptiFormsContainerProps)
       {nodes.length > 0 && (
         <OptimizelyGridSection nodes={nodes} row={NodeWrapper} column={NodeWrapper} />
       )}
-    </section>
+      {props.children}
+    </form>
   );
 }

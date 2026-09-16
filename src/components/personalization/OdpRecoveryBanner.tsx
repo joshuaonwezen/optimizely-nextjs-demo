@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { getCurrentLocale, localizeHref } from "@/lib/localeUrl";
 
 // ODP cross-session personalization: if the visitor abandoned the contact form on an earlier
 // visit (ODP real-time audience `abandoned_contact_form`, built on mb_form_abandon), greet them
@@ -9,11 +11,12 @@ import Link from "next/link";
 // existing /api/demo/odp-segments endpoint so the rest of the site stays static/ISR - only the
 // homepage reads ODP server-side today.
 const RECOVERY_SEGMENT = "abandoned_contact_form";
-const CONTACT_URL = "/en/help/contact";
+const CONTACT_PATH = "/help/contact";
 const DISMISS_KEY = "mb_recovery_dismissed";
 
 export default function OdpRecoveryBanner() {
   const [show, setShow] = useState(false);
+  const pathname = usePathname() ?? "/";
 
   useEffect(() => {
     try {
@@ -63,7 +66,7 @@ export default function OdpRecoveryBanner() {
           Pick up your enquiry where you left off.
         </span>
         <Link
-          href={CONTACT_URL}
+          href={localizeHref(CONTACT_PATH, getCurrentLocale(pathname))}
           className="ml-auto shrink-0 underline underline-offset-2 font-semibold hover:no-underline"
         >
           Finish your enquiry →

@@ -110,6 +110,7 @@ export default async function CallToActionBlock(props: CallToActionProps) {
   const { pa } = getPreviewUtils(data as any);
   const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const style = resolveStyleClasses(ds, { background: "transparent", textColor: "brand" });
+  const surfaceClass = style.wrapper ? `${style.wrapper} rounded-2xl px-8` : "";
 
   // Resolve the link picker (internal refs come back as cms://content/{key}).
   const resolved = await resolveLinkHref(data.link);
@@ -125,7 +126,7 @@ export default async function CallToActionBlock(props: CallToActionProps) {
 
   if (isGhost) {
     return (
-      <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className="py-12 text-center">
+      <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className={`py-12 text-center ${surfaceClass}`}>
         {(href || isEdit) && (
           <a
             href={isEdit ? undefined : href}
@@ -145,7 +146,7 @@ export default async function CallToActionBlock(props: CallToActionProps) {
   const customClass = VARIANT_CLASSES[variant];
 
   return (
-    <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className="py-12 text-center">
+    <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className={`py-12 text-center ${surfaceClass}`}>
       {(href || isEdit) && (
         <Button
           href={isEdit ? undefined : href}

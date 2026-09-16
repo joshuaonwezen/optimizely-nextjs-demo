@@ -217,35 +217,36 @@ export default function FormsPage() {
               Description="Send us a message and we'll get back to you within one business day."
               SubmitUrl={{ default: "/api/form-submit" }}
               SubmitConfirmationMessage="Thank you! We'll be in touch soon."
-            />
-            <OptiFormsTextbox
-              Label="Full Name"
-              Placeholder="Jane Smith"
-              Validators={JSON.stringify([{ type: "RequiredValidator" }])}
-            />
-            <OptiFormsTextbox
-              Label="Email Address"
-              Placeholder="jane@example.com"
-              Validators={JSON.stringify([{ type: "RequiredValidator" }])}
-            />
-            <OptiFormsSelection
-              Label="Topic"
-              Options={JSON.stringify([
-                { label: "Account help", value: "account" },
-                { label: "Card query", value: "card" },
-                { label: "Mortgage", value: "mortgage" },
-                { label: "Other", value: "other" },
-              ])}
-            />
-            <OptiFormsTextarea
-              Label="Message"
-              Placeholder="Describe what you need help with..."
-              Validators={JSON.stringify([{ type: "RequiredValidator" }])}
-            />
-            <OptiFormsSubmit
-              Label="Send Message"
-              showDebug
-            />
+            >
+              <OptiFormsTextbox
+                Label="Full Name"
+                Placeholder="Jane Smith"
+                Validators={JSON.stringify([{ type: "RequiredValidator" }])}
+              />
+              <OptiFormsTextbox
+                Label="Email Address"
+                Placeholder="jane@example.com"
+                Validators={JSON.stringify([{ type: "RequiredValidator" }])}
+              />
+              <OptiFormsSelection
+                Label="Topic"
+                Options={JSON.stringify([
+                  { label: "Account help", value: "account" },
+                  { label: "Card query", value: "card" },
+                  { label: "Mortgage", value: "mortgage" },
+                  { label: "Other", value: "other" },
+                ])}
+              />
+              <OptiFormsTextarea
+                Label="Message"
+                Placeholder="Describe what you need help with..."
+                Validators={JSON.stringify([{ type: "RequiredValidator" }])}
+              />
+              <OptiFormsSubmit
+                Label="Send Message"
+                showDebug
+              />
+            </OptiFormsContainer>
           </div>
         </section>
 

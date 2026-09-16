@@ -52,7 +52,7 @@ export default function FaqContainerBlock(props: FaqContainerBlockProps) {
   const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   return (
-    <div data-component="FaqContainerBlock" className="py-16 max-w-3xl mx-auto px-8">
+    <div data-component="FaqContainerBlock" className={`py-16 max-w-3xl mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}>
       {data.heading && (
         <h2
           {...pa("heading")}

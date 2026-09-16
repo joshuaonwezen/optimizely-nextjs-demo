@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "@/lib/tracking";
 import { identifyCustomer } from "@/lib/tracking/customer";
 import { Button } from "@/components/ui/Button";
+import { useIsClient } from "@/lib/useIsClient";
 
 interface OptiFormsSubmitData {
   Label?: string | null;
@@ -28,13 +29,18 @@ export default function OptiFormsSubmit(props: OptiFormsSubmitProps) {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [successMessage, setSuccessMessage] = useState("Thank you! We'll be in touch soon.");
   const [debug, setDebug] = useState<DebugResult | null>(null);
+  // Before hydration the submit listener isn't attached, so a click would submit the
+  // form natively and put the field values in the URL. Enable once it is.
+  const hydrated = useIsClient();
 
   const formStarted = useRef(false);
   const formSubmitted = useRef(false);
+  const formAbandoned = useRef(false);
 
-  // Fire mb_form_start on first field interaction within the form scope.
+  // Fire mb_form_start on first field interaction within the form.
   useEffect(() => {
-    const scope = ref.current?.closest("main") ?? document.body;
+    const scope = ref.current?.closest("form");
+    if (!scope) return;
     function onFocusIn() {
       if (formStarted.current) return;
       formStarted.current = true;
@@ -47,7 +53,8 @@ export default function OptiFormsSubmit(props: OptiFormsSubmitProps) {
   // Fire mb_form_abandon when the visitor leaves without submitting.
   useEffect(() => {
     function onAbandon() {
-      if (!formStarted.current || formSubmitted.current) return;
+      if (!formStarted.current || formSubmitted.current || formAbandoned.current) return;
+      formAbandoned.current = true;
       trackEvent("mb_form_abandon", { form: "opti_form" });
     }
     function onVisibility() {
@@ -61,59 +68,61 @@ export default function OptiFormsSubmit(props: OptiFormsSubmitProps) {
     };
   }, []);
 
-  async function handleClick() {
-    if (status === "submitting") return;
+  // The container renders the <form>; the browser has already run required-field
+  // validation by the time "submit" fires, so this only has to post the values.
+  useEffect(() => {
+    const form = ref.current?.closest("form");
+    if (!form) return;
+    let submitting = false;
 
-    const scope = ref.current?.closest("main") ?? document.body;
-    const configEl = scope.querySelector("[data-form-submit-url]");
-    const submitUrl = configEl?.getAttribute("data-form-submit-url") ?? "/api/form-submit";
-    const msg = configEl?.getAttribute("data-form-success-message");
-    if (msg) setSuccessMessage(msg);
+    async function onSubmit(event: SubmitEvent) {
+      event.preventDefault();
+      if (!form || submitting) return;
+      submitting = true;
 
-    const inputs = scope.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
-      "input, textarea, select"
-    );
+      const submitUrl = form.getAttribute("data-form-submit-url") ?? "/api/form-submit";
+      const msg = form.getAttribute("data-form-success-message");
+      if (msg) setSuccessMessage(msg);
 
-    const payload: Record<string, string> = {};
-    let valid = true;
-    inputs.forEach((el) => {
-      if (el.name) payload[el.name] = el.value;
-      if (el.required && !el.value) valid = false;
-    });
-
-    if (!valid) {
-      inputs.forEach((el) => {
-        if (el.required && !el.value) el.reportValidity();
+      const payload: Record<string, string> = {};
+      new FormData(form).forEach((value, key) => {
+        // Multi-selects contribute one entry per selected option.
+        if (typeof value === "string") payload[key] = payload[key] ? `${payload[key]},${value}` : value;
       });
-      return;
-    }
+      const fields = Object.keys(payload).join(",");
 
-    setStatus("submitting");
-    try {
-      const res = await fetch(submitUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const responseData = await res.json().catch(() => ({}));
-        if (showDebug) setDebug({ payload, response: responseData, httpStatus: res.status });
-        setStatus("success");
-        formSubmitted.current = true;
-        trackEvent("mb_form_submit", { form: "opti_form", fields: Object.keys(payload).join(","), status: "success" });
-        if (payload.email) {
-          identifyCustomer({ email: payload.email });
+      setStatus("submitting");
+      try {
+        const res = await fetch(submitUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const responseData = await res.json().catch(() => ({}));
+          if (showDebug) setDebug({ payload, response: responseData, httpStatus: res.status });
+          setStatus("success");
+          formSubmitted.current = true;
+          trackEvent("mb_form_submit", { form: "opti_form", fields, status: "success" });
+          if (payload.email) {
+            identifyCustomer({ email: payload.email });
+          }
+          form.reset();
+        } else {
+          setStatus("error");
+          trackEvent("mb_form_submit", { form: "opti_form", fields, status: "error", httpStatus: res.status });
         }
-        inputs.forEach((el) => { el.value = ""; });
-      } else {
+      } catch {
         setStatus("error");
-        trackEvent("mb_form_submit", { form: "opti_form", fields: Object.keys(payload).join(","), status: "error", httpStatus: res.status });
+        trackEvent("mb_form_submit", { form: "opti_form", fields, status: "error" });
+      } finally {
+        submitting = false;
       }
-    } catch {
-      setStatus("error");
-      trackEvent("mb_form_submit", { form: "opti_form", fields: Object.keys(payload).join(","), status: "error" });
     }
-  }
+
+    form.addEventListener("submit", onSubmit);
+    return () => form.removeEventListener("submit", onSubmit);
+  }, [showDebug]);
 
   if (status === "success") {
     return (
@@ -163,9 +172,8 @@ export default function OptiFormsSubmit(props: OptiFormsSubmitProps) {
   return (
     <div data-component="OptiFormsSubmit" ref={ref} className="max-w-2xl mx-auto px-8 pt-4 pb-2">
       <Button
-        type="button"
-        onClick={handleClick}
-        disabled={status === "submitting"}
+        type="submit"
+        disabled={!hydrated || status === "submitting"}
         title={data.Tooltip ?? undefined}
         size="large"
       >

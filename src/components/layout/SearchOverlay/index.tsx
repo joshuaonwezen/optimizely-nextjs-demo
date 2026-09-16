@@ -30,6 +30,14 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
   const [loading, setLoading] = useState(false);
   const inputRef  = useRef<HTMLInputElement>(null);
   const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Only the newest request may write results; typing fast otherwise lets a slow
+  // earlier response land after (and overwrite) a newer one.
+  const requestRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    requestRef.current?.abort();
+  }, []);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -42,18 +50,27 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
   }, [onClose]);
 
   const runSearch = useCallback(async (q: string, m: SearchMode, w: number, f: boolean) => {
-    if (q.length < 2) { setResults([]); setTotal(0); return; }
+    requestRef.current?.abort();
+    if (q.length < 2) { setResults([]); setTotal(0); setLoading(false); return; }
+
+    const controller = new AbortController();
+    requestRef.current = controller;
     setLoading(true);
     try {
       const base = m === "semantic"
         ? `/api/search?q=${encodeURIComponent(q)}&mode=semantic&weight=${w}`
         : `/api/search?q=${encodeURIComponent(q)}&mode=relevance`;
-      const res  = await fetch(f ? base : `${base}&fuzzy=0`);
-      const data = await res.json();
+      const res = await fetch(f ? base : `${base}&fuzzy=0`, { signal: controller.signal });
+      const data = res.ok ? await res.json() : {};
       setResults(data.items ?? []);
       setTotal(data.total ?? 0);
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      console.error("[SearchOverlay] Search failed:", error);
+      setResults([]);
+      setTotal(0);
     } finally {
-      setLoading(false);
+      if (requestRef.current === controller) setLoading(false);
     }
   }, []);
 

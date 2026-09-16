@@ -111,7 +111,8 @@ export default async function ProductCardBlock(props: ProductCardBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
-  const href = data.__context?.edit ? undefined : (await resolveLinkHref(data.linkUrl) ?? "#");
+  // No "#" fallback: an unset or unresolvable link renders a non-navigating card.
+  const href = data.__context?.edit ? undefined : await resolveLinkHref(data.linkUrl);
   const icon = data.icon ? (ICON_MAP[data.icon] ?? ICON_MAP.account) : ICON_MAP.account;
 
   const isFeatured = props.displayTemplateKey === "ProductCardFeaturedTemplate";

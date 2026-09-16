@@ -4,7 +4,8 @@ const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
 
 const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
-    "/demo/(.*)": ["./src/**/*"],
+    // Demo pages render their own source with fs.readFileSync; some read scripts/.
+    "/demo/(.*)": ["./src/**/*", "./scripts/**/*"],
   },
 
   /**

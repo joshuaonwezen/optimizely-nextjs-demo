@@ -1,6 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { ProductHeroCtaClient } from "./ProductHeroCtaClient";
 
 export const ProductHeroBlockType = contentType({
@@ -74,6 +75,8 @@ export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
   const isCompact = props.displayTemplateKey === "ProductHeroCompactTemplate";
   const isCentered = ds?.alignment === "center";
   const style = resolveStyleClasses(ds, { background: "blueGrad" });
+  // Internal links arrive as cms://content/{key}; in edit mode keep the raw value.
+  const ctaHref = data.__context?.edit ? data.ctaUrl?.default ?? undefined : await resolveLinkHref(data.ctaUrl);
 
   return (
     <section
@@ -109,7 +112,7 @@ export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
           )}
           {(data.ctaUrl?.default || data.__context?.edit) && (
             <ProductHeroCtaClient
-              href={data.ctaUrl?.default}
+              href={ctaHref}
               label={data.ctaText}
               isEditMode={!!data.__context?.edit}
               ctaUrlDisplay={data.ctaUrl?.default}

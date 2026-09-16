@@ -122,7 +122,7 @@ export default async function TeamGridBlock(props: TeamGridBlockProps) {
   const members = await loadMembers(keys);
 
   return (
-    <section data-component="TeamGridBlock" className="py-20 max-w-7xl mx-auto px-8">
+    <section data-component="TeamGridBlock" className={`py-20 max-w-7xl mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}>
       <div className="text-center mb-12 max-w-2xl mx-auto">
         {data.heading && (
           <h2 {...pa("heading")} className={`${style.font} text-3xl md:text-4xl font-extrabold ${style.text} mb-3`}>
