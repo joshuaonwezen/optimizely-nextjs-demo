@@ -13,7 +13,7 @@ export const PRODUCT_LANDING_CMS_HOSTS = new Set([
   "app-opon10saas39t5rt002.cms.optimizely.com", // mostinNewCMS
   "app-opononboards2c23t002.cms.optimizely.com", // kastleNewCMS
   "app-opononboardyt09bt002.cms.optimizely.com", // toddCMS
-  // apjCMS is absent on purpose: its CMS has no "Composition" property format.
+  "app-opon12saasw5l98p001.cms.optimizely.com", // apjCMS
 ]);
 
 export function supportsProductLanding(

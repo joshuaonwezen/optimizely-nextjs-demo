@@ -472,8 +472,9 @@ carries them anywhere. Each instance gets them explicitly:
   decides where the **app** registers the types (registry, `generateMetadata` SEO fragment). Add a host only
   after its push is done AND Graph's schema sync has caught up - registering types Graph does not know adds
   fragments for unknown types and breaks **every** page on that instance.
-- Live as of 2026-09-14 on personal, joshCMS, harryNewCMS, mostinNewCMS, kastleNewCMS and toddCMS.
-  **apjCMS is excluded**: no `Composition` property format. On kastleNewCMS the seeded page stays a **draft**
+- Live on **every** instance as of 2026-09-16: personal, joshCMS, harryNewCMS, mostinNewCMS, kastleNewCMS,
+  toddCMS and apjCMS. apjCMS only gained the `Composition` property format on 2026-09-16; before that its push
+  skipped itself, which is what the capability check is for. On kastleNewCMS the seeded page stays a **draft**
   (approval workflow) until someone approves it.
 
 **`POST /v1/manifest` answers 200 even when it imports nothing.** The body carries `outcomes` and `errors`
