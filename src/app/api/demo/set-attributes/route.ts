@@ -1,17 +1,8 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { DEMO_PAGE_VIEWS_COOKIE } from "@/lib/optimizely/cookieNames";
+import { setDemoCookie } from "@/lib/demo/demoCookieRoute";
 
-export async function POST(request: NextRequest) {
-  const { pageViews } = await request.json();
-  const response = NextResponse.json({ ok: true });
-  if (typeof pageViews === "number") {
-    response.cookies.set("demo_page_views", String(pageViews), {
-      path: "/",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24,
-    });
-  } else {
-    response.cookies.delete("demo_page_views");
-  }
-  return response;
+export async function POST(request: Request) {
+  return setDemoCookie(request, DEMO_PAGE_VIEWS_COOKIE, (body) =>
+    typeof body.pageViews === "number" && Number.isFinite(body.pageViews) ? String(body.pageViews) : null
+  );
 }

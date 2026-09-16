@@ -14,6 +14,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 import { buildLocaleUrl, getCurrentLocale, localizeHref } from "@/lib/localeUrl";
 import { readCookie } from "@/lib/tracking/cookies";
+import { DEMO_BUCKETING_ID_COOKIE } from "@/lib/optimizely/cookieNames";
 
 interface Props {
   tree: NavNode[];
@@ -78,7 +79,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
 
   // Logged-in state derives from the demo_bucketing_id cookie (read client-side so
   // the server render stays cacheable).
-  useEffect(() => { setIsLoggedIn(!!readCookie("demo_bucketing_id")); }, []);
+  useEffect(() => { setIsLoggedIn(!!readCookie(DEMO_BUCKETING_ID_COOKIE)); }, []);
 
   // FX: nav_search_style + mobile_nav, decided client-side.
   const searchStyle = useFxDecision("nav_search_style");

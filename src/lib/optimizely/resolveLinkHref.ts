@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 // Cached per content key, so a page with many internal links costs one Graph call
@@ -7,7 +7,7 @@ import { graphClient } from "@/lib/optimizely/graphClient";
 // publish that moves the target also refreshes the link.
 async function fetchContentUrl(key: string): Promise<string | null> {
   "use cache";
-  cacheTag("page");
+  cacheTag(CACHE_TAGS.page);
   cachePublishedContent();
 
   try {

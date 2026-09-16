@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface QuoteBlock {
@@ -36,7 +36,7 @@ export const GET_QUOTE_BLOCKS_QUERY = /* GraphQL */ `
 // next: { revalidate, tags }.
 async function fetchQuoteBlocks(): Promise<GetQuoteBlocksResult> {
   "use cache";
-  cacheTag("quote-blocks");
+  cacheTag(CACHE_TAGS.quoteBlocks);
   cachePublishedContent();
 
   try {

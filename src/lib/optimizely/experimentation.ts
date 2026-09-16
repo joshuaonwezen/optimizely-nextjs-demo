@@ -10,7 +10,9 @@ import {
 } from "@optimizely/optimizely-sdk";
 import { fetchDatafile } from "./datafile";
 
-export type FxAttributes = Record<string, string | number | boolean | null | undefined>;
+import type { FxAttributes } from "./fxAttributes";
+
+export type { FxAttributes };
 
 export type FxDecision = {
   flagKey: string;

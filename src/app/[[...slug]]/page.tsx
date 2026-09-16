@@ -6,8 +6,9 @@ import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/s
 import { supportsProductLanding } from "@/lib/optimizely/productLandingInstances";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { getAllPageRoutes } from "@/lib/graphql/queries/GetAllPagePaths";
+import { LOCALE_RE } from "@/lib/localeUrl";
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { isVariationSegment, parseVariationSegment, type FlagVariation } from "@/lib/optimizely/variationPath";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
@@ -26,8 +27,6 @@ interface PageParams {
   slug?: string[];
 }
 
-const LOCALE_PREFIX_RE = /^[a-z]{2}(-[a-z]{2})?$/;
-
 type KeyResult = {
   // Optional because the cached fetcher returns {} when the Graph query fails -
   // see fetchPageKeys. Every read below is already optional-chained.
@@ -43,7 +42,7 @@ type KeyResult = {
 // entirely, taking only the serializable `urls` array as its cache key.
 async function fetchPageKeys(urls: string[]): Promise<KeyResult> {
   "use cache";
-  cacheTag("page");
+  cacheTag(CACHE_TAGS.page);
   cachePublishedContent();
 
   try {
@@ -61,7 +60,7 @@ async function fetchPageMeta(
   urls: string[]
 ): Promise<PageMetaResult> {
   "use cache";
-  cacheTag("page");
+  cacheTag(CACHE_TAGS.page);
   cachePublishedContent();
 
   try {
@@ -109,7 +108,7 @@ function buildUrlCandidates(slug?: string[]): string[] {
   }
   const path = slug.join("/");
   // If the first segment is a locale code the URL is already fully qualified
-  if (LOCALE_PREFIX_RE.test(slug[0])) {
+  if (LOCALE_RE.test(slug[0])) {
     const locale = slug[0];
     // A bare locale slug (e.g. ["en"]) is the locale homepage.
     if (slug.length === 1) {

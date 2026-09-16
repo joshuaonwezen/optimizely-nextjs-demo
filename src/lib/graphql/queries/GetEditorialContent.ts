@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface EditorialItem {
@@ -56,7 +56,7 @@ const EMPTY = { items: [] as EditorialItem[], fromCms: false };
 // gets its own entry.
 async function fetchEditorialContent(limit: number): Promise<GraphResponse> {
   "use cache";
-  cacheTag("page");
+  cacheTag(CACHE_TAGS.page);
   cachePublishedContent();
 
   try {

@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-const ODP_API_HOST = process.env.OPTIMIZELY_ODP_API_HOST ?? "https://api.zaius.com";
-const ODP_API_KEY = process.env.OPTIMIZELY_ODP_API_KEY ?? "";
+import { ODP_API_HOST, ODP_API_KEY } from "@/lib/optimizely/odp";
 
 async function forwardToOdp(body: Record<string, unknown>): Promise<void> {
   if (!ODP_API_KEY) return;
 
   const identifiers: Record<string, string> = {};
   if (typeof body.email === "string") identifiers.email = body.email;
-  if (typeof body.fs_user_id === "string") identifiers.vuid = body.fs_user_id;
+  // fs_user_id, not vuid: OdpSetup stitches the FX visitor id into ODP under
+  // fs_user_id, so that is the identifier the visitor's profile lives under.
+  if (typeof body.fs_user_id === "string") identifiers.fs_user_id = body.fs_user_id;
 
   const formFields: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(body)) {

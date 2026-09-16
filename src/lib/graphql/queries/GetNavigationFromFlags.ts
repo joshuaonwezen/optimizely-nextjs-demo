@@ -1,6 +1,6 @@
 // Demo reference implementation for /demo/navigation - production nav uses GetNavigation.ts
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import type { NavNode } from "./GetNavigation";
 
@@ -104,7 +104,7 @@ const FALLBACK_TREE: NavNode[] = [
 // outside the boundary - it is pure, so there is nothing to gain by caching it.
 async function fetchFlagNav(): Promise<{ TraditionalPage?: { items?: RawFlagItem[] } }> {
   "use cache";
-  cacheTag("navigation");
+  cacheTag(CACHE_TAGS.navigation);
   cachePublishedContent();
 
   try {

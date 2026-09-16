@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag as _revalidateTag } from "next/cache";
+import { CACHE_TAGS } from "@/lib/optimizely/cacheProfile";
 import { isValidRevalidateSecret } from "@/lib/security/verifySecret";
 
 // Next.js 16 requires a second `profile` arg in its types, but route handlers
@@ -38,15 +39,7 @@ export async function POST(request: NextRequest) {
     console.log("[Optimizely Graph Webhook] Event received:", body);
 
     revalidatePath("/", "layout");
-    revalidateTag("page");
-    revalidateTag("navigation");
-    revalidateTag("banner");
-    revalidateTag("footer");
-    revalidateTag("settings");
-    revalidateTag("quotes");
-    revalidateTag("quote-blocks");
-    revalidateTag("redirects");
-    revalidateTag("locations");
+    for (const tag of Object.values(CACHE_TAGS)) revalidateTag(tag);
 
     return NextResponse.json({ received: true, timestamp: Date.now() });
   } catch (error) {

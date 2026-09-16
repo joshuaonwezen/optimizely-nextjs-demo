@@ -1,5 +1,5 @@
-const ODP_API_HOST = process.env.OPTIMIZELY_ODP_API_HOST ?? "https://api.zaius.com";
-const ODP_API_KEY  = process.env.OPTIMIZELY_ODP_API_KEY  ?? "";
+export const ODP_API_HOST = process.env.OPTIMIZELY_ODP_API_HOST ?? "https://api.zaius.com";
+export const ODP_API_KEY  = process.env.OPTIMIZELY_ODP_API_KEY  ?? "";
 
 // Look up membership by fs_user_id: OdpSetup stitches the FX visitor id (optimizelyEndUserId)
 // into ODP as fs_user_id, so the profile lives under that identifier - NOT vuid. Querying by

@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { readCookie } from "@/lib/tracking/cookies";
+import { DEMO_PERSONA_COOKIE } from "@/lib/optimizely/cookieNames";
+import { LOCALE_RE } from "@/lib/localeUrl";
 
 // Browsing-derived audience segment. Reuses the existing `persona` FX attribute
 // (the middleware, visitor.ts, useFxDecision and FxBucketingEvent all read the
@@ -62,9 +64,9 @@ const SECTION_TO_PERSONA: Record<string, Persona> = {
 // unknown) so the last qualified segment is preserved as they keep browsing.
 export function personaFromPath(pathname: string | null | undefined): Persona | null {
   if (!pathname) return null;
-  // Strip a leading locale segment (/en, /nl) then take the first path segment.
-  const segments = pathname.replace(/^\/(en|nl)(?=\/|$)/, "").split("/").filter(Boolean);
-  const first = segments[0];
+  // Skip a leading locale segment (/en, /nl) then take the first path segment.
+  const segments = pathname.split("/").filter(Boolean);
+  const first = LOCALE_RE.test(segments[0] ?? "") ? segments[1] : segments[0];
   if (!first) return null;
   return SECTION_TO_PERSONA[first] ?? null;
 }
@@ -141,12 +143,12 @@ export function reconcileSegment(): void {
     /* storage unavailable */
   }
   if (stored && isPersona(stored)) {
-    if (readCookie("demo_persona") !== stored) {
+    if (readCookie(DEMO_PERSONA_COOKIE) !== stored) {
       document.cookie = `demo_persona=${stored}; Path=/; SameSite=Lax`;
     }
     return;
   }
-  const cookie = readCookie("demo_persona");
+  const cookie = readCookie(DEMO_PERSONA_COOKIE);
   if (cookie && isPersona(cookie)) writeSegment(cookie);
 }
 

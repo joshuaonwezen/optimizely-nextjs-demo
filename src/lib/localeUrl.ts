@@ -1,4 +1,5 @@
-const LOCALE_RE = /^[a-z]{2}(-[a-z]{2})?$/;
+/** A path segment that is a locale code (en, nl, en-gb). */
+export const LOCALE_RE = /^[a-z]{2}(-[a-z]{2})?$/;
 
 // Paths that must never take a locale prefix (English-only SDK docs, APIs).
 const LOCALE_EXCLUDED_RE = /^\/(demo|api|preview)(\/|$)/;

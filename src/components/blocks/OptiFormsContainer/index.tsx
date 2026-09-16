@@ -4,7 +4,7 @@ import {
   getPreviewUtils,
 } from "@optimizely/cms-sdk/react/server";
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { NodeWrapper } from "@/components/experience/CompositionExperience";
 
@@ -49,7 +49,7 @@ type FormPropsResult = { OptiFormsContainerData?: { items?: OptiFormsContainerDa
 // are serializable, so never pass `node` or `props` in here.
 async function fetchFormProps(name: string): Promise<FormPropsResult> {
   "use cache";
-  cacheTag("page");
+  cacheTag(CACHE_TAGS.page);
   cachePublishedContent();
 
   try {

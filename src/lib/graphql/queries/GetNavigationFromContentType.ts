@@ -1,6 +1,6 @@
 // Demo reference implementation for /demo/navigation - production nav uses GetNavigation.ts
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface ContentTypeNavItem {
@@ -57,7 +57,7 @@ interface ContentTypeNavGraphResult {
 // what the function RETURNS instead, so cacheTag/cacheLife work over any client.
 async function fetchArticleNav(): Promise<ContentTypeNavGraphResult> {
   "use cache";
-  cacheTag("page");
+  cacheTag(CACHE_TAGS.page);
   cachePublishedContent();
 
   try {

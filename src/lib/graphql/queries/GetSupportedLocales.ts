@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 const GET_SUPPORTED_LOCALES_QUERY = /* GraphQL */ `
@@ -44,7 +44,7 @@ interface SiteDefinitionResult {
 // try/catch at the call site cannot rescue.
 async function fetchSupportedLocales(): Promise<SiteDefinitionResult> {
   "use cache";
-  cacheTag("navigation");
+  cacheTag(CACHE_TAGS.navigation);
   cachePublishedContent();
 
   try {

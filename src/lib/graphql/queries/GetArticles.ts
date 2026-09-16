@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { resolveCategoryUris } from "@/lib/taxonomy";
 
@@ -122,7 +122,7 @@ async function fetchArticles(
   categories: string[] | null
 ): Promise<GraphResponse> {
   "use cache";
-  cacheTag("page");
+  cacheTag(CACHE_TAGS.page);
   cachePublishedContent();
 
   try {

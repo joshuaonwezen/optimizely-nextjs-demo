@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { DEFAULT_SITE_SETTINGS, type SiteSettingsStrings } from "@/lib/siteSettings";
 
@@ -39,7 +39,7 @@ const GET_SITE_SETTINGS_QUERY = /* GraphQL */ `
 // fetch options, so the cache boundary is the function, not the fetch.
 async function fetchSiteSettings(locale: string): Promise<GetSiteSettingsResult> {
   "use cache";
-  cacheTag("settings");
+  cacheTag(CACHE_TAGS.settings);
   cachePublishedContent();
 
   try {

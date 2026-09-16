@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface RedirectRule {
@@ -62,7 +62,7 @@ function normalizeRedirectPath(input: string): string {
 // calls this - middleware reaches the rules over HTTP, never by import.
 async function fetchRedirectConfig(): Promise<GetRedirectConfigResult> {
   "use cache";
-  cacheTag("redirects");
+  cacheTag(CACHE_TAGS.redirects);
   cachePublishedContent();
 
   try {

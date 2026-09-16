@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 // Public tree type — used by NestedNavMenu and the demo page
@@ -135,7 +135,7 @@ export function toNavNode(raw: RawNavItem): NavNode {
 // token is dynamic data that cannot cross a cache boundary.
 async function fetchNavigationCached(key: string | undefined, locale: string): Promise<GetNavigationResult> {
   "use cache";
-  cacheTag("navigation");
+  cacheTag(CACHE_TAGS.navigation);
   cachePublishedContent();
 
   try {

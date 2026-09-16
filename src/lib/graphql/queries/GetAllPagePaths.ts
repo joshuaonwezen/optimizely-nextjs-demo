@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 // Every published page URL. Feeds generateStaticParams() in the catch-all route
@@ -28,7 +28,7 @@ type AllPagePathsResult = {
 
 async function fetchAllPagePaths(): Promise<AllPagePathsResult> {
   "use cache";
-  cacheTag("page");
+  cacheTag(CACHE_TAGS.page);
   cachePublishedContent();
 
   // request() takes variables as a required positional - pass {}, not undefined.

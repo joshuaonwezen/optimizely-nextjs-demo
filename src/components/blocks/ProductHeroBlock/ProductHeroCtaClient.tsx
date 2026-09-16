@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getOptimizelyBrowserClient } from "@/lib/optimizely/browser-client";
 import { Button } from "@/components/ui/Button";
 import { readCookie } from "@/lib/tracking/cookies";
+import { browserFxAttributes, VISITOR_ID_COOKIE } from "@/lib/optimizely/fxAttributes";
 
 // Keys are stored in CMS content, so they stay put even though the brand
 // palette they now map onto has nothing to do with the original color names.
@@ -36,20 +37,11 @@ export function ProductHeroCtaClient({ href, label, isEditMode, ctaUrlDisplay, p
 
   useEffect(() => {
     void (async () => {
-      const userId = readCookie("optimizelyEndUserId");
+      const userId = readCookie(VISITOR_ID_COOKIE);
       if (!userId) return;
       const client = await getOptimizelyBrowserClient();
       if (!client) return;
-      const ua = navigator.userAgent;
-      const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
-      const demoPersona = readCookie("demo_persona");
-      const bucketingId = readCookie("demo_bucketing_id");
-      const ctx = client.createUserContext(userId, {
-        device,
-        hostname: window.location.hostname,
-        logged_in: !!bucketingId,
-        ...(demoPersona ? { persona: demoPersona } : {}),
-      });
+      const ctx = client.createUserContext(userId, browserFxAttributes());
       const decision = ctx?.decide("add_to_cart", []); // fire bucketing event
       if (decision?.enabled) {
         const color = decision.variables.button_color as string;

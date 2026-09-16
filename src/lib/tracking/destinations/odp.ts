@@ -1,5 +1,6 @@
 import { readCookie } from "../cookies";
 import type { TrackingDestination } from "../types";
+import { VISITOR_ID_COOKIE } from "@/lib/optimizely/cookieNames";
 
 declare global {
   interface Window {
@@ -26,7 +27,7 @@ export const odpDestination: TrackingDestination = {
  */
 export function identifyCustomer(attrs: Record<string, string | undefined>): void {
   if (typeof window === "undefined" || !window.zaius) return;
-  const fsUserId = readCookie("optimizelyEndUserId");
+  const fsUserId = readCookie(VISITOR_ID_COOKIE);
   const payload: Record<string, string> = {};
   for (const [k, v] of Object.entries(attrs)) {
     if (v) payload[k] = v;

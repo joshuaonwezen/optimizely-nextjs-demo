@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { toNavNode, type NavNode, type RawNavItem } from "@/lib/graphql/queries/GetNavigation";
 
@@ -56,7 +56,7 @@ const GET_FOOTER_QUERY = /* GraphQL */ `
 // so cacheTag/cacheLife work over any client. Args must stay serializable.
 async function fetchFooter(locale: string): Promise<GetFooterResult> {
   "use cache";
-  cacheTag("footer");
+  cacheTag(CACHE_TAGS.footer);
   cachePublishedContent();
 
   try {

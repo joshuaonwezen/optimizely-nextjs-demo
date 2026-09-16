@@ -792,7 +792,7 @@ Add a similar early-return whenever a new non-CMS route is introduced (landing p
 
 Time-based TTL is 1 hour (`CACHE_TTL = 3600` in `src/lib/optimizely/client.ts`) across page output, site chrome, and content data — it is the single source of truth, feeding both `cacheLife({ revalidate })` and the catch-all's `export const revalidate`. No Graph query uses fetch-level `next` options any more; the SDK client discards them (see above), so the FX datafile is the only remaining fetch-level consumer. Freshness is driven by the publish webhook (`revalidatePath`/`revalidateTag`); the 1-hour window is only the fallback ceiling. The FX datafile stays at 60s (see below) and search/preview stay uncached — those are deliberately excluded from the 1-hour policy.
 
-Every tag listed above is busted by `src/app/api/webhooks/route.ts`. **Adding a new `cacheTag()` means adding a matching `revalidateTag()` there** — a tag with no webhook line silently pins that data to the 1-hour ceiling.
+Every tag lives in `CACHE_TAGS` (`src/lib/optimizely/cacheProfile.ts`), and `src/app/api/webhooks/route.ts` revalidates all of them. **Always call `cacheTag(CACHE_TAGS.x)`, never a string literal** - a new tag added anywhere else would have no webhook line and silently pin that data to the 1-hour ceiling.
 
 For a new manual query, write a `"use cache"` function over `graphClient().request()` — see the section above.
 

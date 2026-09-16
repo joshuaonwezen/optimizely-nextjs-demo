@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface SiteBannerItem {
@@ -38,7 +38,7 @@ const GET_SITE_BANNER_QUERY = /* GraphQL */ `
 // value, so cacheTag/cacheLife apply over any client.
 async function fetchSiteBanner(locale: string): Promise<GetSiteBannerResult> {
   "use cache";
-  cacheTag("banner");
+  cacheTag(CACHE_TAGS.banner);
   cachePublishedContent();
 
   try {

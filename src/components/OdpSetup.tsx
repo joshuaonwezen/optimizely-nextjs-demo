@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 import "@/lib/tracking/destinations/odp";
 import { readCookie } from "@/lib/tracking/cookies";
+import { VISITOR_ID_COOKIE } from "@/lib/optimizely/cookieNames";
 
 export default function OdpSetup() {
   const pathname = usePathname();
@@ -12,7 +13,7 @@ export default function OdpSetup() {
   // Link the FX visitor ID to ODP once on mount so server-side segment
   // queries can use optimizelyEndUserId via the fs_user_id identifier.
   useEffect(() => {
-    const fsUserId = readCookie("optimizelyEndUserId");
+    const fsUserId = readCookie(VISITOR_ID_COOKIE);
     if (fsUserId) window.zaius?.entity("customer", { fs_user_id: fsUserId });
   }, []);
 
@@ -24,7 +25,7 @@ export default function OdpSetup() {
   // URL-conditioned segments match nobody. fs_user_id is stitched to the anonymous vuid via
   // the entity() call above, so the pageview is attributed to the unified customer profile.
   useEffect(() => {
-    const fsUserId = readCookie("optimizelyEndUserId");
+    const fsUserId = readCookie(VISITOR_ID_COOKIE);
     window.zaius?.event("pageview", fsUserId ? { fs_user_id: fsUserId } : undefined);
   }, [pathname]);
 

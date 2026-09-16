@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 
 export interface BankLocation {
@@ -79,7 +79,7 @@ function toLocation(raw: RawLocation): BankLocation {
 // next: { revalidate, tags }.
 async function fetchLocations(): Promise<GetLocationsResult> {
   "use cache";
-  cacheTag("locations");
+  cacheTag(CACHE_TAGS.locations);
   cachePublishedContent();
 
   try {

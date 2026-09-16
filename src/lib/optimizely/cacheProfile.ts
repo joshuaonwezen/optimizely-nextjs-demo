@@ -1,6 +1,22 @@
 import { cacheLife } from "next/cache";
 import { CACHE_TTL } from "./client";
 
+// Every cacheTag() in the app. /api/webhooks revalidates all of them on publish, so a
+// tag used anywhere else but missing here would pin its data to the CACHE_TTL ceiling.
+export const CACHE_TAGS = {
+  page: "page",
+  navigation: "navigation",
+  banner: "banner",
+  footer: "footer",
+  settings: "settings",
+  quotes: "quotes",
+  quoteBlocks: "quote-blocks",
+  redirects: "redirects",
+  locations: "locations",
+} as const;
+
+export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];
+
 // Shared cacheLife settings for "use cache" functions that read published content
 // from Graph. Both helpers must be called inside the cache scope.
 

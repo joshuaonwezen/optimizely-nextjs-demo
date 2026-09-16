@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/tracking";
 import { clearSegment, PERSONA_LABELS, useCurrentSegment, writeSegment, type Persona } from "@/lib/segment";
 import { readCookie } from "@/lib/tracking/cookies";
+import { DEMO_BUCKETING_ID_COOKIE, DEMO_PAGE_VIEWS_COOKIE, VISITOR_ID_COOKIE } from "@/lib/optimizely/cookieNames";
 
 // Segment options mirror the personas the homepage can serve. new_visitor is the
 // default (no persona / base experience, before any section has been browsed).
@@ -76,11 +77,11 @@ export default function AudienceSwitcher() {
   }, [open]);
 
   useEffect(() => {
-    const bid = readCookie("demo_bucketing_id");
+    const bid = readCookie(DEMO_BUCKETING_ID_COOKIE);
     setBucketingId(bid);
     setLoggedIn(!!bid);
-    setUserId(readCookie("optimizelyEndUserId") || "anonymous");
-    setFrequentCustomer(!!readCookie("demo_page_views"));
+    setUserId(readCookie(VISITOR_ID_COOKIE) || "anonymous");
+    setFrequentCustomer(!!readCookie(DEMO_PAGE_VIEWS_COOKIE));
 
     function handleOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);

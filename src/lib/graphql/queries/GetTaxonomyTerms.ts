@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
+import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import type { TaxonomyTermMeta } from "@/lib/taxonomy";
 
@@ -84,7 +84,7 @@ async function fetchContentTaxonomy(
   _TaxonomyTerm?: GraphResponse["_TaxonomyTerm"];
 }> {
   "use cache";
-  cacheTag("page");
+  cacheTag(CACHE_TAGS.page);
   cachePublishedContent();
 
   try {
@@ -96,7 +96,7 @@ async function fetchContentTaxonomy(
 
 async function fetchTaxonomyTerms(locale: string): Promise<GraphResponse> {
   "use cache";
-  cacheTag("page");
+  cacheTag(CACHE_TAGS.page);
   cachePublishedContent();
 
   try {

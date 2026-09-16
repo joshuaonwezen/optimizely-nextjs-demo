@@ -7,6 +7,7 @@ import {
 } from "@optimizely/optimizely-sdk/universal";
 import { fetchDatafile } from "@/lib/optimizely/datafile";
 import { appendVisitorCookie } from "@/lib/optimizely/visitorCookie";
+import { buildFxAttributes, requestHost, VISITOR_ID_COOKIE } from "@/lib/optimizely/fxAttributes";
 import { loadRedirectRules, matchRedirect } from "@/lib/redirects";
 import {
   formatVariationSegment,
@@ -61,24 +62,28 @@ function knownVariation(datafile: string, value: string): FlagVariation | null {
 }
 
 export async function middleware(request: NextRequest) {
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
-  const existingId = request.cookies.get("optimizelyEndUserId")?.value;
+  const host = requestHost(request.headers);
+  const existingId = request.cookies.get(VISITOR_ID_COOKIE)?.value;
   const userId = existingId ?? crypto.randomUUID();
   // A first-time visitor has no cookie on THIS request, so forward the new id to the
   // render too - otherwise server components fall back to "anonymous" for FX and ODP
   // until the second page view.
-  if (!existingId) request.cookies.set("optimizelyEndUserId", userId);
+  if (!existingId) request.cookies.set(VISITOR_ID_COOKIE, userId);
   const forwardRequest = { headers: request.headers };
 
   const response = NextResponse.next({ request: forwardRequest });
+  const { pathname } = request.nextUrl;
+
+  // API routes get the forwarded id but no Set-Cookie: /api/demo/reset-visitor-id
+  // writes a NEW id, and a second Set-Cookie carrying the old one could undo it.
+  if (pathname.startsWith("/api/")) return response;
+
   // Always (re)write the visitor id domain-wide and purge any legacy host-only
   // duplicate, so it stays a single cookie shared with the Optimizely Web snippet and
   // the client re-buckets correctly after a reset. See visitorCookie.ts.
   appendVisitorCookie(response.headers, userId, host);
 
-  const { pathname } = request.nextUrl;
-  // Skip API routes, preview, demo pages and Next.js 16 .segments/ prefetch URLs (rewriting them produces a cached 404).
-  if (pathname.startsWith("/api/")) return response;
+  // Skip preview, demo pages and Next.js 16 .segments/ prefetch URLs (rewriting them produces a cached 404).
   if (pathname.startsWith("/preview")) return response;
   if (/^\/demo(\/|$)/.test(pathname)) return response;
   if (pathname.includes(".segments/")) return response;
@@ -126,24 +131,19 @@ export async function middleware(request: NextRequest) {
     const datafile = await fetchDatafile(3000);
     if (!datafile) return response;
 
-    const ua = request.headers.get("user-agent") ?? "";
-    const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
-    // Strip any :port so this matches window.location.hostname on the client.
-    const hostname = host.split(":")[0];
-    const demoPersona = request.cookies.get("demo_persona")?.value;
-    const bucketingId = request.cookies.get("demo_bucketing_id")?.value;
-
     const client = createInstance({
       projectConfigManager: createStaticProjectConfigManager({ datafile }),
       requestHandler: noOpRequestHandler,
     });
 
-    const ctx = client.createUserContext(userId, {
-      device,
-      hostname,
-      logged_in: !!bucketingId,
-      ...(demoPersona ? { persona: demoPersona } : {}),
-    });
+    const ctx = client.createUserContext(
+      userId,
+      buildFxAttributes({
+        userAgent: request.headers.get("user-agent") ?? "",
+        host,
+        cookie: (name) => request.cookies.get(name)?.value,
+      })
+    );
     if (!ctx) return response;
 
     const decisions = ctx.decideAll([OptimizelyDecideOption.DISABLE_DECISION_EVENT]);

@@ -1,5 +1,5 @@
 import { getOptimizelyBrowserClient } from "@/lib/optimizely/browser-client";
-import { readCookie } from "../cookies";
+import { browserFxAttributes } from "@/lib/optimizely/fxAttributes";
 import type { TrackingDestination } from "../types";
 
 export const fxDestination: TrackingDestination = {
@@ -8,10 +8,8 @@ export const fxDestination: TrackingDestination = {
     const client = await getOptimizelyBrowserClient();
     if (!client) return "skipped";
     await client.onReady();
-    const attributes: Record<string, string> = { hostname: window.location.hostname };
-    const persona = readCookie("demo_persona");
-    if (persona) attributes.persona = persona;
-    const user = client.createUserContext(event.userId, attributes);
+    // Events carry the same attributes as decisions, so results can be segmented by them.
+    const user = client.createUserContext(event.userId, browserFxAttributes());
     if (!user) return "skipped";
     user.trackEvent(event.key, event.tags);
     return "sent";

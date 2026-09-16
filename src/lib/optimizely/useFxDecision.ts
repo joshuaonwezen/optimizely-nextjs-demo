@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { OptimizelyDecideOption } from "@optimizely/optimizely-sdk";
 import { getOptimizelyBrowserClient } from "./browser-client";
 import { readCookie } from "@/lib/tracking/cookies";
+import { browserFxAttributes, VISITOR_ID_COOKIE } from "./fxAttributes";
 
 export interface ClientFxDecision {
   enabled: boolean;
@@ -12,7 +13,7 @@ export interface ClientFxDecision {
 }
 
 // Resolves an FX flag in the browser using the same attributes as the server-side
-// getVisitorContext (device, logged_in, persona, page_views). Returns null until the
+// getVisitorContext (see fxAttributes.ts). Returns null until the
 // datafile loads. Impression-suppressed - render <FxBucketingEvent> to fire the event
 // when the variant is shown, matching the existing measurement behavior.
 //
@@ -32,24 +33,12 @@ export function useFxDecision(flagKey: string): ClientFxDecision | null {
     }
 
     let cancelled = false;
-    const userId = readCookie("optimizelyEndUserId");
+    const userId = readCookie(VISITOR_ID_COOKIE);
     if (!userId) return;
 
     void getOptimizelyBrowserClient().then((client) => {
       if (!client || cancelled) return;
-      const ua = navigator.userAgent;
-      const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
-      const demoPersona = readCookie("demo_persona");
-      const bucketingId = readCookie("demo_bucketing_id");
-      const demoPageViews = readCookie("demo_page_views");
-
-      const ctx = client.createUserContext(userId, {
-        device,
-        hostname: window.location.hostname,
-        logged_in: !!bucketingId,
-        ...(demoPersona ? { persona: demoPersona } : {}),
-        ...(demoPageViews !== "" ? { page_views: Number(demoPageViews) } : {}),
-      });
+      const ctx = client.createUserContext(userId, browserFxAttributes());
       if (!ctx) return;
 
       // Enable in the browser with: localStorage.setItem("fx_debug","1") — or ?fxdebug in the URL.
