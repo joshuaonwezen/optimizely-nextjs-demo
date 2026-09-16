@@ -1,20 +1,26 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { NavNode } from "@/lib/graphql/queries/GetNavigation";
 import type { DemoCategory } from "@/lib/getDemoLinks";
 import type { SupportedLocale } from "@/lib/graphql/queries/GetSupportedLocales";
 import { DEFAULT_SITE_SETTINGS, type SiteSettingsStrings } from "@/lib/siteSettings";
 import SearchOverlay from "@/components/layout/SearchOverlay";
-import MoseyBankLogo from "@/components/MoseyBankLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useFxDecision } from "@/lib/optimizely/useFxDecision";
-import { buildLocaleUrl, getCurrentLocale, localizeHref } from "@/lib/localeUrl";
+import { getCurrentLocale, localizeHref } from "@/lib/localeUrl";
 import { readCookie } from "@/lib/tracking/cookies";
 import { DEMO_BUCKETING_ID_COOKIE } from "@/lib/optimizely/cookieNames";
+import { useIsClient } from "@/lib/useIsClient";
+import { AccountMenu } from "./AccountMenu";
+import { BottomTabs } from "./BottomTabs";
+import { DesktopNavTree } from "./DesktopNavTree";
+import { DeveloperMenu } from "./DeveloperMenu";
+import { LocaleMenu } from "./LocaleMenu";
+import { MobileDrawer } from "./MobileDrawer";
+import { SearchIcon } from "./navIcons";
 
 interface Props {
   tree: NavNode[];
@@ -26,6 +32,10 @@ interface Props {
   siteSettings?: SiteSettingsStrings;
   localizedSiteSettings?: Record<string, SiteSettingsStrings>;
 }
+
+const DEVELOPER_MENU = "__demo__";
+const LOCALE_MENU = "__locale__";
+const ACCOUNT_MENU = "__account__";
 
 // Nav hrefs from the CMS carry English (or unprefixed) paths. Rewrite every
 // internal link to the active locale so navigating from an /nl page stays on
@@ -39,34 +49,16 @@ function localizeTree(nodes: NavNode[], locale: string): NavNode[] {
   }));
 }
 
-function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      width="10" height="6" viewBox="0 0 10 6" fill="none"
-      className={`flex-shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
-    >
-      <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M12.5 12.5L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 export default function NavItems({ tree: baseTree, localizedTrees, demoCategories, locales, siteSettings, localizedSiteSettings }: Props) {
-  const [activeKey,     setActiveKey]     = useState<string | null>(null);
-  const [searchOpen,    setSearchOpen]    = useState(false);
-  const [mobileOpen,    setMobileOpen]    = useState(false);
-  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
-  const [mobileDemoCategory, setMobileDemoCategory] = useState<string | null>(null);
-  const [isLoggedIn,    setIsLoggedIn]    = useState(false);
+  // Which desktop dropdown is open; one at a time.
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  // The drawer remembers the path it was opened on, so navigating closes it
+  // without an effect.
+  const [drawerPath, setDrawerPath] = useState<string | null>(null);
   const pathname = usePathname();
+  const mobileOpen = drawerPath !== null && drawerPath === pathname;
+
   const currentLocale = getCurrentLocale(pathname);
   const tree =
     currentLocale === "en"
@@ -77,39 +69,23 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
       ? siteSettings
       : localizedSiteSettings?.[currentLocale] ?? siteSettings) ?? DEFAULT_SITE_SETTINGS;
 
-  // Logged-in state derives from the demo_bucketing_id cookie (read client-side so
-  // the server render stays cacheable).
-  useEffect(() => { setIsLoggedIn(!!readCookie(DEMO_BUCKETING_ID_COOKIE)); }, []);
+  // Logged-in state derives from the demo_bucketing_id cookie, read only after
+  // hydration so the server render stays cacheable.
+  const isClient = useIsClient();
+  const isLoggedIn = isClient && !!readCookie(DEMO_BUCKETING_ID_COOKIE);
 
   // FX: nav_search_style + mobile_nav, decided client-side.
   const searchStyle = useFxDecision("nav_search_style");
   const searchExpanded = searchStyle?.enabled && (searchStyle.variables.style as string) === "expanded";
-
   const mobileNav = useFxDecision("mobile_nav");
   const showBottomTabs = mobileNav?.enabled && mobileNav.variationKey === "bottom_tabs";
 
-  // Close drawer on navigation
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
-
-  // Lock vertical scroll while drawer is open
-  useEffect(() => {
-    document.body.style.overflowY = mobileOpen ? "hidden" : "";
-    return () => { document.body.style.overflowY = ""; };
-  }, [mobileOpen]);
-
-  // Reserve space for the fixed bottom tab bar so it doesn't overlay the footer
-  useEffect(() => {
-    if (!showBottomTabs) return;
-    document.body.style.paddingBottom = "calc(4rem + env(safe-area-inset-bottom))";
-    return () => { document.body.style.paddingBottom = ""; };
-  }, [showBottomTabs]);
-
   if (tree.length === 0) return null;
 
-  function toggleMobile(key: string) {
-    setMobileExpanded(prev => prev === key ? null : key);
-    setMobileDemoCategory(null);
-  }
+  const menuProps = (key: string) => ({
+    open: activeMenu === key,
+    onOpenChange: (open: boolean) => setActiveMenu(open ? key : null),
+  });
 
   return (
     <>
@@ -118,473 +94,35 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
         document.body
       )}
 
-      {/* ── Mobile drawer ─────────────────────────────────── */}
       {mobileOpen && createPortal(
-        <div className="md:hidden fixed inset-0 z-[60] flex flex-col bg-surface-lowest">
-
-          {/* Drawer header */}
-          <div className="flex items-center justify-between px-5 h-16 border-b border-ghost-border flex-shrink-0">
-            <Link href={buildLocaleUrl("/", currentLocale)} prefetch={false} aria-label={`${settings.logoTextPrimary} ${settings.logoTextSecondary} home`} onClick={() => setMobileOpen(false)}>
-              <MoseyBankLogo primary={settings.logoTextPrimary} secondary={settings.logoTextSecondary} />
-            </Link>
-            <button
-              onClick={() => setMobileOpen(false)}
-              aria-label="Close menu"
-              className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-low transition-colors"
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M4 4L16 16M16 4L4 16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Scrollable body */}
-          <div className="flex-1 overflow-y-auto">
-
-            {/* CMS nav tree */}
-            <div className="px-4 py-4 space-y-0.5">
-              {tree.map((node) => {
-                const isExpanded = mobileExpanded === node.key;
-                if (!node.children.length) {
-                  return (
-                    <Link
-                      key={node.key}
-                      href={node.href}
-                      target={node.openInNewTab ? "_blank" : undefined}
-                      rel={node.openInNewTab ? "noopener noreferrer" : undefined}
-                      className="block px-3 py-3 rounded-lg text-base font-medium text-on-surface-variant hover:bg-surface-low hover:text-brand transition-colors"
-                    >
-                      {node.label}
-                    </Link>
-                  );
-                }
-                return (
-                  <div key={node.key}>
-                    <button
-                      onClick={() => toggleMobile(node.key)}
-                      className="w-full flex items-center justify-between px-3 py-3 rounded-lg text-base font-medium text-on-surface-variant hover:bg-surface-low transition-colors"
-                    >
-                      {node.label}
-                      <Chevron open={isExpanded} />
-                    </button>
-                    {isExpanded && (
-                      <div className="ml-3 pl-3 border-l-2 border-ghost-border space-y-0.5 mb-1">
-                        {node.children.map((child) =>
-                          child.children.length > 0 ? (
-                            <div key={child.key} className="mb-1">
-                              <Link
-                                href={child.href}
-                                className="block py-1.5 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-brand transition-colors"
-                              >
-                                {child.label}
-                              </Link>
-                              {child.children.map((grandchild) => (
-                                <Link
-                                  key={grandchild.key}
-                                  href={grandchild.href}
-                                  className="block py-2 text-sm text-on-surface-variant hover:text-brand transition-colors"
-                                >
-                                  {grandchild.label}
-                                </Link>
-                              ))}
-                            </div>
-                          ) : (
-                            <Link
-                              key={child.key}
-                              href={child.href}
-                              className="block py-2 text-sm text-on-surface-variant hover:text-brand transition-colors"
-                            >
-                              {child.label}
-                            </Link>
-                          )
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="border-t border-ghost-border mx-4" />
-
-            {/* Developer section */}
-            <div className="px-4 py-4">
-              <button
-                onClick={() => toggleMobile("__demo__")}
-                className="w-full flex items-center justify-between px-3 py-3 rounded-lg"
-              >
-                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-brand-fill text-on-brand">
-                  Developer
-                </span>
-                <Chevron open={mobileExpanded === "__demo__"} />
-              </button>
-              {mobileExpanded === "__demo__" && (
-                <div className="mt-2 px-3">
-                  {demoCategories.map((category) => {
-                    const isOpen = mobileDemoCategory === category.label;
-                    return (
-                      <div key={category.label}>
-                        <button
-                          onClick={() => setMobileDemoCategory(isOpen ? null : category.label)}
-                          className="w-full flex items-center justify-between py-2.5 text-left"
-                        >
-                          <span className="text-sm font-semibold text-on-surface">
-                            {category.label}
-                            <span className="ml-2 text-xs font-normal text-on-surface-variant">
-                              {category.links.length}
-                            </span>
-                          </span>
-                          <Chevron open={isOpen} />
-                        </button>
-                        {isOpen && (
-                          <ul className="ml-3 pl-3 border-l-2 border-ghost-border space-y-0.5 mb-2">
-                            {category.links.map((link) => (
-                              <li key={link.href}>
-                                <Link
-                                  href={link.href}
-                                  className="block py-1.5 text-sm font-medium text-on-surface-variant hover:text-brand transition-colors"
-                                >
-                                  {link.label}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <Link href="/demo" className="inline-block mt-2 text-sm text-brand hover:underline font-medium">
-                    View all demos →
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Locale switcher */}
-            {locales.length > 1 && (
-              <>
-                <div className="border-t border-ghost-border mx-4" />
-                <div className="px-7 py-4 flex flex-wrap gap-2">
-                  {locales.map((locale) => (
-                    <Link
-                      key={locale.code}
-                      href={buildLocaleUrl(pathname, locale.code)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        locale.code === currentLocale
-                          ? "bg-brand-fill text-on-brand"
-                          : "text-on-surface-variant hover:bg-surface-low hover:text-brand"
-                      }`}
-                    >
-                      {locale.label}
-                    </Link>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Mobile: auth */}
-          <div className="border-t border-ghost-border mx-4" />
-          <div className="px-4 py-4 flex flex-col gap-2">
-            {isLoggedIn ? (
-              <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-surface-low">
-                <span className="w-8 h-8 rounded-full bg-brand-fill text-on-brand text-xs font-bold flex items-center justify-center flex-shrink-0">MB</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-on-surface">My Account</p>
-                  <p className="text-xs text-on-surface-variant">Logged in</p>
-                </div>
-                <Link href="/demo/personalization" onClick={() => setMobileOpen(false)} className="text-xs text-on-surface-variant hover:text-brand transition-colors">
-                  Sign out
-                </Link>
-              </div>
-            ) : (
-              <Link
-                href="/demo/personalization"
-                onClick={() => setMobileOpen(false)}
-                className="block w-full text-center px-4 py-3 rounded-xl text-sm font-medium text-on-surface-variant bg-surface-low hover:text-brand transition-colors"
-              >
-                Sign In
-              </Link>
-            )}
-          </div>
-
-          {/* Drawer footer: search + theme toggle */}
-          <div className="border-t border-ghost-border px-5 py-4 flex-shrink-0 flex items-center gap-3">
-            <button
-              onClick={() => { setMobileOpen(false); setSearchOpen(true); }}
-              className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-low text-on-surface-variant hover:text-brand transition-colors"
-            >
-              <SearchIcon />
-              <span className="text-sm font-medium">Search</span>
-            </button>
-            <ThemeToggle />
-          </div>
-        </div>,
+        <MobileDrawer
+          tree={tree}
+          demoCategories={demoCategories}
+          locales={locales}
+          currentLocale={currentLocale}
+          pathname={pathname}
+          settings={settings}
+          isLoggedIn={isLoggedIn}
+          onClose={() => setDrawerPath(null)}
+          onOpenSearch={() => { setDrawerPath(null); setSearchOpen(true); }}
+        />,
         document.body
       )}
 
-      {/* ── Desktop nav (md+) ─────────────────────────────── */}
+      {/* Desktop nav (md+) */}
       <div data-component="NavItems" className="hidden md:flex items-center gap-1">
-
-        {/* CMS nav tree */}
-        {tree.map((node) => {
-          const hasChildren = node.children.length > 0;
-          const isActive = activeKey === node.key;
-
-          return (
-            <div
-              key={node.key}
-              className="relative"
-              onMouseEnter={() => setActiveKey(node.key)}
-              onMouseLeave={() => setActiveKey(null)}
-            >
-              {hasChildren ? (
-                <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors font-body ${isActive ? "text-brand" : "text-on-surface-variant hover:text-brand"}`}>
-                  {node.label}
-                  <Chevron open={isActive} />
-                </button>
-              ) : (
-                <Link
-                  href={node.href}
-                  target={node.openInNewTab ? "_blank" : undefined}
-                  rel={node.openInNewTab ? "noopener noreferrer" : undefined}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium font-body text-on-surface-variant hover:text-brand transition-colors"
-                >
-                  {node.label}
-                </Link>
-              )}
-
-              {hasChildren && isActive && (
-                <div className="absolute top-full left-0 pt-2 z-50">
-                  <div className="bg-surface-lowest border border-ghost-border rounded-xl shadow-lg p-3 min-w-72 max-w-[min(24rem,calc(100vw-3rem))]">
-                    <Link
-                      href={node.href}
-                      target={node.openInNewTab ? "_blank" : undefined}
-                      rel={node.openInNewTab ? "noopener noreferrer" : undefined}
-                      className="mb-2 flex items-center justify-between border-b border-ghost-border px-3 pb-2.5 pt-1 text-sm font-semibold text-on-surface transition-colors hover:text-brand"
-                    >
-                      {node.label}
-                    </Link>
-                    <div className="space-y-2">
-                    {node.children.map((child) =>
-                      child.children.length > 0 ? (
-                        <section key={child.key} className="rounded-lg bg-surface-lowest">
-                          <Link
-                            href={child.href}
-                            target={child.openInNewTab ? "_blank" : undefined}
-                            rel={child.openInNewTab ? "noopener noreferrer" : undefined}
-                            className="block rounded-lg px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-low hover:text-brand"
-                          >
-                            {child.label}
-                          </Link>
-                          <div className="ml-3 border-l border-ghost-border pl-3 pb-1">
-                            {child.children.map((grandchild) => (
-                              <Link
-                                key={grandchild.key}
-                                href={grandchild.href}
-                                target={grandchild.openInNewTab ? "_blank" : undefined}
-                                rel={grandchild.openInNewTab ? "noopener noreferrer" : undefined}
-                                className="block rounded-md px-3 py-1.5 text-sm text-on-surface-variant transition-colors hover:bg-surface-low hover:text-brand"
-                              >
-                                {grandchild.label}
-                              </Link>
-                            ))}
-                          </div>
-                        </section>
-                      ) : (
-                        <Link
-                          key={child.key}
-                          href={child.href}
-                          target={child.openInNewTab ? "_blank" : undefined}
-                          rel={child.openInNewTab ? "noopener noreferrer" : undefined}
-                          className="block rounded-lg px-3 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-low hover:text-brand"
-                        >
-                          {child.label}
-                        </Link>
-                      )
-                    )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Demo mega-menu */}
-        <div
-          className="relative"
-          onMouseEnter={() => setActiveKey("__demo__")}
-          onMouseLeave={() => setActiveKey(null)}
-        >
-          <Link
-            href="/demo"
-            className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold font-body transition-colors bg-brand-fill text-on-brand hover:bg-brand-fill-dim"
-          >
-            Developer
-            <Chevron open={activeKey === "__demo__"} />
-          </Link>
-
-          {activeKey === "__demo__" && (
-            <div className="absolute top-full right-0 pt-2 z-50">
-              <div className="bg-surface-lowest border border-ghost-border rounded-2xl shadow-xl p-5 w-[540px] lg:w-[700px] xl:w-[860px] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-5rem)] overflow-y-auto">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-xs font-semibold text-on-surface">Developer demos</p>
-                  <Link href="/demo" className="text-xs text-brand hover:underline font-medium">
-                    View all →
-                  </Link>
-                </div>
-                {(() => {
-                  // Split the remaining categories into two stacks balanced by link count
-                  const stacks: [DemoCategory[], DemoCategory[]] = [[], []];
-                  const counts = [0, 0];
-                  for (const cat of demoCategories.slice(1)) {
-                    const i = counts[0] <= counts[1] ? 0 : 1;
-                    stacks[i].push(cat);
-                    counts[i] += cat.links.length;
-                  }
-                  return (
-                    <div className="flex gap-5">
-                      {demoCategories[0] && (
-                        <div className="flex-[2] min-w-0">
-                          <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
-                            {demoCategories[0].label}
-                          </p>
-                          <div className="grid grid-cols-2 gap-x-3">
-                            {demoCategories[0].links.map((link) => (
-                              <Link
-                                key={link.href}
-                                href={link.href}
-                                className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
-                              >
-                                <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
-                                  {link.label}
-                                </span>
-                                <span className="hidden xl:block text-xs text-on-surface-variant leading-snug mt-0.5">
-                                  {link.description}
-                                </span>
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {stacks.map((stack, i) => (
-                        <Fragment key={i}>
-                          <div className="w-px bg-ghost-border flex-shrink-0" />
-                          <div className="flex-1 min-w-0 flex flex-col gap-5">
-                            {stack.map((category) => (
-                              <div key={category.label}>
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2 pb-1.5 border-b border-ghost-border">
-                                  {category.label}
-                                </p>
-                                <ul className="space-y-0.5">
-                                  {category.links.map((link) => (
-                                    <li key={link.href}>
-                                      <Link
-                                        href={link.href}
-                                        className="group block px-2 py-1.5 rounded-lg hover:bg-surface-low transition-colors"
-                                      >
-                                        <span className="block text-sm font-medium text-on-surface group-hover:text-brand transition-colors leading-tight">
-                                          {link.label}
-                                        </span>
-                                        <span className="hidden xl:block text-xs text-on-surface-variant leading-snug mt-0.5">
-                                          {link.description}
-                                        </span>
-                                      </Link>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ))}
-                          </div>
-                        </Fragment>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Language switcher */}
+        <DesktopNavTree tree={tree} activeKey={activeMenu} setActiveKey={setActiveMenu} />
+        <DeveloperMenu demoCategories={demoCategories} {...menuProps(DEVELOPER_MENU)} />
         {locales.length > 1 && (
-          <div
-            className="relative ml-2"
-            onMouseEnter={() => setActiveKey("__locale__")}
-            onMouseLeave={() => setActiveKey(null)}
-          >
-            <button
-              aria-label="Switch language"
-              className="flex items-center gap-1 px-2 py-2 rounded-lg text-sm font-medium text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.25" />
-                <ellipse cx="8" cy="8" rx="2.5" ry="6.5" stroke="currentColor" strokeWidth="1.25" />
-                <path d="M1.5 6h13M1.5 10h13" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
-              </svg>
-              <span className="uppercase text-xs font-semibold tracking-wide">{currentLocale}</span>
-            </button>
-            {activeKey === "__locale__" && (
-              <div className="absolute top-full right-0 pt-2 z-50">
-                <div className="bg-surface-lowest border border-ghost-border rounded-xl shadow-lg py-2 min-w-[80px]">
-                  {locales.map((locale) => (
-                    <Link
-                      key={locale.code}
-                      href={buildLocaleUrl(pathname, locale.code)}
-                      className={`block px-4 py-1.5 text-sm transition-colors hover:bg-surface-low ${
-                        locale.code === currentLocale
-                          ? "text-brand font-semibold"
-                          : "text-on-surface-variant hover:text-brand"
-                      }`}
-                    >
-                      {locale.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <LocaleMenu locales={locales} currentLocale={currentLocale} pathname={pathname} {...menuProps(LOCALE_MENU)} />
         )}
-
-        {/* Personalization: logged-in nav state */}
-        {isLoggedIn ? (
-          <div
-            className="relative ml-1"
-            onMouseEnter={() => setActiveKey("__account__")}
-            onMouseLeave={() => setActiveKey(null)}
-          >
-            <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-full text-sm font-semibold transition-colors bg-surface-low text-on-surface hover:bg-surface">
-              <span className="w-6 h-6 rounded-full bg-brand-fill text-on-brand text-[10px] font-bold flex items-center justify-center flex-shrink-0">MB</span>
-              <span>My Account</span>
-              <Chevron open={activeKey === "__account__"} />
-            </button>
-            {activeKey === "__account__" && (
-              <div className="absolute top-full right-0 pt-2 z-50">
-                <div className="bg-surface-lowest border border-ghost-border rounded-xl shadow-lg py-2 min-w-44">
-                  <Link href={localizeHref("/personal", currentLocale)} className="block px-4 py-2 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors">Dashboard</Link>
-                  <Link href={localizeHref("/personal/savings", currentLocale)} className="block px-4 py-2 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors">My Accounts</Link>
-                  <div className="border-t border-ghost-border my-1" />
-                  <Link href="/demo/personalization" className="block px-4 py-2 text-sm text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors">Sign Out</Link>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <Link
-            href="/demo/personalization"
-            className="px-3 py-1.5 rounded-lg text-sm font-medium text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
-          >
-            Sign In
-          </Link>
-        )}
-
-        {/* Theme toggle */}
+        <AccountMenu isLoggedIn={isLoggedIn} currentLocale={currentLocale} {...menuProps(ACCOUNT_MENU)} />
         <ThemeToggle />
 
-        {/* Search — icon or expanded pill (FX: nav_search_style) */}
+        {/* Search - icon or expanded pill (FX: nav_search_style) */}
         {searchExpanded ? (
           <button
+            type="button"
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
             className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm text-on-surface-variant bg-surface-low border border-ghost-border hover:border-brand/40 hover:text-brand transition-colors min-w-[140px]"
@@ -594,6 +132,7 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
           </button>
         ) : (
           <button
+            type="button"
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
             className="p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
@@ -603,9 +142,10 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
         )}
       </div>
 
-      {/* ── Mobile: search + hamburger (hidden when bottom tabs active) ── */}
+      {/* Mobile: search + hamburger (hidden when bottom tabs are active) */}
       <div className={`${showBottomTabs ? "hidden" : "flex"} md:hidden items-center gap-1`}>
         <button
+          type="button"
           onClick={() => setSearchOpen(true)}
           aria-label="Search"
           className="p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
@@ -613,32 +153,20 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
           <SearchIcon />
         </button>
         <button
-          onClick={() => setMobileOpen(true)}
+          type="button"
+          onClick={() => setDrawerPath(pathname)}
           aria-label="Open menu"
+          aria-expanded={mobileOpen}
+          aria-haspopup="dialog"
           className="p-2 rounded-lg text-on-surface-variant hover:text-brand hover:bg-surface-low transition-colors"
         >
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
             <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
           </svg>
         </button>
       </div>
 
-      {/* ── Mobile bottom tab bar (FX: mobile_nav = bottom_tabs) ─── */}
-      {showBottomTabs && (
-        <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-surface-lowest border-t border-ghost-border flex safe-pb">
-          {[
-            { href: "/",                    label: "Home",     icon: <path d="M3 9.5L10 3l7 6.5V19a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /> },
-            { href: "/personal",            label: "Products", icon: <><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.5"/></> },
-            { href: "/demo",                label: "Demo",     icon: <><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5"/><path d="M9.5 8.5l5 3.5-5 3.5V8.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></> },
-            { href: "/demo/personalization",label: "Account",  icon: <><circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></> },
-          ].map(({ href, label, icon }) => (
-            <Link key={href} href={localizeHref(href, currentLocale)} prefetch={false} className="flex-1 flex flex-col items-center py-3 gap-1 text-on-surface-variant hover:text-brand transition-colors">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">{icon}</svg>
-              <span className="text-[10px] font-medium">{label}</span>
-            </Link>
-          ))}
-        </nav>
-      )}
+      {showBottomTabs && <BottomTabs currentLocale={currentLocale} />}
     </>
   );
 }

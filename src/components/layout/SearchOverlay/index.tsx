@@ -40,13 +40,18 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
   }, []);
 
   useEffect(() => {
+    // Focus returns to whatever opened the overlay when it closes.
+    const opener = document.activeElement as HTMLElement | null;
     inputRef.current?.focus();
 
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      opener?.focus();
+    };
   }, [onClose]);
 
   const runSearch = useCallback(async (q: string, m: SearchMode, w: number, f: boolean) => {
@@ -101,23 +106,31 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
       className="fixed inset-0 z-[100] bg-black/50 flex items-start justify-center pt-24 px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-surface-lowest rounded-2xl shadow-2xl w-full max-w-2xl border border-ghost-border overflow-hidden">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search"
+        className="bg-surface-lowest rounded-2xl shadow-2xl w-full max-w-2xl border border-ghost-border overflow-hidden"
+      >
         {/* Input */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-ghost-border">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="shrink-0 text-on-surface-variant">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true" className="shrink-0 text-on-surface-variant">
             <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.5" />
             <path d="M12.5 12.5L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <input
             ref={inputRef}
-            type="text"
+            type="search"
+            aria-label={labels.searchPlaceholder}
             placeholder={labels.searchPlaceholder}
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             className="flex-1 bg-transparent text-sm text-on-surface placeholder:text-on-surface-variant outline-none"
           />
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close search"
             className="text-xs text-on-surface-variant hover:text-on-surface transition-colors"
           >
             ESC
@@ -193,8 +206,8 @@ export default function SearchOverlay({ onClose, labels = DEFAULT_SITE_SETTINGS 
 
           {!loading && results.length > 0 && (
             <ul>
-              {results.map((r, i) => (
-                <li key={i}>
+              {results.map((r) => (
+                <li key={r.url}>
                   <Link
                     href={r.url}
                     onClick={() => {
