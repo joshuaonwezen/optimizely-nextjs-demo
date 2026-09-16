@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
-import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
+import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveImageUrl, resolveUrl, type ImageRef } from "../_shared/contentRefs";
 
 export const AuthorBlockType = contentType({
@@ -99,12 +99,6 @@ export default function AuthorBlock(props: AuthorBlockProps) {
   const isInline = props.displayTemplateKey === "AuthorInlineTemplate";
   const isProfile = props.displayTemplateKey === "AuthorProfileTemplate";
 
-  const bioContent =
-    data.bio && typeof data.bio === "object" && "json" in data.bio
-      ? (data.bio.json as RichTextProps["content"] | null)
-      : null;
-  const bioHtml = typeof data.bio === "string" ? data.bio : null;
-  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const fallback = resolveStyleClasses(ds, { background: "white" });
 
   if (isInline) {
@@ -124,7 +118,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
         )}
         <div className="min-w-0">
           {data.name && (
-            <p {...pa("name")} className={`${fontClass} text-sm font-semibold ${bg.text} leading-tight`}>
+            <p {...pa("name")} className={`${fallback.font} text-sm font-semibold ${bg.text} leading-tight`}>
               {data.name}
             </p>
           )}
@@ -166,7 +160,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
           />
         )}
         {data.name && (
-          <h3 {...pa("name")} className={`${fontClass} text-lg font-bold ${bg.text || "text-on-surface"}`}>
+          <h3 {...pa("name")} className={`${fallback.font} text-lg font-bold ${bg.text || "text-on-surface"}`}>
             {data.name}
           </h3>
         )}
@@ -209,7 +203,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
         )}
         <div className="min-w-0">
           {data.name && (
-            <h3 {...pa("name")} className={`${fontClass} text-xl font-bold ${fallback.text}`}>
+            <h3 {...pa("name")} className={`${fallback.font} text-xl font-bold ${fallback.text}`}>
               {data.name}
             </h3>
           )}
@@ -234,13 +228,12 @@ export default function AuthorBlock(props: AuthorBlockProps) {
         </div>
       </div>
 
-      {(bioContent || bioHtml) && (
+      {hasRichText(data.bio) && (
         <div
           {...pa("bio")}
           className={`richtext ${fallback.invert ? "richtext-invert" : ""} mt-6 text-base text-on-surface-variant`}
         >
-          {bioContent && <RichText content={bioContent} />}
-          {bioHtml && <div dangerouslySetInnerHTML={{ __html: bioHtml }} />}
+          <CmsRichText value={data.bio} />
         </div>
       )}
     </article>

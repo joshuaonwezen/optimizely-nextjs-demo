@@ -1,6 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BlockHeader } from "../_shared/BlockHeader";
 
 // Columns and rows are modelled as JSON because the table shape is a
 // structured matrix — a row is a label + N values matched to columns by index.
@@ -77,22 +78,14 @@ export default function ComparisonTableBlock(props: ComparisonTableBlockProps) {
 
   return (
     <section data-component="ComparisonTableBlock" className="py-20 max-w-6xl mx-auto px-8">
-      {data.heading && (
-        <h2
-          {...pa("heading")}
-          className={`${style.font} text-3xl md:text-4xl font-extrabold ${style.text} mb-3 text-center`}
-        >
-          {data.heading}
-        </h2>
-      )}
-      {data.subheading && (
-        <p
-          {...pa("subheading")}
-          className={`text-base ${style.textMuted} mb-12 max-w-2xl mx-auto text-center`}
-        >
-          {data.subheading}
-        </p>
-      )}
+      <BlockHeader
+        heading={data.heading}
+        subheading={data.subheading}
+        pa={pa}
+        style={style}
+        headingClassName="text-center"
+        subheadingClassName="text-base mb-12 max-w-2xl mx-auto text-center"
+      />
       <div className={`overflow-x-auto rounded-2xl ${style.wrapper || "border border-ghost-border bg-surface-lowest"}`}>
         <table className="w-full text-sm">
           <thead>

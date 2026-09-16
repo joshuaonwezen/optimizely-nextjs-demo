@@ -1,11 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
+import CmsRichText from "@/components/cms/CmsRichText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getClient } from "@optimizely/cms-sdk";
 import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
-import { extractKey, type ContentRef, type ImageRef } from "@/components/blocks/_shared/contentRefs";
+import { extractKey, type ContentRef, type ImageRef, resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
 
 interface OutcomeData {
   __typename?: string;
@@ -72,7 +72,7 @@ async function loadTestimonial(key: string | null | undefined): Promise<Testimon
 export default async function CaseStudyPage({ content }: { content: CaseStudyContent }) {
   const { pa, src } = getPreviewUtils(content as any);
 
-  const heroUrl = src(content.heroImage as any) ?? content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
+  const heroUrl = resolveImageUrl(content.heroImage, src);
   // Categories live on _itemMetadata, which the SDK's page query does not
   // select, so fetch them by key. Falls back to the legacy `industry` enum for
   // content that has not been tagged in the taxonomy yet.
@@ -153,11 +153,7 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
         <section className="mb-12">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-4">The challenge</h2>
           <div {...pa("challenge")} className="richtext text-on-surface-variant">
-            {content.challenge.json ? (
-              <RichText content={content.challenge.json as RichTextProps["content"]} />
-            ) : content.challenge.html ? (
-              <div dangerouslySetInnerHTML={{ __html: content.challenge.html }} />
-            ) : null}
+            <CmsRichText value={content.challenge} />
           </div>
         </section>
       )}
@@ -166,11 +162,7 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
         <section className="mb-12">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-4">Our solution</h2>
           <div {...pa("solution")} className="richtext text-on-surface-variant">
-            {content.solution.json ? (
-              <RichText content={content.solution.json as RichTextProps["content"]} />
-            ) : content.solution.html ? (
-              <div dangerouslySetInnerHTML={{ __html: content.solution.html }} />
-            ) : null}
+            <CmsRichText value={content.solution} />
           </div>
         </section>
       )}

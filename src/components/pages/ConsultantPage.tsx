@@ -1,7 +1,8 @@
 import Image from "next/image";
-import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
+import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import type { ImageRef } from "@/components/blocks/_shared/contentRefs";
+import { resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
 
 interface ConsultantContent {
   _metadata?: { key?: string | null } | null;
@@ -17,7 +18,7 @@ interface ConsultantContent {
 export default function ConsultantPage({ content }: { content: ConsultantContent }) {
   const { pa, src } = getPreviewUtils(content as any);
 
-  const photoUrl = src(content.photo as any) ?? content.photo?.url?.default ?? content.photo?._metadata?.url?.default ?? null;
+  const photoUrl = resolveImageUrl(content.photo, src);
   const expertise = (content.expertise ?? []).filter(Boolean);
 
   return (
@@ -76,13 +77,9 @@ export default function ConsultantPage({ content }: { content: ConsultantContent
         )}
       </header>
 
-      {(content.bio?.json || content.bio?.html) && (
+      {hasRichText(content.bio) && (
         <div {...pa("bio")} className="richtext text-on-surface-variant mb-12">
-          {content.bio.json ? (
-            <RichText content={content.bio.json as RichTextProps["content"]} />
-          ) : (
-            <div dangerouslySetInnerHTML={{ __html: content.bio.html! }} />
-          )}
+          <CmsRichText value={content.bio} />
         </div>
       )}
 

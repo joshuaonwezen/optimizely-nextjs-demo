@@ -1,11 +1,12 @@
 import Image from "next/image";
-import { RichText } from "@optimizely/cms-sdk/react/richText";
+import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
+import { resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
 
 export default function TraditionalPage({ content }: { content: any }) {
   const { pa, src } = getPreviewUtils(content);
-  const heroUrl = src(content.heroImage as any) ?? content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
+  const heroUrl = resolveImageUrl(content.heroImage, src);
 
   // featuredBlock is a single type:"content" reference. Graph inline-expands it -
   // the SDK's generated page query includes a fragment for every allowed component
@@ -55,16 +56,10 @@ export default function TraditionalPage({ content }: { content: any }) {
       </div>
 
       <div {...pa("body")}>
-        {content.body?.json && (
+        {hasRichText(content.body) && (
           <div className="richtext text-on-surface-variant">
-            <RichText content={content.body.json} />
+            <CmsRichText value={content.body} />
           </div>
-        )}
-        {content.body?.html && !content.body?.json && (
-          <div
-            className="richtext text-on-surface-variant"
-            dangerouslySetInnerHTML={{ __html: content.body.html }}
-          />
         )}
       </div>
 

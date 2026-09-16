@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
+import CmsRichText from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getClient } from "@optimizely/cms-sdk";
 import { formatDate } from "@/lib/formatDate";
 import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
 import type { ImageRef } from "@/components/blocks/_shared/contentRefs";
+import { resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
 
 interface AuthorData {
   name?: string | null;
@@ -61,7 +62,7 @@ async function loadAuthor(key: string | null | undefined): Promise<AuthorData | 
 export default async function ArticlePage({ content }: { content: ArticleContent }) {
   const { pa, src } = getPreviewUtils(content as any);
 
-  const heroUrl = src(content.heroImage as any) ?? content.heroImage?.url?.default ?? content.heroImage?._metadata?.url?.default ?? null;
+  const heroUrl = resolveImageUrl(content.heroImage, src);
   const authorKey = content.author?.key ?? content.author?._metadata?.key ?? null;
   const author = await loadAuthor(authorKey);
   const formattedDate = formatDate(content.publishDate);
@@ -156,11 +157,7 @@ export default async function ArticlePage({ content }: { content: ArticleContent
       )}
 
       <div {...pa("body")} className="richtext text-on-surface-variant mb-12">
-        {content.body?.json ? (
-          <RichText content={content.body.json as RichTextProps["content"]} />
-        ) : content.body?.html ? (
-          <div dangerouslySetInnerHTML={{ __html: content.body.html }} />
-        ) : null}
+        <CmsRichText value={content.body} />
       </div>
 
       {tags.length > 0 && (

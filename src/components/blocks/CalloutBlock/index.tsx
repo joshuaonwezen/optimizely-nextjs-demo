@@ -1,5 +1,5 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
-import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
+import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 
@@ -82,22 +82,12 @@ export default function CalloutBlock(props: CalloutBlockProps) {
   const variant = (data.variant as CalloutVariant | null | undefined) ?? "note";
   const style = resolveStyleClasses(props.displaySettings, { background: "white" });
 
-  const bodyContent = (() => {
-    const richTextClass = `richtext ${style.invert ? "richtext-invert" : ""}`.trim();
-    if (data.body && typeof data.body === "object" && "json" in data.body && data.body.json) {
-      return (
-        <div {...pa("body")} className={richTextClass}>
-          <RichText content={data.body.json as RichTextProps["content"]} />
-        </div>
-      );
-    }
-    if (typeof data.body === "string" && data.body) {
-      return <div {...pa("body")} className={richTextClass} dangerouslySetInnerHTML={{ __html: data.body }} />;
-    }
-    return null;
-  })();
-
-  if (!bodyContent) return null;
+  if (!hasRichText(data.body)) return null;
+  const bodyContent = (
+    <div {...pa("body")} className={`richtext ${style.invert ? "richtext-invert" : ""}`.trim()}>
+      <CmsRichText value={data.body} />
+    </div>
+  );
 
   return (
     <Callout

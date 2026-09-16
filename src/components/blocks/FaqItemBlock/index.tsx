@@ -1,7 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, HEADING_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const FaqItemBlockType = contentType({
@@ -62,7 +62,6 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
 
   const isFlat = props.displayTemplateKey === "FaqItemFlatTemplate";
   const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
-  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const style = resolveStyleClasses(ds, { background: isFlat ? "transparent" : "white" });
 
   if (isFlat) {
@@ -71,7 +70,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
         <details className="group border-b border-outline-variant">
           <summary
             {...pa("question")}
-            className={`flex items-center justify-between gap-4 py-4 cursor-pointer select-none list-none ${fontClass} ${headingClass} font-medium ${style.text} hover:text-brand transition-colors`}
+            className={`flex items-center justify-between gap-4 py-4 cursor-pointer select-none list-none ${style.font} ${headingClass} font-medium ${style.text} hover:text-brand transition-colors`}
           >
             {data.question}
             <svg
@@ -102,7 +101,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
       <details className={`group rounded-xl overflow-hidden ${style.wrapper || "border border-ghost-border bg-surface-lowest"}`}>
         <summary
           {...pa("question")}
-          className={`flex items-center justify-between gap-4 px-6 py-4 cursor-pointer select-none list-none ${fontClass} font-medium ${style.text} hover:text-brand transition-colors`}
+          className={`flex items-center justify-between gap-4 px-6 py-4 cursor-pointer select-none list-none ${style.font} font-medium ${style.text} hover:text-brand transition-colors`}
         >
           {data.question}
           <svg

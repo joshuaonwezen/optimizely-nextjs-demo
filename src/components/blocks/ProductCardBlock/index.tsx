@@ -3,7 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import type { ReactNode } from "react";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, FONT_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 // Product-card titles sit in a narrow column, so they render one step smaller than
@@ -122,7 +122,6 @@ export default async function ProductCardBlock(props: ProductCardBlockProps) {
   const isInverted = bgKey === "dark" || bgKey === "blueGrad";
 
   const featuredClass = isFeatured ? "ring-2 ring-brand/30 shadow-ambient" : "";
-  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const headingClass = CARD_HEADING_CLASSES[(ds?.headingSize as string) ?? "md"] ?? CARD_HEADING_CLASSES.md;
 
   const iconBgClass = isInverted ? "bg-on-brand/10 text-on-brand" : "bg-brand/10 text-brand";
@@ -144,7 +143,7 @@ export default async function ProductCardBlock(props: ProductCardBlockProps) {
       {data.title && (
         <h3
           {...pa("title")}
-          className={`${fontClass} ${headingClass} font-bold mb-3 break-words hyphens-auto ${bg.text}`}
+          className={`${bg.font} ${headingClass} font-bold mb-3 break-words hyphens-auto ${bg.text}`}
         >
           {data.title}
         </h3>

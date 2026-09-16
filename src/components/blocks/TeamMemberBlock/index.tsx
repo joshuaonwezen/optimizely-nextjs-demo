@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveImageUrl, resolveUrl, type ImageRef } from "../_shared/contentRefs";
 
 export const TeamMemberBlockType = contentType({
@@ -68,35 +68,33 @@ export default function TeamMemberBlock(props: TeamMemberBlockProps) {
   const linkedinHref = resolveUrl(data.linkedinUrl);
 
   const isHorizontal = props.displayTemplateKey === "TeamMemberHorizontalTemplate";
-  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
-  const fallback = resolveStyleClasses(ds, { background: "white" });
+  const style = resolveStyleClasses(ds, { background: "white" });
 
   if (isHorizontal) {
-    const bg = resolveStyleClasses(ds, { background: "white" });
     return (
-      <div data-component="TeamMemberBlock" className={`flex items-center gap-5 p-5 rounded-2xl hover-ambient ${bg.wrapper || "bg-surface-lowest border border-ghost-border"}`}>
+      <div data-component="TeamMemberBlock" className={`flex items-center gap-5 p-5 rounded-2xl hover-ambient ${style.wrapper || "bg-surface-lowest border border-ghost-border"}`}>
         <div className="relative w-16 h-16 rounded-full flex-shrink-0 overflow-hidden bg-surface-low">
           {photoUrl ? (
             <Image src={photoUrl} alt={data.name ?? ""} fill className="object-cover" sizes="64px" />
           ) : (
-            <div className={`w-full h-full flex items-center justify-center ${fontClass} text-xl font-bold text-on-surface-variant`}>
+            <div className={`w-full h-full flex items-center justify-center ${style.font} text-xl font-bold text-on-surface-variant`}>
               {data.name?.charAt(0).toUpperCase() ?? "?"}
             </div>
           )}
         </div>
         <div className="min-w-0">
           {data.name && (
-            <h3 {...pa("name")} className={`${fontClass} text-base font-bold ${bg.text || "text-on-surface"}`}>
+            <h3 {...pa("name")} className={`${style.font} text-base font-bold ${style.text || "text-on-surface"}`}>
               {data.name}
             </h3>
           )}
           {data.role && (
-            <p {...pa("role")} className={`text-sm ${bg.textMuted || "text-on-surface-variant"}`}>
+            <p {...pa("role")} className={`text-sm ${style.textMuted || "text-on-surface-variant"}`}>
               {data.role}
             </p>
           )}
           {data.bio && (
-            <p {...pa("bio")} className={`text-sm ${bg.textMuted || "text-on-surface-variant"} leading-relaxed mt-1 line-clamp-2`}>
+            <p {...pa("bio")} className={`text-sm ${style.textMuted || "text-on-surface-variant"} leading-relaxed mt-1 line-clamp-2`}>
               {data.bio}
             </p>
           )}
@@ -113,7 +111,7 @@ export default function TeamMemberBlock(props: TeamMemberBlockProps) {
   return (
     <div
       data-component="TeamMemberBlock"
-      className={`rounded-2xl p-6 text-center hover-ambient transition-shadow ${fallback.wrapper || "bg-surface-lowest border border-ghost-border"}`}
+      className={`rounded-2xl p-6 text-center hover-ambient transition-shadow ${style.wrapper || "bg-surface-lowest border border-ghost-border"}`}
     >
       <div className="relative w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden bg-surface-low">
         {photoUrl ? (
@@ -125,13 +123,13 @@ export default function TeamMemberBlock(props: TeamMemberBlockProps) {
             sizes="96px"
           />
         ) : (
-          <div className={`w-full h-full flex items-center justify-center ${fontClass} text-2xl font-bold text-on-surface-variant`}>
+          <div className={`w-full h-full flex items-center justify-center ${style.font} text-2xl font-bold text-on-surface-variant`}>
             {data.name?.charAt(0).toUpperCase() ?? "?"}
           </div>
         )}
       </div>
       {data.name && (
-        <h3 {...pa("name")} className={`${fontClass} text-lg font-bold ${fallback.text}`}>
+        <h3 {...pa("name")} className={`${style.font} text-lg font-bold ${style.text}`}>
           {data.name}
         </h3>
       )}

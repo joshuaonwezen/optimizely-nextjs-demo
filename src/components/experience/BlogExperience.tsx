@@ -2,16 +2,13 @@ import Image from "next/image";
 import { getClient } from "@optimizely/cms-sdk";
 import { OptimizelyComposition, getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { formatDate } from "@/lib/formatDate";
+import { resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
 import { NodeWrapper } from "./CompositionExperience";
 
 export default async function BlogExperience({ content }: { content: any }) {
   const { pa, src } = getPreviewUtils(content);
 
-  const heroUrl =
-    src(content?.heroImage) ??
-    content?.heroImage?.url?.default ??
-    content?.heroImage?._metadata?.url?.default ??
-    null;
+  const heroUrl = resolveImageUrl(content?.heroImage, src);
 
   // Author is a single "content" property. An inline item arrives fully expanded
   // (__typename AuthorBlock, name set, key null); a reference to an existing
@@ -29,11 +26,7 @@ export default async function BlogExperience({ content }: { content: any }) {
   }
   const authorName = author?.name ?? null;
   const authorRole = author?.role ?? null;
-  const authorAvatarUrl =
-    src(author?.avatar) ??
-    author?.avatar?.url?.default ??
-    author?.avatar?._metadata?.url?.default ??
-    null;
+  const authorAvatarUrl = resolveImageUrl(author?.avatar, src);
 
   const formattedDate = formatDate(content?.publishedDate);
   const nodes: any[] = content?.composition?.nodes ?? [];

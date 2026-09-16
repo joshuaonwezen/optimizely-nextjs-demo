@@ -1,6 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { Button } from "@/components/ui/Button";
 
@@ -108,7 +108,6 @@ export default async function CallToActionBlock(props: CallToActionProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as any);
-  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const style = resolveStyleClasses(ds, { background: "transparent", textColor: "brand" });
   const surfaceClass = style.wrapper ? `${style.wrapper} rounded-2xl px-8` : "";
 
@@ -133,7 +132,7 @@ export default async function CallToActionBlock(props: CallToActionProps) {
             {...pa("link")}
             data-track-event="mb_cta_click"
             data-track-tags={JSON.stringify({ label: data.label ?? "", variant: "ghost" })}
-            className={`${fontClass} inline-flex items-center gap-2 font-semibold ${style.text} hover:underline underline-offset-4 ${isLarge ? "text-lg" : "text-base"}`}
+            className={`${style.font} inline-flex items-center gap-2 font-semibold ${style.text} hover:underline underline-offset-4 ${isLarge ? "text-lg" : "text-base"}`}
           >
             <span {...pa("label")}>{data.label ?? "Learn More"}</span>
             <span aria-hidden>→</span>
@@ -152,7 +151,7 @@ export default async function CallToActionBlock(props: CallToActionProps) {
           href={isEdit ? undefined : href}
           variant={customClass ? "custom" : "primary"}
           size={isLarge ? "large" : "default"}
-          fontClassName={fontClass}
+          fontClassName={style.font}
           className={customClass}
           data-track-event="mb_cta_click"
           data-track-tags={JSON.stringify({ label: data.label ?? "", variant })}

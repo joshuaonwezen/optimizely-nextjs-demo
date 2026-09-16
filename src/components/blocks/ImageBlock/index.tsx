@@ -2,6 +2,7 @@ import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
+import { resolveImageUrl } from "../_shared/contentRefs";
 
 export const ImageBlockType = contentType({
   key: "ImageBlock",
@@ -112,10 +113,7 @@ export default function ImageBlock(props: ImageBlockProps) {
 
   // src() resolves the DAM asset URL (image.item.Url) and appends the preview
   // token in edit mode; the fallbacks cover CMS globalassets (no DAM item).
-  const imageUrl =
-    src(data.image as any) ??
-    data.image?.url?.default ??
-    data.image?._metadata?.url?.default;
+  const imageUrl = resolveImageUrl(data.image, src);
 
   if (!imageUrl) return null;
 

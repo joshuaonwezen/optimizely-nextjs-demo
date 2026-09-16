@@ -4,6 +4,7 @@ import { getArticles } from "@/lib/graphql/queries/GetArticles";
 import { getTaxonomyTerms } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { expandToUris, LEGACY_CATEGORY_MAP } from "@/lib/taxonomy";
 import { resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BlockHeader } from "../_shared/BlockHeader";
 
 // Content type + display template: src/lib/optimizely/productLandingTypes.mjs
 // (personal instance only, kept out of the opti:push glob on purpose).
@@ -44,16 +45,14 @@ export default async function ArticleListBlock(props: ArticleListBlockProps) {
       className={`${style.wrapper} py-16`}
     >
       <div className="max-w-6xl mx-auto px-8">
-        {data.heading && (
-          <h2 {...pa("heading")} className={`${style.font} ${style.heading} font-extrabold mb-3 ${style.text}`}>
-            {data.heading}
-          </h2>
-        )}
-        {data.subheading && (
-          <p {...pa("subheading")} className={`text-base ${style.textMuted} mb-8`}>
-            {data.subheading}
-          </p>
-        )}
+        <BlockHeader
+          heading={data.heading}
+          subheading={data.subheading}
+          pa={pa}
+          style={style}
+          headingSize={style.heading}
+          subheadingClassName="text-base mb-8"
+        />
         {items.length > 0 ? (
           <div className={isList ? "space-y-3" : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"}>
             {items.map((item, i) => (

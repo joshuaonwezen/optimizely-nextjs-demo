@@ -1,5 +1,5 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
-import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
+import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, FONT_CLASSES, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES, resolveStyleClasses,
@@ -84,26 +84,13 @@ export default function TextBlock(props: TextBlockProps) {
   const surfaceClass = style.wrapper ? `${style.wrapper} rounded-2xl` : "";
   const containerClass = `${widthClass} mx-auto px-8 ${paddingClass} ${surfaceClass} ${style.textMuted} ${alignClass}`;
 
-  if (data.body && typeof data.body === "object" && "json" in data.body && data.body.json) {
-    return (
-      <div data-component="TextBlock" {...pa("body")} className={containerClass}>
-        <div className={`richtext ${style.invert ? "richtext-invert" : ""} ${fontClass} ${textSizeClass}`}>
-          <RichText content={data.body.json as RichTextProps["content"]} />
-        </div>
+  if (!hasRichText(data.body)) return null;
+
+  return (
+    <div data-component="TextBlock" {...pa("body")} className={containerClass}>
+      <div className={`richtext ${style.invert ? "richtext-invert" : ""} ${fontClass} ${textSizeClass}`}>
+        <CmsRichText value={data.body} />
       </div>
-    );
-  }
-
-  if (typeof data.body === "string" && data.body) {
-    return (
-      <div
-        data-component="TextBlock"
-        {...pa("body")}
-        className={`${containerClass} richtext ${style.invert ? "richtext-invert" : ""} ${fontClass} ${textSizeClass}`}
-        dangerouslySetInnerHTML={{ __html: data.body }}
-      />
-    );
-  }
-
-  return null;
+    </div>
+  );
 }

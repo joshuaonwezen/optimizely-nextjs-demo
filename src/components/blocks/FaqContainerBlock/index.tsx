@@ -3,6 +3,7 @@ import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/
 import { FaqItemBlockType } from "@/components/blocks/FaqItemBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BlockHeader } from "../_shared/BlockHeader";
 
 export const FaqContainerBlockType = contentType({
   key: "FaqContainerBlock",
@@ -53,22 +54,13 @@ export default function FaqContainerBlock(props: FaqContainerBlockProps) {
 
   return (
     <div data-component="FaqContainerBlock" className={`py-16 max-w-3xl mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}>
-      {data.heading && (
-        <h2
-          {...pa("heading")}
-          className={`${style.font} text-3xl md:text-4xl font-extrabold mb-3 ${style.text}`}
-        >
-          {data.heading}
-        </h2>
-      )}
-      {data.subheading && (
-        <p
-          {...pa("subheading")}
-          className={`text-base ${style.textMuted} mb-8`}
-        >
-          {data.subheading}
-        </p>
-      )}
+      <BlockHeader
+        heading={data.heading}
+        subheading={data.subheading}
+        pa={pa}
+        style={style}
+        subheadingClassName="text-base mb-8"
+      />
       {data.faqItems && data.faqItems.length > 0 && (
         <div {...pa("faqItems")} className="space-y-2">
           {data.faqItems.map((item, i) => (

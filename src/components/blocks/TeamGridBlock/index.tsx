@@ -6,7 +6,8 @@ import { TeamMemberBlockType } from "@/components/blocks/TeamMemberBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
-import { extractKey, type ContentRef, type ImageRef } from "../_shared/contentRefs";
+import { extractKey, orderByKeys, type ContentRef, type ImageRef } from "../_shared/contentRefs";
+import { BlockHeader } from "../_shared/BlockHeader";
 
 export const TeamGridBlockType = contentType({
   key: "TeamGridBlock",
@@ -94,17 +95,7 @@ async function fetchMembers(keys: string[]): Promise<MembersResult> {
 async function loadMembers(keys: string[]): Promise<MemberData[]> {
   if (keys.length === 0) return [];
   const res = await fetchMembers(keys);
-  const items = res?.TeamMemberBlock?.items ?? [];
-
-  // Graph returns one document per locale, so keep the first of each key, then
-  // map back over `keys` to preserve the editor's display order - the query
-  // itself gives no ordering guarantee.
-  const byKey = new Map<string, MemberData>();
-  for (const item of items) {
-    const k = item?._metadata?.key;
-    if (k && !byKey.has(k)) byKey.set(k, item);
-  }
-  return keys.map((k) => byKey.get(k)).filter((m): m is MemberData => Boolean(m));
+  return orderByKeys(res?.TeamMemberBlock?.items ?? [], keys);
 }
 
 export default async function TeamGridBlock(props: TeamGridBlockProps) {
@@ -120,16 +111,7 @@ export default async function TeamGridBlock(props: TeamGridBlockProps) {
   return (
     <section data-component="TeamGridBlock" className={`py-20 max-w-7xl mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}>
       <div className="text-center mb-12 max-w-2xl mx-auto">
-        {data.heading && (
-          <h2 {...pa("heading")} className={`${style.font} text-3xl md:text-4xl font-extrabold ${style.text} mb-3`}>
-            {data.heading}
-          </h2>
-        )}
-        {data.subheading && (
-          <p {...pa("subheading")} className={`text-base ${style.textMuted}`}>
-            {data.subheading}
-          </p>
-        )}
+        <BlockHeader heading={data.heading} subheading={data.subheading} pa={pa} style={style} />
       </div>
       {members.length > 0 && (
         <div {...pa("members")} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

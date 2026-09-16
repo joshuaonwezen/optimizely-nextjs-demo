@@ -4,6 +4,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
+import { BlockHeader } from "../_shared/BlockHeader";
 
 export const LogoGridBlockType = contentType({
   key: "LogoGridBlock",
@@ -120,22 +121,14 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
       data-component="LogoGridBlock"
       className={`py-20 px-8 max-w-7xl mx-auto ${textAlignClass} ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}
     >
-      {data.heading && (
-        <h2
-          {...pa("heading")}
-          className={`${style.font} text-2xl md:text-3xl font-extrabold ${style.text} mb-3`}
-        >
-          {data.heading}
-        </h2>
-      )}
-      {data.subheading && (
-        <p
-          {...pa("subheading")}
-          className={`text-sm ${style.textMuted} mb-12 max-w-xl mx-auto`}
-        >
-          {data.subheading}
-        </p>
-      )}
+      <BlockHeader
+        heading={data.heading}
+        subheading={data.subheading}
+        pa={pa}
+        style={style}
+        headingSize="text-2xl md:text-3xl"
+        subheadingClassName="text-sm mb-12 max-w-xl mx-auto"
+      />
 
       <div className={`flex flex-wrap items-center gap-8 ${flexAlignClass}`}>
         {showPlaceholders

@@ -6,7 +6,8 @@ import { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMileston
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
-import { extractKey, type ContentRef } from "../_shared/contentRefs";
+import { extractKey, type ContentRef, orderByKeys } from "../_shared/contentRefs";
+import { BlockHeader } from "../_shared/BlockHeader";
 
 export const TimelineBlockType = contentType({
   key: "TimelineBlock",
@@ -89,17 +90,8 @@ async function fetchMilestones(keys: string[]): Promise<MilestonesResult> {
 async function loadMilestones(keys: string[]): Promise<MilestoneData[]> {
   if (keys.length === 0) return [];
   const res = await fetchMilestones(keys);
-  const items = res?.TimelineMilestoneBlock?.items ?? [];
-
-  // Chronology is the editor's ordering of `milestones`, and the query gives no
-  // ordering guarantee - so map results back over `keys`. Dedupe by key first:
-  // Graph returns one document per locale.
-  const byKey = new Map<string, MilestoneData>();
-  for (const item of items) {
-    const k = item?._metadata?.key;
-    if (k && !byKey.has(k)) byKey.set(k, item);
-  }
-  return keys.map((k) => byKey.get(k)).filter((m): m is MilestoneData => Boolean(m));
+  // Chronology is the editor's ordering of `milestones`.
+  return orderByKeys(res?.TimelineMilestoneBlock?.items ?? [], keys);
 }
 
 export default async function TimelineBlock(props: TimelineBlockProps) {
@@ -114,22 +106,13 @@ export default async function TimelineBlock(props: TimelineBlockProps) {
 
   return (
     <section data-component="TimelineBlock" className={`py-20 max-w-3xl mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}>
-      {data.heading && (
-        <h2
-          {...pa("heading")}
-          className={`${style.font} text-3xl md:text-4xl font-extrabold ${style.text} mb-3`}
-        >
-          {data.heading}
-        </h2>
-      )}
-      {data.subheading && (
-        <p
-          {...pa("subheading")}
-          className={`text-base ${style.textMuted} mb-12 max-w-2xl`}
-        >
-          {data.subheading}
-        </p>
-      )}
+      <BlockHeader
+        heading={data.heading}
+        subheading={data.subheading}
+        pa={pa}
+        style={style}
+        subheadingClassName="text-base mb-12 max-w-2xl"
+      />
       {milestones.length > 0 && (
         <ol {...pa("milestones")} className="list-none p-0">
           {milestones.map((m, i) => (

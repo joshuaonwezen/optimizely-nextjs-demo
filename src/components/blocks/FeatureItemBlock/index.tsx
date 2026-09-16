@@ -1,7 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, HEADING_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const FeatureItemBlockType = contentType({
@@ -92,7 +92,6 @@ export default function FeatureItemBlock(props: FeatureItemBlockProps) {
     background: isBrand ? "blueGrad" : isFlat ? "transparent" : "white",
   });
   const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
-  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
 
   let structureClass: string;
   if (isFlat) {
@@ -108,7 +107,7 @@ export default function FeatureItemBlock(props: FeatureItemBlockProps) {
       {data.title && (
         <h3
           {...pa("title")}
-          className={`${fontClass} ${headingClass} font-bold mb-3 ${bg.text || "text-on-surface"}`}
+          className={`${bg.font} ${headingClass} font-bold mb-3 ${bg.text || "text-on-surface"}`}
         >
           {data.title}
         </h3>

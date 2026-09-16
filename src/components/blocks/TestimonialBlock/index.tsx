@@ -3,7 +3,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { resolveImageUrl, type ImageRef } from "../_shared/contentRefs";
 import {
-  BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, FONT_CLASSES, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 
 export const TestimonialBlockType = contentType({
@@ -95,7 +95,6 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
     quoteClass = `font-display ${textSizeClass} leading-relaxed mb-8`;
   } else if (isMinimal) {
     const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
-    const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
     const MINIMAL_SIZES: Record<string, string> = {
       sm: "text-xl md:text-2xl",
       md: "text-2xl md:text-3xl",
@@ -106,7 +105,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
     const minimalStyle = resolveStyleClasses(ds, { background: "transparent" });
     textColor = minimalStyle.text;
     mutedColor = minimalStyle.textMuted;
-    quoteClass = `${fontClass} ${textSizeClass} italic leading-relaxed mb-8`;
+    quoteClass = `${minimalStyle.font} ${textSizeClass} italic leading-relaxed mb-8`;
   } else {
     wrapperClass = "py-20 max-w-3xl mx-auto";
     textColor = "text-on-surface";

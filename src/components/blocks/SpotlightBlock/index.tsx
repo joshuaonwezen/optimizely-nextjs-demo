@@ -1,8 +1,8 @@
 import Image from "next/image";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
-import { RichText, type RichTextProps } from "@optimizely/cms-sdk/react/richText";
+import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND, TEXT_COLOR, FONT_STYLE, FONT_CLASSES, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveImageUrl, type ImageRef } from "../_shared/contentRefs";
 
 export const SpotlightBlockType = contentType({
@@ -59,22 +59,11 @@ export default function SpotlightBlock(props: SpotlightBlockProps) {
   const { pa } = getPreviewUtils(data as any);
 
   const imageUrl = resolveImageUrl(data.image);
-  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
   const bg = resolveStyleClasses(ds, { background: "white" });
 
   const isWide = data.spacing !== "narrow";
   const paddingClass = isWide ? "py-16 px-8" : "py-10 px-6";
 
-  const textContent =
-    data.textfield && typeof data.textfield === "object" && "json" in data.textfield
-      ? (data.textfield.json as RichTextProps["content"] | null)
-      : null;
-  const textHtml =
-    data.textfield && typeof data.textfield === "object" && "html" in data.textfield
-      ? data.textfield.html
-      : typeof data.textfield === "string"
-      ? data.textfield
-      : null;
 
   return (
     <section
@@ -100,7 +89,7 @@ export default function SpotlightBlock(props: SpotlightBlockProps) {
           {data.quote && (
             <blockquote
               {...pa("quote")}
-              className={`${fontClass} text-xl md:text-2xl font-semibold italic ${bg.text || "text-on-surface"} mb-4 leading-snug`}
+              className={`${bg.font} text-xl md:text-2xl font-semibold italic ${bg.text || "text-on-surface"} mb-4 leading-snug`}
             >
               &ldquo;{data.quote}&rdquo;
             </blockquote>
@@ -115,13 +104,12 @@ export default function SpotlightBlock(props: SpotlightBlockProps) {
             </p>
           )}
 
-          {(textContent || textHtml) && (
+          {hasRichText(data.textfield) && (
             <div
               {...pa("textfield")}
               className={`richtext ${bg.invert ? "richtext-invert" : ""} mt-4 text-base ${bg.textMuted || "text-on-surface-variant"}`}
             >
-              {textContent && <RichText content={textContent} />}
-              {textHtml && <div dangerouslySetInnerHTML={{ __html: textHtml }} />}
+              <CmsRichText value={data.textfield} />
             </div>
           )}
         </div>

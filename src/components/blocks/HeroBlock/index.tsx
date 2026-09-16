@@ -3,6 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { HeroBlockClient } from "./HeroBlockClient";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { resolveImageUrl } from "../_shared/contentRefs";
 
 export const HeroBlockType = contentType({
   key: "HeroBlock",
@@ -101,10 +102,7 @@ export default async function HeroBlock(props: HeroBlockProps) {
   const title = data.headline ?? data.heading;
   const subtitle = data.subheadline ?? data.summary;
   // src() resolves the DAM asset URL + preview token; fallbacks cover globalassets.
-  const bgUrl =
-    src(data.backgroundImage as any) ??
-    data.backgroundImage?.url?.default ??
-    data.backgroundImage?._metadata?.url?.default;
+  const bgUrl = resolveImageUrl(data.backgroundImage, src) ?? undefined;
 
   const isCentered = ds?.alignment === "center";
   const isTall = ds?.height === "tall";

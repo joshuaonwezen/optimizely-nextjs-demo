@@ -2,6 +2,7 @@ import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
+import { resolveImageUrl } from "../_shared/contentRefs";
 
 // The rendition enum implies a shape; ask the CDN to crop to it (as height/width)
 // so the intended crop holds even when the named rendition is missing on the asset.
@@ -71,10 +72,7 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
   const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
 
   // src() resolves the DAM asset URL + preview token; fallbacks cover globalassets.
-  const imageUrl =
-    src(data.image as any) ??
-    data.image?.url?.default ??
-    data.image?._metadata?.url?.default;
+  const imageUrl = resolveImageUrl(data.image, src);
 
   if (!imageUrl) return null;
 
