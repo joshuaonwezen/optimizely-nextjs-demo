@@ -1000,6 +1000,59 @@ export async function patchPublishedPageProperties(
 }
 
 /**
+ * Replace an existing item's composition and publish it.
+ *
+ * Creates a fresh draft, finds it in the LOCALE-SCOPED version list (the global
+ * /versions list mixes locales and can hand back another language's draft),
+ * merge-patches the composition, then publishes. displayName + routeSegment are
+ * carried on the draft POST so the CMS doesn't re-derive the URL from the name;
+ * omit routeSegment for shared blocks, which have none.
+ */
+export async function publishComposition(
+  key: string,
+  composition: Record<string, unknown>,
+  { locale = "en", displayName, routeSegment }: { locale?: string; displayName?: string; routeSegment?: string } = {}
+): Promise<string> {
+  const token = await getManagementToken();
+  const auth = { Authorization: `Bearer ${token}` };
+
+  const draftBody: Record<string, unknown> = { locale };
+  if (displayName !== undefined) draftBody.displayName = displayName;
+  if (routeSegment !== undefined) draftBody.routeSegment = routeSegment;
+  const draftRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions`, {
+    method: "POST",
+    headers: { ...auth, "Content-Type": "application/json" },
+    body: JSON.stringify(draftBody),
+  });
+  // Not fatal: an existing draft (e.g. left by an earlier failed run) is picked up below.
+  if (!draftRes.ok) console.warn(`  [warn] create draft ${key}: ${draftRes.status} ${(await draftRes.text()).slice(0, 200)}`);
+
+  const vd = (await (
+    await apiFetch(`${CONTENT_ENDPOINT}/${key}/locales/${locale}?pageSize=30`, { headers: auth })
+  ).json()) as { items?: Array<{ version?: string; status?: string }> };
+  const version = (vd.items ?? [])
+    .filter((i) => i.status === "draft" && i.version)
+    .sort((a, b) => Number(b.version) - Number(a.version))[0]?.version;
+  if (!version) throw new Error(`Could not find a draft version for ${key}/${locale}`);
+
+  const patchRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}`, {
+    method: "PATCH",
+    headers: { ...auth, "Content-Type": "application/merge-patch+json" },
+    body: JSON.stringify({ composition }),
+  });
+  if (!patchRes.ok) {
+    throw new Error(`PATCH composition ${key}/${version}: ${patchRes.status} ${(await patchRes.text()).slice(0, 400)}`);
+  }
+
+  const pubRes = await apiFetch(`${CONTENT_ENDPOINT}/${key}/versions/${version}:publish`, {
+    method: "POST",
+    headers: auth,
+  });
+  if (!pubRes.ok) throw new Error(`Publish ${key}/${version}: ${pubRes.status} ${(await pubRes.text()).slice(0, 300)}`);
+  return version;
+}
+
+/**
  * PATCH an existing content item's properties. Uses merge-patch+json so only
  * the provided fields are touched.
  *

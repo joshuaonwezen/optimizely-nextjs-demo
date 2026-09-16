@@ -1,6 +1,6 @@
 import { GraphClient } from "@optimizely/cms-sdk";
 import { applyDamMetaProbe } from "./graphPreviewPatches";
-import { rewriteCompositionFields } from "./compositionProperties";
+import { rewriteCompositionQuery } from "./compositionProperties";
 
 type RequestFn = (
   query: string,
@@ -50,7 +50,7 @@ export function getAdminPreviewClient(): GraphClient {
         Authorization: basicAuthHeader(),
       },
       // This instance override bypasses the prototype patch in compositionProperties.ts.
-      body: JSON.stringify({ query: rewriteCompositionFields(query), variables }),
+      body: JSON.stringify({ query: rewriteCompositionQuery(query), variables }),
       cache: "no-store",
     });
     if (!response.ok) {

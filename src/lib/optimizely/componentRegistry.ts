@@ -96,7 +96,7 @@ import {
   DefaultColumnTemplate,
   DefaultSectionTemplate,
 } from "../../../optimizely.config.mjs";
-import { registerCompositionProperties } from "./compositionProperties";
+import { patchCompositionQueries, registerCompositionProperties } from "./compositionProperties";
 import { supportsProductLanding } from "./productLandingInstances";
 import {
   ArticleListBlockDefaultTemplate,
@@ -114,7 +114,9 @@ config({
 // instance whose Graph lacks the types would break every page there.
 const PRODUCT_LANDING = supportsProductLanding();
 
-// Extra `composition`-type properties need a selection set the SDK does not generate.
+// Deeper composition nesting (native forms) and extra `composition`-type properties
+// both need query text the SDK does not generate. See compositionProperties.ts.
+patchCompositionQueries();
 if (PRODUCT_LANDING) registerCompositionProperties([ProductLandingExperienceType]);
 
 // Native Optimizely Forms type schemas — defined here so opti:push does NOT discover
