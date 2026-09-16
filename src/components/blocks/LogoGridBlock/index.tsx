@@ -16,8 +16,8 @@ export const LogoGridBlockType = contentType({
     logos: {
       type: "array",
       displayName: "Partner Logos",
+      // No indexingType: "disabled" here - it drops the field from Graph and the SDK query.
       items: { type: "content", allowedTypes: ["_image"] },
-      indexingType: "disabled",
     },
   },
 });

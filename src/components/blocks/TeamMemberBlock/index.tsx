@@ -13,7 +13,8 @@ export const TeamMemberBlockType = contentType({
   properties: {
     name:        { type: "string",           displayName: "Name",      indexingType: "searchable", isLocalized: true },
     role:        { type: "string",           displayName: "Role",      isLocalized: true },
-    photo:       { type: "contentReference", displayName: "Photo", allowedTypes: ["_image"], indexingType: "disabled" },
+    // No indexingType: "disabled" here - it drops the field from Graph and the SDK query.
+    photo:       { type: "contentReference", displayName: "Photo", allowedTypes: ["_image"] },
     bio:         { type: "string",           displayName: "Short bio", indexingType: "searchable", isLocalized: true },
     linkedinUrl: { type: "url",              displayName: "LinkedIn URL" },
   },

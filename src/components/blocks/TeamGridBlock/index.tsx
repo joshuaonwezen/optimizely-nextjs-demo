@@ -6,7 +6,7 @@ import { TeamMemberBlockType } from "@/components/blocks/TeamMemberBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
-import { extractKey, type ContentRef } from "../_shared/contentRefs";
+import { extractKey, type ContentRef, type ImageRef } from "../_shared/contentRefs";
 
 export const TeamGridBlockType = contentType({
   key: "TeamGridBlock",
@@ -43,7 +43,7 @@ interface MemberData {
   role?: string | null;
   bio?:  string | null;
   linkedinUrl?: string | null;
-  photo?: { _metadata?: { url?: { default?: string | null } | null } | null } | null;
+  photo?: ImageRef;
 }
 
 interface TeamGridData {
@@ -62,11 +62,6 @@ type TeamGridBlockProps = TeamGridData & {
 // One batched query for every member, not one getContent() per key: a 10-member
 // grid was 10 sequential round-trips, each with its own cache entry keyed on a
 // single member key.
-//
-// `photo` is deliberately absent from the selection - it is declared
-// indexingType: "disabled", so Graph has no such field on TeamMemberBlock and
-// selecting it 400s the whole query. The SDK's own generated query drops it for
-// the same reason, so this matches the previous behaviour exactly.
 const MEMBERS_BY_KEYS_QUERY = /* GraphQL */ `
   query TeamMembersByKeys($keys: [String!]) {
     TeamMemberBlock(where: { _metadata: { key: { in: $keys } } }, limit: 100) {
@@ -76,6 +71,7 @@ const MEMBERS_BY_KEYS_QUERY = /* GraphQL */ `
         role
         bio
         linkedinUrl { default }
+        photo { key url { default } }
       }
     }
   }

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { resolveImageUrl, type ImageRef } from "../_shared/contentRefs";
 import {
   BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, FONT_CLASSES, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
@@ -14,7 +15,8 @@ export const TestimonialBlockType = contentType({
     quote: { type: "string", displayName: "Quote", indexingType: "searchable", isLocalized: true },
     authorName: { type: "string", displayName: "Author Name", isLocalized: true },
     authorRole: { type: "string", displayName: "Author Role", isLocalized: true },
-    authorImage: { type: "contentReference", displayName: "Author Photo", allowedTypes: ["_image"], indexingType: "disabled" },
+    // No indexingType: "disabled" here - it drops the field from Graph and the SDK query.
+    authorImage: { type: "contentReference", displayName: "Author Photo", allowedTypes: ["_image"] },
   },
 });
 
@@ -60,9 +62,7 @@ interface TestimonialData {
   quote?: string | null;
   authorName?: string | null;
   authorRole?: string | null;
-  authorImage?: {
-    _metadata?: { url?: { default?: string | null } | null } | null;
-  } | null;
+  authorImage?: ImageRef;
   __context?: { edit?: boolean } | null;
 }
 
@@ -79,7 +79,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
 
   const isCard = props.displayTemplateKey === "TestimonialCardTemplate";
   const isMinimal = props.displayTemplateKey === "TestimonialMinimalTemplate";
-  const photoUrl = data.authorImage?._metadata?.url?.default;
+  const photoUrl = resolveImageUrl(data.authorImage);
 
   let wrapperClass: string;
   let textColor: string;
