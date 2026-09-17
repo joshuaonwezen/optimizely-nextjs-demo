@@ -3,7 +3,8 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { resolveImageUrl, type ImageRef } from "../_shared/contentRefs";
 import {
-  BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES,
+  resolveStyleClasses, withDefault,
 } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -21,13 +22,14 @@ export const TestimonialBlockType = contentType({
   },
 });
 
+// Default is the unboxed quote, so it has no background control - "Card (boxed)" is
+// the template for a quote on a surface.
 export const TestimonialBlockDefaultTemplate = displayTemplate({
   key: "TestimonialBlockDefaultTemplate",
   isDefault: true,
   displayName: "Default",
   contentType: "TestimonialBlock",
   settings: {
-    ...BACKGROUND,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },
@@ -42,7 +44,8 @@ export const TestimonialCardTemplate = displayTemplate({
   settings: {
     ...BACKGROUND,
     ...TEXT_COLOR,
-    ...TEXT_SIZE,
+    ...FONT_STYLE,
+    ...withDefault(TEXT_SIZE, "md"),
   },
 });
 
@@ -53,9 +56,10 @@ export const TestimonialMinimalTemplate = displayTemplate({
   contentType: "TestimonialBlock",
   tag: "Minimal",
   settings: {
-    ...TEXT_SIZE,
+    ...TEXT_COLOR,
     ...FONT_STYLE,
     ...TEXT_ALIGN,
+    ...withDefault(TEXT_SIZE, "md"),
   },
 });
 
@@ -89,29 +93,31 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
 
   if (isCard) {
     const bg = resolveStyleClasses(ds, { background: "white" });
-    const textSizeClass = TEXT_SIZE_CLASSES[(ds?.textSize as string) ?? "md"];
+    const textSizeClass = TEXT_SIZE_CLASSES[(ds?.textSize as string) || "md"];
     wrapperClass = `${bg.wrapper} rounded-2xl p-10`;
     textColor = bg.text;
     mutedColor = bg.textMuted;
-    quoteClass = `font-display ${textSizeClass} leading-relaxed mb-8`;
+    quoteClass = `${bg.font} ${textSizeClass} leading-relaxed mb-8`;
   } else if (isMinimal) {
-    const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
+    const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) || "left"];
     const MINIMAL_SIZES: Record<string, string> = {
       sm: "text-xl md:text-2xl",
       md: "text-2xl md:text-3xl",
       lg: "text-3xl md:text-4xl",
     };
-    const textSizeClass = MINIMAL_SIZES[(ds?.textSize as string) ?? "md"] ?? MINIMAL_SIZES.md;
+    const textSizeClass = MINIMAL_SIZES[(ds?.textSize as string) || "md"] ?? MINIMAL_SIZES.md;
     wrapperClass = `insight-rail py-12 max-w-3xl mx-auto ${alignClass}`;
     const minimalStyle = resolveStyleClasses(ds, { background: "transparent" });
     textColor = minimalStyle.text;
     mutedColor = minimalStyle.textMuted;
     quoteClass = `${minimalStyle.font} ${textSizeClass} italic leading-relaxed mb-8`;
   } else {
+    // Ignores any stored background: this layout never paints a surface.
+    const plain = resolveStyleClasses({ ...ds, background: "transparent" });
     wrapperClass = "py-20 max-w-3xl mx-auto";
-    textColor = "text-on-surface";
-    mutedColor = "text-on-surface-variant";
-    quoteClass = "font-display text-xl md:text-2xl leading-relaxed mb-8";
+    textColor = plain.text;
+    mutedColor = plain.textMuted;
+    quoteClass = `${plain.font} text-xl md:text-2xl leading-relaxed mb-8`;
   }
 
   return (

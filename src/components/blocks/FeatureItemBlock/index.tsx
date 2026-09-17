@@ -1,7 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, HEADING_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, HEADING_CLASSES, resolveStyleClasses, withDefault,
 } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -16,19 +16,8 @@ export const FeatureItemBlockType = contentType({
   },
 });
 
-const FEATURE_SETTINGS = {
-  ...BACKGROUND,
-  ...TEXT_COLOR,
-  ...HEADING_SIZE_CARD,
-  ...FONT_STYLE,
-};
-
-// Flat renders without a background wrapper, so the background setting is omitted
-const FLAT_SETTINGS = {
-  ...HEADING_SIZE_CARD,
-  ...FONT_STYLE,
-};
-
+// The old "Outlined card" and "Colored card" templates are now Background choices on
+// Default: White is the outlined card, Bright green the colored one, None a bare outline.
 export const FeatureItemBlockDefaultTemplate = displayTemplate({
   key: "FeatureItemBlockDefaultTemplate",
   isDefault: true,
@@ -37,35 +26,22 @@ export const FeatureItemBlockDefaultTemplate = displayTemplate({
   settings: {
     ...BACKGROUND,
     ...TEXT_COLOR,
+    ...withDefault(HEADING_SIZE_CARD, "sm"),
     ...FONT_STYLE,
   },
 });
 
-export const FeatureItemOutlinedTemplate = displayTemplate({
-  key: "FeatureItemOutlinedTemplate",
-  isDefault: false,
-  displayName: "Outlined card",
-  contentType: "FeatureItemBlock",
-  tag: "Outlined",
-  settings: FEATURE_SETTINGS,
-});
-
-export const FeatureItemBrandTemplate = displayTemplate({
-  key: "FeatureItemBrandTemplate",
-  isDefault: false,
-  displayName: "Colored card",
-  contentType: "FeatureItemBlock",
-  tag: "Brand",
-  settings: FEATURE_SETTINGS,
-});
-
+// Flat renders without a background wrapper, so the background setting is omitted
 export const FeatureItemFlatTemplate = displayTemplate({
   key: "FeatureItemFlatTemplate",
   isDefault: false,
   displayName: "Flat (divider only)",
   contentType: "FeatureItemBlock",
   tag: "Flat",
-  settings: FLAT_SETTINGS,
+  settings: {
+    ...withDefault(HEADING_SIZE_CARD, "sm"),
+    ...FONT_STYLE,
+  },
 });
 
 interface FeatureItemData {
@@ -85,23 +61,14 @@ export default function FeatureItemBlock(props: FeatureItemBlockProps) {
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(asSdkContent(data));
 
-  const isOutlined = props.displayTemplateKey === "FeatureItemOutlinedTemplate";
   const isFlat = props.displayTemplateKey === "FeatureItemFlatTemplate";
-  const isBrand = props.displayTemplateKey === "FeatureItemBrandTemplate";
 
-  const bg = resolveStyleClasses(ds, {
-    background: isBrand ? "blueGrad" : isFlat ? "transparent" : "white",
-  });
-  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
+  const bg = resolveStyleClasses(ds, { background: isFlat ? "transparent" : "white" });
+  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) || "sm"];
 
-  let structureClass: string;
-  if (isFlat) {
-    structureClass = "p-8 border-b border-outline-variant";
-  } else if (isOutlined) {
-    structureClass = `rounded-2xl p-8 border border-outline-variant ${bg.wrapper}`;
-  } else {
-    structureClass = `rounded-2xl p-8 ${bg.wrapper || "bg-surface-lowest"}`;
-  }
+  const structureClass = isFlat
+    ? "p-8 border-b border-outline-variant"
+    : `rounded-2xl p-8 ${bg.wrapper || "border border-outline-variant"}`;
 
   return (
     <div data-component="FeatureItemBlock" className={`h-full ${structureClass}`}>

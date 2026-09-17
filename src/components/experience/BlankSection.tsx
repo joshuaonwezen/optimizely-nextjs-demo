@@ -4,6 +4,8 @@ import {
   type StructureContainerProps,
 } from "@optimizely/cms-sdk/react/server";
 import type { CompositionNode, SdkContent } from "@/components/cms/sdkTypes";
+import { GridComponentWrapper } from "./CompositionExperience";
+import { isChecked } from "@/components/blocks/_shared/displayTemplateSettings";
 
 const GAP: Record<string, string> = {
   compact:  "gap-4",
@@ -14,12 +16,13 @@ const GAP: Record<string, string> = {
 const VALIGN: Record<string, string> = {
   top:     "items-start",
   center:  "items-center",
-  bottom:  "items-end",
   stretch: "items-stretch",
 };
 
+// Choice keys differ from the blocks' (surface/surfaceLow vs white/offWhite) because
+// they are stored in published content; the classes match the blocks' BG_CLASSES.
 const COL_BG: Record<string, string> = {
-  surface:     "bg-surface",
+  surface:     "bg-surface-lowest",
   surfaceLow:  "bg-surface-low",
   blue:        "bg-brand/10 border border-brand/20",
   blueGrad:    "bg-gradient-brand",
@@ -43,13 +46,23 @@ const TEXT_COLOR: Record<string, string> = {
 };
 
 const SECTION_BG: Record<string, string> = {
-  surface:     "bg-surface",
+  surface:     "bg-surface-lowest",
   surfaceLow:  "bg-surface-low",
   brand:       "bg-brand/10",
   blueGrad:    "bg-gradient-brand",
   purple:      "bg-tertiary/10",
   dark:        "bg-on-surface",
 };
+
+// "Automatic" text color: light text on the dark and gradient backgrounds, the same
+// rule resolveStyleClasses applies to blocks.
+const LIGHT_TEXT_BACKGROUNDS = new Set(["dark", "blueGrad"]);
+
+function textColorClass(ds: Record<string, string | boolean> | undefined): string {
+  const explicit = TEXT_COLOR[ds?.textColor as string];
+  if (explicit) return explicit;
+  return LIGHT_TEXT_BACKGROUNDS.has(ds?.background as string) ? TEXT_COLOR.light : "";
+}
 
 const SECTION_PY: Record<string, string> = {
   none:     "",
@@ -85,9 +98,10 @@ function Row({ children, node, displaySettings }: StructureContainerProps) {
     count >= 4  ? "md:grid-cols-4" : "";
 
   const gap    = GAP[ds?.gap as string]    ?? GAP.default;
-  const valign = VALIGN[ds?.verticalAlign as string] ?? VALIGN[ds?.alignment as string] ?? "";
+  const valign = VALIGN[ds?.verticalAlign as string] ?? "";
   const maxWidthClass = MAX_WIDTH[ds?.maxWidth as string] ?? "max-w-7xl mx-auto px-8";
-  const reverse = ds?.reverse === true ? "[&>*:first-child]:order-last" : "";
+  // rtl flips the whole grid track order; children are set back to ltr for their text.
+  const reverse = isChecked(ds, "reverse") ? "md:[direction:rtl] md:[&>*]:[direction:ltr]" : "";
 
   const className = [
     maxWidthClass,
@@ -112,8 +126,8 @@ function Column({ children, node, displaySettings }: StructureContainerProps) {
 
   const bg      = COL_BG[ds?.background as string] ?? "";
   const padding = PADDING[ds?.padding as string] ?? "";
-  const rounded = ds?.rounded === true ? "rounded-2xl" : "";
-  const text    = TEXT_COLOR[ds?.textColor as string] ?? "";
+  const rounded = isChecked(ds, "rounded") ? "rounded-2xl" : "";
+  const text    = textColorClass(ds);
 
   const className = [bg, padding, rounded, text].filter(Boolean).join(" ");
 
@@ -139,13 +153,13 @@ export default function BlankSection({
   const py      = SECTION_PY[ds?.paddingY as string] ?? "";
   const divider = SECTION_DIVIDER[ds?.divider as string] ?? "";
   const radius  = SECTION_RADIUS[ds?.cornerRadius as string] ?? "";
-  const text    = TEXT_COLOR[ds?.textColor as string] ?? "";
+  const text    = textColorClass(ds);
 
   const className = [bg, py, divider, radius, text].filter(Boolean).join(" ");
 
   return (
     <section data-component="BlankSection" className={className || undefined} {...pa(content.key ? { key: content.key } : undefined)}>
-      <OptimizelyGridSection nodes={nodes} row={Row} column={Column} />
+      <OptimizelyGridSection nodes={nodes} row={Row} column={Column} ComponentWrapper={GridComponentWrapper} />
     </section>
   );
 }

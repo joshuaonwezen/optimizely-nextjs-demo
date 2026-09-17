@@ -1,7 +1,8 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, TEXT_ALIGN, FONT_STYLE, HEADING_CLASSES, TEXT_ALIGN_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
+  resolveStyleClasses, withDefault,
 } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -17,15 +18,15 @@ export const StatsCounterBlockType = contentType({
   },
 });
 
+// Default paints no surface, so it has no background control; "Highlighted" is the
+// boxed variant. No font control: the number uses the .type-h1 display face.
 export const StatsCounterBlockDefaultTemplate = displayTemplate({
   key: "StatsCounterBlockDefaultTemplate",
   isDefault: true,
   displayName: "Default",
   contentType: "StatsCounterBlock",
   settings: {
-    ...BACKGROUND,
     ...TEXT_COLOR,
-    ...FONT_STYLE,
   },
 });
 
@@ -36,16 +37,16 @@ export const StatsCounterAccentTemplate = displayTemplate({
   contentType: "StatsCounterBlock",
   tag: "Accent",
   settings: {
-    ...HEADING_SIZE_CARD,
+    ...withDefault(HEADING_SIZE, "lg"),
     ...TEXT_ALIGN,
     accentColor: {
       editor: "select" as const,
       displayName: "Number color",
-      sortOrder: 5,
+      sortOrder: 10,
       choices: {
-        brand:    { displayName: "Blue",         sortOrder: 0 },
-        tertiary: { displayName: "Teal",         sortOrder: 1 },
-        surface:  { displayName: "Dark",         sortOrder: 2 },
+        brand:    { displayName: "Green", sortOrder: 0 },
+        tertiary: { displayName: "Teal",  sortOrder: 1 },
+        surface:  { displayName: "Dark",  sortOrder: 2 },
       },
     },
   },
@@ -60,17 +61,8 @@ export const StatsCounterHighlightTemplate = displayTemplate({
   settings: {
     ...BACKGROUND,
     ...TEXT_COLOR,
-    ...HEADING_SIZE_CARD,
-    ...TEXT_ALIGN,
-    size: {
-      editor: "select" as const,
-      displayName: "Layout density",
-      sortOrder: 5,
-      choices: {
-        default: { displayName: "Standard", sortOrder: 0 },
-        compact: { displayName: "Compact",  sortOrder: 1 },
-      },
-    },
+    ...withDefault(HEADING_SIZE, "lg"),
+    ...withDefault(TEXT_ALIGN, "center"),
   },
 });
 
@@ -100,15 +92,14 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
 
   const isHighlight = props.displayTemplateKey === "StatsCounterHighlightTemplate";
   const isAccent = props.displayTemplateKey === "StatsCounterAccentTemplate";
-  const isCompact = ds?.size === "compact";
 
   if (isAccent) {
-    const headingSizeKey = (ds?.headingSize as string) ?? "lg";
+    const headingSizeKey = (ds?.headingSize as string) || "lg";
     const baseValueClass = HEADING_CLASSES[headingSizeKey];
     const suffixSizeKey = headingSizeKey === "xl" ? "lg" : "md";
     const suffixClass = HEADING_CLASSES[suffixSizeKey] ?? "text-3xl md:text-4xl";
-    const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
-    const valueColor = ACCENT_COLOR_CLASSES[(ds?.accentColor as string) ?? "brand"] ?? "text-brand";
+    const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) || "left"];
+    const valueColor = ACCENT_COLOR_CLASSES[(ds?.accentColor as string) || "brand"] ?? "text-brand";
     return (
       <div data-component="StatsCounterBlock" className={`insight-rail py-6 ${alignClass}`}>
         {data.value && (
@@ -130,12 +121,12 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
 
   const bg = resolveStyleClasses(ds, { background: isHighlight ? "white" : "transparent" });
 
-  const headingSizeKey = (ds?.headingSize as string) ?? (isCompact ? "md" : "lg");
+  const headingSizeKey = (ds?.headingSize as string) || "lg";
   const baseValueClass = HEADING_CLASSES[headingSizeKey];
   const suffixSizeKey = headingSizeKey === "xl" ? "lg" : headingSizeKey === "lg" ? "md" : "sm";
   const suffixClass = HEADING_CLASSES[suffixSizeKey] ?? "text-3xl md:text-4xl";
 
-  const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "center"];
+  const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) || "center"];
 
   return (
     <div data-component="StatsCounterBlock" className="relative">

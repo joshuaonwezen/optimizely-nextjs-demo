@@ -1,6 +1,6 @@
 import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
 import { resolveImageUrl } from "../_shared/contentRefs";
 import { asDamContent, asSdkContent, asSdkReference } from "@/components/cms/sdkTypes";
@@ -44,9 +44,8 @@ export const RenditionImageBlockDefaultTemplate = displayTemplate({
   displayName: "Default",
   contentType: "RenditionImageBlock",
   settings: {
+    // Image only - no text, so no text color or font controls.
     ...BACKGROUND_NONE_DEFAULT,
-    ...TEXT_COLOR,
-    ...FONT_STYLE,
   },
 });
 

@@ -1,7 +1,8 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES, resolveStyleClasses,
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES,
+  isChecked, resolveStyleClasses, withDefault,
 } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -16,35 +17,25 @@ export const SectionHeadingBlockType = contentType({
   },
 });
 
-const HEADING_BLOCK_SETTINGS = {
-  showAccent: {
-    editor: "checkbox" as const,
-    displayName: "Show accent bar",
-    sortOrder: 10,
-    choices: {},
-  },
-  ...BACKGROUND_NONE_DEFAULT,
-  ...TEXT_COLOR,
-  ...HEADING_SIZE,
-  ...TEXT_ALIGN,
-  ...FONT_STYLE,
-};
-
+// Centering is the Text alignment setting - there is no separate "Centered" template.
 export const SectionHeadingDefaultTemplate = displayTemplate({
   key: "SectionHeadingDefaultTemplate",
   isDefault: true,
-  displayName: "Default (left-aligned)",
+  displayName: "Default",
   contentType: "SectionHeadingBlock",
-  settings: HEADING_BLOCK_SETTINGS,
-});
-
-export const SectionHeadingCenteredTemplate = displayTemplate({
-  key: "SectionHeadingCenteredTemplate",
-  isDefault: false,
-  displayName: "Centered heading",
-  contentType: "SectionHeadingBlock",
-  tag: "Centered",
-  settings: HEADING_BLOCK_SETTINGS,
+  settings: {
+    showAccent: {
+      editor: "checkbox" as const,
+      displayName: "Show accent bar",
+      sortOrder: 10,
+      choices: {},
+    },
+    ...BACKGROUND_NONE_DEFAULT,
+    ...TEXT_COLOR,
+    ...withDefault(HEADING_SIZE, "lg"),
+    ...TEXT_ALIGN,
+    ...FONT_STYLE,
+  },
 });
 
 interface SectionHeadingData {
@@ -56,7 +47,6 @@ interface SectionHeadingData {
 type SectionHeadingBlockProps = SectionHeadingData & {
   content?: SectionHeadingData;
   displaySettings?: Record<string, string | boolean>;
-  displayTemplateKey?: string;
 };
 
 export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
@@ -64,12 +54,11 @@ export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(asSdkContent(data));
 
-  const isCentered = props.displayTemplateKey === "SectionHeadingCenteredTemplate";
-  const showAccent = ds?.showAccent === true;
+  const showAccent = isChecked(ds, "showAccent");
 
   const bgKey = (ds?.background as string) || "transparent";
   const s = resolveStyleClasses(ds, { background: "transparent" });
-  const alignKey = (ds?.textAlign as string) || (isCentered ? "center" : "left");
+  const alignKey = (ds?.textAlign as string) || "left";
   const alignClass = TEXT_ALIGN_CLASSES[alignKey] ?? "text-left";
 
   const hasBg = bgKey !== "transparent" && s.wrapper;

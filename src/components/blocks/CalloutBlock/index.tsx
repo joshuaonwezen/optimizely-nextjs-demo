@@ -50,15 +50,23 @@ interface CalloutProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: CalloutVariant;
   label?: string;
   children: React.ReactNode;
+  // Display-template overrides from CalloutBlock. surface "" means no background.
+  surface?: string;
+  textClass?: string;
+  mutedClass?: string;
 }
 
-export function Callout({ variant = "note", label, className, children, ...rest }: CalloutProps) {
+export function Callout({
+  variant = "note", label, className, children,
+  surface = "bg-surface-lowest", textClass = "text-on-surface", mutedClass = "text-on-surface-variant",
+  ...rest
+}: CalloutProps) {
   return (
-    <div className={`${className?.includes("bg-") ? "" : "bg-surface-lowest"} rounded-lg border-l-4 p-4 ${borderClass[variant]}${className ? ` ${className}` : ""}`} {...rest}>
+    <div className={`${surface} rounded-lg border-l-4 p-4 ${borderClass[variant]}${className ? ` ${className}` : ""}`} {...rest}>
       {label && (
-        <p className="text-xs font-semibold text-on-surface mb-1.5">{label}</p>
+        <p className={`text-xs font-semibold mb-1.5 ${textClass}`}>{label}</p>
       )}
-      <div className="text-sm text-on-surface-variant leading-relaxed">{children}</div>
+      <div className={`text-sm leading-relaxed ${mutedClass}`}>{children}</div>
     </div>
   );
 }
@@ -95,7 +103,10 @@ export default function CalloutBlock(props: CalloutBlockProps) {
       data-component="CalloutBlock"
       variant={variant}
       label={data.label ?? undefined}
-      className={`${style.wrapper} ${style.font}`.trim() || undefined}
+      surface={style.wrapper}
+      textClass={style.text}
+      mutedClass={style.textMuted}
+      className={style.font}
     >
       {bodyContent}
     </Callout>

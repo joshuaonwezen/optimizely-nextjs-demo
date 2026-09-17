@@ -3,7 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import type { ReactNode } from "react";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, isChecked, resolveStyleClasses,
 } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -32,34 +32,31 @@ export const ProductCardBlockType = contentType({
   },
 });
 
-const PRODUCT_CARD_SETTINGS = {
-  ...BACKGROUND,
-  ...TEXT_COLOR,
-  showIcon: {
-    editor: "checkbox" as const,
-    displayName: "Show icon",
-    sortOrder: 1,
-    choices: {},
-  },
-  ...HEADING_SIZE_CARD,
-  ...FONT_STYLE,
-};
-
+// "Highlight card" replaces the old "Featured (highlighted)" template. The icon
+// control is "Hide icon" so an untouched checkbox (stored "False") keeps the icon.
 export const ProductCardDefaultTemplate = displayTemplate({
   key: "ProductCardDefaultTemplate",
   isDefault: true,
   displayName: "Default",
   contentType: "ProductCardBlock",
-  settings: PRODUCT_CARD_SETTINGS,
-});
-
-export const ProductCardFeaturedTemplate = displayTemplate({
-  key: "ProductCardFeaturedTemplate",
-  isDefault: false,
-  displayName: "Featured (highlighted)",
-  contentType: "ProductCardBlock",
-  tag: "Featured",
-  settings: PRODUCT_CARD_SETTINGS,
+  settings: {
+    ...BACKGROUND,
+    ...TEXT_COLOR,
+    ...HEADING_SIZE_CARD,
+    ...FONT_STYLE,
+    featured: {
+      editor: "checkbox" as const,
+      displayName: "Highlight card",
+      sortOrder: 10,
+      choices: {},
+    },
+    hideIcon: {
+      editor: "checkbox" as const,
+      displayName: "Hide icon",
+      sortOrder: 11,
+      choices: {},
+    },
+  },
 });
 
 const ICON_MAP: Record<string, ReactNode> = {
@@ -105,7 +102,6 @@ interface ProductCardData {
 type ProductCardBlockProps = ProductCardData & {
   content?: ProductCardData;
   displaySettings?: Record<string, string | boolean>;
-  displayTemplateKey?: string;
 };
 
 export default async function ProductCardBlock(props: ProductCardBlockProps) {
@@ -116,14 +112,13 @@ export default async function ProductCardBlock(props: ProductCardBlockProps) {
   const href = data.__context?.edit ? undefined : await resolveLinkHref(data.linkUrl);
   const icon = data.icon ? (ICON_MAP[data.icon] ?? ICON_MAP.account) : ICON_MAP.account;
 
-  const isFeatured = props.displayTemplateKey === "ProductCardFeaturedTemplate";
-  const showIcon = ds?.showIcon !== false;
-  const bgKey = (ds?.background as string) ?? "white";
+  const isFeatured = isChecked(ds, "featured");
+  const showIcon = !isChecked(ds, "hideIcon");
   const bg = resolveStyleClasses(ds, { background: "white" });
-  const isInverted = bgKey === "dark" || bgKey === "blueGrad";
+  const isInverted = bg.invert;
 
   const featuredClass = isFeatured ? "ring-2 ring-brand/30 shadow-ambient" : "";
-  const headingClass = CARD_HEADING_CLASSES[(ds?.headingSize as string) ?? "md"] ?? CARD_HEADING_CLASSES.md;
+  const headingClass = CARD_HEADING_CLASSES[(ds?.headingSize as string) || "md"] ?? CARD_HEADING_CLASSES.md;
 
   const iconBgClass = isInverted ? "bg-on-brand/10 text-on-brand" : "bg-brand/10 text-brand";
   const linkClass   = isInverted ? bg.text : "text-brand";

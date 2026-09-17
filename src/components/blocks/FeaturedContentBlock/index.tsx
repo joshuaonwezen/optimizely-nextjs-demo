@@ -1,7 +1,8 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, TEXT_ALIGN, FONT_STYLE, FONT_CLASSES, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
+  resolveStyleClasses, withDefault,
 } from "../_shared/displayTemplateSettings";
 import { Button } from "@/components/ui/Button";
 import { asSdkContent } from "@/components/cms/sdkTypes";
@@ -18,13 +19,13 @@ export const FeaturedContentBlockType = contentType({
   },
 });
 
+// Default is the unboxed banner, so it has no background control; "Card" paints one.
 export const FeaturedContentBlockDefaultTemplate = displayTemplate({
   key: "FeaturedContentBlockDefaultTemplate",
   isDefault: true,
   displayName: "Default",
   contentType: "FeaturedContentBlock",
   settings: {
-    ...BACKGROUND,
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },
@@ -37,17 +38,9 @@ export const FeaturedContentCardTemplate = displayTemplate({
   contentType: "FeaturedContentBlock",
   tag: "Card",
   settings: {
-    theme: {
-      editor: "select" as const,
-      displayName: "Background color",
-      sortOrder: 10,
-      choices: {
-        surface: { displayName: "White",         sortOrder: 0 },
-        brand:   { displayName: "Green",         sortOrder: 1 },
-      },
-    },
+    ...BACKGROUND,
     ...TEXT_COLOR,
-    ...HEADING_SIZE_CARD,
+    ...withDefault(HEADING_SIZE, "lg"),
     ...TEXT_ALIGN,
     ...FONT_STYLE,
   },
@@ -82,18 +75,18 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   const isDev = process.env.NODE_ENV !== "production";
   if (!pageTitle && !isDev) return null;
 
-  const isCard   = props.displayTemplateKey === "FeaturedContentCardTemplate";
-  const isBrand  = isCard && ds?.theme === "brand";
+  const isCard = props.displayTemplateKey === "FeaturedContentCardTemplate";
+  // Default ignores any stored background: it never paints a surface.
+  const style = resolveStyleClasses(isCard ? ds : { ...ds, background: "transparent" }, { background: isCard ? "white" : "transparent" });
+  const onColor = isCard && style.invert;
 
-  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "lg"];
-  const fontClass = FONT_CLASSES[(ds?.fontStyle as string) ?? "modern"];
-  const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) ?? "left"];
+  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) || "lg"];
+  const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) || "left"];
 
   // Card surface goes on an absolute `.squircle-bg` layer so the mask shapes the
   // card without clipping the heading/button above it.
-  const surfaceClass = isBrand ? "bg-gradient-brand" : "bg-surface-lowest border border-outline-variant";
-  const innerClass   = isBrand ? "max-w-2xl" : "insight-rail max-w-2xl";
-  const headingColor = isBrand ? "text-on-brand" : "text-on-surface";
+  const surfaceClass = style.wrapper;
+  const innerClass   = onColor ? "max-w-2xl" : "insight-rail max-w-2xl";
 
   return (
     <section data-component="FeaturedContentBlock" className={`relative ${isCard ? "" : "py-20"} ${alignClass}`}>
@@ -103,7 +96,7 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
       <div className={`relative ${isCard ? "p-10" : ""} ${innerClass}`}>
         <h2
           {...pa("featuredPage")}
-          className={`${fontClass} ${headingClass} font-extrabold ${headingColor} mb-4`}
+          className={`${style.font} ${headingClass} font-extrabold ${style.text} mb-4`}
         >
           {pageTitle ?? (isDev ? "Set a featured page in the CMS" : null)}
         </h2>
@@ -112,8 +105,8 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
           <Button
             href={data.__context?.edit ? "#" : (pageUrl ?? "#")}
             size="compact"
-            variant={isBrand ? "custom" : "primary"}
-            className={isBrand ? "bg-on-brand text-brand hover:opacity-90" : undefined}
+            variant={onColor ? "custom" : "primary"}
+            className={onColor ? "bg-on-brand text-brand hover:opacity-90" : undefined}
           >
             <span>Read More</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

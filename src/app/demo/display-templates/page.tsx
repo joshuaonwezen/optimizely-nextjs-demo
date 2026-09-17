@@ -159,17 +159,17 @@ export default function DisplayTemplatesDemoPage() {
 
         <Section
           title="Feature Item"
-          description="Three visual layouts for the same title and description. The fallback (no template selected) renders a plain white card."
+          description="The card look comes from the Background setting (White is the outlined card, Bright green the colored card); Flat is the one separate layout."
         >
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Variant label="No template (fallback)">
+            <Variant label="Default, White">
               <FeatureItemBlock {...FEATURE} />
             </Variant>
-            <Variant label="Outlined card">
-              <FeatureItemBlock {...FEATURE} displayTemplateKey="FeatureItemOutlinedTemplate" />
+            <Variant label="Default, None (outline only)">
+              <FeatureItemBlock {...FEATURE} displaySettings={{ background: "transparent" }} />
             </Variant>
-            <Variant label="Colored card">
-              <FeatureItemBlock {...FEATURE} displayTemplateKey="FeatureItemBrandTemplate" />
+            <Variant label="Default, Bright green">
+              <FeatureItemBlock {...FEATURE} displaySettings={{ background: "blueGrad" }} />
             </Variant>
             <Variant label="Flat (divider only)">
               <FeatureItemBlock {...FEATURE} displayTemplateKey="FeatureItemFlatTemplate" />
@@ -179,14 +179,13 @@ export default function DisplayTemplatesDemoPage() {
 
         <Section
           title="Shared setting: Background color"
-          description="One shared setting definition drives every block. Here the Outlined card template sweeps all seven background choices."
+          description="One shared setting definition drives every block. Here the Feature Item sweeps every background choice."
         >
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {BACKGROUND_CHOICES.map(({ key, label }) => (
               <Variant key={key} label={label}>
                 <FeatureItemBlock
                   {...FEATURE}
-                  displayTemplateKey="FeatureItemOutlinedTemplate"
                   displaySettings={{ background: key }}
                 />
               </Variant>
@@ -203,7 +202,6 @@ export default function DisplayTemplatesDemoPage() {
               <Variant key={key} label={label}>
                 <FeatureItemBlock
                   {...FEATURE}
-                  displayTemplateKey="FeatureItemOutlinedTemplate"
                   displaySettings={{ headingSize: key }}
                 />
               </Variant>
@@ -213,21 +211,18 @@ export default function DisplayTemplatesDemoPage() {
             <Variant label="Display (VC Nudge)">
               <FeatureItemBlock
                 {...FEATURE}
-                displayTemplateKey="FeatureItemOutlinedTemplate"
                 displaySettings={{ fontStyle: "modern", headingSize: "md" }}
               />
             </Variant>
             <Variant label="Body (Die Grotesk)">
               <FeatureItemBlock
                 {...FEATURE}
-                displayTemplateKey="FeatureItemOutlinedTemplate"
                 displaySettings={{ fontStyle: "classic", headingSize: "md" }}
               />
             </Variant>
             <Variant label="Captions (Roboto Mono)">
               <FeatureItemBlock
                 {...FEATURE}
-                displayTemplateKey="FeatureItemOutlinedTemplate"
                 displaySettings={{ fontStyle: "mono", headingSize: "md" }}
               />
             </Variant>
@@ -243,7 +238,6 @@ export default function DisplayTemplatesDemoPage() {
               <Variant key={key} label={label}>
                 <FeatureItemBlock
                   {...FEATURE}
-                  displayTemplateKey="FeatureItemOutlinedTemplate"
                   displaySettings={{ textColor: key, headingSize: "md" }}
                 />
               </Variant>
@@ -258,20 +252,20 @@ export default function DisplayTemplatesDemoPage() {
 
         <Section
           title="Product Card"
-          description="Default and Featured templates share the same settings; Featured adds a highlight ring. Backgrounds come from the shared set."
+          description="One template: the Highlight card checkbox adds a highlight ring and Hide icon drops the icon. Backgrounds come from the shared set."
         >
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Variant label="Default">
               <ProductCardBlock {...PRODUCT} />
             </Variant>
-            <Variant label="Featured (highlighted)">
-              <ProductCardBlock {...PRODUCT} displayTemplateKey="ProductCardFeaturedTemplate" />
+            <Variant label="Highlight card">
+              <ProductCardBlock {...PRODUCT} displaySettings={{ featured: true }} />
             </Variant>
             <Variant label="Default, bright green">
               <ProductCardBlock {...PRODUCT} displaySettings={{ background: "blueGrad" }} />
             </Variant>
             <Variant label="Default, no icon, Dark">
-              <ProductCardBlock {...PRODUCT} displaySettings={{ background: "dark", showIcon: false }} />
+              <ProductCardBlock {...PRODUCT} displaySettings={{ background: "dark", hideIcon: true }} />
             </Variant>
           </div>
         </Section>
@@ -298,23 +292,21 @@ export default function DisplayTemplatesDemoPage() {
 
         <Section
           title="Section Heading"
-          description="Left-aligned with an optional accent bar, or centered. Both accept the shared background, heading size, alignment, and font settings."
+          description="One template with an optional accent bar; centering is the Text alignment setting. Also accepts the shared background, heading size, and font settings."
         >
           <div className="grid lg:grid-cols-2 gap-6">
             <Variant label="Default (left-aligned), accent bar">
               <SectionHeadingBlock
                 heading="Banking that fits your life"
                 subheading="Everything you need to manage money day to day, in one app."
-                displayTemplateKey="SectionHeadingDefaultTemplate"
                 displaySettings={{ showAccent: true, headingSize: "md" }}
               />
             </Variant>
-            <Variant label="Centered heading, Off-white background">
+            <Variant label="Centered, Off-white background">
               <SectionHeadingBlock
                 heading="Banking that fits your life"
                 subheading="Everything you need to manage money day to day, in one app."
-                displayTemplateKey="SectionHeadingCenteredTemplate"
-                displaySettings={{ background: "offWhite", headingSize: "md" }}
+                displaySettings={{ background: "offWhite", headingSize: "md", textAlign: "center" }}
               />
             </Variant>
           </div>
@@ -339,7 +331,7 @@ export default function DisplayTemplatesDemoPage() {
 
         <Section
           title="Stats Counter"
-          description="An accent rail with a number color setting, or a highlighted box with layout density. The fallback renders a plain centered stat."
+          description="An accent rail with a number color setting, or a highlighted box with a background. The default renders a plain centered stat."
         >
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
             <Variant label="No template (fallback)">
@@ -351,15 +343,15 @@ export default function DisplayTemplatesDemoPage() {
             <Variant label="Accent rail, teal number">
               <StatsCounterBlock value="2.4" suffix="M" label="Active customers" displayTemplateKey="StatsCounterAccentTemplate" displaySettings={{ accentColor: "tertiary" }} />
             </Variant>
-            <Variant label="Highlighted, Dark, compact">
-              <StatsCounterBlock value="2.4" suffix="M" label="Active customers" displayTemplateKey="StatsCounterHighlightTemplate" displaySettings={{ background: "dark", size: "compact" }} />
+            <Variant label="Highlighted, Dark, medium">
+              <StatsCounterBlock value="2.4" suffix="M" label="Active customers" displayTemplateKey="StatsCounterHighlightTemplate" displaySettings={{ background: "dark", headingSize: "md" }} />
             </Variant>
           </div>
         </Section>
 
         <Section
           title="Outcome Stat"
-          description="Inline places the number and label side by side; Boxed defaults to the bright green fill."
+          description="Inline places the number and label side by side. Picking a background on the default boxes the stat."
         >
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             <Variant label="Inline stat">
@@ -368,8 +360,8 @@ export default function DisplayTemplatesDemoPage() {
             <Variant label="Inline stat, Off-white badge">
               <OutcomeItemBlock stat="98" suffix="%" label="of support chats answered in under a minute" displayTemplateKey="OutcomeItemInlineTemplate" displaySettings={{ background: "offWhite", headingSize: "md" }} />
             </Variant>
-            <Variant label="Boxed stat">
-              <OutcomeItemBlock stat="98" suffix="%" label="of support chats answered in under a minute" displayTemplateKey="OutcomeItemBrandTemplate" />
+            <Variant label="Default, Bright green (boxed)">
+              <OutcomeItemBlock stat="98" suffix="%" label="of support chats answered in under a minute" displaySettings={{ background: "blueGrad" }} />
             </Variant>
           </div>
         </Section>
@@ -383,7 +375,7 @@ export default function DisplayTemplatesDemoPage() {
               <AuthorBlock {...AUTHOR} displayTemplateKey="AuthorInlineTemplate" displaySettings={{ background: "offWhite", showSocial: true }} />
             </Variant>
             <Variant label="Profile card">
-              <AuthorBlock {...AUTHOR} displayTemplateKey="AuthorProfileTemplate" displaySettings={{ showLinkedIn: true }} />
+              <AuthorBlock {...AUTHOR} displayTemplateKey="AuthorProfileTemplate" displaySettings={{ showSocial: true }} />
             </Variant>
             <Variant label="No template (full bio)">
               <AuthorBlock {...AUTHOR} />
@@ -444,42 +436,42 @@ export default function DisplayTemplatesDemoPage() {
 
         <Section
           title="Text Block"
-          description="The Narrow layout template constrains line length and adds text size, alignment, font, and vertical padding settings."
+          description="Width, text size, alignment, font, and vertical padding are all settings on the one template."
         >
           <div className="grid lg:grid-cols-2 gap-6 items-start">
-            <Variant label="No template (standard width)">
+            <Variant label="Default (standard width)">
               <TextBlock body={RICH_TEXT_BODY} />
             </Variant>
-            <Variant label="Narrow layout, large text, compact padding">
-              <TextBlock body={RICH_TEXT_BODY} displayTemplateKey="TextBlockNarrowTemplate" displaySettings={{ textSize: "lg", verticalPadding: "compact" }} />
+            <Variant label="Narrow, large text, compact padding">
+              <TextBlock body={RICH_TEXT_BODY} displaySettings={{ width: "narrow", textSize: "lg", verticalPadding: "compact" }} />
             </Variant>
           </div>
         </Section>
 
         <Section
           title="Image"
-          description="The Rounded corners template adds a radius and an aspect ratio setting that crops the image to a fixed shape."
+          description="Rounded corners and an aspect ratio that crops the image to a fixed shape are settings on the one template."
         >
           <div className="grid lg:grid-cols-2 gap-6 items-start">
-            <Variant label="No template (natural size)">
+            <Variant label="Default (natural size)">
               <ImageBlock image={{ url: { default: SAMPLE_IMAGE } }} altText="Sample image" caption="Original aspect ratio" />
             </Variant>
             <Variant label="Rounded corners, 1:1 Square">
-              <ImageBlock image={{ url: { default: SAMPLE_IMAGE } }} altText="Sample image" caption="Cropped square with rounded corners" displayTemplateKey="ImageBlockRoundedTemplate" displaySettings={{ aspectRatio: "r1x1" }} />
+              <ImageBlock image={{ url: { default: SAMPLE_IMAGE } }} altText="Sample image" caption="Cropped square with rounded corners" displaySettings={{ rounded: true, aspectRatio: "r1x1" }} />
             </Variant>
           </div>
         </Section>
 
         <Section
           title="Logo Grid"
-          description="Logo size, partner names, and alignment settings. Placeholder tiles render here because no CMS images are attached; in the CMS the Color template disables the grayscale filter."
+          description="Logo size, partner names, and alignment settings. Placeholder tiles render here because no CMS images are attached; in the CMS the Full color logos checkbox disables the grayscale filter."
         >
           <div className="grid lg:grid-cols-2 gap-6 items-start">
-            <Variant label="No template (grayscale, centered)">
+            <Variant label="Default (grayscale, centered)">
               <LogoGridBlock heading="Trusted by teams everywhere" />
             </Variant>
             <Variant label="Full color, small, names, left-aligned">
-              <LogoGridBlock heading="Trusted by teams everywhere" displayTemplateKey="LogoGridColorTemplate" displaySettings={{ size: "sm", showNames: true, textAlign: "left" }} />
+              <LogoGridBlock heading="Trusted by teams everywhere" displaySettings={{ fullColor: true, size: "sm", showNames: true, textAlign: "left" }} />
             </Variant>
           </div>
         </Section>

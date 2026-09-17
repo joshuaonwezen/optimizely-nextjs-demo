@@ -612,7 +612,8 @@ export const MyBlockCardTemplate = displayTemplate({
 });
 ```
 
-Available shared constants: `BACKGROUND`, `BACKGROUND_NONE_DEFAULT`, `HEADING_SIZE`, `TEXT_ALIGN`, `FONT_STYLE`, `TEXT_SIZE`.
+Available shared constants: `BACKGROUND`, `BACKGROUND_NONE_DEFAULT`, `BACKGROUND_BRAND_DEFAULT`, `BACKGROUND_OFFWHITE_DEFAULT`, `TEXT_COLOR`, `HEADING_SIZE`, `HEADING_SIZE_CARD`, `TEXT_ALIGN`, `FONT_STYLE`, `TEXT_SIZE`.
+Helpers: `withDefault(SETTING, "choice")` returns a copy with that choice at sortOrder 0 (see below), `isChecked(ds, "key")` reads a checkbox.
 Tailwind class lookup maps: `BG_CLASSES`, `HEADING_CLASSES`, `FONT_CLASSES`, `TEXT_SIZE_CLASSES`, `TEXT_ALIGN_CLASSES`.
 
 ### `BACKGROUND` vs `BACKGROUND_NONE_DEFAULT` — which background default
@@ -621,6 +622,8 @@ Both expose the same eight color choices; they differ only in which one sits at 
 
 - `BACKGROUND` — **White** is the default. Use on **card / solid blocks** that should paint their own surface when unset: ProductCard, Quote, Testimonial, TeamMember, Author, Spotlight, Callout, FeatureItem, FaqItem, PricingTier, StatsCounter, CustomerVoices, Hero, ProductHero, FeaturedContent.
 - `BACKGROUND_NONE_DEFAULT` — **None** (transparent, `BG_CLASSES.transparent` emits an empty wrapper) is the default, so an untouched block inherits the parent section's background instead of a white card. Use on **flat / content blocks** that should blend into their section: SectionHeading, RichText, LogoGrid, TeamGrid, Timeline, TimelineMilestone, Image, RenditionImage, ComparisonTable, ContactForm, BranchFinder, FaqContainer, RawHtml, CallToAction, OutcomeItem.
+
+**When the intended default is anything else, wrap the setting in `withDefault()`** (e.g. `...withDefault(HEADING_SIZE, "lg")`) so the CMS default agrees with the code fallback. It only reorders choices - keys stay the same, so stored values are never orphaned - and it only affects nodes created afterwards. `optimizely.config.mjs` cannot import the shared `.ts` file (`opti:push` loads it with a plain Node `import()`), so it keeps its own inline copy of `TEXT_COLOR`.
 
 Rule of thumb: if the block's `resolveStyleClasses(ds, { background: "transparent" })` code fallback is already `transparent`, spread `BACKGROUND_NONE_DEFAULT` so the CMS default agrees with the code. Both templates keep every color selectable — this only changes the untouched default. Changing which constant a block spreads is a display-template change → `opti:push` to every instance (see below).
 
@@ -636,7 +639,19 @@ Rule of thumb: if the block's `resolveStyleClasses(ds, { background: "transparen
 
 If a block has more than one visual layout (e.g. card vs minimal, horizontal vs vertical), create a separate `displayTemplate()` for each with a `tag` value matching the resolver entry in `componentRegistry.ts`. Always set one template as `isDefault: true`.
 
-Registering the block module is enough: every block renders all of its own templates (branching on `displayTemplateKey`), so `componentRegistry.ts` has no per-tag entries.
+Registering the block module is enough: every block renders all of its own templates (branching on `props.displayTemplateKey`), so `componentRegistry.ts` has no per-tag entries.
+
+**SDK 2.2.0 never passes `displayTemplateKey` to a component** - `OptimizelyComponent` forwards only `content` and `displaySettings`. The key is injected by the wrappers in `src/components/experience/CompositionExperience.tsx`: `NodeWrapper` (every `OptimizelyComposition`) and `GridComponentWrapper` (`OptimizelyGridSection` in `BlankSection.tsx`). Any new composition renderer must pass one of them as `ComponentWrapper`, or every variant silently renders as the default. Until 2026-09-17 this was missing and no variant had ever rendered on a CMS page.
+
+Only add a template when the **layout** changes (different markup/structure). A variant that only changes one style - alignment, a background, rounded corners, width - is a setting on the default template instead. Duplicated templates with identical settings were folded into settings on 2026-09-17 (SectionHeading Centered, FeatureItem Outlined/Brand, OutcomeItem Brand, Image Rounded, Text Narrow, LogoGrid Color, ProductCard Featured).
+
+### Checkbox settings arrive as "True"/"False"
+
+Graph returns checkbox values as the capitalised strings `"True"`/`"False"`, and the SDK's `parseDisplaySettings` only converts lowercase `"true"`/`"false"`. So `ds.x === true` never fires and `ds.x !== false` is always true. **Always read checkboxes with `isChecked(ds, "key")`.** Name checkboxes so unticked (the stored default) is the historic look - e.g. ProductCard's "Hide icon", not "Show icon".
+
+### Checking template usage before removing one
+
+`npx tsx scripts/maintenance/template-usage.ts --removed=KeyA,KeyB` counts which templates published experiences use on every instance and lists nodes still pointing at the given keys. Delete a template from an instance with `DELETE /v1/displaytemplates/{key}` only once nothing uses it there - `opti:push` never deletes templates.
 
 ### cleanup-types.ts
 

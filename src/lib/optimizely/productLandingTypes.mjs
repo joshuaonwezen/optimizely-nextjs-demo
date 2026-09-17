@@ -1,6 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { SEOContract } from "../../../optimizely.config.mjs";
-import { BACKGROUND_NONE_DEFAULT, HEADING_SIZE, FONT_STYLE } from "../../components/blocks/_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, HEADING_SIZE, FONT_STYLE, withDefault } from "../../components/blocks/_shared/displayTemplateSettings";
 
 // Content types rolled out per instance. They live outside optimizely.config.mjs and
 // src/components/**/*.tsx on purpose: a normal opti:push never carries them anywhere,
@@ -51,7 +51,7 @@ export const ArticleListBlockDefaultTemplate = displayTemplate({
   contentType: "ArticleListBlock",
   settings: {
     ...BACKGROUND_NONE_DEFAULT,
-    ...HEADING_SIZE,
+    ...withDefault(HEADING_SIZE, "lg"),
     ...FONT_STYLE,
   },
 });

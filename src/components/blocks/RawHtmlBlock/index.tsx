@@ -38,8 +38,8 @@ export const RawHtmlBlockDefaultTemplate = displayTemplate({
       displayName: "Vertical padding",
       sortOrder: 11,
       choices: {
-        none:     { displayName: "None",     sortOrder: 0 },
-        default:  { displayName: "Standard", sortOrder: 1 },
+        default:  { displayName: "Standard", sortOrder: 0 },
+        none:     { displayName: "None",     sortOrder: 1 },
         spacious: { displayName: "Spacious", sortOrder: 2 },
       },
     },
@@ -72,7 +72,7 @@ export default function RawHtmlBlock(props: RawHtmlBlockProps) {
 
   if (typeof data.html !== "string" || !data.html) return null;
 
-  const paddingClass = PADDING_CLASSES[(ds?.verticalPadding as string) ?? "default"] ?? "py-16";
+  const paddingClass = PADDING_CLASSES[(ds?.verticalPadding as string) || "default"] ?? "py-16";
   const widthClass = (ds?.width as string) === "full" ? "w-full" : "max-w-4xl mx-auto px-8";
   const style = resolveStyleClasses(ds, { background: "transparent" });
   const surfaceClass = style.wrapper ? `${style.wrapper} rounded-2xl` : "";

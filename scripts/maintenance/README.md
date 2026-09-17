@@ -8,6 +8,7 @@ One-off repair, diagnostic and setup scripts. None of them run as part of
 |---|---|
 | `repair-page-properties.ts` | Finds pages whose published version lost its properties (a draft created with `POST /versions` starts with none) and republishes the newest surviving set. Dry run; `--apply` to write. |
 | `patch-link-refs.ts` | Rewrites internal path strings in `type: "url"` link fields to stable `cms://content/{key}` references without reseeding. Dry run; `--apply` to write. |
+| `template-usage.ts` | Counts display template usage in published experiences on every instance; `--removed=KeyA,KeyB` lists nodes still using those keys, `--settings` adds stored setting values. Read-only. |
 | `test-odp.ts` | Lists ODP audience names, or checks one visitor's audience membership by `vuid` and/or `fs_user_id`. Read-only. |
 | `seed-fx-flags.ts` | Creates the early homepage FX flags through the Flags REST API. Flags are normally managed through the Experimentation MCP server now; kept for reference. |
 

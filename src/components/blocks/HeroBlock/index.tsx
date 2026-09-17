@@ -2,7 +2,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { HeroBlockClient } from "./HeroBlockClient";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
-import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, isChecked, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveImageUrl } from "../_shared/contentRefs";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -61,7 +61,7 @@ export const HeroBlockDefaultTemplate = displayTemplate({
     },
     overlay: {
       editor: "checkbox",
-      displayName: "Darken background image",
+      displayName: "Fade background image",
       sortOrder: 12,
       choices: {},
     },
@@ -107,7 +107,7 @@ export default async function HeroBlock(props: HeroBlockProps) {
 
   const isCentered = ds?.alignment === "center";
   const isTall = ds?.height === "tall";
-  const showOverlay = ds?.overlay === true;
+  const showOverlay = isChecked(ds, "overlay");
   const headingSize = (ds?.headingSize as string) ?? "xl";
   const fontStyle = (ds?.fontStyle as string) ?? "modern";
   const style = resolveStyleClasses(ds, { background: "blueGrad", headingSize: "xl" });

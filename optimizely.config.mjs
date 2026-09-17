@@ -205,7 +205,10 @@ export const ConsultantPageType = contentType({
   },
 });
 
-const TEXT_COLOR_SETTING = {
+// Copy of TEXT_COLOR from src/components/blocks/_shared/displayTemplateSettings.ts.
+// It cannot be imported: opti:push loads this file with a plain Node import(), which
+// cannot resolve a .ts module. Keep the two in sync.
+const TEXT_COLOR = {
   textColor: {
     editor: "select",
     displayName: "Text color",
@@ -232,8 +235,8 @@ export const DefaultRowTemplate = displayTemplate({
       displayName: "Gap",
       sortOrder: 0,
       choices: {
-        compact: { displayName: "Compact", sortOrder: 0 },
-        default: { displayName: "Default", sortOrder: 1 },
+        default: { displayName: "Default", sortOrder: 0 },
+        compact: { displayName: "Compact", sortOrder: 1 },
         spacious: { displayName: "Spacious", sortOrder: 2 },
       },
     },
@@ -242,9 +245,9 @@ export const DefaultRowTemplate = displayTemplate({
       displayName: "Vertical Alignment",
       sortOrder: 1,
       choices: {
-        top: { displayName: "Top", sortOrder: 0 },
-        center: { displayName: "Center", sortOrder: 1 },
-        stretch: { displayName: "Stretch", sortOrder: 2 },
+        stretch: { displayName: "Stretch (equal height)", sortOrder: 0 },
+        top: { displayName: "Top", sortOrder: 1 },
+        center: { displayName: "Center", sortOrder: 2 },
       },
     },
     maxWidth: {
@@ -283,9 +286,10 @@ export const DefaultColumnTemplate = displayTemplate({
         blue:        { displayName: "Green",        sortOrder: 3 },
         blueGrad:    { displayName: "Bright green", sortOrder: 4 },
         purple:      { displayName: "Teal",         sortOrder: 5 },
+        dark:        { displayName: "Dark",         sortOrder: 6 },
       },
     },
-    ...TEXT_COLOR_SETTING,
+    ...TEXT_COLOR,
     padding: {
       editor: "select",
       displayName: "Padding",
@@ -326,7 +330,7 @@ export const DefaultSectionTemplate = displayTemplate({
         dark:        { displayName: "Dark",          sortOrder: 6 },
       },
     },
-    ...TEXT_COLOR_SETTING,
+    ...TEXT_COLOR,
     paddingY: {
       editor: "select",
       displayName: "Vertical Padding",

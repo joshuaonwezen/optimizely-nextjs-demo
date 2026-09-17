@@ -1,7 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, HEADING_CLASSES, resolveStyleClasses,
+  BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, HEADING_CLASSES, resolveStyleClasses, withDefault,
 } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -34,10 +34,10 @@ export const FaqItemFlatTemplate = displayTemplate({
   displayName: "Minimal (divider only)",
   contentType: "FaqItemBlock",
   tag: "Flat",
+  // No background: the minimal layout is a divider line, never a card.
   settings: {
-    ...BACKGROUND,
     ...TEXT_COLOR,
-    ...HEADING_SIZE_CARD,
+    ...withDefault(HEADING_SIZE_CARD, "sm"),
     ...FONT_STYLE,
   },
 });
@@ -62,8 +62,8 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
   if (!data.question) return null;
 
   const isFlat = props.displayTemplateKey === "FaqItemFlatTemplate";
-  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) ?? "sm"];
-  const style = resolveStyleClasses(ds, { background: isFlat ? "transparent" : "white" });
+  const headingClass = HEADING_CLASSES[(ds?.headingSize as string) || "sm"];
+  const style = resolveStyleClasses(isFlat ? { ...ds, background: "transparent" } : ds, { background: "white" });
 
   if (isFlat) {
     return (

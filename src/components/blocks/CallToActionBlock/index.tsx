@@ -1,6 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses, withDefault } from "../_shared/displayTemplateSettings";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { Button } from "@/components/ui/Button";
 import { asSdkContent } from "@/components/cms/sdkTypes";
@@ -18,6 +18,8 @@ export const CallToActionType = contentType({
   },
 });
 
+// Button templates take their colors from the button variant, so only the Ghost
+// text link has a text color control.
 const CTA_SIZE_SETTING = {
   size: {
     editor: "select" as const,
@@ -28,7 +30,6 @@ const CTA_SIZE_SETTING = {
       large:   { displayName: "Large",   sortOrder: 1 },
     },
   },
-  ...TEXT_COLOR,
   ...FONT_STYLE,
 };
 
@@ -39,7 +40,6 @@ export const CallToActionDefaultTemplate = displayTemplate({
   contentType: "CallToAction",
   settings: {
     ...BACKGROUND_NONE_DEFAULT,
-    ...TEXT_COLOR,
     ...FONT_STYLE,
   },
 });
@@ -78,7 +78,7 @@ export const CallToActionGhostTemplate = displayTemplate({
         large:   { displayName: "Large",  sortOrder: 1 },
       },
     },
-    ...TEXT_COLOR,
+    ...withDefault(TEXT_COLOR, "brand"),
     ...FONT_STYLE,
   },
 });

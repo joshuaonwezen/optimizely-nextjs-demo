@@ -3,7 +3,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { QuoteBlockType } from "@/components/blocks/QuoteBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import {
-  BACKGROUND_OFFWHITE_DEFAULT, TEXT_COLOR, HEADING_SIZE, HEADING_CLASSES, resolveStyleClasses,
+  BACKGROUND_OFFWHITE_DEFAULT, TEXT_COLOR, HEADING_SIZE, HEADING_CLASSES, resolveStyleClasses, withDefault,
 } from "../_shared/displayTemplateSettings";
 
 export const CustomerVoicesBlockType = contentType({
@@ -32,7 +32,7 @@ export const CustomerVoicesBlockDefaultTemplate = displayTemplate({
   settings: {
     ...BACKGROUND_OFFWHITE_DEFAULT,
     ...TEXT_COLOR,
-    ...HEADING_SIZE,
+    ...withDefault(HEADING_SIZE, "lg"),
   },
 });
 

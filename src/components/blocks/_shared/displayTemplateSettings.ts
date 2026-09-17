@@ -190,6 +190,31 @@ export const TEXT_SIZE: { textSize: SelectSetting } = {
   },
 };
 
+// Returns a copy of a shared setting with `choice` moved to sortOrder 0, keeping the
+// other choices in their original order. The sortOrder 0 choice is what the CMS
+// stores when an editor never touches the control, and that stored value beats the
+// block's code fallback - so use this whenever a block's intended default differs.
+// Choice keys are unchanged, so it never orphans stored values.
+export function withDefault<T extends Record<string, SelectSetting>>(group: T, choice: string): T {
+  const [name, setting] = Object.entries(group)[0];
+  if (!(choice in setting.choices)) throw new Error(`withDefault: "${choice}" is not a ${name} choice`);
+  const rest = Object.entries(setting.choices)
+    .filter(([key]) => key !== choice)
+    .sort(([, a], [, b]) => a.sortOrder - b.sortOrder);
+  const choices = Object.fromEntries(
+    [[choice, setting.choices[choice]] as const, ...rest].map(([key, c], i) => [key, { ...c, sortOrder: i }]),
+  );
+  return { [name]: { ...setting, choices } } as T;
+}
+
+// Checkbox settings arrive from Graph as the strings "True"/"False". The SDK's
+// parseDisplaySettings only converts lowercase "true"/"false", so a plain
+// `=== true` never fires and `!== false` is always true. Always read checkboxes here.
+export function isChecked(ds: DisplaySettings, key: string): boolean {
+  const value = ds?.[key];
+  return value === true || String(value).toLowerCase() === "true";
+}
+
 // ─── Tailwind class lookups ────────────────────────────────────────────────────
 
 // Background → wrapper/text Tailwind classes

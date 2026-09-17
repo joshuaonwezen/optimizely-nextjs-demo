@@ -3,7 +3,7 @@ import Link from "next/link";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND, BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, isChecked, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveImageUrl, resolveUrl, type ImageRef } from "../_shared/contentRefs";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -37,6 +37,16 @@ export const AuthorBlockDefaultTemplate = displayTemplate({
   },
 });
 
+const SHOW_SOCIAL = {
+  showSocial: {
+    editor: "checkbox" as const,
+    displayName: "Show LinkedIn link",
+    sortOrder: 10,
+    choices: {},
+  },
+};
+
+// A byline sits inline in running content, so it defaults to no background.
 export const AuthorInlineTemplate = displayTemplate({
   key: "AuthorInlineTemplate",
   isDefault: false,
@@ -44,15 +54,10 @@ export const AuthorInlineTemplate = displayTemplate({
   contentType: "AuthorBlock",
   tag: "Inline",
   settings: {
-    showSocial: {
-      editor: "checkbox" as const,
-      displayName: "Show LinkedIn link",
-      sortOrder: 0,
-      choices: {},
-    },
-    ...BACKGROUND,
+    ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
+    ...SHOW_SOCIAL,
   },
 });
 
@@ -66,12 +71,7 @@ export const AuthorProfileTemplate = displayTemplate({
     ...BACKGROUND,
     ...TEXT_COLOR,
     ...FONT_STYLE,
-    showLinkedIn: {
-      editor: "checkbox" as const,
-      displayName: "Show LinkedIn link",
-      sortOrder: 5,
-      choices: {},
-    },
+    ...SHOW_SOCIAL,
   },
 });
 
@@ -103,7 +103,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
   const fallback = resolveStyleClasses(ds, { background: "white" });
 
   if (isInline) {
-    const showSocial = ds?.showSocial === true;
+    const showSocial = isChecked(ds, "showSocial");
     const bg = resolveStyleClasses(ds, { background: "transparent" });
     const wrapperBg = bg.wrapper ? `${bg.wrapper} rounded-xl px-4 py-2` : "";
     return (
@@ -148,9 +148,9 @@ export default function AuthorBlock(props: AuthorBlockProps) {
 
   if (isProfile) {
     const bg = resolveStyleClasses(ds, { background: "white" });
-    const showLinkedIn = ds?.showLinkedIn === true;
+    const showLinkedIn = isChecked(ds, "showSocial");
     return (
-      <div data-component="AuthorBlock" className={`rounded-2xl p-8 text-center ${bg.wrapper || "bg-surface-lowest border border-ghost-border"}`}>
+      <div data-component="AuthorBlock" className={`rounded-2xl p-8 text-center ${bg.wrapper || "border border-ghost-border"}`}>
         {avatarUrl && (
           <Image
             src={avatarUrl}
@@ -190,7 +190,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
   return (
     <article
       data-component="AuthorBlock"
-      className={`max-w-2xl mx-auto px-8 py-12 rounded-2xl ${fallback.wrapper || "bg-surface-lowest border border-ghost-border"}`}
+      className={`max-w-2xl mx-auto px-8 py-12 rounded-2xl ${fallback.wrapper || "border border-ghost-border"}`}
     >
       <div className="flex items-start gap-5">
         {avatarUrl && (
@@ -209,7 +209,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
             </h3>
           )}
           {data.role && (
-            <p {...pa("role")} className="text-sm text-on-surface-variant mt-1">
+            <p {...pa("role")} className={`text-sm mt-1 ${fallback.textMuted}`}>
               {data.role}
             </p>
           )}
@@ -232,7 +232,7 @@ export default function AuthorBlock(props: AuthorBlockProps) {
       {hasRichText(data.bio) && (
         <div
           {...pa("bio")}
-          className={`richtext ${fallback.invert ? "richtext-invert" : ""} mt-6 text-base text-on-surface-variant`}
+          className={`richtext ${fallback.invert ? "richtext-invert" : ""} mt-6 text-base ${fallback.textMuted}`}
         >
           <CmsRichText value={data.bio} />
         </div>

@@ -2,7 +2,8 @@ import Image from "next/image";
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
-  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES, resolveStyleClasses,
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES,
+  isChecked, resolveStyleClasses, withDefault,
 } from "../_shared/displayTemplateSettings";
 import { BlockHeader } from "../_shared/BlockHeader";
 import { asSdkContent } from "@/components/cms/sdkTypes";
@@ -32,37 +33,30 @@ export const LogoGridBlockDefaultTemplate = displayTemplate({
   settings: {
     ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
+    ...withDefault(TEXT_ALIGN, "center"),
     ...FONT_STYLE,
-  },
-});
-
-export const LogoGridColorTemplate = displayTemplate({
-  key: "LogoGridColorTemplate",
-  isDefault: false,
-  displayName: "Full color logos",
-  contentType: "LogoGridBlock",
-  tag: "Color",
-  settings: {
     size: {
       editor: "select" as const,
       displayName: "Logo size",
       sortOrder: 10,
       choices: {
-        sm:      { displayName: "Small",    sortOrder: 0 },
-        default: { displayName: "Standard", sortOrder: 1 },
+        default: { displayName: "Standard", sortOrder: 0 },
+        sm:      { displayName: "Small",    sortOrder: 1 },
         lg:      { displayName: "Large",    sortOrder: 2 },
       },
+    },
+    fullColor: {
+      editor: "checkbox" as const,
+      displayName: "Full color logos",
+      sortOrder: 11,
+      choices: {},
     },
     showNames: {
       editor: "checkbox" as const,
       displayName: "Show partner names",
-      sortOrder: 11,
+      sortOrder: 12,
       choices: {},
     },
-    ...BACKGROUND_NONE_DEFAULT,
-    ...TEXT_COLOR,
-    ...TEXT_ALIGN,
-    ...FONT_STYLE,
   },
 });
 
@@ -82,7 +76,6 @@ interface LogoGridData {
 type LogoGridBlockProps = LogoGridData & {
   content?: LogoGridData;
   displaySettings?: Record<string, string | boolean>;
-  displayTemplateKey?: string;
 };
 
 const PLACEHOLDER_COUNT = 6;
@@ -104,8 +97,8 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(asSdkContent(data));
 
-  const isColor = props.displayTemplateKey === "LogoGridColorTemplate";
-  const showNames = ds?.showNames === true;
+  const isColor = isChecked(ds, "fullColor");
+  const showNames = isChecked(ds, "showNames");
   const sizeKey = (ds?.size as string) || "default";
   const { wrapper: logoWrapper, imgSizes } = LOGO_SIZES[sizeKey] ?? LOGO_SIZES["default"];
 

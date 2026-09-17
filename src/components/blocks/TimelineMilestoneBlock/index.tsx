@@ -1,6 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const TimelineMilestoneBlockType = contentType({
@@ -21,7 +21,7 @@ export const TimelineMilestoneBlockDefaultTemplate = displayTemplate({
   displayName: "Default",
   contentType: "TimelineMilestoneBlock",
   settings: {
-    ...BACKGROUND_NONE_DEFAULT,
+    // No background: a milestone is a row on its Timeline's rail, never a card.
     ...TEXT_COLOR,
     ...FONT_STYLE,
   },

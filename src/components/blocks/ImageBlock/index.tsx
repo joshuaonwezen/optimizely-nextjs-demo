@@ -1,6 +1,6 @@
 import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, isChecked, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
 import { resolveImageUrl } from "../_shared/contentRefs";
 import { asDamContent, asSdkContent, asSdkReference } from "@/components/cms/sdkTypes";
@@ -37,16 +37,6 @@ export const ImageBlockDefaultTemplate = displayTemplate({
     ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
-  },
-});
-
-export const ImageBlockRoundedTemplate = displayTemplate({
-  key: "ImageBlockRoundedTemplate",
-  isDefault: false,
-  displayName: "Rounded corners",
-  contentType: "ImageBlock",
-  tag: "Rounded",
-  settings: {
     aspectRatio: {
       editor: "select",
       displayName: "Aspect ratio",
@@ -58,9 +48,12 @@ export const ImageBlockRoundedTemplate = displayTemplate({
         r1x1:  { displayName: "1:1 Square",      sortOrder: 3 },
       },
     },
-    ...BACKGROUND_NONE_DEFAULT,
-    ...TEXT_COLOR,
-    ...FONT_STYLE,
+    rounded: {
+      editor: "checkbox",
+      displayName: "Rounded corners",
+      sortOrder: 11,
+      choices: {},
+    },
   },
 });
 
@@ -80,7 +73,6 @@ interface ImageBlockData {
 type ImageBlockProps = ImageBlockData & {
   content?: ImageBlockData;
   displaySettings?: Record<string, string | boolean>;
-  displayTemplateKey?: string;
 };
 
 // Choice keys cannot contain "/" or ":", so map them to valid CSS aspect-ratio values
@@ -120,8 +112,8 @@ export default function ImageBlock(props: ImageBlockProps) {
 
   const altText = getAlt(asSdkReference(data.image), data.altText ?? "");
 
-  const isRounded = props.displayTemplateKey === "ImageBlockRoundedTemplate";
-  const ratioKey = (ds?.aspectRatio as string) ?? "auto";
+  const isRounded = isChecked(ds, "rounded");
+  const ratioKey = (ds?.aspectRatio as string) || "auto";
   const aspectRatio = ASPECT_RATIOS[ratioKey];
   const cropRatio = CROP_RATIOS[ratioKey];
 
