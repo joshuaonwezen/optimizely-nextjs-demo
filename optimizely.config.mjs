@@ -266,6 +266,17 @@ export const DefaultRowTemplate = displayTemplate({
       sortOrder: 3,
       choices: {},
     },
+    // Only applies to rows with exactly two columns.
+    columnRatio: {
+      editor: "select",
+      displayName: "Column widths",
+      sortOrder: 4,
+      choices: {
+        equal:  { displayName: "Equal",         sortOrder: 0 },
+        oneTwo: { displayName: "Narrow + wide", sortOrder: 1 },
+        twoOne: { displayName: "Wide + narrow", sortOrder: 2 },
+      },
+    },
   },
 });
 
@@ -306,6 +317,16 @@ export const DefaultColumnTemplate = displayTemplate({
       displayName: "Rounded Corners",
       sortOrder: 3,
       choices: {},
+    },
+    contentAlign: {
+      editor: "select",
+      displayName: "Content alignment",
+      sortOrder: 4,
+      choices: {
+        left:   { displayName: "Left",   sortOrder: 0 },
+        center: { displayName: "Center", sortOrder: 1 },
+        right:  { displayName: "Right",  sortOrder: 2 },
+      },
     },
   },
 });

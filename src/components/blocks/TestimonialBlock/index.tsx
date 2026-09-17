@@ -4,7 +4,7 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { resolveImageUrl, type ImageRef } from "../_shared/contentRefs";
 import {
   BACKGROUND, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES,
-  resolveStyleClasses, withDefault,
+  resolveStyleClasses, withDefault, SPACING, spacingClass,
 } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -32,6 +32,9 @@ export const TestimonialBlockDefaultTemplate = displayTemplate({
   settings: {
     ...TEXT_COLOR,
     ...FONT_STYLE,
+    ...TEXT_ALIGN,
+    ...withDefault(TEXT_SIZE, "sm"),
+    ...SPACING,
   },
 });
 
@@ -77,6 +80,15 @@ type TestimonialBlockProps = TestimonialData & {
   displayTemplateKey?: string;
 };
 
+// Pull-quote sizes for the unboxed layouts (Default and Minimal).
+const QUOTE_SIZES: Record<string, string> = {
+  sm: "text-xl md:text-2xl",
+  md: "text-2xl md:text-3xl",
+  lg: "text-3xl md:text-4xl",
+};
+
+const JUSTIFY: Record<string, string> = { center: "justify-center", right: "justify-end" };
+
 export default function TestimonialBlock(props: TestimonialBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
@@ -87,6 +99,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
   const photoUrl = resolveImageUrl(data.authorImage);
 
   let wrapperClass: string;
+  let authorJustify = "";
   let textColor: string;
   let mutedColor: string;
   let quoteClass: string;
@@ -100,12 +113,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
     quoteClass = `${bg.font} ${textSizeClass} leading-relaxed mb-8`;
   } else if (isMinimal) {
     const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) || "left"];
-    const MINIMAL_SIZES: Record<string, string> = {
-      sm: "text-xl md:text-2xl",
-      md: "text-2xl md:text-3xl",
-      lg: "text-3xl md:text-4xl",
-    };
-    const textSizeClass = MINIMAL_SIZES[(ds?.textSize as string) || "md"] ?? MINIMAL_SIZES.md;
+    const textSizeClass = QUOTE_SIZES[(ds?.textSize as string) || "md"] ?? QUOTE_SIZES.md;
     wrapperClass = `insight-rail py-12 max-w-3xl mx-auto ${alignClass}`;
     const minimalStyle = resolveStyleClasses(ds, { background: "transparent" });
     textColor = minimalStyle.text;
@@ -114,10 +122,12 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
   } else {
     // Ignores any stored background: this layout never paints a surface.
     const plain = resolveStyleClasses({ ...ds, background: "transparent" });
-    wrapperClass = "py-20 max-w-3xl mx-auto";
+    const alignKey = (ds?.textAlign as string) || "left";
+    wrapperClass = `${spacingClass(ds, "py-20")} max-w-3xl mx-auto ${TEXT_ALIGN_CLASSES[alignKey] ?? ""}`;
+    authorJustify = JUSTIFY[alignKey] ?? "";
     textColor = plain.text;
     mutedColor = plain.textMuted;
-    quoteClass = `${plain.font} text-xl md:text-2xl leading-relaxed mb-8`;
+    quoteClass = `${plain.font} ${QUOTE_SIZES[(ds?.textSize as string) || "sm"] ?? QUOTE_SIZES.sm} leading-relaxed mb-8`;
   }
 
   return (
@@ -130,7 +140,7 @@ export default function TestimonialBlock(props: TestimonialBlockProps) {
           &ldquo;{data.quote}&rdquo;
         </blockquote>
       )}
-      <div className="flex items-center gap-4">
+      <div className={`flex items-center gap-4 ${authorJustify}`}>
         {photoUrl && (
           <Image
             src={photoUrl}

@@ -634,6 +634,18 @@ Rule of thumb: if the block's `resolveStyleClasses(ds, { background: "transparen
 - Any flat / content block that should inherit its section's background - add `BACKGROUND_NONE_DEFAULT` (None default)
 - Any block with multi-line text content - add `TEXT_ALIGN`
 - Any block with prose or body text - add `TEXT_SIZE`
+- Any **section-level** block (placed directly on the page, so no BlankSection spacing applies) - add `SPACING` and `CONTENT_WIDTH`, plus `COLUMNS` if it lays items out in a grid. Also add heading size and alignment for its header (`BlockHeader` takes `headingSize={style.heading}` and `align={style.align}`)
+- Any element block with fixed vertical padding - add `SPACING`
+
+### Layout settings: "Standard" means the block's own layout
+
+`SPACING`, `CONTENT_WIDTH` and `COLUMNS` differ per block, so their first choice is "Standard". Read them with `spacingClass(ds, "py-20")`, `widthClass(ds, "max-w-3xl")` and `columnsClass(ds, "sm:grid-cols-2 lg:grid-cols-3")`, passing the block's current class as the standard. Stored content that never set them keeps rendering unchanged. When adding a heading size to a block whose current size isn't one of `HEADING_CLASSES`, only use `style.heading` when `ds.headingSize` is set (see BranchFinder/ContactForm).
+
+### Placement: section vs element
+
+`GridComponentWrapper` passes `placement="element"` to every block inside a row/column; blocks at the composition root get no prop (a section). A block enabled for both that brings its own page container (`max-w-* mx-auto px-8`) must wrap it in `pageContainer(props.placement, "...")`, because the row already centers and pads. See ImageBlock, TextBlock, FaqItemBlock, RawHtmlBlock.
+
+Rows have `columnRatio` (two-column rows only), and columns have `contentAlign`.
 
 ### Template variants
 

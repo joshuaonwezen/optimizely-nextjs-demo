@@ -32,11 +32,13 @@ export function NodeWrapper({ children, node }: ComponentContainerProps | Struct
 /**
  * ComponentWrapper for OptimizelyGridSection. Adds no element of its own: the
  * data-epi-* attributes go onto OptimizelyComponent, which wraps them in a div in
- * edit mode only - exactly what the SDK does when no wrapper is given.
+ * edit mode only - exactly what the SDK does when no wrapper is given. Also tells
+ * the block it sits inside a column (placement "element"), so blocks that bring
+ * their own page container can drop it.
  */
 export function GridComponentWrapper({ children, node }: ComponentContainerProps) {
   const { pa } = getPreviewUtils(node);
-  return <>{withTemplateKey(children, node, pa(node))}</>;
+  return <>{withTemplateKey(children, node, { ...pa(node), placement: "element" })}</>;
 }
 
 /**

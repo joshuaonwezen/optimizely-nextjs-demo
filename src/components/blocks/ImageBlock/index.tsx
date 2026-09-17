@@ -1,6 +1,9 @@
 import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, isChecked, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import {
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, SPACING, isChecked, pageContainer, resolveStyleClasses, spacingClass,
+  type Placement,
+} from "../_shared/displayTemplateSettings";
 import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
 import { resolveImageUrl } from "../_shared/contentRefs";
 import { asDamContent, asSdkContent, asSdkReference } from "@/components/cms/sdkTypes";
@@ -37,6 +40,7 @@ export const ImageBlockDefaultTemplate = displayTemplate({
     ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
+    ...SPACING,
     aspectRatio: {
       editor: "select",
       displayName: "Aspect ratio",
@@ -73,6 +77,7 @@ interface ImageBlockData {
 type ImageBlockProps = ImageBlockData & {
   content?: ImageBlockData;
   displaySettings?: Record<string, string | boolean>;
+  placement?: Placement;
 };
 
 // Choice keys cannot contain "/" or ":", so map them to valid CSS aspect-ratio values
@@ -136,7 +141,7 @@ export default function ImageBlock(props: ImageBlockProps) {
   return (
     <figure
       data-component="ImageBlock"
-      className={`max-w-7xl mx-auto px-8 py-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}
+      className={`${pageContainer(props.placement, "max-w-7xl mx-auto px-8") || (style.wrapper ? "px-8" : "")} ${spacingClass(ds, "py-8")} ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}
     >
       <div
         className={`relative overflow-hidden ${isRounded ? "rounded-2xl" : ""}`}

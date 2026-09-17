@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useFormTracking } from "@/lib/tracking/useFormTracking";
 import { identifyCustomer } from "@/lib/tracking/customer";
-import { resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { resolveStyleClasses, spacingClass, widthClass } from "../_shared/displayTemplateSettings";
 import { Button } from "@/components/ui/Button";
 
 interface ContactFormBlockData {
@@ -21,7 +21,12 @@ type ContactFormProps = ContactFormBlockData & {
 
 export default function ContactForm(props: ContactFormProps) {
   const data = props.content ?? props;
-  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
+  const ds = props.displaySettings;
+  const style = resolveStyleClasses(ds, { background: "transparent" });
+  // Nodes saved before the Heading size setting existed keep their fixed text-3xl.
+  const headingClass = ds?.headingSize ? style.heading : "text-3xl";
+  const sectionClass = spacingClass(ds, "py-16");
+  const boxClass = `${widthClass(ds, "max-w-2xl")} mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl p-8` : ""}`;
   const submitUrl = data.submitUrl?.default ?? "/api/form-submit";
   const successMessage = data.successMessage ?? "Thank you! We'll be in touch soon.";
 
@@ -68,8 +73,8 @@ export default function ContactForm(props: ContactFormProps) {
 
   if (status === "success") {
     return (
-      <section data-component="ContactFormBlock" className="py-16">
-        <div className={`max-w-2xl mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl p-8` : ""}`}>
+      <section data-component="ContactFormBlock" className={sectionClass}>
+        <div className={boxClass}>
           <p className="text-base font-semibold text-brand">{successMessage}</p>
         </div>
       </section>
@@ -77,15 +82,15 @@ export default function ContactForm(props: ContactFormProps) {
   }
 
   return (
-    <section data-component="ContactFormBlock" className="py-16">
-      <div className={`max-w-2xl mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl p-8` : ""}`}>
+    <section data-component="ContactFormBlock" className={sectionClass}>
+      <div className={boxClass}>
         {data.heading && (
-          <h2 className={`${style.font} text-3xl font-extrabold mb-4 ${style.text}`}>
+          <h2 className={`${style.font} ${headingClass} font-extrabold mb-4 ${style.align} ${style.text}`}>
             {data.heading}
           </h2>
         )}
         {data.intro && (
-          <p className={`text-base mb-8 ${style.textMuted}`}>{data.intro}</p>
+          <p className={`text-base mb-8 ${style.align} ${style.textMuted}`}>{data.intro}</p>
         )}
 
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">

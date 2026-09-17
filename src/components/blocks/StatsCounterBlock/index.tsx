@@ -27,6 +27,8 @@ export const StatsCounterBlockDefaultTemplate = displayTemplate({
   contentType: "StatsCounterBlock",
   settings: {
     ...TEXT_COLOR,
+    ...withDefault(HEADING_SIZE, "lg"),
+    ...withDefault(TEXT_ALIGN, "center"),
   },
 });
 

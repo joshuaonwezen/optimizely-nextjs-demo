@@ -2,7 +2,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, HEADING_CLASSES, TEXT_ALIGN_CLASSES,
-  resolveStyleClasses, withDefault,
+  resolveStyleClasses, withDefault, SPACING, spacingClass,
 } from "../_shared/displayTemplateSettings";
 import { Button } from "@/components/ui/Button";
 import { asSdkContent } from "@/components/cms/sdkTypes";
@@ -27,7 +27,10 @@ export const FeaturedContentBlockDefaultTemplate = displayTemplate({
   contentType: "FeaturedContentBlock",
   settings: {
     ...TEXT_COLOR,
+    ...withDefault(HEADING_SIZE, "lg"),
+    ...TEXT_ALIGN,
     ...FONT_STYLE,
+    ...SPACING,
   },
 });
 
@@ -89,7 +92,7 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   const innerClass   = onColor ? "max-w-2xl" : "insight-rail max-w-2xl";
 
   return (
-    <section data-component="FeaturedContentBlock" className={`relative ${isCard ? "" : "py-20"} ${alignClass}`}>
+    <section data-component="FeaturedContentBlock" className={`relative ${isCard ? "" : spacingClass(ds, "py-20")} ${alignClass}`}>
       {isCard && (
         <div aria-hidden className={`squircle-bg absolute inset-0 ${surfaceClass}`} />
       )}

@@ -1,7 +1,7 @@
 // Shared display template settings — spread these into displayTemplate() settings
 // objects so every block exposes the same controls with the same plain-English labels.
 //
-// sortOrder is reserved 0-5 for the shared settings below. Block-specific inline
+// sortOrder is reserved 0-9 for the shared settings below. Block-specific inline
 // settings must use 10+ so the two never collide in the CMS editor panel.
 
 type SelectSetting = {
@@ -213,6 +213,91 @@ export function withDefault<T extends Record<string, SelectSetting>>(group: T, c
 export function isChecked(ds: DisplaySettings, key: string): boolean {
   const value = ds?.[key];
   return value === true || String(value).toLowerCase() === "true";
+}
+
+// ─── Layout settings ──────────────────────────────────────────────────────────
+// Spacing, width and columns differ per block, so their first choice is "Standard":
+// the block's own current layout, passed to the helper as `standard`. Content that
+// never set these keeps rendering exactly as before.
+
+export const SPACING: { spacing: SelectSetting } = {
+  spacing: {
+    editor: "select",
+    displayName: "Vertical spacing",
+    sortOrder: 6,
+    choices: {
+      default:  { displayName: "Standard", sortOrder: 0 },
+      none:     { displayName: "None",     sortOrder: 1 },
+      compact:  { displayName: "Compact",  sortOrder: 2 },
+      spacious: { displayName: "Spacious", sortOrder: 3 },
+    },
+  },
+};
+
+export const CONTENT_WIDTH: { contentWidth: SelectSetting } = {
+  contentWidth: {
+    editor: "select",
+    displayName: "Content width",
+    sortOrder: 7,
+    choices: {
+      default: { displayName: "Standard", sortOrder: 0 },
+      narrow:  { displayName: "Narrow",   sortOrder: 1 },
+      wide:    { displayName: "Wide",     sortOrder: 2 },
+    },
+  },
+};
+
+// For blocks that lay their items out in a grid.
+export const COLUMNS: { columns: SelectSetting } = {
+  columns: {
+    editor: "select",
+    displayName: "Columns",
+    sortOrder: 8,
+    choices: {
+      default: { displayName: "Standard", sortOrder: 0 },
+      two:     { displayName: "2",        sortOrder: 1 },
+      three:   { displayName: "3",        sortOrder: 2 },
+      four:    { displayName: "4",        sortOrder: 3 },
+    },
+  },
+};
+
+const SPACING_CLASSES: Record<string, string> = { none: "", compact: "py-8", spacious: "py-24" };
+const WIDTH_CLASSES: Record<string, string> = { narrow: "max-w-3xl", wide: "max-w-7xl" };
+const COLUMN_CLASSES: Record<string, string> = {
+  two:   "sm:grid-cols-2",
+  three: "sm:grid-cols-2 lg:grid-cols-3",
+  four:  "sm:grid-cols-2 lg:grid-cols-4",
+};
+
+export function spacingClass(ds: DisplaySettings, standard: string): string {
+  return SPACING_CLASSES[ds?.spacing as string] ?? standard;
+}
+
+export function widthClass(ds: DisplaySettings, standard: string): string {
+  return WIDTH_CLASSES[ds?.contentWidth as string] ?? standard;
+}
+
+export function columnsClass(ds: DisplaySettings, standard: string): string {
+  return COLUMN_CLASSES[ds?.columns as string] ?? standard;
+}
+
+// Positions a max-width box (a header, an intro paragraph) to match its text
+// alignment: centered text in a centered box, right-aligned text on the right.
+const ALIGN_BOX: Record<string, string> = { center: "mx-auto", right: "ml-auto" };
+
+export function alignBoxClass(ds: DisplaySettings, standard: string): string {
+  return ALIGN_BOX[(ds?.textAlign as string) || standard] ?? "";
+}
+
+// Where a composition placed the block. GridComponentWrapper passes "element" for
+// blocks inside a row/column; anything else is a section in its own right.
+export type Placement = "section" | "element";
+
+// A section-level block supplies its own page container (max width, centering, side
+// padding). Inside a column the row already provides one, so drop it there.
+export function pageContainer(placement: Placement | undefined, classes: string): string {
+  return placement === "element" ? "" : classes;
 }
 
 // ─── Tailwind class lookups ────────────────────────────────────────────────────

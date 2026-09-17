@@ -1,6 +1,6 @@
 import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND_NONE_DEFAULT, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, pageContainer, resolveStyleClasses, type Placement } from "../_shared/displayTemplateSettings";
 import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
 import { resolveImageUrl } from "../_shared/contentRefs";
 import { asDamContent, asSdkContent, asSdkReference } from "@/components/cms/sdkTypes";
@@ -63,6 +63,7 @@ interface RenditionImageBlockData {
 type RenditionImageBlockProps = RenditionImageBlockData & {
   content?: RenditionImageBlockData;
   displaySettings?: Record<string, string | boolean>;
+  placement?: Placement;
 };
 
 export default function RenditionImageBlock(props: RenditionImageBlockProps) {
@@ -91,7 +92,7 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
   return (
     <figure
       data-component="RenditionImageBlock"
-      className={`max-w-7xl mx-auto px-8 py-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}
+      className={`${pageContainer(props.placement, "max-w-7xl mx-auto px-8") || (style.wrapper ? "px-8" : "")} py-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}
     >
       <div {...pa("image")} className="overflow-hidden rounded-2xl">
         {/* eslint-disable-next-line @next/next/no-img-element -- DAM URLs carry a preview token; next/image would re-optimise and strip it */}

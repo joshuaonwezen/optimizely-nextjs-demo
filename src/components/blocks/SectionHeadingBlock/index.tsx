@@ -2,7 +2,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND_NONE_DEFAULT, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES,
-  isChecked, resolveStyleClasses, withDefault,
+  isChecked, resolveStyleClasses, withDefault, SPACING, spacingClass,
 } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -35,6 +35,7 @@ export const SectionHeadingDefaultTemplate = displayTemplate({
     ...withDefault(HEADING_SIZE, "lg"),
     ...TEXT_ALIGN,
     ...FONT_STYLE,
+    ...SPACING,
   },
 });
 
@@ -62,7 +63,8 @@ export default function SectionHeadingBlock(props: SectionHeadingBlockProps) {
   const alignClass = TEXT_ALIGN_CLASSES[alignKey] ?? "text-left";
 
   const hasBg = bgKey !== "transparent" && s.wrapper;
-  const outerPadding = hasBg ? "py-20 px-8 rounded-2xl" : "py-20";
+  const spacing = spacingClass(ds, "py-20");
+  const outerPadding = hasBg ? `${spacing} px-8 rounded-2xl` : spacing;
 
   return (
     <div data-component="SectionHeadingBlock" className={`${outerPadding} ${hasBg ? s.wrapper : ""} ${alignClass}`}>

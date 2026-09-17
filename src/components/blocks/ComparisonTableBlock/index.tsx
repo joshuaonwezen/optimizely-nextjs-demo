@@ -1,6 +1,9 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import {
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses, alignBoxClass,
+  SPACING, CONTENT_WIDTH, HEADING_SIZE, TEXT_ALIGN, spacingClass, widthClass, withDefault,
+} from "../_shared/displayTemplateSettings";
 import { BlockHeader } from "../_shared/BlockHeader";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -31,7 +34,11 @@ export const ComparisonTableBlockDefaultTemplate = displayTemplate({
   settings: {
     ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
+    ...withDefault(HEADING_SIZE, "md"),
+    ...withDefault(TEXT_ALIGN, "center"),
     ...FONT_STYLE,
+    ...SPACING,
+    ...CONTENT_WIDTH,
   },
 });
 
@@ -71,21 +78,23 @@ function parseJson<T>(value: T[] | string | null | undefined): T[] {
 export default function ComparisonTableBlock(props: ComparisonTableBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(asSdkContent(data));
-  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
+  const ds = props.displaySettings;
+  const style = resolveStyleClasses(ds, { background: "transparent", headingSize: "md", textAlign: "center" });
   const columns = parseJson<ColumnDef>(data.columns);
   const rows = parseJson<RowDef>(data.rows);
 
   if (columns.length === 0 || rows.length === 0) return null;
 
   return (
-    <section data-component="ComparisonTableBlock" className="py-20 max-w-6xl mx-auto px-8">
+    <section data-component="ComparisonTableBlock" className={`${spacingClass(ds, "py-20")} ${widthClass(ds, "max-w-6xl")} mx-auto px-8`}>
       <BlockHeader
         heading={data.heading}
         subheading={data.subheading}
         pa={pa}
         style={style}
-        headingClassName="text-center"
-        subheadingClassName="text-base mb-12 max-w-2xl mx-auto text-center"
+        headingSize={style.heading}
+        align={style.align}
+        subheadingClassName={`text-base mb-12 max-w-2xl ${alignBoxClass(ds, "center")}`}
       />
       <div className={`overflow-x-auto rounded-2xl ${style.wrapper || "border border-ghost-border bg-surface-lowest"}`}>
         <table className="w-full text-sm">

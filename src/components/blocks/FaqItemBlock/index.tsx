@@ -2,6 +2,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND, TEXT_COLOR, HEADING_SIZE_CARD, FONT_STYLE, HEADING_CLASSES, resolveStyleClasses, withDefault,
+  pageContainer, type Placement,
 } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -52,6 +53,7 @@ type FaqItemBlockProps = FaqItemData & {
   content?: FaqItemData;
   displaySettings?: Record<string, string | boolean>;
   displayTemplateKey?: string;
+  placement?: Placement;
 };
 
 export default function FaqItemBlock(props: FaqItemBlockProps) {
@@ -67,7 +69,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
 
   if (isFlat) {
     return (
-      <div data-component="FaqItemBlock" data-track-toggle="mb_faq_expand" className="max-w-3xl mx-auto px-8">
+      <div data-component="FaqItemBlock" data-track-toggle="mb_faq_expand" className={pageContainer(props.placement, "max-w-3xl mx-auto px-8") || undefined}>
         <details className="group border-b border-outline-variant">
           <summary
             {...pa("question")}
@@ -98,7 +100,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
   }
 
   return (
-    <div data-component="FaqItemBlock" data-track-toggle="mb_faq_expand" className="max-w-3xl mx-auto px-8 mb-2">
+    <div data-component="FaqItemBlock" data-track-toggle="mb_faq_expand" className={`${pageContainer(props.placement, "max-w-3xl mx-auto px-8")} mb-2`}>
       <details className={`group rounded-xl overflow-hidden ${style.wrapper || "border border-ghost-border bg-surface-lowest"}`}>
         <summary
           {...pa("question")}

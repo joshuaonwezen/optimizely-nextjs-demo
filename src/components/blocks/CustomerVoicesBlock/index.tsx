@@ -3,7 +3,8 @@ import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { QuoteBlockType } from "@/components/blocks/QuoteBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import {
-  BACKGROUND_OFFWHITE_DEFAULT, TEXT_COLOR, HEADING_SIZE, HEADING_CLASSES, resolveStyleClasses, withDefault,
+  BACKGROUND_OFFWHITE_DEFAULT, TEXT_COLOR, HEADING_SIZE, TEXT_ALIGN, HEADING_CLASSES, resolveStyleClasses, withDefault,
+  SPACING, COLUMNS, columnsClass, spacingClass,
 } from "../_shared/displayTemplateSettings";
 
 export const CustomerVoicesBlockType = contentType({
@@ -33,6 +34,9 @@ export const CustomerVoicesBlockDefaultTemplate = displayTemplate({
     ...BACKGROUND_OFFWHITE_DEFAULT,
     ...TEXT_COLOR,
     ...withDefault(HEADING_SIZE, "lg"),
+    ...withDefault(TEXT_ALIGN, "center"),
+    ...SPACING,
+    ...COLUMNS,
   },
 });
 
@@ -59,26 +63,26 @@ export default function CustomerVoicesBlock(props: CustomerVoicesProps) {
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(data as never);
 
-  const bg = resolveStyleClasses(ds, { background: "offWhite" });
+  const bg = resolveStyleClasses(ds, { background: "offWhite", textAlign: "center" });
   const headingKey = (ds?.headingSize as string) || "lg";
   const headingClass = HEADING_CLASSES[headingKey] ?? HEADING_CLASSES.lg;
 
   const cards = (data.cards ?? []) as CardData[];
 
   return (
-    <section data-component="CustomerVoicesBlock" className={`${bg.wrapper} rounded-2xl px-6 py-10 sm:px-10`}>
+    <section data-component="CustomerVoicesBlock" className={`${bg.wrapper} rounded-2xl px-6 ${spacingClass(ds, "py-10")} sm:px-10`}>
       {data.heading && (
-        <h2 {...pa("heading")} className={`${headingClass} ${bg.text} font-semibold text-center`}>
+        <h2 {...pa("heading")} className={`${headingClass} ${bg.text} font-semibold ${bg.align}`}>
           {data.heading}
         </h2>
       )}
       {data.subheading && (
-        <p {...pa("subheading")} className={`mt-2 text-center ${bg.textMuted}`}>
+        <p {...pa("subheading")} className={`mt-2 ${bg.align} ${bg.textMuted}`}>
           {data.subheading}
         </p>
       )}
       {cards.length > 0 && (
-        <div {...pa("cards")} className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div {...pa("cards")} className={`mt-8 grid gap-5 ${columnsClass(ds, "sm:grid-cols-2 lg:grid-cols-3")}`}>
           {cards.map((card, i) => (
             <BlockErrorBoundary key={i}>
               <figure className="bg-surface-lowest border border-outline-variant rounded-xl p-5 flex flex-col gap-3">

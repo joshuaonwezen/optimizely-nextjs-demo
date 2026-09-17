@@ -1,5 +1,7 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE } from "../_shared/displayTemplateSettings";
+import {
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, SPACING, CONTENT_WIDTH, HEADING_SIZE, TEXT_ALIGN, withDefault,
+} from "../_shared/displayTemplateSettings";
 
 export { default } from "./ContactForm";
 
@@ -25,6 +27,10 @@ export const ContactFormBlockDefaultTemplate = displayTemplate({
   settings: {
     ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
+    ...withDefault(HEADING_SIZE, "md"),
+    ...TEXT_ALIGN,
     ...FONT_STYLE,
+    ...SPACING,
+    ...CONTENT_WIDTH,
   },
 });

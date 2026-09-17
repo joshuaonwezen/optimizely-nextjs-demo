@@ -3,7 +3,7 @@ import CmsRichText, { hasRichText } from "@/components/cms/CmsRichText";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_SIZE, FONT_CLASSES, TEXT_ALIGN_CLASSES, TEXT_SIZE_CLASSES,
-  resolveStyleClasses, withDefault,
+  pageContainer, resolveStyleClasses, withDefault, type Placement,
 } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -60,6 +60,7 @@ interface TextBlockData {
 type TextBlockProps = TextBlockData & {
   content?: TextBlockData;
   displaySettings?: Record<string, string | boolean>;
+  placement?: Placement;
 };
 
 const PADDING_CLASSES: Record<string, string> = {
@@ -80,7 +81,9 @@ export default function TextBlock(props: TextBlockProps) {
   const widthClass = ds?.width === "narrow" ? "max-w-2xl" : "max-w-4xl";
   const style = resolveStyleClasses(ds, { background: "transparent", fontStyle: "classic" });
   const surfaceClass = style.wrapper ? `${style.wrapper} rounded-2xl` : "";
-  const containerClass = `${widthClass} mx-auto px-8 ${paddingClass} ${surfaceClass} ${style.textMuted} ${alignClass}`;
+  // In a column the row already centers and pads; keep side padding only for a surface.
+  const containerPad = pageContainer(props.placement, "mx-auto px-8") || (style.wrapper ? "px-8" : "");
+  const containerClass = `${widthClass} ${containerPad} ${paddingClass} ${surfaceClass} ${style.textMuted} ${alignClass}`;
 
   if (!hasRichText(data.body)) return null;
 

@@ -1,6 +1,8 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses, withDefault } from "../_shared/displayTemplateSettings";
+import {
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, SPACING, resolveStyleClasses, spacingClass, withDefault,
+} from "../_shared/displayTemplateSettings";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 import { Button } from "@/components/ui/Button";
 import { asSdkContent } from "@/components/cms/sdkTypes";
@@ -31,6 +33,8 @@ const CTA_SIZE_SETTING = {
     },
   },
   ...FONT_STYLE,
+  ...withDefault(TEXT_ALIGN, "center"),
+  ...SPACING,
 };
 
 export const CallToActionDefaultTemplate = displayTemplate({
@@ -41,6 +45,8 @@ export const CallToActionDefaultTemplate = displayTemplate({
   settings: {
     ...BACKGROUND_NONE_DEFAULT,
     ...FONT_STYLE,
+    ...withDefault(TEXT_ALIGN, "center"),
+    ...SPACING,
   },
 });
 
@@ -80,6 +86,8 @@ export const CallToActionGhostTemplate = displayTemplate({
     },
     ...withDefault(TEXT_COLOR, "brand"),
     ...FONT_STYLE,
+    ...withDefault(TEXT_ALIGN, "center"),
+    ...SPACING,
   },
 });
 
@@ -109,7 +117,8 @@ export default async function CallToActionBlock(props: CallToActionProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
   const { pa } = getPreviewUtils(asSdkContent(data));
-  const style = resolveStyleClasses(ds, { background: "transparent", textColor: "brand" });
+  const style = resolveStyleClasses(ds, { background: "transparent", textColor: "brand", textAlign: "center" });
+  const boxClass = `${spacingClass(ds, "py-12")} ${style.align}`;
   const surfaceClass = style.wrapper ? `${style.wrapper} rounded-2xl px-8` : "";
 
   // Resolve the link picker (internal refs come back as cms://content/{key}).
@@ -126,7 +135,7 @@ export default async function CallToActionBlock(props: CallToActionProps) {
 
   if (isGhost) {
     return (
-      <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className={`py-12 text-center ${surfaceClass}`}>
+      <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className={`${boxClass} ${surfaceClass}`}>
         {(href || isEdit) && (
           <a
             href={isEdit ? undefined : href}
@@ -146,7 +155,7 @@ export default async function CallToActionBlock(props: CallToActionProps) {
   const customClass = VARIANT_CLASSES[variant];
 
   return (
-    <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className={`py-12 text-center ${surfaceClass}`}>
+    <div data-component="CallToActionBlock" data-track-view="CallToActionBlock" className={`${boxClass} ${surfaceClass}`}>
       {(href || isEdit) && (
         <Button
           href={isEdit ? undefined : href}

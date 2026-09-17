@@ -19,12 +19,25 @@ export const ProductHeroBlockType = contentType({
   },
 });
 
+const ALIGNMENT = {
+  alignment: {
+    editor: "select" as const,
+    displayName: "Text alignment",
+    sortOrder: 10,
+    choices: {
+      left: { displayName: "Left", sortOrder: 0 },
+      center: { displayName: "Center", sortOrder: 1 },
+    },
+  },
+};
+
 export const ProductHeroBlockDefaultTemplate = displayTemplate({
   key: "ProductHeroBlockDefaultTemplate",
   isDefault: true,
   displayName: "Default",
   contentType: "ProductHeroBlock",
   settings: {
+    ...ALIGNMENT,
     ...BACKGROUND_BRAND_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
@@ -38,15 +51,7 @@ export const ProductHeroCompactTemplate = displayTemplate({
   contentType: "ProductHeroBlock",
   tag: "Compact",
   settings: {
-    alignment: {
-      editor: "select",
-      displayName: "Text alignment",
-      sortOrder: 10,
-      choices: {
-        left: { displayName: "Left", sortOrder: 0 },
-        center: { displayName: "Center", sortOrder: 1 },
-      },
-    },
+    ...ALIGNMENT,
     ...BACKGROUND_BRAND_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,

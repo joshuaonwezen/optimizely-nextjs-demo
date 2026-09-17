@@ -82,6 +82,18 @@ const SECTION_RADIUS: Record<string, string> = {
   xl: "rounded-3xl overflow-hidden",
 };
 
+// Two-column rows only: a 3-track grid with one column spanning two tracks.
+const COLUMN_RATIO: Record<string, string> = {
+  oneTwo: "md:grid-cols-3 md:[&>*:last-child]:col-span-2",
+  twoOne: "md:grid-cols-3 md:[&>*:first-child]:col-span-2",
+};
+
+// Left is the natural alignment, so it adds no class and stored columns are unchanged.
+const CONTENT_ALIGN: Record<string, string> = {
+  center: "text-center",
+  right:  "text-right",
+};
+
 const MAX_WIDTH: Record<string, string> = {
   narrow:    "max-w-3xl mx-auto px-8",
   fullWidth: "px-8",
@@ -93,7 +105,7 @@ function Row({ children, node, displaySettings }: StructureContainerProps) {
 
   const count = node.nodes?.length ?? 1;
   const gridCols =
-    count === 2 ? "md:grid-cols-2" :
+    count === 2 ? (COLUMN_RATIO[ds?.columnRatio as string] ?? "md:grid-cols-2") :
     count === 3 ? "md:grid-cols-3" :
     count >= 4  ? "md:grid-cols-4" : "";
 
@@ -128,8 +140,9 @@ function Column({ children, node, displaySettings }: StructureContainerProps) {
   const padding = PADDING[ds?.padding as string] ?? "";
   const rounded = isChecked(ds, "rounded") ? "rounded-2xl" : "";
   const text    = textColorClass(ds);
+  const align   = CONTENT_ALIGN[ds?.contentAlign as string] ?? "";
 
-  const className = [bg, padding, rounded, text].filter(Boolean).join(" ");
+  const className = [bg, padding, rounded, text, align].filter(Boolean).join(" ");
 
   return (
     <div className={className || undefined} {...pa(node)}>

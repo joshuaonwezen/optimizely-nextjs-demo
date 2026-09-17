@@ -3,7 +3,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES,
-  isChecked, resolveStyleClasses, withDefault,
+  isChecked, resolveStyleClasses, withDefault, HEADING_SIZE, SPACING, CONTENT_WIDTH, alignBoxClass, spacingClass, widthClass,
 } from "../_shared/displayTemplateSettings";
 import { BlockHeader } from "../_shared/BlockHeader";
 import { asSdkContent } from "@/components/cms/sdkTypes";
@@ -33,8 +33,11 @@ export const LogoGridBlockDefaultTemplate = displayTemplate({
   settings: {
     ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
+    ...withDefault(HEADING_SIZE, "sm"),
     ...withDefault(TEXT_ALIGN, "center"),
     ...FONT_STYLE,
+    ...SPACING,
+    ...CONTENT_WIDTH,
     size: {
       editor: "select" as const,
       displayName: "Logo size",
@@ -102,7 +105,7 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
   const sizeKey = (ds?.size as string) || "default";
   const { wrapper: logoWrapper, imgSizes } = LOGO_SIZES[sizeKey] ?? LOGO_SIZES["default"];
 
-  const style = resolveStyleClasses(ds, { background: "transparent" });
+  const style = resolveStyleClasses(ds, { background: "transparent", headingSize: "sm" });
   const alignKey = (ds?.textAlign as string) || "center";
   const textAlignClass = TEXT_ALIGN_CLASSES[alignKey] ?? "text-center";
   const flexAlignClass = FLEX_ALIGN[alignKey] ?? "justify-center";
@@ -113,15 +116,15 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
   return (
     <section
       data-component="LogoGridBlock"
-      className={`py-20 px-8 max-w-7xl mx-auto ${textAlignClass} ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}
+      className={`${spacingClass(ds, "py-20")} px-8 ${widthClass(ds, "max-w-7xl")} mx-auto ${textAlignClass} ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}
     >
       <BlockHeader
         heading={data.heading}
         subheading={data.subheading}
         pa={pa}
         style={style}
-        headingSize="text-2xl md:text-3xl"
-        subheadingClassName="text-sm mb-12 max-w-xl mx-auto"
+        headingSize={style.heading}
+        subheadingClassName={`text-sm mb-12 max-w-xl ${alignBoxClass(ds, "center")}`}
       />
 
       <div className={`flex flex-wrap items-center gap-8 ${flexAlignClass}`}>

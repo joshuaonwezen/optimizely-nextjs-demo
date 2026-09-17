@@ -5,7 +5,10 @@ import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/opti
 import { TeamMemberBlockType } from "@/components/blocks/TeamMemberBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { graphClient } from "@/lib/optimizely/graphClient";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import {
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses, COLUMNS, alignBoxClass, columnsClass,
+  SPACING, CONTENT_WIDTH, HEADING_SIZE, TEXT_ALIGN, spacingClass, widthClass, withDefault,
+} from "../_shared/displayTemplateSettings";
 import { extractKey, orderByKeys, type ContentRef, type ImageRef } from "../_shared/contentRefs";
 import { BlockHeader } from "../_shared/BlockHeader";
 import { asSdkContent } from "@/components/cms/sdkTypes";
@@ -34,7 +37,12 @@ export const TeamGridBlockDefaultTemplate = displayTemplate({
   settings: {
     ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
+    ...withDefault(HEADING_SIZE, "md"),
+    ...withDefault(TEXT_ALIGN, "center"),
     ...FONT_STYLE,
+    ...SPACING,
+    ...CONTENT_WIDTH,
+    ...COLUMNS,
   },
 });
 
@@ -102,7 +110,8 @@ async function loadMembers(keys: string[]): Promise<MemberData[]> {
 export default async function TeamGridBlock(props: TeamGridBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(asSdkContent(data));
-  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
+  const ds = props.displaySettings;
+  const style = resolveStyleClasses(ds, { background: "transparent", headingSize: "md", textAlign: "center" });
 
   const keys = (data.members ?? [])
     .map(extractKey)
@@ -110,12 +119,12 @@ export default async function TeamGridBlock(props: TeamGridBlockProps) {
   const members = await loadMembers(keys);
 
   return (
-    <section data-component="TeamGridBlock" className={`py-20 max-w-7xl mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}>
-      <div className="text-center mb-12 max-w-2xl mx-auto">
-        <BlockHeader heading={data.heading} subheading={data.subheading} pa={pa} style={style} />
+    <section data-component="TeamGridBlock" className={`${spacingClass(ds, "py-20")} ${widthClass(ds, "max-w-7xl")} mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}>
+      <div className={`${style.align} mb-12 max-w-2xl ${alignBoxClass(ds, "center")}`}>
+        <BlockHeader heading={data.heading} subheading={data.subheading} pa={pa} style={style} headingSize={style.heading} />
       </div>
       {members.length > 0 && (
-        <div {...pa("members")} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div {...pa("members")} className={`grid grid-cols-1 ${columnsClass(ds, "sm:grid-cols-2 md:grid-cols-3")} gap-6`}>
           {members.map((m, i) => (
             <BlockErrorBoundary key={i}>
               <OptimizelyComponent content={asSdkContent(m)} />

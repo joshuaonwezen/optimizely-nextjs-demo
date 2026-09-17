@@ -5,7 +5,10 @@ import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/opti
 import { TimelineMilestoneBlockType } from "@/components/blocks/TimelineMilestoneBlock";
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { graphClient } from "@/lib/optimizely/graphClient";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import {
+  BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses, alignBoxClass,
+  SPACING, CONTENT_WIDTH, HEADING_SIZE, TEXT_ALIGN, spacingClass, widthClass, withDefault,
+} from "../_shared/displayTemplateSettings";
 import { extractKey, type ContentRef, orderByKeys } from "../_shared/contentRefs";
 import { BlockHeader } from "../_shared/BlockHeader";
 import { asSdkContent } from "@/components/cms/sdkTypes";
@@ -34,7 +37,11 @@ export const TimelineBlockDefaultTemplate = displayTemplate({
   settings: {
     ...BACKGROUND_NONE_DEFAULT,
     ...TEXT_COLOR,
+    ...withDefault(HEADING_SIZE, "md"),
+    ...TEXT_ALIGN,
     ...FONT_STYLE,
+    ...SPACING,
+    ...CONTENT_WIDTH,
   },
 });
 
@@ -98,7 +105,8 @@ async function loadMilestones(keys: string[]): Promise<MilestoneData[]> {
 export default async function TimelineBlock(props: TimelineBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(asSdkContent(data));
-  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
+  const ds = props.displaySettings;
+  const style = resolveStyleClasses(ds, { background: "transparent", headingSize: "md" });
 
   const keys = (data.milestones ?? [])
     .map(extractKey)
@@ -106,13 +114,15 @@ export default async function TimelineBlock(props: TimelineBlockProps) {
   const milestones = await loadMilestones(keys);
 
   return (
-    <section data-component="TimelineBlock" className={`py-20 max-w-3xl mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}>
+    <section data-component="TimelineBlock" className={`${spacingClass(ds, "py-20")} ${widthClass(ds, "max-w-3xl")} mx-auto px-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}>
       <BlockHeader
         heading={data.heading}
         subheading={data.subheading}
         pa={pa}
         style={style}
-        subheadingClassName="text-base mb-12 max-w-2xl"
+        headingSize={style.heading}
+        align={style.align}
+        subheadingClassName={`text-base mb-12 max-w-2xl ${alignBoxClass(ds, "left")}`}
       />
       {milestones.length > 0 && (
         <ol {...pa("milestones")} className="list-none p-0">

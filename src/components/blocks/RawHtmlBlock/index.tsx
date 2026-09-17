@@ -1,6 +1,6 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_NONE_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses, pageContainer, type Placement } from "../_shared/displayTemplateSettings";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
 export const RawHtmlBlockType = contentType({
@@ -57,6 +57,7 @@ interface RawHtmlBlockData {
 type RawHtmlBlockProps = RawHtmlBlockData & {
   content?: RawHtmlBlockData;
   displaySettings?: Record<string, string | boolean>;
+  placement?: Placement;
 };
 
 const PADDING_CLASSES: Record<string, string> = {
@@ -73,7 +74,7 @@ export default function RawHtmlBlock(props: RawHtmlBlockProps) {
   if (typeof data.html !== "string" || !data.html) return null;
 
   const paddingClass = PADDING_CLASSES[(ds?.verticalPadding as string) || "default"] ?? "py-16";
-  const widthClass = (ds?.width as string) === "full" ? "w-full" : "max-w-4xl mx-auto px-8";
+  const widthClass = (ds?.width as string) === "full" ? "w-full" : pageContainer(props.placement, "max-w-4xl mx-auto px-8");
   const style = resolveStyleClasses(ds, { background: "transparent" });
   const surfaceClass = style.wrapper ? `${style.wrapper} rounded-2xl` : "";
   const containerClass = `${widthClass} ${paddingClass} ${surfaceClass} ${style.font} ${style.text}`.replace(/\s+/g, " ").trim();

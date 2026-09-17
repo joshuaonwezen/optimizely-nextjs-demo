@@ -3,7 +3,7 @@ import ArticleCard from "@/components/articles/ArticleCard";
 import { getArticles } from "@/lib/graphql/queries/GetArticles";
 import { getTaxonomyTerms } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { expandToUris, LEGACY_CATEGORY_MAP } from "@/lib/taxonomy";
-import { resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { columnsClass, resolveStyleClasses, spacingClass, widthClass } from "../_shared/displayTemplateSettings";
 import { BlockHeader } from "../_shared/BlockHeader";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -28,7 +28,8 @@ type ArticleListBlockProps = ArticleListData & {
 export default async function ArticleListBlock(props: ArticleListBlockProps) {
   const data: ArticleListData = props.content ?? props;
   const { pa } = getPreviewUtils(asSdkContent(data));
-  const style = resolveStyleClasses(props.displaySettings, { background: "transparent" });
+  const ds = props.displaySettings;
+  const style = resolveStyleClasses(ds, { background: "transparent" });
 
   // The category enum still uses the legacy slugs; filter on the matching taxonomy
   // term and its descendants, since content is tagged with leaf terms only.
@@ -43,19 +44,20 @@ export default async function ArticleListBlock(props: ArticleListBlockProps) {
     <section
       data-component="ArticleListBlock"
       data-track-view="ArticleListBlock"
-      className={`${style.wrapper} py-16`}
+      className={`${style.wrapper} ${spacingClass(ds, "py-16")}`}
     >
-      <div className="max-w-6xl mx-auto px-8">
+      <div className={`${widthClass(ds, "max-w-6xl")} mx-auto px-8`}>
         <BlockHeader
           heading={data.heading}
           subheading={data.subheading}
           pa={pa}
           style={style}
           headingSize={style.heading}
+          align={style.align}
           subheadingClassName="text-base mb-8"
         />
         {items.length > 0 ? (
-          <div className={isList ? "space-y-3" : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"}>
+          <div className={isList ? "space-y-3" : `grid gap-4 ${columnsClass(ds, "sm:grid-cols-2 lg:grid-cols-3")}`}>
             {items.map((item, i) => (
               <ArticleCard key={item._metadata?.url?.default ?? i} item={item} terms={terms} />
             ))}
