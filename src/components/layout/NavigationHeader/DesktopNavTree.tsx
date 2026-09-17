@@ -30,6 +30,7 @@ export function DesktopNavTree({ tree, activeKey, setActiveKey }: Props) {
         return (
           <NavDropdown
             key={node.key}
+            menuId={node.key}
             open={activeKey === node.key}
             onOpenChange={(open) => setActiveKey(open ? node.key : null)}
             panelClassName="absolute top-full left-0 pt-2 z-50"

@@ -29,6 +29,7 @@ export function AccountMenu({ isLoggedIn, currentLocale, open, onOpenChange }: P
 
   return (
     <NavDropdown
+      menuId="account"
       open={open}
       onOpenChange={onOpenChange}
       className="relative ml-1"

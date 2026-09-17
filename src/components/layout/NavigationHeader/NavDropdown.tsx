@@ -1,8 +1,14 @@
 "use client";
 
-import { useId, useRef, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 interface Props {
+  /**
+   * Stable, unique id for this menu (e.g. the nav node key). Deliberately not
+   * useId(): experiment- and audience-driven chrome renders differently on the
+   * server and in the browser, which shifts useId values and breaks hydration.
+   */
+  menuId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /**
@@ -29,8 +35,8 @@ interface Props {
  * A click only ever opens: hover (or the emulated hover of a tap) has already
  * opened the menu by the time the click lands, so toggling would close it again.
  */
-export function NavDropdown({ open, onOpenChange, trigger, triggerIsLink, className = "relative", panelClassName, children }: Props) {
-  const panelId = useId();
+export function NavDropdown({ menuId, open, onOpenChange, trigger, triggerIsLink, className = "relative", panelClassName, children }: Props) {
+  const panelId = `nav-menu-${menuId}`;
   const wrapperRef = useRef<HTMLDivElement>(null);
   const closingRef = useRef(false);
 

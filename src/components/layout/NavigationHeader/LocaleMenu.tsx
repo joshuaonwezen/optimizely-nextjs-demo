@@ -17,6 +17,7 @@ interface Props {
 export function LocaleMenu({ locales, currentLocale, pathname, open, onOpenChange }: Props) {
   return (
     <NavDropdown
+      menuId="locale"
       open={open}
       onOpenChange={onOpenChange}
       className="relative ml-2"

@@ -53,6 +53,7 @@ export function DeveloperMenu({ demoCategories, open, onOpenChange }: Props) {
 
   return (
     <NavDropdown
+      menuId="developer"
       open={open}
       onOpenChange={onOpenChange}
       triggerIsLink
