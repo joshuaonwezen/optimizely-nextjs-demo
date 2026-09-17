@@ -10,6 +10,7 @@ import {
   GRAPH_ENDPOINT,
   gridSection,
   SINGLE_KEY,
+  stableKey,
   uid,
   wrapProps,
 } from "./_shared";
@@ -121,15 +122,27 @@ function blogComposition(blog: BlogDef) {
   };
 }
 
+// seed-modeling's stable key for "Author - Evie Marsh" (AUTHOR_KEYS.evieMarsh). Importing
+// seed-modeling would run its main(), so the key is derived the same way here.
+const PREFERRED_AUTHOR_KEY = stableKey("mb-model", "author:evieMarsh");
+
 /**
- * Resolve an AuthorBlock key that actually exists in the CMS. Graph can keep a
- * deleted author lingering as a stale doc, so a bare limit:1 query may hand back
- * a ghost key that 400s on use (seen on re-seeded instances). We fetch several
+ * Resolve an AuthorBlock key that actually exists in the CMS. Prefers seed-modeling's
+ * stable Evie Marsh key: taking whichever author Graph lists first bound every blog
+ * to a leftover random-key author on instances seeded before stable keys.
+ *
+ * Fallback: Graph can keep a deleted author lingering as a stale doc, so a bare
+ * limit:1 query may hand back a ghost key that 400s on use. We fetch several
  * candidates and return the first one the Management API confirms exists. Polls
  * to cover the ~30-60s indexing lag after seed-modeling creates the authors.
  */
 async function resolveAuthorKey(attempts = 8, delayMs = 15000): Promise<string | null> {
   const token = await getManagementToken();
+  const preferred = await fetch(`${CONTENT_ENDPOINT}/${PREFERRED_AUTHOR_KEY}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (preferred.ok) return PREFERRED_AUTHOR_KEY;
+
   const query = `query { AuthorBlock(limit: 25) { items { _metadata { key } } } }`;
   for (let i = 0; i < attempts; i++) {
     const res = await fetch(GRAPH_ENDPOINT, {
