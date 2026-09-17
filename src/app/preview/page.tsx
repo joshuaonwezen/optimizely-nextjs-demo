@@ -21,9 +21,14 @@ type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
+// Whole words only: error messages embed 32-hex content keys, and a key that
+// happens to contain "401"/"403" (e.g. 8b52c548f14d40338...) used to turn a plain
+// "content not found" into a redirect to the homepage.
 function isTokenError(error: unknown): boolean {
-  const msg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-  return msg.includes("401") || msg.includes("403") || msg.includes("unauthorized") || msg.includes("forbidden") || msg.includes("token") || msg.includes("expired");
+  const status = (error as { status?: unknown } | null)?.status;
+  if (status === 401 || status === 403) return true;
+  const msg = error instanceof Error ? error.message : String(error);
+  return /\b(401|403|unauthorized|forbidden|expired)\b|\btoken\b/i.test(msg);
 }
 
 // Graph _metadata.locale can be a scalar or a { name } object depending on the
