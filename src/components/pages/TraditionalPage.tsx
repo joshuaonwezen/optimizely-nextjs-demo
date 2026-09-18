@@ -42,6 +42,7 @@ export default function TraditionalPage({ content }: { content: TraditionalPageC
             src={heroUrl}
             alt={content.heading ?? ""}
             fill
+            priority
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 896px"
           />

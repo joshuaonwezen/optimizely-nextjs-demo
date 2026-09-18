@@ -32,9 +32,16 @@ export interface ArticleListResult {
 
 // A single query serves both the filtered and unfiltered cases: Graph ignores a
 // filter whose variable is null, so passing `categories: null` returns
-// everything. Facets always come back so the sidebar can show counts.
+// everything. Facet aggregation is opt-in via $withFacets - only the faceted
+// listing demo renders the counts, and ArticleListBlock was paying for a
+// 30-bucket aggregation it never read.
 const GET_ARTICLES_QUERY = /* GraphQL */ `
-  query GetArticles($limit: Int, $cursor: String, $categories: [String]) {
+  query GetArticles(
+    $limit: Int
+    $cursor: String
+    $categories: [String]
+    $withFacets: Boolean!
+  ) {
     ArticlePage(
       limit: $limit
       cursor: $cursor
@@ -53,7 +60,7 @@ const GET_ARTICLES_QUERY = /* GraphQL */ `
         _itemMetadata { categories }
         _metadata { published url { default } }
       }
-      facets {
+      facets @include(if: $withFacets) {
         _itemMetadata {
           categories(orderType: COUNT, orderBy: DESC, limit: 30) { name count }
         }
@@ -119,7 +126,8 @@ function mapResponse(data: GraphResponse | null): ArticleListResult {
 async function fetchArticles(
   limit: number,
   cursor: string | null | undefined,
-  categories: string[] | null
+  categories: string[] | null,
+  withFacets: boolean
 ): Promise<GraphResponse> {
   "use cache";
   cacheTag(CACHE_TAGS.page);
@@ -130,6 +138,7 @@ async function fetchArticles(
     limit,
     cursor: cursor ?? undefined,
     categories,
+    withFacets,
   });
   } catch (error) {
     return cachedQueryFailed("fetchArticles", error);
@@ -141,10 +150,17 @@ export async function getArticles(options?: {
   cursor?: string | null;
   /** Category term URIs to filter by. Null or empty returns everything. */
   category?: string[] | null;
+  /** Request the category facet aggregation. Only needed to render counts. */
+  facets?: boolean;
 }): Promise<ArticleListResult> {
-  const { limit = 6, cursor, category } = options ?? {};
+  const { limit = 6, cursor, category, facets = true } = options ?? {};
   try {
-    const res = await fetchArticles(limit, cursor, category?.length ? category : null);
+    const res = await fetchArticles(
+      limit,
+      cursor,
+      category?.length ? category : null,
+      facets
+    );
     return mapResponse(res);
   } catch (error) {
     console.error("[getArticles] Returning empty result:", error);

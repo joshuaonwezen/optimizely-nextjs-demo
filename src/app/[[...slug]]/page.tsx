@@ -177,24 +177,44 @@ async function CmsPage({
   // Step 1: URL-based lookup. Graph returns one item for pages with a single
   // published version; for multi-version pages (e.g. homepage) it returns all
   // matching versions so we pick the variation match.
-  for (const url of urls) {
+  // No next: { revalidate, tags } - getContentByPath() routes through
+  // request(), which forwards no Next.js fetch options, so the option was
+  // only ever discarded. Page content rides page-output ISR instead
+  // (export const revalidate above, busted by revalidatePath in the webhook).
+  const tryUrl = async (url: string) => {
     try {
-      // No next: { revalidate, tags } - getContentByPath() routes through
-      // request(), which forwards no Next.js fetch options, so the option was
-      // only ever discarded. Page content rides page-output ISR instead
-      // (export const revalidate above, busted by revalidatePath in the webhook).
-      const items = await client.getContentByPath(url, variationFilter);
-      if (items.length > 0) {
-        const variationMatch = variationFilter
-          ? items.find((item: { _metadata?: { variation?: string | null } }) =>
-              variationValues.includes(item._metadata?.variation ?? ""))
-          : null;
-        page = variationMatch ?? items[0];
-        break;
-      }
+      return await client.getContentByPath(url, variationFilter);
     } catch {
-      // Graph unavailable for this URL — try next candidate
+      // Graph unavailable for this URL - treat as a miss and try the others.
+      return [];
     }
+  };
+
+  const pickMatch = (items: Awaited<ReturnType<typeof tryUrl>>) => {
+    const variationMatch = variationFilter
+      ? items.find(
+          (item) =>
+            variationValues.includes(
+              (item as { _metadata?: { variation?: string | null } })._metadata
+                ?.variation ?? ""
+            )
+        )
+      : null;
+    return variationMatch ?? items[0];
+  };
+
+  // The first candidate is the overwhelmingly common hit, so try it alone and
+  // keep the single-round-trip fast path. Only on a miss do the remaining
+  // candidates go out together - a non-English locale homepage generates five,
+  // which previously meant five sequential Graph round-trips before first byte.
+  // Candidate order still decides the winner, so resolution is unchanged.
+  const firstItems = await tryUrl(urls[0]);
+  if (firstItems.length > 0) {
+    page = pickMatch(firstItems);
+  } else if (urls.length > 1) {
+    const rest = await Promise.all(urls.slice(1).map(tryUrl));
+    const hit = rest.find((items) => items.length > 0);
+    if (hit) page = pickMatch(hit);
   }
 
   // Step 2: Fallback for pages where getContentByPath returns nothing because

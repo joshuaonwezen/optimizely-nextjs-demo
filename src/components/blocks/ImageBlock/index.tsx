@@ -153,6 +153,8 @@ export default function ImageBlock(props: ImageBlockProps) {
           srcSet={srcSet}
           sizes="(max-width: 1280px) 100vw, 1280px"
           alt={altText}
+          loading="lazy"
+          decoding="async"
           className={`${aspectRatio ? "absolute inset-0 h-full w-full object-cover" : "w-full h-auto"} ${isRounded ? "rounded-2xl" : ""}`}
         />
       </div>

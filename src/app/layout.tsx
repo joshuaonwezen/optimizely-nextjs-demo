@@ -30,6 +30,11 @@ const vcNudge = localFont({
   ],
 });
 
+// Stays preloaded: this is the body face, so deferring it would swap every
+// paragraph from the Arial fallback after first paint. next/font's `preload`
+// is per-family, not per-src, so the three italic cuts cannot be excluded
+// without splitting the family - which would break weight resolution per the
+// note above.
 const dieGrotesk = localFont({
   variable: "--font-body-local",
   display: "swap",
@@ -44,10 +49,12 @@ const dieGrotesk = localFont({
   ],
 });
 
+// Only used by the /demo/* code blocks, so not worth a preload on every route.
 const robotoMono = Roboto_Mono({
   variable: "--font-mono-local",
   subsets: ["latin"],
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -100,6 +107,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* The WX snippet below blocks the parser, so warm its connection first.
+            No crossOrigin: a hint carrying it opens a CORS-mode connection that
+            would not match the non-CORS <script>, causing a second download.
+            No explicit rel="preload" either - React 19 already hoists one for
+            the <script src> below, so adding our own only duplicates the tag. */}
+        <link rel="preconnect" href="https://cdn.optimizely.com" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://d1igp3oop3iho5.cloudfront.net" />
         {/* Must stay a blocking <script>: Web Experimentation applies variation changes
             before first paint; async or next/script loading would flash the original. */}
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}

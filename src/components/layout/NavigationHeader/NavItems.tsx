@@ -7,7 +7,7 @@ import type { NavNode } from "@/lib/graphql/queries/GetNavigation";
 import type { DemoCategory } from "@/lib/getDemoLinks";
 import type { SupportedLocale } from "@/lib/graphql/queries/GetSupportedLocales";
 import { DEFAULT_SITE_SETTINGS, type SiteSettingsStrings } from "@/lib/siteSettings";
-import SearchOverlay from "@/components/layout/SearchOverlay";
+import dynamic from "next/dynamic";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 import { getCurrentLocale, localizeHref } from "@/lib/localeUrl";
@@ -19,8 +19,19 @@ import { BottomTabs } from "./BottomTabs";
 import { DesktopNavTree } from "./DesktopNavTree";
 import { DeveloperMenu } from "./DeveloperMenu";
 import { LocaleMenu } from "./LocaleMenu";
-import { MobileDrawer } from "./MobileDrawer";
 import { SearchIcon } from "./navIcons";
+
+// Both are portalled behind state that starts false, so the server never renders
+// them - but a static import still shipped them in the layout chunk on every
+// route. Loading them on first open keeps the nav's initial payload small.
+const SearchOverlay = dynamic(() => import("@/components/layout/SearchOverlay"), {
+  ssr: false,
+});
+
+const MobileDrawer = dynamic(
+  () => import("./MobileDrawer").then((m) => m.MobileDrawer),
+  { ssr: false }
+);
 
 interface Props {
   tree: NavNode[];

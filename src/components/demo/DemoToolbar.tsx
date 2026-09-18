@@ -1,7 +1,14 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import AudienceSwitcher from "./AudienceSwitcher";
+import dynamic from "next/dynamic";
+
+// Demo-only control panel mounted in the root layout, so a static import put it
+// in the shared chunk for every route. It is interactive-only and never part of
+// first paint, so it loads on the client after hydration instead.
+const AudienceSwitcher = dynamic(() => import("./AudienceSwitcher"), {
+  ssr: false,
+});
 
 export default function DemoToolbar() {
   const pathname = usePathname();

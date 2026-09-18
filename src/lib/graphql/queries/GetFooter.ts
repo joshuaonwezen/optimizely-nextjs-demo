@@ -30,9 +30,10 @@ const GET_FOOTER_QUERY = /* GraphQL */ `
       _metadata { key }
       label
       href { url { default } }
-      description
       openInNewTab
-      children @recursive(depth: 3)
+      # No description field - FooterColumns renders label + href + target only.
+      # Depth 2 rather than 3: the footer is columns -> links, one level deep.
+      children @recursive(depth: 2)
     }
   }
 

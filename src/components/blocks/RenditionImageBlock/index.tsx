@@ -94,14 +94,27 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
       data-component="RenditionImageBlock"
       className={`${pageContainer(props.placement, "max-w-7xl mx-auto px-8") || (style.wrapper ? "px-8" : "")} py-8 ${style.wrapper ? `${style.wrapper} rounded-2xl` : ""}`}
     >
-      <div {...pa("image")} className="overflow-hidden rounded-2xl">
+      {/* CROP_RATIOS is height/width (what the DAM crop param wants); CSS
+          aspect-ratio is width/height, hence the reciprocal. Reserving the box
+          keeps a cropped rendition from shifting layout as it loads. */}
+      <div
+        {...pa("image")}
+        className="relative overflow-hidden rounded-2xl"
+        style={cropRatio ? { aspectRatio: 1 / cropRatio } : undefined}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element -- DAM URLs carry a preview token; next/image would re-optimise and strip it */}
         <img
           src={baseSrc}
           srcSet={srcSet}
           sizes="(max-width: 1280px) 100vw, 1280px"
           alt={getAlt(asSdkReference(data.image), data.altText ?? "")}
-          className="w-full h-auto block"
+          loading="lazy"
+          decoding="async"
+          className={
+            cropRatio
+              ? "absolute inset-0 h-full w-full object-cover"
+              : "w-full h-auto block"
+          }
         />
       </div>
     </figure>

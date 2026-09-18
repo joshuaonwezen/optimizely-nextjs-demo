@@ -59,6 +59,7 @@ export default async function BlogExperience({ content }: { content: BlogExperie
             src={heroUrl}
             alt={content?.heading ?? ""}
             fill
+            priority
             className="object-cover"
             sizes="(max-width: 896px) 100vw, 896px"
           />

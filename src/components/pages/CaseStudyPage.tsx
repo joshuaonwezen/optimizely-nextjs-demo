@@ -77,7 +77,19 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
   // Categories live on _itemMetadata, which the SDK's page query does not
   // select, so fetch them by key. Falls back to the legacy `industry` enum for
   // content that has not been tagged in the taxonomy yet.
-  const taxonomy = await getContentTaxonomy(content._metadata?.key);
+  const outcomeKeys = (content.outcomes ?? [])
+    .map(extractKey)
+    .filter((k): k is string => Boolean(k));
+
+  // Three independent lookups that used to run in series (taxonomy, then the
+  // outcomes fan-out, then the testimonial). None depends on another, so the
+  // page now pays one Graph latency instead of three.
+  const [taxonomy, outcomes, testimonial] = await Promise.all([
+    getContentTaxonomy(content._metadata?.key),
+    loadOutcomes(outcomeKeys),
+    loadTestimonial(extractKey(content.testimonial)),
+  ]);
+
   // Editorial-workflow terms are dropped here; they are for the CMS, not visitors.
   const categories = publicCategoryUris(
     taxonomy.terms,
@@ -87,12 +99,6 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
     label: termLabel(taxonomy.terms, uri),
   }));
 
-  const outcomeKeys = (content.outcomes ?? [])
-    .map(extractKey)
-    .filter((k): k is string => Boolean(k));
-  const outcomes = await loadOutcomes(outcomeKeys);
-
-  const testimonial = await loadTestimonial(extractKey(content.testimonial));
   const tags = (content.tags ?? []).filter(Boolean);
   const related = (content.relatedCaseStudies ?? []).filter((r) => r?._metadata?.url?.default);
 
@@ -138,7 +144,7 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
 
       {heroUrl && (
         <div {...pa("heroImage")} className="relative w-full aspect-[16/9] mb-12 rounded-2xl overflow-hidden">
-          <Image src={heroUrl} alt={content.title ?? ""} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 896px" />
+          <Image src={heroUrl} alt={content.title ?? ""} fill priority className="object-cover" sizes="(max-width: 1024px) 100vw, 896px" />
         </div>
       )}
 

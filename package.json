@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "analyze": "ANALYZE=1 next build",
     "start": "next start",
     "lint": "eslint src scripts",
     "typecheck": "tsc --noEmit",
@@ -34,6 +35,7 @@
     "shiki": "^4.3.0"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.3.5",
     "@optimizely/cms-cli": "2.2.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

@@ -65,12 +65,16 @@ export default async function ArticlePage({ content }: { content: ArticleContent
 
   const heroUrl = resolveImageUrl(content.heroImage, src);
   const authorKey = content.author?.key ?? content.author?._metadata?.key ?? null;
-  const author = await loadAuthor(authorKey);
-  const formattedDate = formatDate(content.publishDate);
+  // Independent lookups - awaited together so the page pays one Graph latency
+  // rather than two in series.
   // Categories live on _itemMetadata, which the SDK's page query does not
   // select, so fetch them by key. Falls back to the legacy `category` enum for
   // content that has not been tagged in the taxonomy yet.
-  const taxonomy = await getContentTaxonomy(content._metadata?.key);
+  const [author, taxonomy] = await Promise.all([
+    loadAuthor(authorKey),
+    getContentTaxonomy(content._metadata?.key),
+  ]);
+  const formattedDate = formatDate(content.publishDate);
   // Editorial-workflow terms are dropped here; they are for the CMS, not visitors.
   const categoryUris = publicCategoryUris(
     taxonomy.terms,
@@ -151,6 +155,7 @@ export default async function ArticlePage({ content }: { content: ArticleContent
             src={heroUrl}
             alt={content.title ?? ""}
             fill
+            priority
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 768px"
           />

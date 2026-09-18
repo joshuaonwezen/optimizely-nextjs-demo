@@ -36,7 +36,12 @@ export default async function ArticleListBlock(props: ArticleListBlockProps) {
   const { terms } = await getTaxonomyTerms();
   const termKey = data.category ? LEGACY_CATEGORY_MAP[data.category] : undefined;
   const categoryUris = termKey ? expandToUris(terms, [termKey]) : null;
-  const { items } = await getArticles({ limit: data.limit ?? DEFAULT_LIMIT, category: categoryUris });
+  // facets: false - this block renders items only, so skip the aggregation.
+  const { items } = await getArticles({
+    limit: data.limit ?? DEFAULT_LIMIT,
+    category: categoryUris,
+    facets: false,
+  });
 
   const isList = data.layout === "list";
 
