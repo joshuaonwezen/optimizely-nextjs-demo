@@ -371,6 +371,7 @@ query SearchEverything(
   $weight: Float!           # semantic blend, see #ranking
   $fuzzy: Boolean           # typo tolerance, see #fuzzy
   $cursor: String           # pagination, see #filtering
+  $collectionId: String     # optional - omit to evaluate all active collections, see #pinned
 ) {
   ArticlePage(
     where: {
@@ -381,7 +382,7 @@ query SearchEverything(
     orderBy: { _ranking: SEMANTIC, _semanticWeight: $weight }               # see #ranking
     limit: 10
     cursor: $cursor
-    pinned: { phrase: $query }                                             # see #pinned
+    pinned: { phrase: $query, collections: $collectionId }                 # see #pinned
     tracking: { phrase: $query, source: "/demo/search" }                   # see #tracking
   ) {
     total
