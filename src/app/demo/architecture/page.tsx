@@ -80,6 +80,33 @@ export default function ArchitecturePage() {
 
       <div className="max-w-6xl mx-auto px-8 py-16 space-y-20">
 
+        {/* This page covers one slice: CMS, Graph and Next.js. The wider platform
+            diagram lives on its own page, so point at it before the reader starts. */}
+        <Link
+          href="/demo/optimizely-one"
+          className="group flex items-center gap-5 rounded-2xl border border-brand/25 bg-brand/5 p-6 hover:border-brand/50 hover:bg-brand/10 transition-colors"
+        >
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-mono font-semibold uppercase tracking-widest text-brand mb-1.5">
+              Looking for the whole stack?
+            </p>
+            <p className="font-display font-bold text-on-surface text-base mb-1">
+              Optimizely One Platform
+            </p>
+            <p className="text-sm text-on-surface-variant leading-relaxed max-w-2xl">
+              This page covers CMS, Graph and Next.js. The platform diagram widens that to all nine
+              products - ODP, Feature Experimentation, Web Experimentation, DAM, the Content Source
+              API, recommendations and Mark AI - and marks which are actually wired up.
+            </p>
+          </div>
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-2xl text-brand/50 group-hover:text-brand group-hover:translate-x-0.5 transition-all motion-reduce:transform-none"
+          >
+            →
+          </span>
+        </Link>
+
         <section id="what-is-headless">
           <DemoSectionHeading id="what-is-headless">What is a headless CMS?{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
@@ -866,6 +893,7 @@ export default function ArchitecturePage() {
           </h2>
           <div className="grid md:grid-cols-3 gap-4">
             {[
+              { href: "/demo/optimizely-one",         label: "Optimizely One Platform",    description: "The same picture widened to the whole stack: Graph, ODP, FX, Web Exp, DAM, Recs, and Mark AI." },
               { href: "/demo/caching",                label: "ISR Caching",                description: "Cache layers, revalidation tags, webhooks, and what kills ISR." },
               { href: "/demo/feature-experimentation", label: "Experimentation",    description: "Feature flags, A/B tests, and how a variation is chosen and served." },
               { href: "/demo/personalization",         label: "Personalization",            description: "Audience targeting and serving content per visitor persona." },

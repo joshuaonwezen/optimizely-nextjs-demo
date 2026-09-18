@@ -3,12 +3,13 @@ import Link from "next/link";
 import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
+import InlineCode from "@/components/demo/InlineCode";
 import { StepBadge } from "@/components/ui/StepBadge";
 import { Chip, Pipeline } from "@/components/demo/Pipeline";
 import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
 export const metadata: Metadata = {
-  title: "Opal AI Agents",
+  title: "Mark AI Agents",
 };
 
 
@@ -40,12 +41,12 @@ function AgentCard({
 }
 
 
-export default function OpalDemoPage() {
+export default function MarkAiDemoPage() {
   return (
     <>
       <DemoHero
-        title="Opal: AI Agent Platform"
-        description="Opal is Optimizely's agent orchestration layer. It ships a library of pre-built specialized agents for GEO, SEO, content review, and compliance - and lets you build custom agents and multi-step automated workflows on top of your CMS, experimentation, and data stack."
+        title="Mark AI: Agent Platform"
+        description="Mark AI is Optimizely's agent orchestration layer. It ships a library of pre-built specialized agents for GEO, SEO, content review, and compliance - and lets you build custom agents and multi-step automated workflows on top of your CMS, experimentation, and data stack."
       >
         <div className="flex flex-wrap gap-3 mt-8">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
@@ -69,7 +70,7 @@ export default function OpalDemoPage() {
         <section id="overview">
           <DemoSectionHeading id="overview">Platform Overview</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            Opal sits above your entire Optimizely stack - reading content via Graph, writing
+            Mark AI sits above your entire Optimizely stack - reading content via Graph, writing
             updates back through the Management API, and triggering experiments via Feature
             Experimentation. It exposes three building blocks that compose into any automation
             pattern your team needs.
@@ -94,7 +95,7 @@ export default function OpalDemoPage() {
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 Build agents without writing a prompt template from scratch. Define the agent&apos;s
                 goal in natural language, attach tools it can call, and add brand kit assets or
-                customer data as context. The Opal Tools SDK lets developers expose any HTTP
+                customer data as context. The Mark AI Tools SDK lets developers expose any HTTP
                 endpoint as a callable tool.
               </p>
             </div>
@@ -119,7 +120,7 @@ export default function OpalDemoPage() {
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Traditional SEO optimizes content for search engine crawlers. GEO (Generative Engine
             Optimization) extends that to AI-powered search surfaces - ChatGPT, Perplexity, and
-            Google AI Overviews. Opal ships agents for both layers, and the implementation agent
+            Google AI Overviews. Mark AI ships agents for both layers, and the implementation agent
             at the end of the chain writes changes directly back to your CMS.
           </p>
 
@@ -221,7 +222,7 @@ export default function OpalDemoPage() {
         <section id="content-agents">
           <DemoSectionHeading id="content-agents">Content Creation &amp; Review Agents</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            Opal includes agents for the full content lifecycle - from generating first drafts and
+            Mark AI includes agents for the full content lifecycle - from generating first drafts and
             optimizing existing copy to checking for legal/compliance issues before publish. All
             agents respect your brand kit assets and tone-of-voice guidelines.
           </p>
@@ -309,7 +310,7 @@ export default function OpalDemoPage() {
               </p>
               <div className="space-y-3">
                 {[
-                  { name: "Chat Input", desc: "User sends a message in the Opal chat - on-demand automation, good for ad hoc analysis tasks" },
+                  { name: "Chat Input", desc: "User sends a message in the Mark AI chat - on-demand automation, good for ad hoc analysis tasks" },
                   { name: "Webhook", desc: "HTTP request from an external system - content publish events, form submissions, CI pipeline hooks" },
                   { name: "Scheduler", desc: "Runs automatically at a fixed time or on a cron schedule - weekly audits, nightly refresh checks" },
                   { name: "Email", desc: "Sends to a dedicated address - lets non-technical stakeholders kick off a workflow from their inbox" },
@@ -379,12 +380,18 @@ export default function OpalDemoPage() {
 
         {/* Developer Tools */}
         <section id="developer-sdk">
-          <DemoSectionHeading id="developer-sdk">Developer Tools - Opal Tools SDK</DemoSectionHeading>
+          <DemoSectionHeading id="developer-sdk">Developer Tools - Mark AI Tools SDK</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            Opal&apos;s built-in agents can read from Graph and write via the Management API, but your
+            Mark AI&apos;s built-in agents can read from Graph and write via the Management API, but your
             internal systems - pricing databases, PIM, analytics APIs - are not reachable by default.
-            The Opal Tools SDK lets you expose any HTTP endpoint as a callable tool that agents
+            The Mark AI Tools SDK lets you expose any HTTP endpoint as a callable tool that agents
             can discover and invoke at runtime. SDKs are available for TypeScript/Node, Python, and C#.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            Note that the published package and its exported names still carry the product&apos;s
+            former branding - you import from <InlineCode>optimizely-opal/sdk</InlineCode> and
+            construct an <InlineCode>OpalTool</InlineCode>. The snippets below use those identifiers
+            deliberately, because that is what resolves today.
           </p>
 
           <div className="space-y-6">
@@ -397,7 +404,7 @@ export default function OpalDemoPage() {
                 <div>
                   <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
                     A tool is an object with a name, description, typed parameters, and an
-                    async execute function. The description is what Opal reads to decide whether
+                    async execute function. The description is what Mark AI reads to decide whether
                     to call this tool - write it from the agent&apos;s perspective, not the
                     developer&apos;s.
                   </p>
@@ -438,7 +445,7 @@ export const productDataTool = new OpalTool({
               <div className="p-6 grid md:grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                    Opal calls{" "}
+                    Mark AI calls{" "}
                     <code className="bg-surface-low px-1 rounded font-mono text-xs">/discovery</code>{" "}
                     when you register the tool server to learn what tools are available and what
                     parameters each one accepts. At runtime it calls{" "}
@@ -463,8 +470,8 @@ import { productDataTool } from "./tools/productData";
 const app = express();
 const tools = [productDataTool];
 
-// GET /discovery - Opal reads this at registration time
-// POST /execute/:toolName - Opal calls this at runtime
+// GET /discovery - Mark AI reads this at registration time
+// POST /execute/:toolName - Mark AI calls this at runtime
 app.use(opalToolsMiddleware({ tools }));
 
 app.listen(3001);`} />
@@ -475,11 +482,11 @@ app.listen(3001);`} />
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-ghost-border flex items-center gap-3">
                 <StepBadge>3</StepBadge>
-                <h3 className="font-display font-semibold text-on-surface">Register in Opal and attach to an agent</h3>
+                <h3 className="font-display font-semibold text-on-surface">Register in Mark AI and attach to an agent</h3>
               </div>
               <div className="p-6">
                 <p className="text-sm text-on-surface-variant leading-relaxed mb-4 max-w-2xl">
-                  In the Opal UI, register the tool server URL under <strong>Tools</strong>. Opal
+                  In the Mark AI UI, register the tool server URL under <strong>Tools</strong>. Mark AI
                   fetches{" "}
                   <code className="bg-surface-low px-1 rounded font-mono text-xs">/discovery</code>{" "}
                   immediately to validate the schema. Then, when editing any agent, select the
@@ -496,22 +503,22 @@ app.listen(3001);`} />
           </div>
         </section>
 
-        {/* How Opal Complements This Stack */}
+        {/* How Mark AI Complements This Stack */}
         <section id="stack-integration">
-          <DemoSectionHeading id="stack-integration">How Opal Complements This Stack</DemoSectionHeading>
+          <DemoSectionHeading id="stack-integration">How Mark AI Complements This Stack</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            Opal does not replace any layer of the Optimizely stack - it orchestrates across all
+            Mark AI does not replace any layer of the Optimizely stack - it orchestrates across all
             of them. Agents read content through Graph, write updates via the Management API,
             create experiment variations that FX can route to, and segment by ODP audiences.
           </p>
 
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
             <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
-              Opal&apos;s position in the stack
+              Mark AI&apos;s position in the stack
             </p>
             <Pipeline
               steps={[
-                { label: "Opal Agent", sub: "orchestration layer" },
+                { label: "Mark AI Agent", sub: "orchestration layer" },
                 { label: "Graph API", sub: "reads content + structure" },
                 { label: "Management API", sub: "writes updates back" },
                 { label: "Feature Experimentation", sub: "creates A/B variations" },
@@ -530,7 +537,7 @@ app.listen(3001);`} />
                 Management API →
               </p>
               <p className="text-xs text-on-surface-variant">
-                How Opal&apos;s Implementation Agent authenticates and writes content back to the CMS programmatically
+                How Mark AI&apos;s Implementation Agent authenticates and writes content back to the CMS programmatically
               </p>
             </Link>
             <Link
@@ -542,7 +549,7 @@ app.listen(3001);`} />
                 Experimentation →
               </p>
               <p className="text-xs text-on-surface-variant">
-                How Opal&apos;s Variation Development Agent creates A/B test variants that FX routes to the right audience
+                How Mark AI&apos;s Variation Development Agent creates A/B test variants that FX routes to the right audience
               </p>
             </Link>
             <Link
@@ -554,7 +561,7 @@ app.listen(3001);`} />
                 SEO &amp; Metadata →
               </p>
               <p className="text-xs text-on-surface-variant">
-                How Next.js generates metadata fields that Opal&apos;s SEO agents audit and the Implementation Agent writes back
+                How Next.js generates metadata fields that Mark AI&apos;s SEO agents audit and the Implementation Agent writes back
               </p>
             </Link>
           </div>

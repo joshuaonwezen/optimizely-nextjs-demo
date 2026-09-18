@@ -273,7 +273,7 @@ export default function SeoDemoPage() {
             </div>
             <div>
               <p className="font-display font-semibold text-on-surface mb-1">
-                Opal can audit and write these fields automatically
+                Mark AI can audit and write these fields automatically
               </p>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
                 The <strong className="text-on-surface">SEO Metadata Optimization Agent</strong> evaluates
@@ -288,7 +288,7 @@ export default function SeoDemoPage() {
                 reads above.
               </p>
               <Link
-                href="/demo/opal#geo-seo-agents"
+                href="/demo/mark-ai#geo-seo-agents"
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
               >
                 See the SEO agents in action →
@@ -337,9 +337,9 @@ export default function SeoDemoPage() {
             <strong>GEO Schema Optimization Agent.</strong>{" "}
             Beyond traditional SEO, JSON-LD is increasingly important for AI-powered search engines
             (ChatGPT, Perplexity, Google AI Overviews) - structured data helps LLMs cite your content
-            accurately. Opal&apos;s <strong>GEO Schema Optimization Agent</strong> analyzes your live pages,
+            accurately. Mark AI&apos;s <strong>GEO Schema Optimization Agent</strong> analyzes your live pages,
             identifies which Schema.org types apply, and recommends ready-to-paste JSON-LD snippets.{" "}
-            <Link href="/demo/opal#geo-seo-agents" className="text-brand hover:underline font-semibold">
+            <Link href="/demo/mark-ai#geo-seo-agents" className="text-brand hover:underline font-semibold">
               Learn about GEO agents →
             </Link>
           </Callout>
@@ -391,11 +391,11 @@ export default function SeoDemoPage() {
           <><strong className="text-on-surface">Use _metadata.url.default as the canonical URL.</strong> This is the CMS&apos;s authoritative URL for the content. Don&apos;t reconstruct it from params - they can diverge if the CMS URL is updated.</>,
         ]} />
 
-        <section id="opal-automation">
-          <DemoSectionHeading id="opal-automation">Automate the SEO cycle with Opal</DemoSectionHeading>
+        <section id="mark-ai-automation">
+          <DemoSectionHeading id="mark-ai-automation">Automate the SEO cycle with Mark AI</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             Everything on this page - metadata fields, sitemap freshness, structured data, robots
-            rules - can be audited and updated automatically. Opal ships a set of specialized agents
+            rules - can be audited and updated automatically. Mark AI ships a set of specialized agents
             that read your live site via Graph, surface issues, and write fixes back to the CMS via
             the Management API.
           </p>
@@ -434,7 +434,7 @@ export default function SeoDemoPage() {
                   ))}
                 </div>
                 <Link
-                  href={`/demo/opal#${anchor}`}
+                  href={`/demo/mark-ai#${anchor}`}
                   className="mt-auto text-sm font-semibold text-brand hover:underline"
                 >
                   See agent details →
@@ -445,17 +445,17 @@ export default function SeoDemoPage() {
 
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex items-center justify-between gap-6">
             <div>
-              <p className="font-display font-semibold text-on-surface mb-1">Full Opal use-cases demo</p>
+              <p className="font-display font-semibold text-on-surface mb-1">Full Mark AI use-cases demo</p>
               <p className="text-sm text-on-surface-variant leading-relaxed max-w-xl">
                 GEO/SEO agents, content creation and review workflows, workflow orchestration
-                triggers, and the developer SDK for building custom tools Opal can call.
+                triggers, and the developer SDK for building custom tools Mark AI can call.
               </p>
             </div>
             <Link
-              href="/demo/opal"
+              href="/demo/mark-ai"
               className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold bg-brand text-on-brand hover:bg-brand-dim transition-colors"
             >
-              Explore Opal demos →
+              Explore Mark AI demos →
             </Link>
           </div>
         </section>

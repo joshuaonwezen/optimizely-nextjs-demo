@@ -45,6 +45,7 @@ export function getDemoCategories(): DemoCategory[] {
     {
       label: "Architecture",
       links: [
+        { href: "/demo/optimizely-one",  label: "Optimizely One Platform",      description: "How Graph, ODP, FX, Web Exp, CMS, DAM, Recs and Mark AI compose in one app" },
         { href: "/demo/architecture",    label: "Architecture & CMS Editions",  description: "How CMS, Graph, and Next.js fit together - plus SaaS CMS vs CMS 13" },
         { href: "/demo/error-handling",  label: "Error Handling",   description: "notFound vs 500, error boundaries, fallbacks" },
       ],
@@ -52,7 +53,7 @@ export function getDemoCategories(): DemoCategory[] {
     {
       label: "AI",
       links: [
-        { href: "/demo/opal", label: "Opal AI Agents", description: "GEO, SEO, and content review agents" },
+        { href: "/demo/mark-ai", label: "Mark AI Agents", description: "GEO, SEO, and content review agents" },
         { href: "/demo/mcp-server", label: "CMS MCP Server", description: "Natural language content authoring via MCP" },
       ],
     },

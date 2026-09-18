@@ -404,12 +404,12 @@ export default function McpServerDemoPage() {
               </p>
             </Link>
             <Link
-              href="/demo/opal"
+              href="/demo/mark-ai"
               className="bg-surface-lowest border border-ghost-border hover:border-brand/40 rounded-2xl p-5 transition-colors group"
             >
               <p className="text-xs font-mono text-on-surface-variant mb-2 uppercase tracking-wider">Related Demo</p>
               <p className="font-display font-semibold text-on-surface group-hover:text-brand transition-colors text-sm mb-1">
-                Opal AI Agents →
+                Mark AI Agents →
               </p>
               <p className="text-xs text-on-surface-variant">
                 Pre-built and custom agents that use the same Management API and Graph paths the MCP server exposes
