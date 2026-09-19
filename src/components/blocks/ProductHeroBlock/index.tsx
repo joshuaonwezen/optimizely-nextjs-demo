@@ -1,7 +1,8 @@
 import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, FONT_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, FONT_STYLE, HEADLINE_STYLE, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
+import { ExtrudedHeadline } from "@/components/ui/ExtrudedHeadline";
 import { ProductHeroCtaClient } from "./ProductHeroCtaClient";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -41,6 +42,7 @@ export const ProductHeroBlockDefaultTemplate = displayTemplate({
     ...BACKGROUND_BRAND_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
+    ...HEADLINE_STYLE,
   },
 });
 
@@ -55,6 +57,7 @@ export const ProductHeroCompactTemplate = displayTemplate({
     ...BACKGROUND_BRAND_DEFAULT,
     ...TEXT_COLOR,
     ...FONT_STYLE,
+    ...HEADLINE_STYLE,
   },
 });
 
@@ -100,7 +103,10 @@ export default async function ProductHeroBlock(props: ProductHeroBlockProps) {
               {data.badge}
             </span>
           )}
-          {data.title && (
+          {data.title && ds?.headlineStyle === "extruded" && (
+            <ExtrudedHeadline text={data.title} textAttrs={pa("title")} className="text-4xl md:text-5xl lg:text-[3.5rem] leading-[0.95] mb-8" />
+          )}
+          {data.title && ds?.headlineStyle !== "extruded" && (
             <h1
               {...pa("title")}
               className={`${style.font} text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold leading-tight mb-8 ${style.text}`}

@@ -176,6 +176,20 @@ export const FONT_STYLE: { fontStyle: SelectSetting } = {
   },
 };
 
+// Headline style - "3D extruded" draws a hero title as optimizely.com's stacked
+// green type (<ExtrudedHeadline>). Standard is first so existing heroes are unchanged.
+export const HEADLINE_STYLE: { headlineStyle: SelectSetting } = {
+  headlineStyle: {
+    editor: "select",
+    displayName: "Headline style",
+    sortOrder: 6,
+    choices: {
+      flat:     { displayName: "Standard",    sortOrder: 0 },
+      extruded: { displayName: "3D extruded", sortOrder: 1 },
+    },
+  },
+};
+
 // Body text size — for blocks where the prose reading size should be adjustable
 export const TEXT_SIZE: { textSize: SelectSetting } = {
   textSize: {

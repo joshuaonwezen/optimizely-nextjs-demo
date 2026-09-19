@@ -2,7 +2,7 @@ import { contentType, displayTemplate } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { HeroBlockClient } from "./HeroBlockClient";
 import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
-import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, isChecked, resolveStyleClasses } from "../_shared/displayTemplateSettings";
+import { BACKGROUND_BRAND_DEFAULT, TEXT_COLOR, HEADING_SIZE, FONT_STYLE, HEADLINE_STYLE, isChecked, resolveStyleClasses } from "../_shared/displayTemplateSettings";
 import { resolveImageUrl } from "../_shared/contentRefs";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -69,6 +69,7 @@ export const HeroBlockDefaultTemplate = displayTemplate({
     ...TEXT_COLOR,
     ...HEADING_SIZE,
     ...FONT_STYLE,
+    ...HEADLINE_STYLE,
   },
 });
 
@@ -132,6 +133,7 @@ export default async function HeroBlock(props: HeroBlockProps) {
       showOverlay={showOverlay}
       headingSize={headingSize}
       fontStyle={fontStyle}
+      isExtruded={ds?.headlineStyle === "extruded"}
       edit={!!data.__context?.edit}
       paHeadline={pa("headline")}
       paSubheadline={pa("subheadline")}

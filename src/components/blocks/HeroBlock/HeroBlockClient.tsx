@@ -5,6 +5,7 @@ import { useFxDecision } from "@/lib/optimizely/useFxDecision";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 import { HEADING_CLASSES, FONT_CLASSES } from "../_shared/displayTemplateSettings";
 import { Button } from "@/components/ui/Button";
+import { ExtrudedHeadline } from "@/components/ui/ExtrudedHeadline";
 
 // Preview-attribute objects from the SDK's pa() helper (empty in published mode).
 type PreviewAttrs = Record<string, string | undefined>;
@@ -20,6 +21,8 @@ export interface HeroBlockClientProps {
   showOverlay: boolean;
   headingSize?: string;
   fontStyle?: string;
+  /** Headline style "3D extruded": draw the title as stacked 3D type. */
+  isExtruded?: boolean;
   surfaceClass?: string;
   textClass?: string;
   textMutedClass?: string;
@@ -41,6 +44,7 @@ export function HeroBlockClient({
   showOverlay,
   headingSize = "xl",
   fontStyle = "modern",
+  isExtruded = false,
   surfaceClass = "bg-gradient-brand",
   textClass = "text-on-brand",
   textMutedClass = "text-on-brand-subtle",
@@ -96,7 +100,10 @@ export function HeroBlockClient({
         className={`relative z-10 max-w-7xl mx-auto px-8 py-20 w-full ${effectiveCentered ? "text-center" : ""}`}
       >
         <div className={effectiveCentered ? "max-w-3xl mx-auto" : "max-w-3xl"}>
-          {displayTitle && (
+          {displayTitle && isExtruded && (
+            <ExtrudedHeadline text={displayTitle} textAttrs={paHeadline} className={`${titleSizeClass} leading-[0.95] mb-8`} />
+          )}
+          {displayTitle && !isExtruded && (
             <h1
               {...paHeadline}
               className={`${titleFontClass} ${titleSizeClass} font-extrabold leading-tight mb-8 ${textClass}`}
