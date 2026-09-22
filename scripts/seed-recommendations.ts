@@ -25,6 +25,7 @@ import {
   apiFetch,
   CONTENT_ENDPOINT,
   findPageKeyByUrl,
+  isApprovalRequired,
   elementComponent,
   gridSection,
   publishComposition,
@@ -119,12 +120,27 @@ async function main() {
 
   // The draft starts with NO properties, so pass the existing bag back verbatim.
   // It is already in { value: ... } form, which is what the PATCH expects.
-  await publishComposition(pageKey, composition, {
-    locale: "en",
-    displayName: current.displayName,
-    routeSegment: current.routeSegment,
-    properties: current.properties ?? {},
-  });
+  try {
+    await publishComposition(pageKey, composition, {
+      locale: "en",
+      displayName: current.displayName,
+      routeSegment: current.routeSegment,
+      properties: current.properties ?? {},
+    });
+  } catch (err) {
+    // An instance with an approval workflow (kastleNewCMS) accepts the draft but
+    // refuses the publish. The block is staged correctly and goes live when someone
+    // approves it, so that is a warning, not a failed seed.
+    const message = err instanceof Error ? err.message : String(err);
+    if (isApprovalRequired(400, message)) {
+      console.warn(
+        `\n  [warn] ${BLOCK_TYPE} saved as a DRAFT - this instance requires approval to publish.` +
+          ` Approve the pending version of "Insights Hub: Articles" in the CMS to make it live.`
+      );
+      return;
+    }
+    throw err;
+  }
 
   console.log(
     `\nDone - ${BLOCK_TYPE} appended to the Insights Hub: Articles composition.` +
