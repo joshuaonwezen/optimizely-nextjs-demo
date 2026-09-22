@@ -1,5 +1,6 @@
 "use client";
 
+import { serializeVariations, whenVariationsSettled } from "./activeVariations";
 import { getVisitorId } from "./cookies";
 import { dataLayerDestination } from "./destinations/dataLayer";
 import { fxDestination } from "./destinations/fx";
@@ -52,9 +53,21 @@ export async function trackEvent(
     }
   }
 
+  // Attribute the event to whatever variations are on screen, so FX, ODP and GA4 can
+  // all segment by arm. Empty on a page that served none, and the param is then
+  // omitted entirely rather than sent blank.
+  //
+  // The wait exists because above-the-fold components beat the datafile fetch: without
+  // it, HeroBlock's view event goes out at ~11ms and the decisions land at ~229ms, so
+  // the hero impression was never attributed. Bounded, and it never drops an event.
+  await whenVariationsSettled();
+  const expVariantString = serializeVariations();
+
   const event: TrackedEvent = {
     key: eventKey,
-    tags: cleanTags,
+    tags: expVariantString
+      ? { ...cleanTags, exp_variant_string: expVariantString }
+      : cleanTags,
     userId: getVisitorId(),
     timestamp: Date.now(),
   };

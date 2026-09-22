@@ -77,7 +77,9 @@ export function personaFromPath(pathname: string | null | undefined): Persona | 
 // session-scoped (no Max-Age) to match sessionStorage - a new browser session
 // resets to new_visitor.
 const SEGMENT_STORAGE_KEY = "mb_segment";
-const SEGMENT_EVENT = "mb:segment";
+// Exported so other client subscribers (useVisitorProfile) can revalidate when the
+// persona changes, which happens client-side with no server round trip.
+export const SEGMENT_EVENT = "mb:segment";
 
 const listeners = new Set<() => void>();
 

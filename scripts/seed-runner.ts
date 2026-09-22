@@ -98,6 +98,9 @@ async function main() {
     // Geo branch-finder shared block on /en/help/branches. seed-locations (above)
     // has already run, so BankLocation data exists; needs the branches page in Graph.
     ["npx", ["tsx", "scripts/seed-branch-finder.ts"]],
+    // Personalised article rail on /insights/articles. Optional: it needs that
+    // experience indexed in Graph, and RecommendationBlock pushed to the instance.
+    ["npx", ["tsx", "scripts/seed-recommendations.ts"]],
     ["npx", ["tsx", "scripts/seed-contact-pages.ts"]],
     // Requires a published "Form Container" shared block authored in the CMS UI
     // (native forms cannot be created via the API). Warns and skips if none exists.

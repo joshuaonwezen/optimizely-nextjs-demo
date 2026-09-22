@@ -5,6 +5,7 @@ import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/
 import { getClient } from "@optimizely/cms-sdk";
 import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
+import ReadCategorySignal from "@/components/personalization/ReadCategorySignal";
 import { extractKey, type ContentRef, type ImageRef, resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
@@ -91,10 +92,11 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
   ]);
 
   // Editorial-workflow terms are dropped here; they are for the CMS, not visitors.
-  const categories = publicCategoryUris(
+  const categoryUris = publicCategoryUris(
     taxonomy.terms,
     resolveCategoryUris(taxonomy.uris, content.industry)
-  ).map((uri) => ({
+  );
+  const categories = categoryUris.map((uri) => ({
     key: toTermKey(uri),
     label: termLabel(taxonomy.terms, uri),
   }));
@@ -104,6 +106,7 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
 
   return (
     <article data-component="CaseStudyPage" className="max-w-4xl mx-auto px-8 pt-16 pb-24">
+      <ReadCategorySignal uris={categoryUris} />
       <header className="mb-12">
         <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-6">
           <span className="text-brand">Case Study</span>

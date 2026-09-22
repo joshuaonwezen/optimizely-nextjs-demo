@@ -16,6 +16,7 @@ import * as ProductCardBlockModule from "@/components/blocks/ProductCardBlock";
 import * as ProductHeroBlockModule from "@/components/blocks/ProductHeroBlock";
 import * as FeatureItemBlockModule from "@/components/blocks/FeatureItemBlock";
 import * as SectionHeadingBlockModule from "@/components/blocks/SectionHeadingBlock";
+import * as RecommendationBlockModule from "@/components/blocks/RecommendationBlock";
 import * as TestimonialBlockModule from "@/components/blocks/TestimonialBlock";
 import * as StatsCounterBlockModule from "@/components/blocks/StatsCounterBlock";
 import * as ImageBlockModule from "@/components/blocks/ImageBlock";
@@ -183,6 +184,7 @@ const BLOCK_MODULES = [
   ProductHeroBlockModule,
   FeatureItemBlockModule,
   SectionHeadingBlockModule,
+  RecommendationBlockModule,
   TestimonialBlockModule,
   StatsCounterBlockModule,
   ImageBlockModule,

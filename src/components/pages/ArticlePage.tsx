@@ -6,6 +6,7 @@ import { getClient } from "@optimizely/cms-sdk";
 import { formatDate } from "@/lib/formatDate";
 import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
+import ReadCategorySignal from "@/components/personalization/ReadCategorySignal";
 import type { ImageRef } from "@/components/blocks/_shared/contentRefs";
 import { resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
 import { asSdkContent } from "@/components/cms/sdkTypes";
@@ -89,6 +90,7 @@ export default async function ArticlePage({ content }: { content: ArticleContent
 
   return (
     <article data-component="ArticlePage" className="max-w-3xl mx-auto px-8 pt-16 pb-24">
+      <ReadCategorySignal uris={categoryUris} />
       <header className="mb-12">
         <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-6">
           {categories.map((c) => (

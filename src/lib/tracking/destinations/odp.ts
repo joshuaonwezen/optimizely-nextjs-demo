@@ -25,6 +25,24 @@ export const odpDestination: TrackingDestination = {
  * visitor's fs_user_id. Call this after a form submission yields an email
  * or other identifying data.
  */
+/**
+ * Write the visitor's content interests onto their ODP customer profile.
+ *
+ * The mb_content_viewed event already gives ODP a behavioural stream to build a
+ * realtime segment from. This does the other half: `top_category` as a customer
+ * ATTRIBUTE means a marketer can build an audience on a CMS taxonomy term from a
+ * dropdown, with no engineering ticket and no event-stream rule.
+ *
+ * Requires `last_category` / `top_category` to exist on ODP's customers object. Most
+ * accounts auto-create custom fields on first write; a strict-schema account needs
+ * them added in the ODP UI first.
+ */
+export function recordTopCategory(topCategory: string | undefined, lastCategory: string | undefined): void {
+  if (typeof window === "undefined" || !window.zaius) return;
+  if (!topCategory && !lastCategory) return;
+  identifyCustomer({ top_category: topCategory, last_category: lastCategory });
+}
+
 export function identifyCustomer(attrs: Record<string, string | undefined>): void {
   if (typeof window === "undefined" || !window.zaius) return;
   const fsUserId = readCookie(VISITOR_ID_COOKIE);

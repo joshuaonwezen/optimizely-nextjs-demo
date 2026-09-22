@@ -13,3 +13,9 @@ export const DEMO_PERSONA_COOKIE = "demo_persona";
 export const DEMO_BUCKETING_ID_COOKIE = "demo_bucketing_id";
 /** Demo "frequent customer" state: page_views attribute. */
 export const DEMO_PAGE_VIEWS_COOKIE = "demo_page_views";
+/**
+ * The CMS category terms this visitor reads most, as term keys, comma-separated,
+ * most-read first. A cookie rather than localStorage alone so the server can read
+ * them without a network call. Written by lib/personalization/readCategories.ts.
+ */
+export const READ_CATEGORIES_COOKIE = "mb_read_categories";
