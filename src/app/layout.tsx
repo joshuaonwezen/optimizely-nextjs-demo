@@ -8,6 +8,7 @@ import HideOnPreview from "@/components/layout/HideOnPreview";
 import Footer from "@/components/layout/Footer";
 import DemoToolbar from "@/components/demo/DemoToolbar";
 import OdpSetup from "@/components/OdpSetup";
+import WxProfileBridge from "@/components/personalization/WxProfileBridge";
 import OdpRecoveryBanner from "@/components/personalization/OdpRecoveryBanner";
 import AutoTracker from "@/components/AutoTracker";
 import StickyOfferBar from "@/components/layout/StickyOfferBar";
@@ -155,6 +156,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <StickyOfferBar />
         <DemoToolbar />
         <OdpSetup />
+        <WxProfileBridge />
         <AutoTracker />
       </body>
     </html>

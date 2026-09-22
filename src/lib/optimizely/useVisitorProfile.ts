@@ -35,14 +35,20 @@ export type UseVisitorProfile = {
   refresh: (fresh?: boolean) => void;
 };
 
-export function useVisitorProfile(): UseVisitorProfile {
+/**
+ * `enabled: false` skips the request entirely. Callers mounted in the root layout use
+ * it to avoid adding an /api/profile round trip to every page load for visitors who
+ * cannot benefit from it.
+ */
+export function useVisitorProfile({ enabled = true }: { enabled?: boolean } = {}): UseVisitorProfile {
   const [profile, setProfile] = useState<VisitorProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   // Bumping this re-runs the fetch effect. Kept as state rather than calling the
   // fetch directly so the effect body never calls setState synchronously.
   const [request, setRequest] = useState({ n: 0, fresh: false });
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     void fetchProfile(request.fresh).then((next) => {
       if (cancelled) return;
@@ -52,7 +58,7 @@ export function useVisitorProfile(): UseVisitorProfile {
     return () => {
       cancelled = true;
     };
-  }, [request]);
+  }, [request, enabled]);
 
   const refresh = useCallback((fresh = false) => {
     setLoading(true);
