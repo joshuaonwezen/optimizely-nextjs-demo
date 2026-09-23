@@ -21,7 +21,7 @@ const MARKERS = [
   { id: "m-decide", color: "var(--tertiary)" },
   { id: "m-data", color: "var(--secondary-container)" },
   { id: "m-ai", color: "var(--primary-dim)" },
-  { id: "m-ref", color: "var(--on-surface-variant)" },
+  { id: "m-flow", color: "var(--on-surface-variant)" },
 ];
 
 const LEGEND: { color: string; label: string; dashed: boolean }[] = [
@@ -34,7 +34,9 @@ const LEGEND: { color: string; label: string; dashed: boolean }[] = [
   { color: "var(--secondary-container)", label: "Behavioural events to ODP", dashed: false },
   { color: "var(--secondary-container)", label: "ODP audiences back to the server as a variation key", dashed: true },
   { color: "var(--primary-dim)", label: "Mark AI agents assist authoring (dev-time, via MCP)", dashed: true },
-  { color: "var(--on-surface-variant)", label: "Reference only - not integrated in this repo", dashed: true },
+  { color: "var(--on-surface-variant)", label: "Request flow inside the Next.js deployment", dashed: false },
+  { color: "var(--tertiary)", label: "Decisions and conversions to experiment results", dashed: false },
+  { color: "var(--on-surface-variant)", label: "Reference only - export and warehouse are not wired up", dashed: true },
 ];
 
 type Status = "live" | "partial" | "reference";
@@ -109,17 +111,31 @@ const PRODUCTS: {
     files: ["src/app/demo/mark-ai/page.tsx", "src/app/demo/mcp-server/page.tsx", ".mcp.json"],
   },
   {
+    name: "Experiment Results",
+    status: "live",
+    role: "Where the experiment is actually measured. Every decision and every conversion this app fires lands here, and the stats engine turns them into lift and significance per variation.",
+    mechanism: "Both event types leave the browser, not the edge. Middleware runs decideAll with DISABLE_DECISION_EVENT behind a no-op requestHandler, so the impression is fired by FxBucketingEvent once the served variation is confirmed, and conversions go through the shared trackEvent() wrapper's FX destination (user.trackEvent). Both carry the same attributes as the decision, so results can be segmented by them. Results are read in the FX console or through the Results API; this app does not call that API.",
+    files: ["src/components/FxBucketingEvent.tsx", "src/lib/tracking/destinations/fx.ts"],
+  },
+  {
+    name: "Optimizely Analytics",
+    status: "reference",
+    role: "Warehouse-native product analytics: funnels, retention and cohort analysis over the same behavioural data, joined to whatever else the business already keeps in its warehouse.",
+    mechanism: "Not integrated here, and it is the one product that does not ingest anything. Optimizely's Enriched Events Export drops raw decision and conversion rows into storage the customer owns, that lands in their warehouse (Snowflake, BigQuery, Databricks), and Analytics queries it in place rather than copying it. The value of the export is that experiment results stop being a walled garden: a variation can be joined to revenue, churn or anything else already modelled in the warehouse.",
+    files: [],
+  },
+  {
     name: "Content Recommendations",
     status: "reference",
     role: "Picks the next best article or page per visitor from their behavioural profile, typically for a \"recommended for you\" rail.",
-    mechanism: "Not integrated here. Wiring it up means adding the recs script or API, letting it read the ODP profile keyed on the same optimizelyEndUserId cookie, and resolving the returned content keys through Graph so the rail renders with the existing block components.",
+    mechanism: "Not integrated here, and it does not reuse the ODP profile - it builds its own from its own tracking script plus a crawl or feed of the content. Nothing syncs between the two profile stores; the most you can align is the visitor identifier by passing the same optimizelyEndUserId. Wiring it up means adding that script or its delivery API, then resolving the returned content keys through Graph so the rail renders with the existing block components.",
     files: [],
   },
   {
     name: "Product Recommendations",
     status: "reference",
     role: "Catalog-driven merchandising: also-bought, trending and personalised product rails.",
-    mechanism: "Not integrated here, and it needs something this demo does not have: a product catalog feed. The natural fit would be to register the catalog through the Content Source API so products are queryable in Graph, then feed behavioural signals from the existing mb_* event layer.",
+    mechanism: "Not integrated here, and it needs something this demo does not have: a product catalog feed. It also keeps its own behavioural profile rather than reading ODP, so the mb_* stream cannot simply be piped in - the same signals would have to be emitted to its tracker alongside the existing ODP calls. The natural fit would be to register the catalog through the Content Source API so products are queryable in Graph, then add that second emit to the existing event layer.",
     files: [],
   },
 ];
@@ -132,7 +148,9 @@ const STATUS_TABLE: { product: string; status: Status; note: string }[] = [
   { product: "Web Experimentation", status: "live", note: "Blocking snippet plus cookie bridge" },
   { product: "DAM / CMP", status: "live", note: "Delivery side only, no DAM REST calls" },
   { product: "Content Source API", status: "live", note: "Seed time: quotes and branch locations" },
+  { product: "Experiment Results", status: "live", note: "Decisions and conversions fired from the browser" },
   { product: "Mark AI", status: "partial", note: "Docs and dev-time MCP, no runtime integration" },
+  { product: "Optimizely Analytics", status: "reference", note: "Needs Enriched Events Export into a warehouse" },
   { product: "Content Recommendations", status: "reference", note: "Not integrated" },
   { product: "Product Recommendations", status: "reference", note: "Not integrated" },
 ];
@@ -207,10 +225,17 @@ const LIFECYCLE: { title: string; detail: React.ReactNode }[] = [
 //   Server:      520, 182, 272, 100 -> cx=656 left=520 right=792 bottom=282
 //   Client:      520, 304, 272, 100 -> cx=656 left=520 right=792 bottom=404
 //   FX:          940, 72,  200, 76  -> cx=1040 cy=110 left=940
-//   WX:          940, 170, 200, 76  -> cx=1040 cy=208 left=940
-//   ODP:         940, 268, 200, 88  -> cx=1040 cy=312 left=940 bottom=356
+//   ODP:         940, 170, 200, 88  -> cx=1040 cy=214 left=940 bottom=258
+//   WX:          940, 280, 200, 76  -> cx=1040 cy=318 left=940
 //   ContentRecs: 940, 388, 200, 68  -> cx=1040 left=940 bottom=456
 //   ProductRecs: 940, 476, 200, 68  -> cx=1040 left=940
+//   ExpResults:  500, 600, 170, 72  -> cy=636 right=670
+//   Warehouse:   750, 600, 170, 72  -> cy=636 left=750 right=920
+//   Analytics:   970, 600, 170, 72  -> cy=636 left=970
+//
+// The right column is ordered so each product sits level with the runtime it talks to:
+// FX <-> Middleware, ODP <-> Server (segments), WX <-> Client. The two 22px gaps between
+// the runtime boxes (160..182 and 282..304) hold the request-spine connectors at x=600.
 
 function Box({
   x, y, w = 176, h = 76,
@@ -327,7 +352,7 @@ export default function OptimizelyOnePage() {
 
           <div className="rounded-2xl border border-ghost-border bg-surface-lowest p-4 overflow-x-auto">
             <svg
-              viewBox="0 0 1180 640"
+              viewBox="0 0 1180 690"
               width="100%"
               style={{ minWidth: 900 }}
               aria-label="Diagram of the Optimizely One platform composed inside a Next.js application"
@@ -349,6 +374,11 @@ export default function OptimizelyOnePage() {
               <ColumnLabel x={656}>APPLICATION RUNTIME</ColumnLabel>
               <ColumnLabel x={1040}>DECISION + DATA</ColumnLabel>
 
+              {/* The measurement band runs across the bottom rather than as a fifth column:
+                  its events come from Client/Browser, and a fifth column would have to cross
+                  the whole DECISION + DATA column to get there. */}
+              <text x={24} y={584} textAnchor="start" fill="var(--on-surface-variant)" fontSize={9} fontWeight="bold" letterSpacing={1.4} fontFamily="system-ui,sans-serif">MEASUREMENT + ANALYTICS</text>
+
               {/* Arrows are drawn first so the boxes paint over their endpoints. */}
 
               {/* CMS / DAM / Content Source -> Graph */}
@@ -369,8 +399,17 @@ export default function OptimizelyOnePage() {
               <line x1={438} y1={226} x2={514} y2={226}
                 stroke="var(--error)" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#m-graph)" />
 
-              {/* Graph publish webhook -> Server, routed below the app frame */}
-              <path d="M 362,290 L 362,596 L 470,596 L 470,262 L 514,262"
+              {/* The request spine. The URL rewrite is the ONLY channel the FX decision uses
+                  to reach the server render: middleware writes __v_flag--variation segments,
+                  the catch-all parses them back off the slug and turns them into the Graph
+                  variation filter. Nothing re-decides FX on the server. */}
+              <path d="M 600,160 L 600,178"
+                fill="none" stroke="var(--on-surface-variant)" strokeWidth={1.5} markerEnd="url(#m-flow)" />
+              <path d="M 600,282 L 600,300"
+                fill="none" stroke="var(--on-surface-variant)" strokeWidth={1.5} markerEnd="url(#m-flow)" />
+
+              {/* Graph publish webhook -> Server, routed under Graph through the free corridor */}
+              <path d="M 362,290 L 362,318 L 470,318 L 470,262 L 514,262"
                 fill="none" stroke="var(--primary-fill)" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#m-hook)" />
 
               {/* FX -> middleware */}
@@ -378,25 +417,39 @@ export default function OptimizelyOnePage() {
                 stroke="var(--tertiary)" strokeWidth={2} markerEnd="url(#m-decide)" />
 
               {/* WX -> client (the snippet runs in the browser) */}
-              <path d="M 940,208 C 880,208 858,336 798,338"
-                fill="none" stroke="var(--tertiary)" strokeWidth={2} markerEnd="url(#m-decide)" />
+              <line x1={940} y1={348} x2={798} y2={398}
+                stroke="var(--tertiary)" strokeWidth={2} markerEnd="url(#m-decide)" />
 
-              {/* WX variation cookie: client -> middleware, an app-internal hop
-                  bulging into the frame padding so it reads as cross-runtime. */}
-              <path d="M 792,326 C 816,300 816,184 796,158"
+              {/* WX variation cookie: client -> middleware, up the frame's right gutter.
+                  It is deliberately long - the point is that the cookie survives to the
+                  NEXT request. It crosses only the dashed segments arrow, at a right angle. */}
+              <path d="M 792,316 L 806,316 L 806,132 L 798,132"
                 fill="none" stroke="var(--tertiary)" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#m-decide)" />
 
-              {/* Client -> ODP events, ODP -> Server segments */}
-              <path d="M 796,380 C 860,384 880,360 936,348"
+              {/* Client -> ODP events, climbing left of the WX box (stays at x <= 936) */}
+              <path d="M 796,344 C 856,336 886,292 936,254"
                 fill="none" stroke="var(--secondary-container)" strokeWidth={2} markerEnd="url(#m-data)" />
-              <path d="M 940,284 C 886,284 860,238 796,234"
-                fill="none" stroke="var(--secondary-container)" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#m-data)" />
 
-              {/* ODP profile -> the two recommendation products */}
-              <line x1={1040} y1={356} x2={1040} y2={382}
-                stroke="var(--on-surface-variant)" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#m-ref)" />
-              <path d="M 990,356 L 990,372 L 916,372 L 916,502 L 934,502"
-                fill="none" stroke="var(--on-surface-variant)" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#m-ref)" />
+              {/* ODP -> Server segments, level with the runtime it talks to */}
+              <line x1={940} y1={214} x2={798} y2={214}
+                stroke="var(--secondary-container)" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#m-data)" />
+
+              {/* Nothing points at the two recommendation products on purpose: neither one
+                  reads the ODP profile, each keeps its own from its own tracker. */}
+
+              {/* Decisions and conversions leave the BROWSER, not the edge: middleware runs
+                  decideAll with DISABLE_DECISION_EVENT behind a no-op requestHandler, so the
+                  impression is fired by FxBucketingEvent and conversions by the fx tracking
+                  destination (user.trackEvent). The line crosses the frame because the events
+                  are leaving the deployment. */}
+              <path d="M 585,404 L 585,596"
+                fill="none" stroke="var(--tertiary)" strokeWidth={2} markerEnd="url(#m-decide)" />
+
+              {/* Results -> warehouse, and Analytics reading the warehouse in place */}
+              <line x1={670} y1={636} x2={746} y2={636}
+                stroke="var(--on-surface-variant)" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#m-flow)" />
+              <line x1={970} y1={636} x2={924} y2={636}
+                stroke="var(--on-surface-variant)" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#m-flow)" />
 
               {/* The Next.js app frame, drawn under its inner boxes */}
               <rect
@@ -448,30 +501,50 @@ export default function OptimizelyOnePage() {
                 title="Feature Experimentation"
                 sub={["datafile · 60s TTL", "decides at the edge, on the", "server and in the browser"]} />
 
-              <Box x={940} y={170} w={200} hc="var(--tertiary)"
-                title="Web Experimentation"
-                sub={["client-side snippet", "shares the visitor cookie", "bridges into middleware"]} />
-
-              <Box x={940} y={268} w={200} h={88} hc="var(--secondary-container)"
+              <Box x={940} y={170} w={200} h={88} hc="var(--secondary-container)"
                 title="Data Platform (ODP)"
                 sub={["events in: zaius tag and", "server /v3/events", "segments out: /v3/graphql", "audiences → variation key"]} />
 
+              <Box x={940} y={280} w={200} hc="var(--tertiary)"
+                title="Web Experimentation"
+                sub={["client-side snippet", "shares the visitor cookie", "bridges into middleware"]} />
+
               <Box x={940} y={388} w={200} h={68} hc="var(--on-surface-variant)" dashed
                 title="Content Recommendations"
-                sub={["reference - not wired up", "would read the ODP profile"]} />
+                sub={["reference - not wired up", "own tracker + content feed"]} />
 
               <Box x={940} y={476} w={200} h={68} hc="var(--on-surface-variant)" dashed
                 title="Product Recommendations"
-                sub={["reference - not wired up", "catalog feed + behaviour"]} />
+                sub={["reference - not wired up", "own tracker + catalog feed"]} />
+
+              {/* Measurement band. The events really are sent from the browser, so Experiment
+                  Results is solid; the export and everything downstream of it is reference. */}
+              <Box x={500} y={600} w={170} h={72} hc="var(--tertiary)"
+                title="Experiment Results"
+                sub={["decisions + conversions in", "stats engine computes lift", "read via the Results API"]} />
+
+              <Box x={750} y={600} w={170} h={72} hc="var(--on-surface-variant)" dashed
+                title="Data Warehouse"
+                sub={["customer owned", "Snowflake · BigQuery", "raw decision + event rows"]} />
+
+              <Box x={970} y={600} w={170} h={72} hc="var(--on-surface-variant)" dashed
+                title="Optimizely Analytics"
+                sub={["warehouse-native", "queries the warehouse", "no data copy"]} />
 
               {/* Arrow labels last, so they sit above every stroke */}
               <text x={478} y={190} textAnchor="middle" fill="var(--primary)" fontSize={9} fontFamily="system-ui,sans-serif">GraphQL</text>
               <text x={476} y={244} textAnchor="middle" fill="var(--error)" fontSize={9} fontStyle="italic" fontFamily="system-ui,sans-serif">content</text>
-              <text x={480} y={612} textAnchor="start" fill="var(--primary-fill)" fontSize={9} fontFamily="system-ui,sans-serif">publish webhook · revalidateTag</text>
+              <text x={424} y={333} textAnchor="middle" fill="var(--primary-fill)" fontSize={9} fontFamily="system-ui,sans-serif">publish webhook · revalidateTag</text>
               <text x={869} y={96} textAnchor="middle" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">datafile · decideAll</text>
-              <text x={786} y={176} textAnchor="end" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">opti_wx_variation cookie</text>
-              <text x={866} y={398} textAnchor="middle" fill="var(--secondary-container)" fontSize={8.5} fontFamily="system-ui,sans-serif">mb_* events</text>
-              <text x={925} y={272} textAnchor="end" fill="var(--secondary-container)" fontSize={8.5} fontFamily="system-ui,sans-serif">segments</text>
+              <text x={814} y={120} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">opti_wx_variation</text>
+              <text x={814} y={131} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">read next request</text>
+              <text x={826} y={356} textAnchor="start" fill="var(--secondary-container)" fontSize={8.5} fontFamily="system-ui,sans-serif">mb_* events</text>
+              <text x={869} y={206} textAnchor="middle" fill="var(--secondary-container)" fontSize={8.5} fontFamily="system-ui,sans-serif">segments</text>
+              <text x={610} y={176} textAnchor="start" fill="var(--on-surface-variant)" fontSize={8.5} fontFamily="system-ui,sans-serif">__v_flag--variation</text>
+              <text x={610} y={298} textAnchor="start" fill="var(--on-surface-variant)" fontSize={8.5} fontFamily="system-ui,sans-serif">rendered HTML</text>
+              <text x={595} y={520} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">decisions · conversions</text>
+              <text x={710} y={590} textAnchor="middle" fill="var(--on-surface-variant)" fontSize={8.5} fontFamily="system-ui,sans-serif">Enriched Events Export</text>
+              <text x={945} y={590} textAnchor="middle" fill="var(--on-surface-variant)" fontSize={8.5} fontFamily="system-ui,sans-serif">queries in place</text>
             </svg>
           </div>
 
