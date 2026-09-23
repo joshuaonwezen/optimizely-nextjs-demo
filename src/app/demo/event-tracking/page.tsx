@@ -44,12 +44,11 @@ export const metadata: Metadata = {
 };
 
 const DESTINATION_SNIPPET = `// A destination is anything that can receive an event.
-// src/lib/tracking/types.ts
 
 export type TrackedEvent = {
   key: string;
   tags: Record<string, string | number | boolean>;
-  userId: string;      // stable optimizelyEndUserId cookie
+  userId: string;      // the stable visitor id, shared with every product
   timestamp: number;
 };
 
@@ -63,18 +62,18 @@ export type TrackingDestination = {
 // in its own try/catch, and errors are swallowed: tracking must never
 // break the page.
 //
-// Before building the event it awaits whenVariationsSettled(), then stamps
+// Before building the event, wait for flag decisions to settle, then stamp
 // on exp_variant_string - the variations actually rendered on this page, as
-// RuleKey-VariationName, comma joined. On a page that served none, the tag
-// is omitted entirely rather than sent blank.
+// RuleKey-VariationName, comma joined. On a page that served none, omit the
+// tag entirely rather than sending it blank.
 
-await trackEvent("demo_cta_click", { source: "demo-page" });
-// → FX:        user.trackEvent("demo_cta_click", tags)
-// → ODP:       zaius.event("demo_cta_click", { ...tags })
-// → dataLayer: window.dataLayer.push({ event: "demo_cta_click", ... })
+await trackEvent("cta_click", { source: "pricing-page" });
+// → FX:        user.trackEvent("cta_click", tags)
+// → ODP:       zaius.event("cta_click", { ...tags })
+// → dataLayer: window.dataLayer.push({ event: "cta_click", ... })
 //
 // tags now include, where a variation was served:
-//   exp_variant_string: "hero_layout_experiment-centered,banner_desktop-banner2"`;
+//   exp_variant_string: "checkout_layout_test-single_step"`;
 
 const ADD_DESTINATION_SNIPPET = `// Adding a source is one object - no call sites change.
 import { registerDestination } from "@/lib/tracking";
@@ -91,23 +90,24 @@ registerDestination({
 // Every existing trackEvent() call - CTA clicks, form submits,
 // scroll depth, outbound links - now also reaches Segment.`;
 
-const CONVERSION_LOOP_SNIPPET = `// 1. Middleware buckets the visitor server-side and SUPPRESSES the
-//    impression (DISABLE_DECISION_EVENT) - deciding is not seeing.
-const decision = user.decide("homepage");   // no event fired
+const CONVERSION_LOOP_SNIPPET = `// 1. Bucket the visitor server-side and SUPPRESS the impression
+//    (DISABLE_DECISION_EVENT) - deciding is not seeing.
+const decision = user.decide("checkout_layout");   // no event fired
 
-// 2. The page that actually renders the variation fires the impression
-//    client-side (FxBucketingEvent) with the same optimizelyEndUserId.
-ctx.decide("homepage", []);                 // empty options = fire impression
+// 2. Whatever actually renders the variation fires the impression
+//    client-side, with the same visitor id.
+ctx.decide("checkout_layout", []);                 // empty options = fire it
 
-// 3. The conversion fires through the tracking layer with the SAME
-//    visitor ID, so FX can attribute it to the bucketed variation.
-trackEvent("demo_cta_click", { source: "hero" });
+// 3. The conversion fires through the tracking layer with that SAME
+//    visitor id, so results can attribute it to the bucketed variation.
+trackEvent("cta_click", { source: "hero" });
 
-// FX Results then compares conversion rates per variation:
-//   variation A: 1,204 impressions, 87 demo_cta_click  → 7.2%
-//   variation B: 1,198 impressions, 112 demo_cta_click → 9.3%`;
+// Results then compares conversion rates per variation:
+//   variation A: 1,204 impressions, 87 cta_click  → 7.2%
+//   variation B: 1,198 impressions, 112 cta_click → 9.3%`;
 
-const DECLARATIVE_SNIPPET = `<!-- AutoTracker turns data attributes into events - no JS per element. -->
+const DECLARATIVE_SNIPPET = `<!-- A listener turns data attributes into events - no JS per element.
+     The attribute names are yours to choose; the pattern is what matters. -->
 
 <!-- Click tracking -->
 <a href="/savings" data-track-event="cta_click" data-track-tags='{"area":"hero"}'>
@@ -125,10 +125,9 @@ const DECLARATIVE_SNIPPET = `<!-- AutoTracker turns data attributes into events 
 </div>
 
 <!-- Fired automatically, no attributes needed:
-     mb_outbound_click - clicks on external links
-     mb_scroll_depth   - 25 / 50 / 75 / 100% scroll marks
-     mb_time_on_page   - 30 / 60 / 180 second marks
-     mb_demo_page_view - /demo route views -->`;
+     outbound_click - clicks on external links
+     scroll_depth   - 25 / 50 / 75 / 100% scroll marks
+     time_on_page   - 30 / 60 / 180 second marks -->`;
 
 export default function EventTrackingDemoPage() {
   return (
@@ -149,10 +148,10 @@ export default function EventTrackingDemoPage() {
             <SectionAnchor id="live" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            The button fires a <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_cta_click</code>{" "}
+            The button fires a <code className="bg-surface-low px-1 rounded font-mono text-xs">cta_click</code>{" "}
             conversion through the tracking layer. The dispatch log below shows each event and which
             destinations received it - scroll the page and the automatic{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">mb_scroll_depth</code> events
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">scroll_depth</code> events
             appear in the same log, because they flow through the same wrapper.
           </p>
           <ConversionDemo />
@@ -167,13 +166,13 @@ export default function EventTrackingDemoPage() {
             Analytics calls scattered through components couple every feature to every vendor. The
             tracking layer inverts that: components call a single{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent(key, tags)</code>{" "}
-            and the layer resolves the visitor identity once (the{" "}
+            and the layer resolves the visitor identity once - the same{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code>{" "}
-            cookie set by middleware), then fans the event out to every registered destination. This
-            project ships three: the FX browser client, ODP via the zaius script, and a{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">window.dataLayer</code> push,
-            which is what GA4 and the GTM container in{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">layout.tsx</code> read. That
+            cookie every Optimizely product keys off - then fans the event out to every registered
+            destination. Three is the usual set: the experimentation browser client, the data
+            platform tag, and a{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">window.dataLayer</code> push
+            for whatever analytics and tag manager the business already runs. That
             third destination is the reason a customer&apos;s existing analytics can slice by
             experiment arm without a second integration: every event carries{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">exp_variant_string</code>,
@@ -206,14 +205,14 @@ export default function EventTrackingDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">exp_variant_string</code>,
             naming the variations on screen when it fired, which is what lets ODP and GA4 segment by
             arm rather than only FX. Getting that right needed one piece of coordination: an
-            above-the-fold component beats the network. Measured on the homepage, HeroBlock&apos;s
-            view event fired at ~11ms while the first decision landed at ~229ms, so the hero
-            impression - the one whose variation matters most - was the single event going out
-            unattributed. So{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent</code> waits
-            for decisions to settle before building the event. The wait is bounded and returns early
-            once they stop arriving; it delays an event, it never drops one. A page that serves no
-            variation waits once and then sends no tag at all.
+            above-the-fold component beats the network. A hero&apos;s view event can fire within
+            milliseconds of mount, while the SDK still has to fetch its datafile before it can
+            decide anything - so the most valuable impression on the page is exactly the one most
+            likely to go out unattributed. The fix is for{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent</code> to wait
+            for decisions to settle before building the event. Keep that wait bounded and let it
+            return early once decisions stop arriving: it should delay an event, never drop one. A
+            page that serves no variation waits once and then sends no tag at all.
           </p>
           <CodeBlock code={CONVERSION_LOOP_SNIPPET} label="Impression suppression and conversion attribution" />
         </section>
@@ -224,14 +223,14 @@ export default function EventTrackingDemoPage() {
             <SectionAnchor id="declarative" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">AutoTracker</code> (mounted
+            A single listener (mounted
             once in the root layout) listens for clicks, toggles, submits, and scrolling with document-level
             listeners, so most events need no component code at all - a{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">data-track-event</code>{" "}
-            attribute is enough. Because AutoTracker calls the same wrapper, every destination gets these
+            attribute is enough. Because that listener calls the same wrapper, every destination gets these
             events too.
           </p>
-          <CodeBlock code={DECLARATIVE_SNIPPET} label="Data attributes AutoTracker understands" />
+          <CodeBlock code={DECLARATIVE_SNIPPET} label="A declarative attribute contract" />
         </section>
 
         <section id="setup">
@@ -257,14 +256,14 @@ export default function EventTrackingDemoPage() {
           <><strong className="text-on-surface">Components call one wrapper, never a vendor SDK.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent(key, tags)</code> resolves identity once and fans out to all destinations - adding a vendor is one <code className="bg-surface-low px-1 rounded font-mono text-xs">TrackingDestination</code> object, zero call-site changes.</>,
           <><strong className="text-on-surface">Tracking must never break the page.</strong> Every destination send is isolated in its own try/catch; a failing or missing sink (ODP without the zaius script) reports <em>skipped</em> or <em>error</em> and the rest still deliver.</>,
           <><strong className="text-on-surface">Impressions and conversions must share a visitor ID.</strong> Both use the <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> cookie set by middleware - a fresh UUID per request would make conversions unattributable.</>,
-          <><strong className="text-on-surface">Every event names the variation it was fired under.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">exp_variant_string</code> travels to all three destinations, so ODP and GA4 can segment by experiment arm, not just FX. It uses the <strong>rule</strong> key, not the flag key, matching what the GA4 seeder already writes.</>,
+          <><strong className="text-on-surface">Every event names the variation it was fired under.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">exp_variant_string</code> travels to all three destinations, so ODP and GA4 can segment by experiment arm, not just FX. Use the <strong>rule</strong> key rather than the flag key - a flag can have several rules, and the rule is what the analytics tool&apos;s experiment dimension expects.</>,
           <><strong className="text-on-surface">Suppress impressions at decide time, fire at render time.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> everywhere except the component that renders the variation prevents double-counting.</>,
           <><strong className="text-on-surface">FX drops events with unknown keys - silently.</strong> Define the event in the FX project and attach it as a metric to a flag rule before expecting results.</>,
           <><strong className="text-on-surface">Prefer declarative tracking for content.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">data-track-event</code> attributes work inside CMS-rendered markup where you can&apos;t add click handlers.</>,
         ]} />
 
         <SourcePanel
-          heading="Source files"
+          heading="How this reference implementation does it"
           files={[
             { label: "tracking/index.ts", path: "src/lib/tracking/index.ts", content: trackingIndexTs },
             { label: "destinations/fx.ts", path: "src/lib/tracking/destinations/fx.ts", content: fxDestinationTs },

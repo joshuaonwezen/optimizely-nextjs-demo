@@ -3,7 +3,6 @@ import Link from "next/link";
 import DemoHero from "@/components/demo/DemoHero";
 import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 import KeyPoints from "@/components/demo/KeyPoints";
-import InlineCode from "@/components/demo/InlineCode";
 import { Pipeline } from "@/components/demo/Pipeline";
 import { StepBadge } from "@/components/ui/StepBadge";
 
@@ -36,166 +35,119 @@ const LEGEND: { color: string; label: string; dashed: boolean }[] = [
   { color: "var(--primary-dim)", label: "Mark AI agents assist authoring (dev-time, via MCP)", dashed: true },
   { color: "var(--on-surface-variant)", label: "Request flow inside the Next.js deployment", dashed: false },
   { color: "var(--tertiary)", label: "Decisions and conversions to experiment results", dashed: false },
-  { color: "var(--on-surface-variant)", label: "Reference only - export and warehouse are not wired up", dashed: true },
+  { color: "var(--on-surface-variant)", label: "Leaves the request path - into systems you own", dashed: true },
 ];
 
-type Status = "live" | "partial" | "reference";
-
-const STATUS_CHIP: Record<Status, { label: string; className: string }> = {
-  live: { label: "Wired up", className: "bg-brand/10 text-brand border-brand/30" },
-  partial: { label: "Partial", className: "bg-tertiary/10 text-tertiary border-tertiary/30" },
-  reference: { label: "Reference", className: "bg-surface-low text-on-surface-variant border-ghost-border" },
-};
-
+// `role` is what the product is for; `mechanism` is how you integrate it. Both are
+// written at the platform level - the concrete choices a given implementation makes
+// belong in the prose around them, not here.
 const PRODUCTS: {
   name: string;
-  status: Status;
   role: string;
   mechanism: string;
-  files: string[];
 }[] = [
   {
     name: "Optimizely Graph",
-    status: "live",
     role: "The single read API. Every content-shaped thing in the stack converges here: CMS pages, DAM asset metadata, and external systems registered through the Content Source API.",
-    mechanism: "Server-side GraphQL over the cms-sdk GraphClient against cg.optimizely.com, single-key auth. Cached queries are \"use cache\" functions wrapping request() with a cacheTag; unbounded-input queries (search, autocomplete, geo) call request() directly and stay uncached.",
-    files: ["src/lib/optimizely/graphClient.ts", "src/lib/graphql/queries/"],
+    mechanism: "Query it server-side over GraphQL with a delivery key. The integration decision that matters is caching: queries whose shape is fixed and whose inputs come from a closed set can be cached and tagged for invalidation, while queries keyed on unbounded visitor input - search terms, coordinates - must stay uncached, or every request mints a cache entry nothing will ever read again.",
   },
   {
     name: "SaaS CMS",
-    status: "live",
     role: "Authoring, Visual Builder compositions, display templates, preview and the editorial workflow. Publishes sync into Graph rather than being read directly by the app.",
-    mechanism: "Content types pushed from code via opti:push. Reads go through Graph; writes (seeding, migrations) go through the Management API with an OAuth client-credentials token. Preview uses a short-lived token, or App Key Basic auth for shareable external links.",
-    files: ["optimizely.config.mjs", "src/lib/optimizely/componentRegistry.ts", "scripts/_shared.ts"],
+    mechanism: "Define content types in code and push them, so the model is version-controlled alongside the components that render it. Reads go through Graph, never the CMS directly. Writes - seeding, migrations, bulk edits - go through the Management API under service credentials. Preview is its own path: a short-lived token for editors in context, and app-level credentials where a draft link has to work for someone with no CMS login.",
   },
   {
     name: "Feature Experimentation",
-    status: "live",
-    role: "Flags, A/B tests and server-side bucketing. The decision that matters most is made before rendering, in middleware, so each variation can be cached independently.",
-    mechanism: "Datafile-only SDK (60s TTL) running in three places: edge middleware (decideAll, encoded into the URL), server components via getOptimizelyUser(), and the browser for impressions. Impressions are suppressed by default and fired once by the component that actually renders the variant. A fourth, parallel client adds the SDK's native ODP manager so an FX audience can target an ODP segment directly instead of going through the hand-rolled map in odp.ts. It is deliberately kept out of middleware, where fetching segments would put a blocking ODP round trip on every request, and no FX audience uses an ODP condition yet - so that path exists in code but is not exercised here.",
-    files: ["src/middleware.ts", "src/lib/optimizely/user.ts", "src/lib/optimizely/variationPath.ts", "src/lib/optimizely/experimentationOdp.ts"],
+    role: "Flags, A/B tests and server-side bucketing. The decision that matters most is made before rendering, so each variation can be cached independently.",
+    mechanism: "The SDK decides from a locally cached datafile, so a decision costs no network call. Decide as early in the request as you can - at the edge, before rendering - and carry the result forward rather than deciding again per component. Suppress the impression everywhere a flag is read for routing, and fire it once from whatever actually renders the variant, or a page that decides several times will over-count. The SDK can also fetch ODP segments itself, letting an audience carry a segment condition directly instead of you mapping segments to variations by hand; keep that lookup off the hot path, since unlike a datafile decision it is a real network round trip.",
   },
   {
     name: "Data Platform (ODP)",
-    status: "live",
-    role: "The behavioural profile store. Events flow out of the app, come back as audience membership, and are mapped to a Graph variation key so the next render is personalised.",
-    mechanism: "Four channels: the client zaius tag for pageviews and mb_* events, a server POST to /v3/events for form submissions, a server /v3/graphql query for audience membership (5 min cache), and customer-attribute writes that put top_category and last_category on the profile. Segments map to variation keys through ODP_SEGMENT_TO_VARIATION. The attribute write is the one that changes who can use this: an audience on a CMS taxonomy term becomes a dropdown in the ODP UI rather than an engineering ticket.",
-    files: ["src/lib/optimizely/odp.ts", "src/components/OdpSetup.tsx", "src/components/AutoTracker.tsx", "src/lib/optimizely/profile.ts"],
+    role: "The behavioural profile store. Events flow out of the app, come back as audience membership, and are mapped to a content variation so the next render is personalised.",
+    mechanism: "Four channels, and they are worth separating. A browser tag for pageviews and interaction events. A server-side event call for things the browser should not be trusted with, like a form submission. A server-side query that reads back which audiences a visitor qualifies for, cached, because membership changes slowly. And customer-attribute writes, which are the ones that change who can use the platform: an event stream needs someone to write a segment rule, whereas an attribute carrying the visitor\'s content interests turns an audience into a dropdown a marketer can use unaided.",
   },
   {
     name: "Web Experimentation",
-    status: "live",
-    role: "Visual, marketer-owned client-side testing on top of the same visitor identity as FX. Useful for changes that do not need a code deploy.",
-    mechanism: "A blocking snippet in <head> (sync on purpose, to avoid a flash of the original). The link runs both ways. Outbound, a WX custom-JS action writes an opti_wx_variation cookie, which middleware validates against the FX datafile and folds into the URL segment, so the next request is server-rendered and FX decisions take precedence. Inbound, WxProfileBridge pushes the shared visitor profile in as WX user attributes - persona, ODP segment, top category and the served variation - so a WX audience can be built on a CMS taxonomy term with no deploy. WX evaluates audiences at page activation and the push lands after hydration, so those attributes apply from the next activation, the same semantics as the cookie.",
-    files: ["src/app/layout.tsx", "src/middleware.ts", "src/components/personalization/WxProfileBridge.tsx"],
+    role: "Visual, marketer-owned client-side testing on top of the same visitor identity as Feature Experimentation. Useful for changes that do not need a code deploy.",
+    mechanism: "The snippet must load blocking in the head, or the original paints before the variation applies. Because it decides in the browser after the server has already responded, connecting it to server-rendered content means persisting its decision - typically to a cookie - and letting the next request act on it. Traffic should run both ways: push what you know about the visitor in as user attributes, and a marketer can target a content taxonomy term or a data-platform audience from the visual editor without a deploy. Audiences evaluate at page activation, so attributes pushed after the page loads apply from the next one.",
   },
   {
     name: "DAM / CMP Assets",
-    status: "live",
     role: "Asset library and delivery. Images arrive as references on content and are rendered with responsive srcsets and on-the-fly CDN resizing.",
-    mechanism: "Delivery-side only: asset metadata comes through Graph on the content reference, binaries come from the CMP CDN with resize params, and an allow-listed proxy route adds long-lived caching. There are no direct DAM REST calls.",
-    files: ["src/lib/optimizely/damImage.ts", "src/app/api/image-proxy/route.ts"],
+    mechanism: "Delivery-side only is usually the right scope. Asset metadata rides along on the content reference from Graph, so no second lookup is needed, and the binary comes from the asset CDN with transform parameters applied per breakpoint. If you proxy those URLs to add caching or hide the origin, allow-list the hosts you will forward to rather than accepting arbitrary ones.",
   },
   {
     name: "Content Source API",
-    status: "live",
     role: "Brings systems that are not the CMS into Graph, so a PIM, a branch database or a quote feed can be queried with the same GraphQL and the same facets as CMS content.",
-    mechanism: "Build and seed time: a schema is PUT to the content source endpoint, then rows are pushed as NdJSON under App Key Basic auth. Once indexed, the items read back exactly like CMS content, including GeoPoint geo search.",
-    files: ["scripts/_contentSource.ts", "src/lib/graphql/queries/GetLocations.ts"],
+    mechanism: "Register a schema for the external system, then push rows into it. Once indexed they read back exactly like CMS content - same filters, same facets, same pagination - so a component does not need to know whether what it renders was authored or synced. This is the cheapest way to make a non-CMS system queryable without building a second delivery path.",
   },
   {
-    name: "GA4 / Google Tag Manager",
-    status: "live",
+    name: "Analytics and tag management",
     role: "The analytics the customer already had. Not an Optimizely product, but the one every real stack has, and the place a marketer will ask to see experiment arms alongside everything else they measure.",
-    mechanism: "gtag and the GTM container bootstrap inline in <head> so both exist before any tracking call, sharing one window.dataLayer. Every trackEvent() pushes there as a third destination, and each carries exp_variant_string (RuleKey-VariationName, comma joined) so any GA4 report can be sliced by experiment arm without a second integration. Note the seeding script targets a different property from the app's client-side one, on purpose.",
-    files: ["src/app/layout.tsx", "src/lib/tracking/destinations/dataLayer.ts", "scripts/send-ga4-events.mjs"],
+    mechanism: "Treat it as one more destination on the same event wrapper rather than a separate integration. The thing that makes it valuable is attribution: stamp each event with the variation the visitor was actually served, using the experiment-dimension convention the analytics tool already understands, and an Optimizely variation becomes a dimension in reports Optimizely does not own. Keep the tag bootstraps ahead of any tracking call so nothing fires into an undefined queue.",
   },
   {
     name: "Mark AI",
-    status: "partial",
     role: "AI agents over the stack: content generation and review, SEO and GEO analysis, and natural-language authoring against the CMS.",
-    mechanism: "Present as documentation plus a dev-time MCP connection (the CMS MCP server, and an experimentation MCP server in .mcp.json) that a developer or editor drives from their tooling. There is no runtime call from the app itself, so this is an authoring-side accelerator rather than a request-path dependency.",
-    files: ["src/app/demo/mark-ai/page.tsx", "src/app/demo/mcp-server/page.tsx", ".mcp.json"],
+    mechanism: "Authoring-side rather than request-path. Agents reach the CMS and the experimentation platform through their published tool interfaces, driven from an editor or developer tool, so nothing here sits between a visitor and a response. That is the distinction to hold onto when scoping it: it accelerates the people producing the experience, and adds no runtime dependency to serving it.",
   },
   {
     name: "Experiment Results",
-    status: "live",
-    role: "Where the experiment is actually measured. Every decision and every conversion this app fires lands here, and the stats engine turns them into lift and significance per variation.",
-    mechanism: "Both event types leave the browser, not the edge. Middleware runs decideAll with DISABLE_DECISION_EVENT behind a no-op requestHandler, so the impression is fired by FxBucketingEvent once the served variation is confirmed, and conversions go through the shared trackEvent() wrapper's FX destination (user.trackEvent). Both carry the same attributes as the decision, so results can be segmented by them. Results are read in the FX console or through the Results API; this app does not call that API.",
-    files: ["src/components/FxBucketingEvent.tsx", "src/lib/tracking/destinations/fx.ts"],
+    role: "Where the experiment is actually measured. Every decision and every conversion lands here, and the stats engine turns them into lift and significance per variation.",
+    mechanism: "Both event types should leave from where the visitor actually is, not from wherever the decision was computed - an impression fired at the edge records an exposure nobody necessarily saw. Decide at the edge with the impression suppressed, confirm what was rendered, then fire it from the client. Send conversions with the same attributes as the decision, or results cannot be segmented by the audiences that shaped them. Results are read in the console or pulled through the results API.",
   },
   {
     name: "Optimizely Analytics",
-    status: "reference",
     role: "Warehouse-native product analytics: funnels, retention and cohort analysis over the same behavioural data, joined to whatever else the business already keeps in its warehouse.",
-    mechanism: "Not integrated here, and it is the one product that does not ingest anything. Optimizely's Enriched Events Export drops raw decision and conversion rows into storage the customer owns, that lands in their warehouse (Snowflake, BigQuery, Databricks), and Analytics queries it in place rather than copying it. The value of the export is that experiment results stop being a walled garden: a variation can be joined to revenue, churn or anything else already modelled in the warehouse.",
-    files: [],
+    mechanism: "The one product that does not ingest anything. An enriched export drops raw decision and conversion rows into storage the customer owns, that lands in their warehouse, and Analytics queries it in place rather than copying it. The value is that experiment results stop being a walled garden: a variation can be joined to revenue, churn or anything else already modelled there.",
   },
   {
     name: "Content Recommendations",
-    status: "reference",
     role: "Picks the next best article or page per visitor from their behavioural profile, typically for a \"recommended for you\" rail.",
-    mechanism: "Not integrated here, and it does not reuse the ODP profile - it builds its own from its own tracking script plus a crawl or feed of the content. Nothing syncs between the two profile stores; the most you can align is the visitor identifier by passing the same optimizelyEndUserId. Wiring it up means adding that script or its delivery API, then resolving the returned content keys through Graph so the rail renders with the existing block components.",
-    files: [],
+    mechanism: "The trap worth knowing before scoping it: it does not reuse the data-platform profile. It builds its own, from its own tracking script plus a crawl or feed of the content, and nothing syncs between the two stores. The most you can align is the visitor identifier. Integrating it means adding that script or its delivery API, then resolving the returned content keys through Graph so the rail renders with components you already have.",
   },
   {
     name: "Product Recommendations",
-    status: "reference",
     role: "Catalog-driven merchandising: also-bought, trending and personalised product rails.",
-    mechanism: "Not integrated here, and it needs something this demo does not have: a product catalog feed. It also keeps its own behavioural profile rather than reading ODP, so the mb_* stream cannot simply be piped in - the same signals would have to be emitted to its tracker alongside the existing ODP calls. The natural fit would be to register the catalog through the Content Source API so products are queryable in Graph, then add that second emit to the existing event layer.",
-    files: [],
+    mechanism: "Needs a product catalog feed, and like Content Recommendations it keeps its own behavioural profile rather than reading the data platform - so an existing event stream cannot simply be piped in; the same signals have to be emitted to its tracker alongside the existing calls. Registering the catalog through the Content Source API first is what makes the returned products queryable next to everything else.",
   },
 ];
 
-const STATUS_TABLE: { product: string; status: Status; note: string }[] = [
-  { product: "Optimizely Graph", status: "live", note: "Core read path, 19 named queries" },
-  { product: "SaaS CMS", status: "live", note: "Management API, preview, Visual Builder" },
-  { product: "Feature Experimentation", status: "live", note: "Middleware, server and browser; native ODP client unused" },
-  { product: "Data Platform (ODP)", status: "live", note: "zaius tag, /v3/events, segments, customer attributes" },
-  { product: "Web Experimentation", status: "live", note: "Blocking snippet, cookie out, profile attributes in" },
-  { product: "DAM / CMP", status: "live", note: "Delivery side only, no DAM REST calls" },
-  { product: "Content Source API", status: "live", note: "Seed time: quotes and branch locations" },
-  { product: "GA4 / Google Tag Manager", status: "live", note: "Third destination; every event carries exp_variant_string" },
-  { product: "Experiment Results", status: "live", note: "Decisions and conversions fired from the browser" },
-  { product: "Mark AI", status: "partial", note: "Docs and dev-time MCP, no runtime integration" },
-  { product: "Optimizely Analytics", status: "reference", note: "Needs Enriched Events Export into a warehouse" },
-  { product: "Content Recommendations", status: "reference", note: "Not integrated" },
-  { product: "Product Recommendations", status: "reference", note: "Not integrated" },
-];
 
 const LIFECYCLE: { title: string; detail: React.ReactNode }[] = [
   {
-    title: "Edge middleware",
+    title: "Identify and decide, at the edge",
     detail: (
       <>
-        Mints or reads the <InlineCode>optimizelyEndUserId</InlineCode> cookie, applies CMS-managed
-        redirects, runs FX <InlineCode>decideAll</InlineCode> against the cached datafile, keeps only
-        flags marked as CMS flags whose route matches, and rewrites the URL with up to three{" "}
-        <InlineCode>__v_flag--variation</InlineCode> segments. The WX cookie is folded in here too,
-        only where FX has no decision for that flag.
+        Establish the visitor id before anything else needs it, minting one on first request so the
+        very first render is not anonymous. Apply CMS-managed redirects against the clean path,
+        before any rewriting. Then decide flags from the cached datafile and encode the winning
+        variations into the request itself. Two constraints worth designing in: only let flags that
+        actually change CMS content reach this stage, and cap how many can stack, or the number of
+        distinct cache entries multiplies with every flag you add.
       </>
     ),
   },
   {
-    title: "Catch-all route",
+    title: "Resolve the route",
     detail: (
       <>
-        <InlineCode>extractVariations()</InlineCode> splits the variation segments back off the slug,
-        then <InlineCode>buildUrlCandidates()</InlineCode> produces the locale-aware URL candidates to
-        try. On the homepage only, with no FX variation, the ODP segment read runs and the route opts
-        out of caching - which is why <InlineCode>/</InlineCode> is dynamic and every other route stays
-        on ISR.
+        Split the variation keys back off the incoming path, and work out which content URLs to
+        try - locale prefixes and trailing slashes both produce more than one candidate. This is
+        also where you decide whether the request can stay cached: reading per-visitor state here
+        makes the route dynamic, so scope that read to the few routes that genuinely need it rather
+        than applying it globally.
       </>
     ),
   },
   {
-    title: "Graph query",
+    title: "Query content",
     detail: (
       <>
-        <InlineCode>getContentByPath()</InlineCode> runs per candidate with a variation filter that
-        always sets <InlineCode>includeOriginal: true</InlineCode>, so a visitor who matches no
-        variation still gets the original page. A key-lookup fallback covers the case where the path
-        query misses.
+        Fetch by path with a variation filter, and <strong>always allow the original</strong> in
+        the result set. Without that, a visitor who matches no variation gets nothing rather than
+        the default page - the single most common way personalised routing produces a blank page in
+        production. Keep a lookup fallback for the case where the path query misses.
       </>
     ),
   },
@@ -203,9 +155,9 @@ const LIFECYCLE: { title: string; detail: React.ReactNode }[] = [
     title: "Render",
     detail: (
       <>
-        The component registry dispatches the returned type to an experience or page component, which
-        walks the composition tree and renders each block. The variation actually served is reported
-        back to FX as an impression from the client.
+        Dispatch the returned content type to a component and walk the composition tree. The
+        variation that was actually rendered is what gets reported back as an impression, from the
+        client - not the variation that was decided upstream, which may never have been shown.
       </>
     ),
   },
@@ -213,9 +165,9 @@ const LIFECYCLE: { title: string; detail: React.ReactNode }[] = [
     title: "Invalidate",
     detail: (
       <>
-        An editor publishes, Graph reindexes and fires its webhook, and the webhook route calls{" "}
-        <InlineCode>revalidateTag</InlineCode> for every tag in <InlineCode>CACHE_TAGS</InlineCode>.
-        The one-hour TTL is only the fallback ceiling.
+        Nothing polls. Publishing is what drops the cache: the CMS reindexes and fires a webhook,
+        and the handler invalidates every cache tag the content could be behind. A time-based TTL
+        is the fallback ceiling for a missed webhook, not the mechanism.
       </>
     ),
   },
@@ -314,7 +266,7 @@ export default function OptimizelyOnePage() {
     <>
       <DemoHero
         title="Optimizely One Platform"
-        description="How Graph, SaaS CMS, DAM, the Content Source API, Feature Experimentation, Web Experimentation, ODP, recommendations and Mark AI compose inside a single Next.js application - and which of them are actually wired up in this demo."
+        description="How Graph, SaaS CMS, DAM, the Content Source API, Feature Experimentation, Web Experimentation, ODP, recommendations and Mark AI compose into one integration - what each product is responsible for, where they hand off to each other, and the decisions that make the difference between products running side by side and products actually composing."
       />
 
       <div className="max-w-6xl mx-auto px-8 py-16 space-y-20">
@@ -327,10 +279,11 @@ export default function OptimizelyOnePage() {
               app has one query language and one cache story instead of one integration per product.
             </>,
             <>
-              <strong>Experimentation happens before rendering.</strong> FX decides in edge
-              middleware and the variation is encoded into the URL as{" "}
-              <InlineCode>__v_flag--variation</InlineCode>, which gives every bucket its own stable
-              ISR cache entry. Personalised pages stay statically cached instead of going dynamic.
+              <strong>Experimentation happens before rendering.</strong> Decide the flag at the
+              edge and make the winning variation part of the URL, so every bucket gets its own
+              stable ISR cache entry. Personalised pages stay statically cached instead of going
+              dynamic, which is the difference between personalisation you can afford at scale and
+              personalisation you cannot.
             </>,
             <>
               <strong>Client-side tools can still reach server-rendered output.</strong> Web
@@ -343,16 +296,17 @@ export default function OptimizelyOnePage() {
               request changes the content served on the next.
             </>,
             <>
-              <strong>One profile, read by every product.</strong> Visitor id, FX attributes,
-              persona, the CMS categories the visitor reads and their ODP audiences compose into a
-              single object. Reading it means reading cookies, so blocks fetch it from the browser
-              via <InlineCode>/api/profile</InlineCode> and the page they sit on stays cached.
+              <strong>One profile, read by every product.</strong> Visitor id, decision attributes,
+              audience membership and the content interests inferred from browsing belong in a
+              single object rather than being re-derived per product. Composing it means reading
+              per-visitor state, which makes a route dynamic - so anything that has to stay cached
+              reads that profile from the browser instead of the server.
             </>,
             <>
-              <strong>Three of these products are not integrated here.</strong> Content
-              Recommendations, Product Recommendations and Optimizely Analytics are reference only,
-              and Mark AI is authoring-side. See the{" "}
-              <a href="#status" className="text-brand hover:underline">status table</a>.
+              <strong>Not every product reads the same profile.</strong> The recommendation
+              products each build their own from their own tracker, and warehouse analytics ingests
+              nothing at all - it queries an export in place. Assuming one shared visitor profile
+              across the whole suite is the most common scoping mistake.
             </>,
           ]}
         />
@@ -360,9 +314,10 @@ export default function OptimizelyOnePage() {
         <section id="diagram">
           <DemoSectionHeading id="diagram">Architecture Diagram{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            Content supply on the left, Graph as the hub, the Next.js app in the middle split by
-            runtime, and the decisioning and data products on the right. Solid boxes are wired up in
-            this repo; dashed boxes are reference architecture.
+            Content supply on the left, Graph as the hub, the application in the middle split by
+            runtime, and the decisioning and data products on the right. Solid edges are the request
+            path; dashed edges leave it - a decision persisted for the next request, or an export
+            into systems you own.
           </p>
 
           <div className="rounded-2xl border border-ghost-border bg-surface-lowest p-4 overflow-x-auto">
@@ -415,7 +370,7 @@ export default function OptimizelyOnePage() {
                 stroke="var(--error)" strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#m-graph)" />
 
               {/* The request spine. The URL rewrite is the ONLY channel the FX decision uses
-                  to reach the server render: middleware writes __v_flag--variation segments,
+                  to reach the server render: the edge encodes the variation into the URL,
                   the catch-all parses them back off the slug and turns them into the Graph
                   variation filter. Nothing re-decides FX on the server. */}
               <path d="M 600,160 L 600,178"
@@ -454,7 +409,7 @@ export default function OptimizelyOnePage() {
 
               {/* Decisions and conversions leave the BROWSER, not the edge: middleware runs
                   decideAll with DISABLE_DECISION_EVENT behind a no-op requestHandler, so the
-                  impression is fired by FxBucketingEvent and conversions by the fx tracking
+                  impression is fired by whatever renders the variant, and conversions by the tracking
                   destination (user.trackEvent). The line crosses the frame because the events
                   are leaving the deployment. */}
               <path d="M 585,404 L 585,596"
@@ -498,11 +453,11 @@ export default function OptimizelyOnePage() {
 
               <Box x={286} y={150} w={152} h={140} hc="var(--error)"
                 title="Optimizely Graph"
-                sub={["cg.optimizely.com", "one GraphQL read API", "for CMS · DAM meta ·", "external sources", "search · facets · geo", "variation filter for", "personalised content"]} />
+                sub={["one GraphQL read API", "for CMS · DAM meta ·", "external sources", "search · facets · geo", "variation filter for", "personalised content"]} />
 
               <Box x={520} y={72} w={272} h={88} hc="var(--primary)"
                 title="Edge Middleware"
-                sub={["FX decideAll at the edge", "rewrites __v_flag--variation", "one stable ISR key per bucket", "CMS redirects · visitor id"]} />
+                sub={["FX decideAll at the edge", "encodes the variation key", "one stable ISR key per bucket", "CMS redirects · visitor id"]} />
 
               <Box x={520} y={182} w={272} h={100} hc="var(--primary)"
                 title="Server Components (RSC)"
@@ -510,7 +465,7 @@ export default function OptimizelyOnePage() {
 
               <Box x={520} y={304} w={272} h={100} hc="var(--primary)"
                 title="Client / Browser"
-                sub={["WX snippet (blocking)", "ODP zaius tag", "AutoTracker · mb_* events", "FX browser datafile"]} />
+                sub={["WX snippet (blocking)", "ODP zaius tag", "tag · interaction events", "FX browser datafile"]} />
 
               <Box x={940} y={72} w={200} hc="var(--tertiary)"
                 title="Feature Experimentation"
@@ -526,14 +481,14 @@ export default function OptimizelyOnePage() {
 
               <Box x={940} y={388} w={200} h={68} hc="var(--on-surface-variant)" dashed
                 title="Content Recommendations"
-                sub={["reference - not wired up", "own tracker + content feed"]} />
+                sub={["keeps its own profile", "own tracker + content feed"]} />
 
               <Box x={940} y={476} w={200} h={68} hc="var(--on-surface-variant)" dashed
                 title="Product Recommendations"
-                sub={["reference - not wired up", "own tracker + catalog feed"]} />
+                sub={["keeps its own profile", "own tracker + catalog feed"]} />
 
               {/* Measurement band. The events really are sent from the browser, so Experiment
-                  Results is solid; the export and everything downstream of it is reference. */}
+                  Results is solid; the export and everything downstream of it leaves the request path. */}
               <Box x={500} y={600} w={170} h={72} hc="var(--tertiary)"
                 title="Experiment Results"
                 sub={["decisions + conversions in", "stats engine computes lift", "read via the Results API"]} />
@@ -551,11 +506,11 @@ export default function OptimizelyOnePage() {
               <text x={476} y={244} textAnchor="middle" fill="var(--error)" fontSize={9} fontStyle="italic" fontFamily="system-ui,sans-serif">content</text>
               <text x={424} y={333} textAnchor="middle" fill="var(--primary-fill)" fontSize={9} fontFamily="system-ui,sans-serif">publish webhook · revalidateTag</text>
               <text x={869} y={96} textAnchor="middle" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">datafile · decideAll</text>
-              <text x={814} y={120} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">opti_wx_variation</text>
+              <text x={814} y={120} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">variation cookie</text>
               <text x={814} y={131} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">read next request</text>
               <text x={826} y={356} textAnchor="start" fill="var(--secondary-container)" fontSize={8.5} fontFamily="system-ui,sans-serif">mb_* events</text>
               <text x={869} y={206} textAnchor="middle" fill="var(--secondary-container)" fontSize={8.5} fontFamily="system-ui,sans-serif">segments</text>
-              <text x={610} y={176} textAnchor="start" fill="var(--on-surface-variant)" fontSize={8.5} fontFamily="system-ui,sans-serif">__v_flag--variation</text>
+              <text x={610} y={176} textAnchor="start" fill="var(--on-surface-variant)" fontSize={8.5} fontFamily="system-ui,sans-serif">variation in the URL</text>
               <text x={610} y={298} textAnchor="start" fill="var(--on-surface-variant)" fontSize={8.5} fontFamily="system-ui,sans-serif">rendered HTML</text>
               <text x={595} y={520} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">decisions · conversions</text>
               <text x={710} y={590} textAnchor="middle" fill="var(--on-surface-variant)" fontSize={8.5} fontFamily="system-ui,sans-serif">Enriched Events Export</text>
@@ -605,31 +560,32 @@ export default function OptimizelyOnePage() {
             <div className="rounded-2xl border border-ghost-border bg-surface-lowest p-6">
               <h3 className="font-display font-bold text-base text-on-surface mb-3">What it composes</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                <InlineCode>VisitorProfile</InlineCode> carries the visitor id, the FX attribute set,
-                the browsing persona, the CMS category terms the visitor reads most, the ODP audiences
-                they qualify for, and the variation those audiences resolve to.
+                One object holding the visitor id, the attribute set decisions are made with,
+                whatever segment or persona signal you derive from browsing, the audiences the data
+                platform says they qualify for, and the variation those audiences resolve to.
               </p>
               <p className="text-sm text-on-surface-variant leading-relaxed">
-                It calls <InlineCode>getVisitorContext()</InlineCode> and the existing ODP query
-                rather than reimplementing them, so there is still exactly one definition of the FX
-                attribute set and one segment lookup.
+                Compose it from the readers you already have rather than reimplementing them. The
+                attribute set in particular must have exactly one definition: if the edge, the
+                server and the browser each build their own, they will drift, and a visitor can be
+                bucketed one way server-side and another in the browser.
               </p>
             </div>
 
             <div className="rounded-2xl border border-ghost-border bg-surface-lowest p-6">
               <h3 className="font-display font-bold text-base text-on-surface mb-3">
-                Why blocks read it from the browser
+                Why cached pages read it from the browser
               </h3>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
-                Reading the profile means reading cookies, and reading cookies makes a route dynamic.
-                Today <InlineCode>/</InlineCode> is the only dynamic page route; every other page is
-                ISR. An editor can drop a block anywhere, so a block that read the profile on the
-                server could quietly take any page out of the cache.
+                Composing the profile means reading per-visitor state, and reading per-visitor state
+                on the server makes that route dynamic. In a CMS-driven site an editor can place a
+                block on any page, so a block that reads the profile server-side can quietly take an
+                arbitrary page out of the cache - and nobody finds out until the site gets slower.
               </p>
               <p className="text-sm text-on-surface-variant leading-relaxed">
-                So the recommendations block renders a server shell from its CMS fields and fetches
-                the personalised items from <InlineCode>/api/profile</InlineCode> in the browser. The
-                page keeps its cache entry and the rail still personalises.
+                The way out is to split it: render the shell from CMS fields on the server, and
+                fetch the personalised part from the browser against an endpoint that is allowed to
+                be dynamic. The page keeps its cache entry and the content still personalises.
               </p>
             </div>
           </div>
@@ -639,19 +595,20 @@ export default function OptimizelyOnePage() {
             <ul className="space-y-2 text-sm text-on-surface-variant leading-relaxed">
               <li>
                 <strong className="text-on-surface">Server</strong>, on a route that is already
-                dynamic: <InlineCode>getVisitorProfile()</InlineCode> for the cookie-only view, or{" "}
-                <InlineCode>getVisitorProfileWithSegments()</InlineCode> to add the ODP lookup.
+                dynamic. Offer two depths: one that reads only local state and costs nothing, and
+                one that adds the audience lookup, so callers are not forced to pay for a network
+                round trip they do not need.
               </li>
               <li>
-                <strong className="text-on-surface">Route handler</strong>:{" "}
-                <InlineCode>/api/profile</InlineCode>, which is <InlineCode>force-dynamic</InlineCode>.
-                Add <InlineCode>?fresh=1</InlineCode> to bypass the five minute segment cache when a
-                panel has to show current state.
+                <strong className="text-on-surface">A dedicated endpoint</strong>, explicitly
+                dynamic, for anything running on a cached page. Give it a way to bypass the audience
+                cache, because a verification or debugging surface has to show current state rather
+                than what was true five minutes ago.
               </li>
               <li>
-                <strong className="text-on-surface">Browser</strong>:{" "}
-                <InlineCode>useVisitorProfile()</InlineCode>, which dedupes to one request per tab and
-                refetches when the persona changes client-side.
+                <strong className="text-on-surface">Browser</strong>, through a small client-side
+                reader that dedupes concurrent callers into one request per tab and refetches when a
+                signal changes without a server round trip.
               </li>
             </ul>
           </div>
@@ -669,49 +626,49 @@ export default function OptimizelyOnePage() {
             {[
               {
                 title: "Data to decision to content",
-                blurb: "Behaviour observed in the browser becomes audience membership in ODP, which becomes a variation key in a Graph query. The content served changes because of what the visitor did earlier, and the loop closes: every event fired afterwards carries the variation that was served, so the same stream that personalised the page also measures it.",
+                blurb: "Behaviour observed in the browser becomes audience membership, which becomes a variation key on the content query. The page changes because of what the visitor did earlier, and the loop closes: every event fired afterwards carries the variation that was served, so the same stream that personalised the page also measures it.",
                 steps: [
-                  { label: "mb_* event", sub: "AutoTracker" },
-                  { label: "ODP profile", sub: "zaius tag" },
-                  { label: "Audience", sub: "/v3/graphql" },
-                  { label: "variation key", sub: "resolveVariationKey()", highlight: true },
-                  { label: "Graph filter", sub: "includeOriginal" },
-                  { label: "Personalised page", sub: "RSC render" },
-                  { label: "exp_variant_string", sub: "back on every event" },
+                  { label: "Interaction event", sub: "browser tag" },
+                  { label: "Behavioural profile", sub: "data platform" },
+                  { label: "Audience", sub: "segment query" },
+                  { label: "Variation key", sub: "one shared string", highlight: true },
+                  { label: "Content filter", sub: "allow the original" },
+                  { label: "Personalised page", sub: "server render" },
+                  { label: "Variation on events", sub: "attribution closes" },
                 ],
               },
               {
                 title: "Publish to invalidate",
-                blurb: "Nothing polls. An editor publishing is what makes the cache drop, and the one-hour TTL is only the ceiling if a webhook is ever missed.",
+                blurb: "Nothing polls. Publishing is what makes the cache drop, and a time-based TTL is only the ceiling for a webhook that never arrived.",
                 steps: [
-                  { label: "Editor publishes", sub: "Visual Builder" },
-                  { label: "Graph reindexes", sub: "~30-60s" },
-                  { label: "Webhook", sub: "doc.updated" },
-                  { label: "revalidateTag", sub: "every CACHE_TAG", highlight: true },
+                  { label: "Editor publishes", sub: "authoring UI" },
+                  { label: "Content reindexes", sub: "seconds, not instant" },
+                  { label: "Webhook", sub: "content updated" },
+                  { label: "Invalidate tags", sub: "every affected tag", highlight: true },
                   { label: "Next request", sub: "rerenders once" },
                 ],
               },
               {
                 title: "Client decision to server render",
-                blurb: "The loop that makes a client-side tool safe on a statically cached site. WX picks its variation in the browser, but the visible render on the next navigation is server-side, so there is no flash of the original.",
+                blurb: "The loop that makes a client-side tool safe on a statically cached site. The visual editor picks its variation in the browser, but the visible render on the next navigation is server-side, so there is no flash of the original.",
                 steps: [
-                  { label: "WX snippet", sub: "browser" },
-                  { label: "opti_wx_variation", sub: "cookie" },
-                  { label: "Middleware", sub: "validates vs datafile", highlight: true },
-                  { label: "__v_ segment", sub: "URL rewrite" },
-                  { label: "Cached variant", sub: "own ISR entry" },
+                  { label: "Visual editor", sub: "decides in browser" },
+                  { label: "Persisted decision", sub: "cookie" },
+                  { label: "Validate at the edge", sub: "reject unknown keys", highlight: true },
+                  { label: "Variation in the URL", sub: "one key per bucket" },
+                  { label: "Cached variant", sub: "its own cache entry" },
                 ],
               },
               {
                 title: "Content meaning to recommendation",
-                blurb: "The CMS taxonomy stops being only a filing system and becomes a targeting vocabulary. The terms an editor tags an article with are the same strings ODP builds an audience on and Graph filters by, so no new query and no schema change was needed to get a personalised rail - getArticles() already took a category filter.",
+                blurb: "The content taxonomy stops being only a filing system and becomes a targeting vocabulary. The terms an editor tags an article with are the same strings the data platform builds an audience on and the content query filters by - so a personalised rail needs no new query and no schema change, because the filter was already there.",
                 steps: [
-                  { label: "CMS category", sub: "term on the article" },
-                  { label: "mb_content_viewed", sub: "ReadCategorySignal" },
-                  { label: "mb_read_categories", sub: "cookie, top 3", highlight: true },
-                  { label: "ODP top_category", sub: "customer attribute" },
-                  { label: "Graph filter", sub: "getArticles({ category })" },
-                  { label: "Recommended rail", sub: "client fetch, page stays ISR" },
+                  { label: "Content category", sub: "term on the article" },
+                  { label: "Content viewed", sub: "event carries the terms" },
+                  { label: "Top categories", sub: "accumulated per visitor", highlight: true },
+                  { label: "Customer attribute", sub: "targetable in the UI" },
+                  { label: "Content filter", sub: "same terms, same query" },
+                  { label: "Recommended rail", sub: "fetched client-side" },
                 ],
               },
             ].map(({ title, blurb, steps }) => (
@@ -727,44 +684,21 @@ export default function OptimizelyOnePage() {
         <section id="products">
           <DemoSectionHeading id="products">Product by Product{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            What each product does in this architecture, how it is actually connected, and where that
-            connection lives in the code.
+            What each product is for, and what integrating it actually involves - the decisions that
+            tend to matter, and the traps worth knowing before you scope the work.
           </p>
 
           <div className="grid md:grid-cols-2 gap-5">
-            {PRODUCTS.map(({ name, status, role, mechanism, files }) => {
-              const chip = STATUS_CHIP[status];
-              return (
-                <div
-                  key={name}
-                  className={`rounded-2xl border border-ghost-border p-6 ${
-                    status === "reference" ? "bg-surface-lowest/50" : "bg-surface-lowest"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <h3 className={`font-display font-bold text-base ${
-                      status === "reference" ? "text-on-surface-variant" : "text-on-surface"
-                    }`}>
-                      {name}
-                    </h3>
-                    <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-full border ${chip.className}`}>
-                      {chip.label}
-                    </span>
-                  </div>
-                  <p className="text-sm text-on-surface-variant leading-relaxed mb-3">{role}</p>
-                  <p className="text-xs text-on-surface-variant/80 leading-relaxed mb-4">{mechanism}</p>
-                  {files.length > 0 && (
-                    <ul className="space-y-1">
-                      {files.map((file) => (
-                        <li key={file} className="text-[11px] font-mono text-on-surface-variant/70 truncate">
-                          {file}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              );
-            })}
+            {PRODUCTS.map(({ name, role, mechanism }) => (
+              <div
+                key={name}
+                className="rounded-2xl border border-ghost-border bg-surface-lowest p-6"
+              >
+                <h3 className="font-display font-bold text-base text-on-surface mb-3">{name}</h3>
+                <p className="text-sm text-on-surface-variant leading-relaxed mb-3">{role}</p>
+                <p className="text-xs text-on-surface-variant/80 leading-relaxed">{mechanism}</p>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -786,42 +720,6 @@ export default function OptimizelyOnePage() {
               </li>
             ))}
           </ol>
-        </section>
-
-        <section id="status">
-          <DemoSectionHeading id="status">What Is Actually Wired Up{" "}</DemoSectionHeading>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
-            The diagram is a reference architecture, so it includes products this demo does not use.
-            This table is the honest version: what you can go and read the code for today.
-          </p>
-
-          <div className="rounded-2xl border border-ghost-border bg-surface-lowest overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-ghost-border bg-surface-low">
-                  <th className="text-left font-semibold text-on-surface px-5 py-3">Product</th>
-                  <th className="text-left font-semibold text-on-surface px-5 py-3">Status</th>
-                  <th className="text-left font-semibold text-on-surface px-5 py-3">In this repo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {STATUS_TABLE.map(({ product, status, note }) => {
-                  const chip = STATUS_CHIP[status];
-                  return (
-                    <tr key={product} className="border-b border-ghost-border last:border-0">
-                      <td className="px-5 py-3 text-on-surface font-medium">{product}</td>
-                      <td className="px-5 py-3">
-                        <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-full border ${chip.className}`}>
-                          {chip.label}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 text-on-surface-variant">{note}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
         </section>
 
         <section id="related">

@@ -56,14 +56,14 @@ query {
 }`;
 
 
-const BUCKETING_SNIPPET = `// src/components/FxBucketingEvent.tsx
+const BUCKETING_SNIPPET = `// The component that fires the impression, client-side
 // flagKey is passed in from the page - it was encoded in the URL by middleware:
-//   /savings → /savings/__v_homepage--business
-// extractVariations() in page.tsx parses it back out.
+//   /pricing → /pricing/__v_checkout_layout--single_step
+// The content route parses it back out.
 // No decideAll() here - the flagKey is already known from the route.
 
 "use client";
-export function FxBucketingEvent({ flagKey }: { flagKey: string }) {
+export function VariationImpression({ flagKey }: { flagKey: string }) {
   useEffect(() => {
     const userId = getCookie("optimizelyEndUserId");
     if (!userId) return;
@@ -71,14 +71,14 @@ export function FxBucketingEvent({ flagKey }: { flagKey: string }) {
       if (!client) return;
       const ua = navigator.userAgent;
       const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
-      const persona = getCookie("demo_persona");
-      // Attributes MUST mirror src/middleware.ts (which produced the served
+      const persona = getCookie("persona");
+      // Attributes MUST mirror what middleware used (it produced the served
       // variation) - including logged_in - or the impression can land on a
       // different variation than the one that was rendered.
       const ctx = client.createUserContext(userId, {
         device,
         hostname: window.location.hostname,
-        logged_in: !!getCookie("demo_bucketing_id"),
+        logged_in: !!getCookie("bucketing_id"),
         ...(persona ? { persona } : {}),
       });
       ctx?.decide(flagKey, []); // fire bucketing event for this flag only
@@ -87,7 +87,7 @@ export function FxBucketingEvent({ flagKey }: { flagKey: string }) {
   return null;
 }
 
-// src/app/[[...slug]]/page.tsx
+// The catch-all content route
 // flagKey comes from the URL segment, not from a client-side SDK call.
 // flagVariations = [{ flagKey: "homepage", variationKey: "business" }]
 const { cleanSlug, activeVariations, flagVariations } = extractVariations(slug);
@@ -97,7 +97,7 @@ const servedFlagKey = flagVariations.find((fv) => fv.variationKey === servedVari
 return (
   <>
     <OptimizelyComponent content={page} />
-    {servedFlagKey && <FxBucketingEvent flagKey={servedFlagKey} />}
+    {servedFlagKey && <VariationImpression flagKey={servedFlagKey} />}
   </>
 );`;
 
@@ -109,24 +109,24 @@ const userCtx = client.createUserContext(userId, attributes);
 
 // Evaluate without firing an impression:
 const decision = userCtx.decide(
-  "hero_copy",
+  "checkout_layout",
   [OptimizelyDecideOption.DISABLE_DECISION_EVENT],
 );
 if (!decision.enabled) return null;
 
 // Variation will be rendered - fire the impression:
-void userCtx.decide("hero_copy");
+void userCtx.decide("checkout_layout");
 
 // Variables come back typed - cast to the type you expect:
 const headline = decision.variables.headline as string;
 const subheadline = decision.variables.subheadline as string;
 return <Hero headline={headline} subheadline={subheadline} variation={decision.variationKey} />;`;
 
-const VARIATIONS_SNIPPET = `// src/app/[[...slug]]/page.tsx
-// Middleware rewrites: /savings → /savings/__v_homepage--business
+const VARIATIONS_SNIPPET = `// The catch-all content route
+// Middleware rewrites: /pricing → /pricing/__v_checkout_layout--single_step
 // Both flagKey and variationKey are encoded in the URL segment so the page
 // knows which flag to fire the bucketing event for - no extra SDK call needed.
-// Parsing lives in src/lib/optimizely/variationPath.ts, shared with middleware:
+// Keep parsing in one module, shared with middleware:
 // a malformed segment parses to null instead of an undefined variation key.
 import { isVariationSegment, parseVariationSegment } from "@/lib/optimizely/variationPath";
 
@@ -162,7 +162,7 @@ async function CmsPage({ params }) {
   return (
     <>
       <OptimizelyComponent content={page} />
-      {servedFlagKey && <FxBucketingEvent flagKey={servedFlagKey} />}
+      {servedFlagKey && <VariationImpression flagKey={servedFlagKey} />}
     </>
   );
 }`;
@@ -205,11 +205,11 @@ query {
 # items[0] (the base) is returned - experiment is safe to deploy before
 # editors create any CMS variations.`;
 
-const MIDDLEWARE_SNIPPET = `// src/middleware.ts
+const MIDDLEWARE_SNIPPET = `// Edge middleware
 import { createInstance, createStaticProjectConfigManager, OptimizelyDecideOption }
   from "@optimizely/optimizely-sdk/universal";
 
-export const VARIATION_MARKER = "__v_";
+export const VARIATION_MARKER = "__v_";   // arbitrary - pick anything URL-safe
 const MAX_CMS_VARIATIONS = 3; // safety backstop; cms_route is the real control
 
 // An experiment declares its target route via the cms_route variation variable.
@@ -267,7 +267,7 @@ export async function middleware(request: NextRequest) {
 
   if (activeDecisions.length === 0) return response;
 
-  // Rewrite URL: /savings → /savings/__v_homepage--business
+  // Rewrite URL: /pricing → /pricing/__v_checkout_layout--single_step
   // Each segment encodes flagKey--variationKey so the page knows which flag fired.
   // The user sees /savings in the browser - the rewrite is transparent.
   // Next.js catches each rewritten path as a separate ISR cache entry.
@@ -317,7 +317,7 @@ function HeroCopyDemo({ decision }: { decision: FxDecision | undefined }) {
   if (!decision?.enabled) {
     return (
       <div className="rounded-2xl border border-dashed border-ghost-border bg-surface-lowest p-8 text-center">
-        <p className="text-sm font-mono text-on-surface-variant mb-1">hero_copy</p>
+        <p className="text-sm font-mono text-on-surface-variant mb-1">checkout_layout</p>
         <p className="text-on-surface-variant text-sm">
           Flag is <strong>off</strong> - enable it in the FX dashboard to see the live hero copy variation.
         </p>
@@ -325,7 +325,7 @@ function HeroCopyDemo({ decision }: { decision: FxDecision | undefined }) {
     );
   }
 
-  const headline = (decision.variables.headline as string) || "Banking made simple";
+  const headline = (decision.variables.headline as string) || "The default headline";
   const subheadline = (decision.variables.subheadline as string) || "";
   const isChallenger = decision.variationKey === "challenger";
 
@@ -397,7 +397,7 @@ function PhaseHeader({ label, caption }: { label: string; caption: string }) {
 
 const BUCKETING_ID_SNIPPET = `// Normal decision - bucketed by the visitor's anonymous userId
 const userCtx = client.createUserContext(userId, attributes);
-const decision = userCtx.decide("hero_copy", [DISABLE_DECISION_EVENT]);
+const decision = userCtx.decide("checkout_layout", [DISABLE_DECISION_EVENT]);
 
 // Account-level decision - when logged in, bucket by account ID instead.
 // All seats on the same account see the same variation.
@@ -408,7 +408,7 @@ const accountCtx = accountId
       $opt_bucketing_id: accountId,
     })
   : null;
-const accountDecision = accountCtx?.decide("hero_copy", [DISABLE_DECISION_EVENT]);`;
+const accountDecision = accountCtx?.decide("checkout_layout", [DISABLE_DECISION_EVENT]);`;
 
 export default async function FeatureFlagsDemoPage() {
   const user = await getOptimizelyUser();
@@ -416,9 +416,9 @@ export default async function FeatureFlagsDemoPage() {
   const device = attributes.device as string;
 
   const decisions = user.decideAll();
-  const heroCopyDecision = decisions["hero_copy"];
+  const heroCopyDecision = decisions["checkout_layout"];
   const bucketedDecision = bucketingId
-    ? user.decide("hero_copy", { bucketingId })
+    ? user.decide("checkout_layout", { bucketingId })
     : null;
 
   const activeVariations = Object.values(decisions)
@@ -533,9 +533,9 @@ export default async function FeatureFlagsDemoPage() {
           <PhaseHeader label="Serve" caption="automatic on every request" />
           <div className="flex flex-col lg:flex-row lg:items-stretch gap-2">
             {[
-              { n: 5, env: "Edge", icon: ICON_ZAP, accent: "bg-brand/10 text-brand", file: "src/middleware.ts", essence: "Pick the variation, put it in the URL", explain: "FX chooses which variation this visitor should see (that choice is the “decision”), and the middleware writes it into the request path so the page can be cached per variation.", code: "decideAll([DISABLE_DECISION_EVENT])\n// → { homepage: { variationKey: 'business' } }\n// rewrite: /savings → /savings/__v_homepage--business", href: "#code-middleware" },
-              { n: 6, env: "Server · Graph (cached)", icon: ICON_DATABASE, accent: "bg-tertiary/10 text-tertiary", file: "src/app/[[...slug]]/page.tsx", essence: "Fetch the matching content from Graph", explain: "The page asks Optimizely Graph for the content variant whose name matches the chosen variation. The response is cached, so repeat visits stay fast.", code: "variation: {\n  include: 'SOME',\n  value: ['business'],\n  includeOriginal: true,\n}", href: "#code-page-route" },
-              { n: 7, env: "Client", icon: ICON_ACTIVITY, accent: "bg-brand/10 text-brand", file: "src/components/FxBucketingEvent.tsx", essence: "Record that the visitor saw it", explain: "In the browser, FX logs an “impression” - the event that tells the experiment this visitor was shown this variation, so results can be measured.", code: "decide('homepage')", href: "#code-bucketing-event" },
+              { n: 5, env: "Edge", icon: ICON_ZAP, accent: "bg-brand/10 text-brand", file: "at the edge, before render", essence: "Pick the variation, put it in the URL", explain: "FX chooses which variation this visitor should see (that choice is the “decision”), and the middleware writes it into the request path so the page can be cached per variation.", code: "decideAll([DISABLE_DECISION_EVENT])\n// → { checkout_layout: { variationKey: 'single_step' } }\n// rewrite: /pricing → /pricing/__v_checkout_layout--single_step", href: "#code-middleware" },
+              { n: 6, env: "Server · Graph (cached)", icon: ICON_DATABASE, accent: "bg-tertiary/10 text-tertiary", file: "in the content route", essence: "Fetch the matching content from Graph", explain: "The page asks Optimizely Graph for the content variant whose name matches the chosen variation. The response is cached, so repeat visits stay fast.", code: "variation: {\n  include: 'SOME',\n  value: ['single_step'],\n  includeOriginal: true,\n}", href: "#code-page-route" },
+              { n: 7, env: "Client", icon: ICON_ACTIVITY, accent: "bg-brand/10 text-brand", file: "in the browser, after render", essence: "Record that the visitor saw it", explain: "In the browser, FX logs an “impression” - the event that tells the experiment this visitor was shown this variation, so results can be measured.", code: "decide('checkout_layout')", href: "#code-bucketing-event" },
             ].flatMap((s, i, arr) => [
               <div key={s.n} className="flex-1 min-w-0 bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-2">
@@ -668,14 +668,14 @@ export default async function FeatureFlagsDemoPage() {
           </div>
         </section>
 
-        {/* ── Live hero_copy demo ── */}
+        {/* ── Live flag demo ── */}
         <section id="live-demo">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Live Demo: <code className="font-mono text-2xl">hero_copy</code> <a href="#live-demo" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
+            Live Demo: <code className="font-mono text-2xl">checkout_layout</code> <a href="#live-demo" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-lg">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-2">
             This card is driven entirely by the{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">hero_copy</code> flag
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">checkout_layout</code> flag
             and its <code className="bg-surface-low px-1 rounded text-xs font-mono">headline</code> +{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">subheadline</code> variables.
           </p>
@@ -712,7 +712,7 @@ export default async function FeatureFlagsDemoPage() {
               <code className="bg-surface-low px-1 rounded font-mono text-xs">investments</code> (audience: <code className="bg-surface-low px-1 rounded font-mono text-xs">persona == &quot;investments&quot;</code>).
               Visitors matching none fall through to the default <code className="bg-surface-low px-1 rounded font-mono text-xs">off</code> variation and see the base homepage. The{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code> attribute is set from the{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_persona</code> cookie by the Audience Switcher.
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code> cookie. In production that attribute would come from a real signal - CRM data, a session, a segment - rather than a switcher; only the source changes, the audience conditions stay the same.
               On each variation, set two variation variables:{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_flag: true</code> (marks this as a CMS-content experiment the edge should route) and{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_route</code> (the path the variation targets, e.g.{" "}
@@ -747,7 +747,7 @@ export default async function FeatureFlagsDemoPage() {
             <Step number={3} title="Validate with the Audience Switcher">
               Use the floating pill in the bottom-right corner to preview each variation instantly -
               no waiting for FX bucketing. Select <strong>Business Customer</strong>; the homepage should
-              show &ldquo;Banking built for business&rdquo; once the CMS variation exists.
+              show &ldquo;the business variant headline&rdquo; once the CMS variation exists.
             </Step>
 
             <Step number={4} title="Enable the flag and start the experiment">
@@ -759,7 +759,7 @@ export default async function FeatureFlagsDemoPage() {
             <Step number={5} title="Validate the experiment in your own app">
               With a variation created and the flag live, any visitor bucketed into it is served the matching
               CMS variant automatically - no per-page code. In your own app, confirm it end to end: check the{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">__v_</code> segment on the rewritten request,
+              variation segment on the rewritten request,
               the served content, and the participant count in your FX results. FX owns analytics, winner declaration,
               and rollout from here.
             </Step>
@@ -789,7 +789,7 @@ export default async function FeatureFlagsDemoPage() {
                 Attributes like <code className="bg-surface-low px-1 rounded font-mono text-xs">device</code>,{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code>, and{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">logged_in</code> are collected by{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code> (cookies + headers) and
+                the request-scoped visitor context (cookies + headers) and
                 passed into the decision. FX audience conditions match against them at bucketing time.
               </p>
             </div>
@@ -798,22 +798,17 @@ export default async function FeatureFlagsDemoPage() {
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 An FX audience can also be defined as membership in an{" "}
                 <strong>ODP segment</strong> (built from behavioural + profile data in the Optimizely Data
-                Platform). Server-side,{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">queryOdpSegments(userId)</code> in{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">src/lib/optimizely/odp.ts</code> resolves the
-                visitor&apos;s qualified segments; those feed the FX decision the same way attributes do. See{" "}
+                Platform). A server-side segment query resolves the visitor&apos;s qualified
+                segments, and those feed the decision the same way attributes do. See{" "}
                 <Link href="/demo/personalization#odp" className="text-brand hover:underline">Personalization → ODP</Link> for the full walkthrough.
               </p>
               <p className="text-sm text-on-surface-variant leading-relaxed mt-3">
-                That mapping is hand-rolled. The SDK can also do it natively: build the client with an
-                ODP manager and an audience can carry an{" "}
+                Mapping segments to variations by hand is one option. The SDK can also do it
+                natively: build the client with an ODP manager and an audience carries an{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">ODP_SEGMENT</code>{" "}
-                condition directly, with{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">getOdpAwareClient()</code> in{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">src/lib/optimizely/experimentationOdp.ts</code>{" "}
-                fetching the segments. It is kept out of middleware on purpose - that lookup is a
-                blocking network call and middleware runs on every request - and no audience in this
-                project uses an ODP condition yet, so the path is present but not exercised.
+                condition directly, with the SDK fetching the segments itself. Keep that fetch off
+                the edge either way - unlike a datafile decision it is a real blocking round trip,
+                and middleware runs on every request.
               </p>
             </div>
           </div>
@@ -824,7 +819,7 @@ export default async function FeatureFlagsDemoPage() {
               <div className="space-y-3">
                 {[
                   { key: "device", value: device, note: "read from User-Agent header server-side (no cookie - GDPR safe)" },
-                  { key: "logged_in", value: String(attributes.logged_in), note: "from demo_logged_in cookie (Audience Switcher)" },
+                  { key: "logged_in", value: String(attributes.logged_in), note: "from logged_in cookie (Audience Switcher)" },
                 ].map(({ key, value, note }) => (
                   <div key={key} className="flex items-start justify-between gap-4 pb-3 border-b border-ghost-border last:border-0">
                     <div>
@@ -903,7 +898,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
           <Callout variant="warning">
             <strong>If you split projects, the bucketing event must fire against the same project.</strong>{" "}
             Bucketing happens at the edge in the CMS project, but the impression (step 7) fires in the browser via{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">FxBucketingEvent</code>. Point that client at the CMS
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">VariationImpression</code>. Point that client at the CMS
             project&apos;s public SDK key, or the impression lands in the wrong project and the experiment shows no participants.
             Everything else - the <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> cookie,{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_route</code> scoping,{" "}
@@ -922,7 +917,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
             <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_route</code> target this page, and rewrites the URL
             with variation path segments. The user&apos;s browser always sees the original URL - the rewrite is transparent.
           </p>
-          <CodeBlock code={MIDDLEWARE_SNIPPET} label="src/middleware.ts" />
+          <CodeBlock code={MIDDLEWARE_SNIPPET} label="Deciding at the edge" />
         </section>
 
         <section id="code-page-route">
@@ -933,7 +928,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
             The catch-all route reads the variation keys out of the URL, collects them, and passes
             them to Graph. Every CMS page automatically serves the right content variant.
           </p>
-          <CodeBlock code={VARIATIONS_SNIPPET} label="src/app/[[...slug]]/page.tsx" />
+          <CodeBlock code={VARIATIONS_SNIPPET} label="Reading the variation back in the content route" />
         </section>
 
         <section id="code-graph-query">
@@ -956,14 +951,14 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
             Middleware encoded{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey--variationKey</code>{" "}
             into the URL, so{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">extractVariations(slug)</code>{" "}
+            a shared parser{" "}
             already knows the <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey</code> - no extra SDK call. When Graph
             confirms a variation was served, the page mounts{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<FxBucketingEvent />"}</code>, which calls{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<VariationImpression />"}</code>, which calls{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">decide(flagKey, [])</code>{" "}
             client-side for that flag only. Its attributes must mirror the middleware context that produced the variation.
           </p>
-          <CodeBlock code={BUCKETING_SNIPPET} label="src/components/FxBucketingEvent.tsx" />
+          <CodeBlock code={BUCKETING_SNIPPET} label="Firing the impression from the client" />
         </section>
 
         {/* ── Approach comparison ── */}
@@ -984,7 +979,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
               <h3 className="font-display font-semibold text-on-surface">Edge Middleware + URL rewrite</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
                 Middleware evaluates FX and rewrites the URL with{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">__v_flagKey--variationKey</code>.
+                a <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey--variationKey</code> pair.
                 The page reads variation from{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">params</code> (no{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">cookies()</code>) so
@@ -1054,7 +1049,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
             impression rule applies - call <code className="bg-surface-low px-1 rounded font-mono text-xs">userCtx.decide(flagKey)</code>{" "}
             (no options, or empty array) when the variation is actually rendered to fire the impression.
           </p>
-          <CodeBlock code={DECISION_SNIPPET} label="src/components/SubscribeBanner.tsx" />
+          <CodeBlock code={DECISION_SNIPPET} label="Deciding a flag in a server component" />
         </section>
 
         {/* ── Bucketing ID ── */}
@@ -1090,11 +1085,11 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
             ))}
           </div>
 
-          <CodeBlock code={BUCKETING_ID_SNIPPET} label="src/components/MyPage.tsx" />
+          <CodeBlock code={BUCKETING_ID_SNIPPET} label="Overriding the bucketing id" />
 
           {/* Live comparison */}
           <div className="mt-8">
-            <h3 className="font-display font-semibold text-on-surface mb-1">Live comparison - <code className="font-mono font-semibold">hero_copy</code></h3>
+            <h3 className="font-display font-semibold text-on-surface mb-1">Live comparison - <code className="font-mono font-semibold">checkout_layout</code></h3>
             <p className="text-sm text-on-surface-variant mb-5">
               {bucketingId
                 ? `Bucketing ID active (SHA-256 of login email). The two decisions below may land in different variations - the normal decision is bucketed by your browser's stable userId, the account decision by the hashed login ID.`
@@ -1171,14 +1166,14 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
           <><strong className="text-on-surface">includeOriginal: true</strong> means users outside the experiment always get the original content. Safe to add the filter before any CMS variations exist.</>,
           <><strong className="text-on-surface">Datafile is cached for 60 seconds</strong> via Next.js fetch revalidation. Changes in the FX dashboard propagate within one minute with no server restart.</>,
           <><strong className="text-on-surface">React cache() is scoped to a single HTTP request.</strong> Wrapping the user context factory in React <code className="bg-surface-low px-1 rounded font-mono text-xs">cache()</code> means any number of server components can call it and share one context per request. Concurrent visitors each get their own completely isolated context; nothing is shared across users.</>,
-          <><strong className="text-on-surface">DISABLE_DECISION_EVENT</strong> suppresses bucketing events during the middleware routing pass. Once the variation is rendered, <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<FxBucketingEvent flagKey={...} />"}</code> mounts client-side and fires the impression for that flag only - its attributes must mirror the middleware context, or the impression can bucket differently than what was served.</>,
+          <><strong className="text-on-surface">DISABLE_DECISION_EVENT</strong> suppresses bucketing events during the middleware routing pass. Once the variation is rendered, <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<VariationImpression flagKey={...} />"}</code> mounts client-side and fires the impression for that flag only - its attributes must mirror the middleware context, or the impression can bucket differently than what was served.</>,
           <><strong className="text-on-surface">cms_route scopes an experiment to a page.</strong> The middleware only applies a variation whose <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_route</code> matches the current path, so many CMS experiments can run across the site without colliding or fragmenting each other&apos;s ISR cache. There is no server-side re-decide - <code className="bg-surface-low px-1 rounded font-mono text-xs">page._metadata.variation</code> confirms what Graph served.</>,
           <><strong className="text-on-surface">Variations work on any content type</strong> - pages, shared blocks, navigation. Wherever Graph accepts a variation filter, the SDK wires in seamlessly.</>,
           <><strong className="text-on-surface">CMS variations must be created in Visual Builder, but can then be updated via the Management API.</strong> The REST API silently ignores the <code className="bg-surface-low px-1 rounded font-mono text-xs">variation</code> field on <code className="bg-surface-low px-1 rounded font-mono text-xs">POST</code> - you cannot create a named variation programmatically. But creating one in the UI generates a new draft <strong>version</strong> that you can PATCH and publish.</>,
         ]} />
 
         <SourcePanel
-          heading="Source files"
+          heading="How this reference implementation does it"
           files={[
             {
               label: "user.ts",

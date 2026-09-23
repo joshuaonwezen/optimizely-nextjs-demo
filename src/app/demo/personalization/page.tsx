@@ -52,7 +52,7 @@ zaius.methods = ['initialize','onload','customer','entity','event', /* ... */];
 e.src = 'https://d1igp3oop3iho5.cloudfront.net/v2/' +
         NEXT_PUBLIC_OPTIMIZELY_ODP_TRACKER_ID + '/zaius-min.js';`;
 
-const ODP_IDENTITY_SNIPPET = `// src/components/OdpSetup.tsx ("use client", rendered in the root layout)
+const ODP_IDENTITY_SNIPPET = `// A client component mounted once in the root layout.
 //
 // ODP assigns every browser its own vuid cookie. To query segments
 // server-side using the FX visitor ID, the two identities must be linked:
@@ -71,7 +71,7 @@ useEffect(() => {
 const ODP_SEGMENT_QUERY_SNIPPET = `// src/lib/optimizely/odp.ts - server-side segment membership query.
 // Auth is the ODP API key in an x-api-key header (server-only env var).
 
-// Look up by fs_user_id: OdpSetup stitches the FX visitor id into ODP under
+// Look up by fs_user_id: the identity component stitches the visitor id into ODP under
 // that identifier. Querying by vuid returns an empty customer.
 const SEGMENT_QUERY = \`
   query GetSegments($userId: String!, $segmentFilter: [String!]!) {
@@ -132,11 +132,11 @@ export default async function Page({ params }) {
 const ODP_EVENTS_SNIPPET = `// Two ways an event leaves this app. Only the first is ODP-only.
 //
 // 1. Straight to ODP - never reaches experiment results
-//    window.zaius.event("pageview")            <- OdpSetup, per route change
+//    window.zaius.event("pageview")            <- identity component, per route
 //    window.zaius.entity("customer", {...})    <- identity stitching + top_category
 //
 // 2. One call, three destinations - NOT "the FX SDK"
-//    trackEvent("mb_scroll_depth", {...})      <- AutoTracker
+//    trackEvent("scroll_depth", {...})         <- the tracking listener
 //      -> FX:        user.trackEvent(key, tags)        experiment metrics
 //      -> ODP:       zaius.event(key, {...tags})       moves segment membership
 //      -> dataLayer: window.dataLayer.push({...})      GA4 / GTM
@@ -146,7 +146,7 @@ const ODP_EVENTS_SNIPPET = `// Two ways an event leaves this app. Only the first
 //
 // Impressions are separate again: user.decide("flag", []) on render.
 // Everything keys off the same visitor ID (optimizelyEndUserId) - which is
-// exactly why OdpSetup stitches it into ODP as fs_user_id.`;
+// exactly why the identity component stitches it into ODP as fs_user_id.`;
 
 function Step({
   number,
@@ -291,7 +291,7 @@ export default async function PersonalizationDemoPage() {
               <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-3">Path 2 - ODP direct (server-side, no Feature Experimentation)</p>
               <div className="flex flex-wrap items-center gap-3 mb-3">
                 {[
-                  { label: "ODP segments API", sub: "queryOdpSegments(userId)" },
+                  { label: "ODP segments API", sub: "one query per request" },
                   { label: "Segment map", sub: "segment name → variationKey" },
                   { label: "Graph filter", sub: "getContentByPath()" },
                   { label: "CMS variant", sub: "or original fallback", highlight: true },
@@ -451,7 +451,7 @@ export default async function PersonalizationDemoPage() {
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">device</code>,{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code>,{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">logged_in</code>, geo, plan, UTM - are
-                collected by <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code> and passed
+                collected once per request and passed
                 straight into <code className="bg-surface-low px-1 rounded font-mono text-xs">userCtx.decide()</code>. The SDK matches
                 them against your audience rules <strong>locally, in-process</strong> - no extra service, no network round-trip.
               </p>
@@ -496,7 +496,7 @@ export default async function PersonalizationDemoPage() {
           <DemoSectionHeading id="audience-attributes">FX Native Attributes in Depth{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The native path in detail. FX audiences are matched against the attributes you return from{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>,
+            the request-scoped visitor context,
             all evaluated in-process - headers, cookies, auth sessions, geo data, and any database
             value are available before HTML is streamed, with no network call to a separate service.
             Below are practical patterns for the most common attribute sources.
@@ -547,8 +547,8 @@ const device = /mobile|android|iphone|ipad/i.test(ua)
                 <div>
                   <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
                     The Audience Switcher sets a{" "}
-                    <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_persona</code>{" "}
-                    cookie. <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
+                    <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code>{" "}
+                    cookie. The request-scoped visitor context{" "}
                     reads it and includes it in the attribute map as{" "}
                     <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code>.
                     In production, replace the cookie with a real signal - segment from your CRM,
@@ -562,7 +562,7 @@ const device = /mobile|android|iphone|ipad/i.test(ua)
                   </p>
                 </div>
                 <CodeBlock code={`// src/lib/optimizely/visitor.ts
-const persona = cookieStore.get("demo_persona")?.value;
+const persona = cookieStore.get("persona")?.value;
 
 // In production: replace cookie with real enrichment
 // e.g. from your CRM or database:
@@ -629,7 +629,7 @@ const decision = userCtx.decide("premium_feature", [DISABLE_DECISION_EVENT]);
                   <p className="text-sm text-on-surface-variant leading-relaxed mb-3">
                     Vercel, Cloudflare, and most edge runtimes inject geo headers on every request.
                     Add them to{" "}
-                    <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
+                    the request-scoped visitor context{" "}
                     and they become available as FX audience conditions instantly.
                   </p>
                   <p className="text-sm text-on-surface-variant leading-relaxed">
@@ -707,7 +707,7 @@ export default async function CmsPage({
                 </div>
                 <CodeBlock code={`// All attributes are set once when creating the user context
 const userCtx = client.createUserContext(userId, {
-  // Base attributes (device, persona, logged_in) from getVisitorContext()
+  // Base attributes (device, persona, logged_in) from the visitor context
   ...attributes,
 
   // From auth session
@@ -735,12 +735,12 @@ const decision = userCtx.decide("homepage", [DISABLE_DECISION_EVENT]);
           <DemoSectionHeading id="extending-visitor-context">Extending the Visitor Context{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Adding a new audience signal is a one-file change. Once an attribute flows into{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>,
+            the request-scoped visitor context,
             it becomes available as an FX audience condition with no further SDK configuration.
           </p>
 
           <div className="space-y-6 max-w-2xl">
-            <Step number={1} title="Add the signal to getVisitorContext()">
+            <Step number={1} title="Add the signal where visitor context is resolved">
               Open{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">
                 src/lib/optimizely/visitor.ts
@@ -920,7 +920,7 @@ ${mappingEntries.length > 0
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">fs_user_id</code> identifier
                 is what lets the server ask ODP about the same visitor the FX SDK is bucketing.
               </p>
-              <CodeBlock code={ODP_IDENTITY_SNIPPET} label="src/components/OdpSetup.tsx" />
+              <CodeBlock code={ODP_IDENTITY_SNIPPET} label="Stitching the visitor id into ODP" />
             </div>
 
             <div>
@@ -932,7 +932,7 @@ ${mappingEntries.length > 0
                 empty array - personalization degrades to the default content, never to an error page.
                 Surfaces that have to show current state rather than cached state, like the audience
                 switcher panel, ask for{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">/api/profile?fresh=1</code>,
+                a profile endpoint with a cache-bypass flag,
                 which bypasses that cache.
               </p>
               <CodeBlock code={ODP_SEGMENT_QUERY_SNIPPET} label="src/lib/optimizely/odp.ts" />
@@ -953,8 +953,8 @@ ${mappingEntries.length > 0
                 <p className="text-[10px] font-mono text-brand uppercase tracking-wider mb-3">ODP direct pipeline</p>
                 <div className="flex flex-wrap items-center gap-3">
                   {[
-                    { label: "queryOdpSegments()", sub: "subset filtered, 300s cached" },
-                    { label: "resolveVariationKey()", sub: "first matching segment wins" },
+                    { label: "Segment lookup", sub: "subset filtered, cached" },
+                    { label: "Resolve variation", sub: "first matching segment wins" },
                     { label: "Graph variation filter", sub: "getContentByPath({ variation })" },
                     { label: "CMS variant", sub: "or original fallback", highlight: true },
                   ].map((step, i, arr) => (
@@ -975,7 +975,7 @@ ${mappingEntries.length > 0
               <h3 className="font-display text-lg font-bold text-on-surface mb-1">ODP events vs FX events</h3>
               <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
                 There are two ways an event leaves this app, and the difference is narrower than it
-                looks. Pageviews are ODP-only: <code className="bg-surface-low px-1 rounded font-mono text-xs">OdpSetup</code>{" "}
+                looks. Pageviews are ODP-only: the identity component{" "}
                 calls the zaius tag directly, so a pageview feeds the behavioral profile and never
                 appears in experiment results. Everything else goes through one{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent()</code>{" "}
@@ -1080,7 +1080,7 @@ ${mappingEntries.length > 0
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Sharing a visitor ID is not the same as sharing what you know about that visitor, though,
             and the traffic above only runs one way - out of WX and into the server. The return leg is{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">WxProfileBridge</code>,
+            a small client component,
             which pushes the shared profile in as WX user attributes: persona, ODP segment, top
             category and the variation that was served. That is what lets a marketer target a WX
             experiment at a CMS taxonomy term or an ODP audience from the WX UI, with no deploy.
@@ -1099,7 +1099,7 @@ ${mappingEntries.length > 0
                   {[
                     { label: "Server responds", sub: "base CMS content in HTML" },
                     { label: "WX snippet runs", sub: "evaluates experiment rules" },
-                    { label: "Cookie written", sub: "opti_wx_variation=flag--key" },
+                    { label: "Cookie written", sub: "wx_variation=flag--key" },
                   ].map((step, i, arr) => (
                     <div key={step.label} className="flex items-center gap-3">
                       <div className="text-center rounded-xl px-4 py-3 min-w-[130px] bg-surface-low">
@@ -1116,8 +1116,8 @@ ${mappingEntries.length > 0
                 <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mb-2">Request 2+ - CMS variation served</p>
                 <div className="flex flex-wrap items-center gap-3">
                   {[
-                    { label: "Cookie sent", sub: "opti_wx_variation in headers" },
-                    { label: "Middleware reads", sub: "injects __v_ URL segment" },
+                    { label: "Cookie sent", sub: "wx_variation in headers" },
+                    { label: "Middleware reads", sub: "folds it into the URL" },
                     { label: "Graph filter", sub: "variation: { include: SOME }" },
                     { label: "CMS variant", sub: "or original fallback", highlight: true },
                   ].map((step, i, arr) => (
@@ -1149,7 +1149,7 @@ ${mappingEntries.length > 0
               In the Web Experimentation UI, add a{" "}
               <strong>Custom JS action</strong> to your experiment - one per variation bucket. The
               action fires when WX assigns a visitor to that bucket. Write the cookie{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">opti_wx_variation</code>{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">wx_variation</code>{" "}
               with the value <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey--variationKey</code>,
               where <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey</code>{" "}
               is a stable namespace you choose and{" "}
@@ -1175,7 +1175,7 @@ var flagKey = "homepage";      // stable namespace - any string
 var variationKey = "treatment"; // must exactly match CMS variation name
 
 document.cookie =
-  "opti_wx_variation=" + flagKey + "--" + variationKey +
+  "wx_variation=" + flagKey + "--" + variationKey +
   "; path=/; max-age=86400; SameSite=Lax";
 
 // For the control/original bucket: omit this cookie write.
@@ -1187,21 +1187,21 @@ document.cookie =
                 <span className="text-xs font-mono text-on-surface-variant">src/middleware.ts (bridge - already live)</span>
               </div>
               <CodeBlock code={`// After FX decisions are collected, middleware also reads the
-// WX cookie and injects a __v_ segment for it.
+// WX cookie and encodes that variation into the URL for it.
 // FX takes precedence: WX only applies when FX has no active
 // decision for the same flagKey.
 
-const wxVariation = request.cookies.get("opti_wx_variation")?.value;
+const wxVariation = request.cookies.get("wx_variation")?.value;
 // e.g. "homepage--treatment"
 
 if (wxVariation && wxVariation.includes("--")) {
   const [wxFlagKey] = wxVariation.split("--");
   const covered = cmsVariationSegments.some(
-    (s) => s.startsWith("__v_" + wxFlagKey + "--")
+    (s) => s.startsWith(VARIATION_PREFIX + wxFlagKey + "--")
   );
   if (!covered) {
-    cmsVariationSegments.push("__v_" + wxVariation);
-    // /savings → /savings/__v_homepage--treatment
+    cmsVariationSegments.push(VARIATION_PREFIX + wxVariation);
+    // /pricing → /pricing/<prefix>checkout_layout--single_step
     // page.tsx extracts "treatment" → Graph serves the CMS variant
   }
 }`} />
@@ -1211,16 +1211,13 @@ if (wxVariation && wxVariation.includes("--")) {
           {/* Step 3 + 4 */}
           <div className="space-y-6 max-w-2xl mb-8">
             <Step number={3} title="Verify the integration in DevTools">
-              Test without a live WX experiment by setting the cookie manually in the browser
-              console:{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">
-                document.cookie = &quot;opti_wx_variation=homepage--treatment; path=/&quot;
-              </code>. Navigate to the experiment page. In DevTools Network, find the HTML request
-              - the{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">X-Middleware-Rewrite</code>{" "}
-              response header should show the internal rewritten URL including{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">__v_homepage--treatment</code>.
-              Clear the cookie and reload to confirm base content returns.
+              You can test this without a live WX experiment. In the browser console, set the same
+              cookie your middleware reads - whatever you named it - to a{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">flag--variation</code>{" "}
+              pair your datafile actually knows, then navigate to the experiment page. In DevTools
+              Network, find the HTML request: the rewrite response header should show the internal
+              URL with the variation folded into the path. Clear the cookie and reload to confirm
+              base content returns.
             </Step>
 
             <Step number={4} title="FX and Web Experimentation can coexist">
@@ -1265,10 +1262,10 @@ if (wxVariation && wxVariation.includes("--")) {
               <h3 className="font-display font-semibold text-on-surface mb-3">What it sets</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
                 The switcher writes two cookies that{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
+                the request-scoped visitor context{" "}
                 picks up on every subsequent server request. These map directly to FX audience conditions
                 - no client-side SDK involved. The{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_bucketing_id</code>{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">bucketing_id</code>{" "}
                 cookie also serves as the FX bucketing ID, keeping the visitor in the same traffic
                 bucket across page loads.
               </p>
@@ -1277,11 +1274,11 @@ if (wxVariation && wxVariation.includes("--")) {
                   <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-2">Persona</p>
                   <div className="space-y-1.5">
                     {[
-                      { key: "new_visitor", note: "demo_persona absent (default)" },
-                      { key: "personal", note: 'demo_persona = "personal"' },
-                      { key: "business", note: 'demo_persona = "business"' },
-                      { key: "mortgages", note: 'demo_persona = "mortgages"' },
-                      { key: "investments", note: 'demo_persona = "investments"' },
+                      { key: "new_visitor", note: "persona absent (default)" },
+                      { key: "personal", note: 'persona = "personal"' },
+                      { key: "business", note: 'persona = "business"' },
+                      { key: "mortgages", note: 'persona = "mortgages"' },
+                      { key: "investments", note: 'persona = "investments"' },
                     ].map(({ key, note }) => (
                       <div key={key} className="flex items-center justify-between gap-3 text-sm">
                         <code className="font-mono text-xs bg-surface-low px-2 py-0.5 rounded text-on-surface">{key}</code>
@@ -1294,8 +1291,8 @@ if (wxVariation && wxVariation.includes("--")) {
                   <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-2">Auth State</p>
                   <div className="space-y-1.5">
                     {[
-                      { label: "Guest", note: "demo_bucketing_id absent" },
-                      { label: "Logged In", note: "demo_bucketing_id = [hash]" },
+                      { label: "Guest", note: "bucketing_id absent" },
+                      { label: "Logged In", note: "bucketing_id = [hash]" },
                     ].map(({ label, note }) => (
                       <div key={label} className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-on-surface font-medium text-xs">{label}</span>
@@ -1312,15 +1309,15 @@ if (wxVariation && wxVariation.includes("--")) {
                 <span className="text-xs font-mono text-on-surface-variant">src/lib/optimizely/visitor.ts</span>
               </div>
               <CodeBlock code={`// Audience Switcher writes two cookies.
-// Persona: POST /api/demo/set-persona → demo_persona (1-day)
-// Logged In: POST /api/demo/set-bucketing-id → demo_bucketing_id
+// Persona: POST /api/demo/set-persona → persona (1-day)
+// Logged In: POST /api/demo/set-bucketing-id → bucketing_id
 //   Value: SHA-256 of "demo-account@mosey.bank" (stable hash)
 
 // visitor.ts reads both on every server request:
-const persona     = cookieStore.get("demo_persona")?.value;
-const bucketingId = cookieStore.get("demo_bucketing_id")?.value;
+const persona     = cookieStore.get("persona")?.value;
+const bucketingId = cookieStore.get("bucketing_id")?.value;
 
-// demo_bucketing_id serves two roles:
+// bucketing_id serves two roles:
 //   1. logged_in: !!bucketingId  (the FX attribute)
 //   2. passed to createUserContext() as bucketingId
 //      for stable cross-device traffic bucketing in FX
@@ -1337,7 +1334,7 @@ const bucketingId = cookieStore.get("demo_bucketing_id")?.value;
           <Callout variant="warning">
             <strong>The Audience Switcher is demo tooling only.</strong>{" "}
             In production, replace the{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">demo_persona</code> cookie
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code> cookie
             with real audience signals - auth session data, CRM enrichment, or onboarding answers.
             The FX audience conditions and targeting logic stay the same; only the attribute source changes.
           </Callout>
@@ -1347,10 +1344,11 @@ const bucketingId = cookieStore.get("demo_bucketing_id")?.value;
         <section id="your-session">
           <DemoSectionHeading id="your-session">Your Session{" "}</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            The attributes below are what{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">getVisitorContext()</code>{" "}
-            resolved for your current request. These are passed to Feature Experimentation as your
-            audience attribute map on every page load - no round-trip, evaluated entirely in-process.
+            Live output from this reference implementation, not guidance - the attributes below were
+            resolved for your actual request, and are what gets passed to Feature Experimentation as
+            your audience attribute map on every page load. No round trip; it is evaluated entirely
+            in-process. The useful thing to take from it is the <em>shape</em>: a small, stable set
+            of attributes resolved once per request and reused by every decision.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -1474,7 +1472,7 @@ const bucketingId = cookieStore.get("demo_bucketing_id")?.value;
         </section>
 
         <SourcePanel
-          heading="Source files"
+          heading="How this reference implementation does it"
           files={[
             {
               label: "visitor.ts",
