@@ -25,6 +25,18 @@ const odpSetupTsx = fs.readFileSync(
   path.join(process.cwd(), "src/components/OdpSetup.tsx"),
   "utf8"
 );
+const profileTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/optimizely/profile.ts"),
+  "utf8"
+);
+const wxProfileBridgeTsx = fs.readFileSync(
+  path.join(process.cwd(), "src/components/personalization/WxProfileBridge.tsx"),
+  "utf8"
+);
+const experimentationOdpTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/optimizely/experimentationOdp.ts"),
+  "utf8"
+);
 
 export const metadata: Metadata = {
   title: "Personalization & Audiences",
@@ -117,19 +129,24 @@ export default async function Page({ params }) {
   // or the original page when no variation key was resolved.
 }`;
 
-const ODP_EVENTS_SNIPPET = `// Two event pipelines run side by side in this app - don't conflate them:
+const ODP_EVENTS_SNIPPET = `// Two ways an event leaves this app. Only the first is ODP-only.
 //
-// 1. ODP events (behavioral profile, segments, campaigns)
+// 1. Straight to ODP - never reaches experiment results
 //    window.zaius.event("pageview")            <- OdpSetup, per route change
-//    window.zaius.entity("customer", {...})    <- identity stitching
+//    window.zaius.entity("customer", {...})    <- identity stitching + top_category
 //
-// 2. FX events (experiment metrics and impressions)
-//    trackEvent("mb_scroll_depth", {...})      <- AutoTracker via the FX SDK
-//    user.decide("flag", [])                    <- impression on render
+// 2. One call, three destinations - NOT "the FX SDK"
+//    trackEvent("mb_scroll_depth", {...})      <- AutoTracker
+//      -> FX:        user.trackEvent(key, tags)        experiment metrics
+//      -> ODP:       zaius.event(key, {...tags})       moves segment membership
+//      -> dataLayer: window.dataLayer.push({...})      GA4 / GTM
 //
-// ODP events build the profile that segments are computed from.
-// FX events power experiment results. Both key off the same visitor ID
-// (optimizelyEndUserId) - which is exactly why OdpSetup links the IDs.`;
+//    Every one of those carries exp_variant_string, so the variation the
+//    visitor was served travels with the event to all three.
+//
+// Impressions are separate again: user.decide("flag", []) on render.
+// Everything keys off the same visitor ID (optimizelyEndUserId) - which is
+// exactly why OdpSetup stitches it into ODP as fs_user_id.`;
 
 function Step({
   number,
@@ -868,11 +885,16 @@ ${mappingEntries.length > 0
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The segments above don&apos;t appear by magic - ODP (Optimizely Data Platform) builds a
             behavioral profile per visitor from events the browser sends, then evaluates segment
-            membership in real time. Three things flow through it: an event tag in the page{" "}
+            membership in real time. Four things flow through it: an event tag in the page{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">head</code>, identity
-            stitching that links ODP&apos;s cookie to the FX visitor ID, and a server-side query that
-            reads segment membership back out. Once you have a segment, the direct path maps it to a
-            CMS variation and passes it straight to Graph - no FX engine required.
+            stitching that links ODP&apos;s cookie to the FX visitor ID, a server-side query that
+            reads segment membership back out, and customer-attribute writes that put{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">top_category</code> and{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">last_category</code> on
+            the profile. That last one is what lets a marketer build an audience on a CMS taxonomy
+            term from a dropdown instead of filing an engineering ticket. Once you have a segment,
+            the direct path maps it to a CMS variation and passes it straight to Graph - no FX
+            engine required.
           </p>
 
           <div className="space-y-8">
@@ -908,6 +930,10 @@ ${mappingEntries.length > 0
                 of the segments this app cares about, which does the visitor qualify for? The subset filter
                 keeps the query cheap, the 300s cache keeps it off the hot path, and any failure returns an
                 empty array - personalization degrades to the default content, never to an error page.
+                Surfaces that have to show current state rather than cached state, like the audience
+                switcher panel, ask for{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">/api/profile?fresh=1</code>,
+                which bypasses that cache.
               </p>
               <CodeBlock code={ODP_SEGMENT_QUERY_SNIPPET} label="src/lib/optimizely/odp.ts" />
             </div>
@@ -948,12 +974,17 @@ ${mappingEntries.length > 0
             <div>
               <h3 className="font-display text-lg font-bold text-on-surface mb-1">ODP events vs FX events</h3>
               <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
-                This app runs two tracking pipelines that are easy to confuse. ODP events feed the
-                behavioral profile that segments are computed from. FX events (fired by{" "}
-                <code className="bg-surface-low px-1 rounded font-mono text-xs">AutoTracker</code> through
-                the FX SDK) feed experiment metrics. They share a visitor ID but nothing else - an ODP
-                pageview never shows up in experiment results, and an FX conversion never moves segment
-                membership. For the conversion side, see{" "}
+                There are two ways an event leaves this app, and the difference is narrower than it
+                looks. Pageviews are ODP-only: <code className="bg-surface-low px-1 rounded font-mono text-xs">OdpSetup</code>{" "}
+                calls the zaius tag directly, so a pageview feeds the behavioral profile and never
+                appears in experiment results. Everything else goes through one{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent()</code>{" "}
+                call that fans out to <strong className="text-on-surface">all three</strong>{" "}
+                destinations - FX, ODP and the dataLayer. So a conversion does move segment
+                membership: the same call that records an experiment metric also lands on the ODP
+                profile a segment is computed from. Each of those events now also carries{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">exp_variant_string</code>,
+                so the variation the visitor saw travels with it. For the fan-out itself, see{" "}
                 <Link href="/demo/event-tracking" className="text-brand hover:underline">Event Tracking</Link>.
               </p>
               <CodeBlock code={ODP_EVENTS_SNIPPET} label="Two pipelines, one visitor ID" />
@@ -1039,12 +1070,23 @@ ${mappingEntries.length > 0
               a brief flicker - the same tradeoff as{" "}
               <Link href="/demo/feature-experimentation#approaches" className="text-brand hover:underline">Approach C - Client-side only</Link>.</li>
           </ul>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
             Identity is already shared:{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code>{" "}
             is written domain-wide by middleware and is the same cookie the Web snippet uses for visitor
             identity. Both products see the same visitor with no extra coordination needed. The walkthrough
             below implements the cookie method.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            Sharing a visitor ID is not the same as sharing what you know about that visitor, though,
+            and the traffic above only runs one way - out of WX and into the server. The return leg is{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">WxProfileBridge</code>,
+            which pushes the shared profile in as WX user attributes: persona, ODP segment, top
+            category and the variation that was served. That is what lets a marketer target a WX
+            experiment at a CMS taxonomy term or an ODP audience from the WX UI, with no deploy.
+            Be aware of the timing - WX evaluates audiences at page activation and this push lands
+            after hydration, so the attributes apply from the <strong>next</strong> activation, the
+            same one-request lag as the cookie.
           </p>
 
           {/* Two-request architecture diagram */}
@@ -1448,6 +1490,21 @@ const bucketingId = cookieStore.get("demo_bucketing_id")?.value;
               label: "OdpSetup.tsx",
               path: "src/components/OdpSetup.tsx",
               content: odpSetupTsx,
+            },
+            {
+              label: "profile.ts",
+              path: "src/lib/optimizely/profile.ts",
+              content: profileTs,
+            },
+            {
+              label: "WxProfileBridge.tsx",
+              path: "src/components/personalization/WxProfileBridge.tsx",
+              content: wxProfileBridgeTsx,
+            },
+            {
+              label: "experimentationOdp.ts",
+              path: "src/lib/optimizely/experimentationOdp.ts",
+              content: experimentationOdpTs,
             },
           ]}
         />

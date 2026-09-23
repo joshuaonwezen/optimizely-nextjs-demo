@@ -804,6 +804,17 @@ export default async function FeatureFlagsDemoPage() {
                 visitor&apos;s qualified segments; those feed the FX decision the same way attributes do. See{" "}
                 <Link href="/demo/personalization#odp" className="text-brand hover:underline">Personalization → ODP</Link> for the full walkthrough.
               </p>
+              <p className="text-sm text-on-surface-variant leading-relaxed mt-3">
+                That mapping is hand-rolled. The SDK can also do it natively: build the client with an
+                ODP manager and an audience can carry an{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">ODP_SEGMENT</code>{" "}
+                condition directly, with{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">getOdpAwareClient()</code> in{" "}
+                <code className="bg-surface-low px-1 rounded font-mono text-xs">src/lib/optimizely/experimentationOdp.ts</code>{" "}
+                fetching the segments. It is kept out of middleware on purpose - that lookup is a
+                blocking network call and middleware runs on every request - and no audience in this
+                project uses an ODP condition yet, so the path is present but not exercised.
+              </p>
             </div>
           </div>
 

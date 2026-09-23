@@ -14,6 +14,10 @@ const trackingIndexTs = fs.readFileSync(
   path.join(process.cwd(), "src/lib/tracking/index.ts"),
   "utf8"
 );
+const activeVariationsTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/tracking/activeVariations.ts"),
+  "utf8"
+);
 const fxDestinationTs = fs.readFileSync(
   path.join(process.cwd(), "src/lib/tracking/destinations/fx.ts"),
   "utf8"
@@ -58,11 +62,19 @@ export type TrackingDestination = {
 // One failing sink never blocks the others - each send() is isolated
 // in its own try/catch, and errors are swallowed: tracking must never
 // break the page.
+//
+// Before building the event it awaits whenVariationsSettled(), then stamps
+// on exp_variant_string - the variations actually rendered on this page, as
+// RuleKey-VariationName, comma joined. On a page that served none, the tag
+// is omitted entirely rather than sent blank.
 
 await trackEvent("demo_cta_click", { source: "demo-page" });
 // → FX:        user.trackEvent("demo_cta_click", tags)
 // → ODP:       zaius.event("demo_cta_click", { ...tags })
-// → dataLayer: window.dataLayer.push({ event: "demo_cta_click", ... })`;
+// → dataLayer: window.dataLayer.push({ event: "demo_cta_click", ... })
+//
+// tags now include, where a variation was served:
+//   exp_variant_string: "hero_layout_experiment-centered,banner_desktop-banner2"`;
 
 const ADD_DESTINATION_SNIPPET = `// Adding a source is one object - no call sites change.
 import { registerDestination } from "@/lib/tracking";
@@ -159,8 +171,13 @@ export default function EventTrackingDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code>{" "}
             cookie set by middleware), then fans the event out to every registered destination. This
             project ships three: the FX browser client, ODP via the zaius script, and a{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">window.dataLayer</code> push
-            (the GTM/GA convention).
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">window.dataLayer</code> push,
+            which is what GA4 and the GTM container in{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">layout.tsx</code> read. That
+            third destination is the reason a customer&apos;s existing analytics can slice by
+            experiment arm without a second integration: every event carries{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">exp_variant_string</code>,
+            so an Optimizely variation shows up as a dimension in reports Optimizely does not own.
           </p>
           <div className="grid md:grid-cols-2 gap-6">
             <CodeBlock code={DESTINATION_SNIPPET} label="The destination contract and fan-out" />
@@ -183,6 +200,20 @@ export default function EventTrackingDemoPage() {
             impression. Conversions then attribute correctly because the tracking layer uses the same
             stable visitor ID for <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent</code>{" "}
             that middleware used for bucketing.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            The visitor ID is no longer the only thread. Every event also carries{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">exp_variant_string</code>,
+            naming the variations on screen when it fired, which is what lets ODP and GA4 segment by
+            arm rather than only FX. Getting that right needed one piece of coordination: an
+            above-the-fold component beats the network. Measured on the homepage, HeroBlock&apos;s
+            view event fired at ~11ms while the first decision landed at ~229ms, so the hero
+            impression - the one whose variation matters most - was the single event going out
+            unattributed. So{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent</code> waits
+            for decisions to settle before building the event. The wait is bounded and returns early
+            once they stop arriving; it delays an event, it never drops one. A page that serves no
+            variation waits once and then sends no tag at all.
           </p>
           <CodeBlock code={CONVERSION_LOOP_SNIPPET} label="Impression suppression and conversion attribution" />
         </section>
@@ -226,6 +257,7 @@ export default function EventTrackingDemoPage() {
           <><strong className="text-on-surface">Components call one wrapper, never a vendor SDK.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent(key, tags)</code> resolves identity once and fans out to all destinations - adding a vendor is one <code className="bg-surface-low px-1 rounded font-mono text-xs">TrackingDestination</code> object, zero call-site changes.</>,
           <><strong className="text-on-surface">Tracking must never break the page.</strong> Every destination send is isolated in its own try/catch; a failing or missing sink (ODP without the zaius script) reports <em>skipped</em> or <em>error</em> and the rest still deliver.</>,
           <><strong className="text-on-surface">Impressions and conversions must share a visitor ID.</strong> Both use the <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> cookie set by middleware - a fresh UUID per request would make conversions unattributable.</>,
+          <><strong className="text-on-surface">Every event names the variation it was fired under.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">exp_variant_string</code> travels to all three destinations, so ODP and GA4 can segment by experiment arm, not just FX. It uses the <strong>rule</strong> key, not the flag key, matching what the GA4 seeder already writes.</>,
           <><strong className="text-on-surface">Suppress impressions at decide time, fire at render time.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> everywhere except the component that renders the variation prevents double-counting.</>,
           <><strong className="text-on-surface">FX drops events with unknown keys - silently.</strong> Define the event in the FX project and attach it as a metric to a flag rule before expecting results.</>,
           <><strong className="text-on-surface">Prefer declarative tracking for content.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">data-track-event</code> attributes work inside CMS-rendered markup where you can&apos;t add click handlers.</>,
@@ -238,6 +270,7 @@ export default function EventTrackingDemoPage() {
             { label: "destinations/fx.ts", path: "src/lib/tracking/destinations/fx.ts", content: fxDestinationTs },
             { label: "destinations/odp.ts", path: "src/lib/tracking/destinations/odp.ts", content: odpDestinationTs },
             { label: "destinations/dataLayer.ts", path: "src/lib/tracking/destinations/dataLayer.ts", content: dataLayerDestinationTs },
+            { label: "activeVariations.ts", path: "src/lib/tracking/activeVariations.ts", content: activeVariationsTs },
             { label: "AutoTracker.tsx", path: "src/components/AutoTracker.tsx", content: autoTrackerTs },
             { label: "ConversionDemo.tsx", path: "src/app/demo/event-tracking/ConversionDemo.tsx", content: conversionDemoTs },
           ]}
