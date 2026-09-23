@@ -144,7 +144,7 @@ const ODP_EVENTS_SNIPPET = `// Two ways an event leaves this app. Only the first
 //    Every one of those carries exp_variant_string, so the variation the
 //    visitor was served travels with the event to all three.
 //
-// Impressions are separate again: user.decide("flag", []) on render.
+// Decision events are separate again: user.decide("flag", []) on render.
 // Everything keys off the same visitor ID (optimizelyEndUserId) - which is
 // exactly why the identity component stitches it into ODP as fs_user_id.`;
 
@@ -279,7 +279,7 @@ export default async function PersonalizationDemoPage() {
               <p className="text-xs text-on-surface-variant leading-relaxed">
                 FX is the delivery engine: it evaluates audience rules in-process, buckets traffic,
                 and returns a variation key that Graph uses to serve the right CMS variant. The FX
-                results page tracks impressions and conversions per variation and runs a{" "}
+                results page tracks decision events and conversions per variation and runs a{" "}
                 <strong className="text-on-surface">statistical significance test</strong> - you can declare
                 a winner with a measured confidence interval. FX audience conditions can be fed from
                 native request-time attributes <em>or</em> ODP segments (the combination) - see FX Audience
@@ -1042,8 +1042,9 @@ ${mappingEntries.length > 0
               <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
                 Only when you must keep <strong>WX as the decisioning engine</strong> <em>and</em> the
                 content must come from the <strong>CMS content model</strong>. That narrow case is what the
-                rest of this section covers - via a cookie (next request) or a client-side refetch (same
-                view, with a flicker). Expect one of those two tradeoffs.
+                rest of this section covers - either persist the decision and act on it on the next request,
+                or refetch client-side on the same view, with a flicker. Expect one of those two
+                tradeoffs.
               </p>
               <span className="self-start text-xs px-2 py-0.5 rounded-full bg-surface-low text-on-surface-variant font-medium">last resort</span>
             </div>
@@ -1059,9 +1060,9 @@ ${mappingEntries.length > 0
           </p>
           <ul className="text-sm text-on-surface-variant mb-4 max-w-3xl space-y-2">
             <li><strong className="text-on-surface">Experiment measured over a journey</strong> - the{" "}
-              <strong>cookie</strong> method (walked through below): WX writes the bucket to a cookie,
-              middleware reads it on the <strong>next</strong> request and routes Graph to the variant.
-              No flicker; the one-request lag is invisible across a multi-page journey.</li>
+              <strong>persisted-decision</strong> method (walked through below): WX records the bucket,
+              the edge reads it on the <strong>next</strong> request and routes the content query to the
+              variant. No flicker; the one-request lag is invisible across a multi-page journey.</li>
             <li><strong className="text-on-surface">First-touch personalization on the landing page itself</strong> - a
               client-side <strong>refetch</strong>: once the snippet resolves the variation, a client component
               refetches the variant from Graph (reusing the same{" "}
@@ -1073,9 +1074,9 @@ ${mappingEntries.length > 0
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
             Identity is already shared:{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code>{" "}
-            is written domain-wide by middleware and is the same cookie the Web snippet uses for visitor
-            identity. Both products see the same visitor with no extra coordination needed. The walkthrough
-            below implements the cookie method.
+            is written domain-wide by middleware and is the same identifier the Web snippet uses. Both
+            products see the same visitor with no extra coordination needed. The walkthrough below
+            implements the persisted-decision method.
           </p>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Sharing a visitor ID is not the same as sharing what you know about that visitor, though,
@@ -1086,7 +1087,7 @@ ${mappingEntries.length > 0
             experiment at a CMS taxonomy term or an ODP audience from the WX UI, with no deploy.
             Be aware of the timing - WX evaluates audiences at page activation and this push lands
             after hydration, so the attributes apply from the <strong>next</strong> activation, the
-            same one-request lag as the cookie.
+            same one-request lag as the persisted decision.
           </p>
 
           {/* Two-request architecture diagram */}
@@ -1099,7 +1100,7 @@ ${mappingEntries.length > 0
                   {[
                     { label: "Server responds", sub: "base CMS content in HTML" },
                     { label: "WX snippet runs", sub: "evaluates experiment rules" },
-                    { label: "Cookie written", sub: "wx_variation=flag--key" },
+                    { label: "Decision persisted", sub: "flag--variation" },
                   ].map((step, i, arr) => (
                     <div key={step.label} className="flex items-center gap-3">
                       <div className="text-center rounded-xl px-4 py-3 min-w-[130px] bg-surface-low">
@@ -1116,7 +1117,7 @@ ${mappingEntries.length > 0
                 <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mb-2">Request 2+ - CMS variation served</p>
                 <div className="flex flex-wrap items-center gap-3">
                   {[
-                    { label: "Cookie sent", sub: "wx_variation in headers" },
+                    { label: "Sent with next request", sub: "read at the edge" },
                     { label: "Middleware reads", sub: "folds it into the URL" },
                     { label: "Graph filter", sub: "variation: { include: SOME }" },
                     { label: "CMS variant", sub: "or original fallback", highlight: true },
@@ -1224,7 +1225,7 @@ if (wxVariation && wxVariation.includes("--")) {
               FX and WX can run simultaneously on the same page. If an FX flag is active for the
               same <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey</code>,
               the FX decision wins and the WX cookie is ignored for that key. WX tracks its own
-              impressions and conversions client-side via the snippet - no server-side impression
+              decision events and conversions client-side via the snippet - no server-side decision event
               tracking is needed for WX experiments.
             </Step>
           </div>
@@ -1241,7 +1242,7 @@ if (wxVariation && wxVariation.includes("--")) {
 
             <Callout variant="note">
               <strong>Web Experimentation statistics are unaffected by the bridge.</strong>{" "}
-              WX tracks its own impressions and conversions via the snippet - the server-side
+              WX tracks its own decision events and conversions via the snippet - the server-side
               cookie bridge does not interfere with WX reporting. The bridge only changes which
               CMS content variant is served; all statistical analysis stays in the WX dashboard.
             </Callout>

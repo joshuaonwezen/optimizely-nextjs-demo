@@ -90,11 +90,11 @@ registerDestination({
 // Every existing trackEvent() call - CTA clicks, form submits,
 // scroll depth, outbound links - now also reaches Segment.`;
 
-const CONVERSION_LOOP_SNIPPET = `// 1. Bucket the visitor server-side and SUPPRESS the impression
+const CONVERSION_LOOP_SNIPPET = `// 1. Bucket the visitor server-side and SUPPRESS the decision event
 //    (DISABLE_DECISION_EVENT) - deciding is not seeing.
 const decision = user.decide("checkout_layout");   // no event fired
 
-// 2. Whatever actually renders the variation fires the impression
+// 2. Whatever actually renders the variation fires the decision event
 //    client-side, with the same visitor id.
 ctx.decide("checkout_layout", []);                 // empty options = fire it
 
@@ -103,8 +103,8 @@ ctx.decide("checkout_layout", []);                 // empty options = fire it
 trackEvent("cta_click", { source: "hero" });
 
 // Results then compares conversion rates per variation:
-//   variation A: 1,204 impressions, 87 cta_click  → 7.2%
-//   variation B: 1,198 impressions, 112 cta_click → 9.3%`;
+//   variation A: 1,204 decision events, 87 cta_click  → 7.2%
+//   variation B: 1,198 decision events, 112 cta_click → 9.3%`;
 
 const DECLARATIVE_SNIPPET = `<!-- A listener turns data attributes into events - no JS per element.
      The attribute names are yours to choose; the pattern is what matters. -->
@@ -137,7 +137,7 @@ export default function EventTrackingDemoPage() {
         description={<>A global tracking layer: one{" "}
           <code className="bg-on-brand/10 px-1 rounded font-mono text-sm">trackEvent()</code> wrapper
           fans conversion events out to Feature Experimentation, ODP, and any other destination -
-          closing the impression-to-conversion loop for experiments.</>}
+          closing the decision-to-conversion loop for experiments.</>}
       />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
@@ -186,17 +186,17 @@ export default function EventTrackingDemoPage() {
 
         <section id="loop">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            The impression-to-conversion loop
+            The decision-to-conversion loop
             <SectionAnchor id="loop" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            An A/B test needs two events tied to the same visitor: an <strong>impression</strong>{" "}
+            An A/B test needs two events tied to the same visitor: a <strong>decision event</strong>{" "}
             (this user saw variation B) and a <strong>conversion</strong> (this user then did the thing
-            we care about). This project suppresses impressions at decision time with{" "}
+            we care about). This project suppresses decision events at decide time with{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code>{" "}
             - middleware and server components decide flags several times per request, and firing on
             every decide would double-count. Only the component that renders the variation fires the
-            impression. Conversions then attribute correctly because the tracking layer uses the same
+            decision event. Conversions then attribute correctly because the tracking layer uses the same
             stable visitor ID for <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent</code>{" "}
             that middleware used for bucketing.
           </p>
@@ -207,14 +207,14 @@ export default function EventTrackingDemoPage() {
             arm rather than only FX. Getting that right needed one piece of coordination: an
             above-the-fold component beats the network. A hero&apos;s view event can fire within
             milliseconds of mount, while the SDK still has to fetch its datafile before it can
-            decide anything - so the most valuable impression on the page is exactly the one most
+            decide anything - so the most valuable decision event on the page is exactly the one most
             likely to go out unattributed. The fix is for{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent</code> to wait
             for decisions to settle before building the event. Keep that wait bounded and let it
             return early once decisions stop arriving: it should delay an event, never drop one. A
             page that serves no variation waits once and then sends no tag at all.
           </p>
-          <CodeBlock code={CONVERSION_LOOP_SNIPPET} label="Impression suppression and conversion attribution" />
+          <CodeBlock code={CONVERSION_LOOP_SNIPPET} label="Decision-event suppression and conversion attribution" />
         </section>
 
         <section id="declarative">
@@ -255,9 +255,9 @@ export default function EventTrackingDemoPage() {
         <KeyPoints points={[
           <><strong className="text-on-surface">Components call one wrapper, never a vendor SDK.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">trackEvent(key, tags)</code> resolves identity once and fans out to all destinations - adding a vendor is one <code className="bg-surface-low px-1 rounded font-mono text-xs">TrackingDestination</code> object, zero call-site changes.</>,
           <><strong className="text-on-surface">Tracking must never break the page.</strong> Every destination send is isolated in its own try/catch; a failing or missing sink (ODP without the zaius script) reports <em>skipped</em> or <em>error</em> and the rest still deliver.</>,
-          <><strong className="text-on-surface">Impressions and conversions must share a visitor ID.</strong> Both use the <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> cookie set by middleware - a fresh UUID per request would make conversions unattributable.</>,
+          <><strong className="text-on-surface">Decision events and conversions must share a visitor ID.</strong> Both use the <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> cookie set by middleware - a fresh UUID per request would make conversions unattributable.</>,
           <><strong className="text-on-surface">Every event names the variation it was fired under.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">exp_variant_string</code> travels to all three destinations, so ODP and GA4 can segment by experiment arm, not just FX. Use the <strong>rule</strong> key rather than the flag key - a flag can have several rules, and the rule is what the analytics tool&apos;s experiment dimension expects.</>,
-          <><strong className="text-on-surface">Suppress impressions at decide time, fire at render time.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> everywhere except the component that renders the variation prevents double-counting.</>,
+          <><strong className="text-on-surface">Suppress decision events at decide time, fire at render time.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">DISABLE_DECISION_EVENT</code> everywhere except the component that renders the variation prevents double-counting.</>,
           <><strong className="text-on-surface">FX drops events with unknown keys - silently.</strong> Define the event in the FX project and attach it as a metric to a flag rule before expecting results.</>,
           <><strong className="text-on-surface">Prefer declarative tracking for content.</strong> <code className="bg-surface-low px-1 rounded font-mono text-xs">data-track-event</code> attributes work inside CMS-rendered markup where you can&apos;t add click handlers.</>,
         ]} />

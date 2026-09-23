@@ -59,7 +59,7 @@ export async function trackEvent(
   //
   // The wait exists because above-the-fold components beat the datafile fetch: without
   // it, HeroBlock's view event goes out at ~11ms and the decisions land at ~229ms, so
-  // the hero impression was never attributed. Bounded, and it never drops an event.
+  // the hero decision event was never attributed. Bounded, and it never drops an event.
   await whenVariationsSettled();
   const expVariantString = serializeVariations();
 

@@ -29,7 +29,7 @@ const LEGEND: { color: string; label: string; dashed: boolean }[] = [
   { color: "var(--error)", label: "Graph returns content", dashed: true },
   { color: "var(--primary-fill)", label: "Publish webhook - revalidateTag drops the ISR entry", dashed: true },
   { color: "var(--tertiary)", label: "FX and WX decisions reach the app", dashed: false },
-  { color: "var(--tertiary)", label: "WX variation cookie, read by middleware next request", dashed: true },
+  { color: "var(--tertiary)", label: "WX decision persisted, read on the next request", dashed: true },
   { color: "var(--secondary-container)", label: "Behavioural events to ODP", dashed: false },
   { color: "var(--secondary-container)", label: "ODP audiences back to the server as a variation key", dashed: true },
   { color: "var(--primary-dim)", label: "Mark AI agents assist authoring (dev-time, via MCP)", dashed: true },
@@ -59,7 +59,7 @@ const PRODUCTS: {
   {
     name: "Feature Experimentation",
     role: "Flags, A/B tests and server-side bucketing. The decision that matters most is made before rendering, so each variation can be cached independently.",
-    mechanism: "The SDK decides from a locally cached datafile, so a decision costs no network call. Decide as early in the request as you can - at the edge, before rendering - and carry the result forward rather than deciding again per component. Suppress the impression everywhere a flag is read for routing, and fire it once from whatever actually renders the variant, or a page that decides several times will over-count. The SDK can also fetch ODP segments itself, letting an audience carry a segment condition directly instead of you mapping segments to variations by hand; keep that lookup off the hot path, since unlike a datafile decision it is a real network round trip.",
+    mechanism: "The SDK decides from a locally cached datafile, so a decision costs no network call. Decide as early in the request as you can - at the edge, before rendering - and carry the result forward rather than deciding again per component. Suppress the decision event everywhere a flag is read for routing, and fire it once from whatever actually renders the variant, or a page that decides several times will over-count. The SDK can also fetch ODP segments itself, letting an audience carry a segment condition directly instead of you mapping segments to variations by hand; keep that lookup off the hot path, since unlike a datafile decision it is a real network round trip.",
   },
   {
     name: "Data Platform (ODP)",
@@ -69,7 +69,7 @@ const PRODUCTS: {
   {
     name: "Web Experimentation",
     role: "Visual, marketer-owned client-side testing on top of the same visitor identity as Feature Experimentation. Useful for changes that do not need a code deploy.",
-    mechanism: "The snippet must load blocking in the head, or the original paints before the variation applies. Because it decides in the browser after the server has already responded, connecting it to server-rendered content means persisting its decision - typically to a cookie - and letting the next request act on it. Traffic should run both ways: push what you know about the visitor in as user attributes, and a marketer can target a content taxonomy term or a data-platform audience from the visual editor without a deploy. Audiences evaluate at page activation, so attributes pushed after the page loads apply from the next one.",
+    mechanism: "The snippet must load blocking in the head, or the original paints before the variation applies. Because it decides in the browser after the server has already responded, connecting it to server-rendered content means persisting that decision somewhere the next request carries, and letting the server act on it then. Traffic should run both ways: push what you know about the visitor in as user attributes, and a marketer can target a content taxonomy term or a data-platform audience from the visual editor without a deploy. Audiences evaluate at page activation, so attributes pushed after the page loads apply from the next one.",
   },
   {
     name: "DAM / CMP Assets",
@@ -94,7 +94,7 @@ const PRODUCTS: {
   {
     name: "Experiment Results",
     role: "Where the experiment is actually measured. Every decision and every conversion lands here, and the stats engine turns them into lift and significance per variation.",
-    mechanism: "Both event types should leave from where the visitor actually is, not from wherever the decision was computed - an impression fired at the edge records an exposure nobody necessarily saw. Decide at the edge with the impression suppressed, confirm what was rendered, then fire it from the client. Send conversions with the same attributes as the decision, or results cannot be segmented by the audiences that shaped them. Results are read in the console or pulled through the results API.",
+    mechanism: "Both event types should leave from where the visitor actually is, not from wherever the decision was computed - a decision event fired at the edge records an exposure nobody necessarily saw. Decide at the edge with the decision event suppressed, confirm what was rendered, then fire it from the client. Send conversions with the same attributes as the decision, or results cannot be segmented by the audiences that shaped them. Results are read in the console or pulled through the results API.",
   },
   {
     name: "Optimizely Analytics",
@@ -156,7 +156,7 @@ const LIFECYCLE: { title: string; detail: React.ReactNode }[] = [
     detail: (
       <>
         Dispatch the returned content type to a component and walk the composition tree. The
-        variation that was actually rendered is what gets reported back as an impression, from the
+        variation that was actually rendered is what gets reported back as the decision event, from the
         client - not the variation that was decided upstream, which may never have been shown.
       </>
     ),
@@ -280,15 +280,17 @@ export default function OptimizelyOnePage() {
             </>,
             <>
               <strong>Experimentation happens before rendering.</strong> Decide the flag at the
-              edge and make the winning variation part of the URL, so every bucket gets its own
-              stable ISR cache entry. Personalised pages stay statically cached instead of going
-              dynamic, which is the difference between personalisation you can afford at scale and
-              personalisation you cannot.
+              edge, then carry the winning variation forward on the request. Where you put it is
+              the consequential choice: in the request path, each variation gets its own cache
+              entry; in a header, it is simpler but every variation shares one entry unless the
+              CDN is told to vary on it. That choice is the difference between personalisation you
+              can afford at scale and personalisation you cannot.
             </>,
             <>
               <strong>Client-side tools can still reach server-rendered output.</strong> Web
-              Experimentation runs in the browser but writes a cookie that middleware reads on the
-              next request, so the variation survives into the server render with no flash.
+              Experimentation decides in the browser, but if it persists that decision the next
+              request can act on it server-side - so the variation survives into a real server
+              render with no flash of the original.
             </>,
             <>
               <strong>ODP closes the loop.</strong> Behavioural events go out, audience membership
@@ -390,7 +392,7 @@ export default function OptimizelyOnePage() {
               <line x1={940} y1={348} x2={798} y2={398}
                 stroke="var(--tertiary)" strokeWidth={2} markerEnd="url(#m-decide)" />
 
-              {/* WX variation cookie: client -> middleware, up the frame's right gutter.
+              {/* WX decision persisted: client -> middleware, up the frame's right gutter.
                   It is deliberately long - the point is that the cookie survives to the
                   NEXT request. It crosses only the dashed segments arrow, at a right angle. */}
               <path d="M 792,316 L 806,316 L 806,132 L 798,132"
@@ -409,7 +411,7 @@ export default function OptimizelyOnePage() {
 
               {/* Decisions and conversions leave the BROWSER, not the edge: middleware runs
                   decideAll with DISABLE_DECISION_EVENT behind a no-op requestHandler, so the
-                  impression is fired by whatever renders the variant, and conversions by the tracking
+                  decision event is fired by whatever renders the variant, and conversions by the tracking
                   destination (user.trackEvent). The line crosses the frame because the events
                   are leaving the deployment. */}
               <path d="M 585,404 L 585,596"
@@ -506,7 +508,7 @@ export default function OptimizelyOnePage() {
               <text x={476} y={244} textAnchor="middle" fill="var(--error)" fontSize={9} fontStyle="italic" fontFamily="system-ui,sans-serif">content</text>
               <text x={424} y={333} textAnchor="middle" fill="var(--primary-fill)" fontSize={9} fontFamily="system-ui,sans-serif">publish webhook · revalidateTag</text>
               <text x={869} y={96} textAnchor="middle" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">datafile · decideAll</text>
-              <text x={814} y={120} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">variation cookie</text>
+              <text x={814} y={120} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">persisted decision</text>
               <text x={814} y={131} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">read next request</text>
               <text x={826} y={356} textAnchor="start" fill="var(--secondary-container)" fontSize={8.5} fontFamily="system-ui,sans-serif">mb_* events</text>
               <text x={869} y={206} textAnchor="middle" fill="var(--secondary-container)" fontSize={8.5} fontFamily="system-ui,sans-serif">segments</text>
@@ -653,9 +655,9 @@ export default function OptimizelyOnePage() {
                 blurb: "The loop that makes a client-side tool safe on a statically cached site. The visual editor picks its variation in the browser, but the visible render on the next navigation is server-side, so there is no flash of the original.",
                 steps: [
                   { label: "Visual editor", sub: "decides in browser" },
-                  { label: "Persisted decision", sub: "cookie" },
+                  { label: "Persisted decision", sub: "carried on next request" },
                   { label: "Validate at the edge", sub: "reject unknown keys", highlight: true },
-                  { label: "Variation in the URL", sub: "one key per bucket" },
+                  { label: "Carried to the server", sub: "path keys the cache" },
                   { label: "Cached variant", sub: "its own cache entry" },
                 ],
               },

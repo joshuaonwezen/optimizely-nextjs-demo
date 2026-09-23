@@ -3,7 +3,7 @@
 // Variations the visitor is looking at right now, keyed by FX rule key.
 //
 // Written only by <FxBucketingEvent>, which mounts exclusively where a component
-// has already rendered a variation and fired its impression, so this map can never
+// has already rendered a variation and fired its decision event, so this map can never
 // claim a variation that was not served. Nothing here calls decide() - it only
 // reports a decision that already happened.
 //
@@ -60,7 +60,7 @@ let clientReady: Promise<void> | null = null;
  * Needed because above-the-fold components race the network. Measured on the homepage:
  * HeroBlock's IntersectionObserver fires mb_feature_viewed at ~11ms, while the browser
  * SDK cannot decide until it has fetched the datafile (~229ms cold). So the hero
- * impression, the one whose variation matters most, was the single event going out
+ * decision event, the one whose variation matters most, was the single event going out
  * unattributed.
  *
  * Waiting on the SDK client alone is NOT enough, and that mistake is easy to repeat:

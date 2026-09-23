@@ -56,14 +56,14 @@ query {
 }`;
 
 
-const BUCKETING_SNIPPET = `// The component that fires the impression, client-side
+const BUCKETING_SNIPPET = `// The component that fires the decision event, client-side
 // flagKey is passed in from the page - it was encoded in the URL by middleware:
 //   /pricing → /pricing/__v_checkout_layout--single_step
 // The content route parses it back out.
 // No decideAll() here - the flagKey is already known from the route.
 
 "use client";
-export function VariationImpression({ flagKey }: { flagKey: string }) {
+export function DecisionEvent({ flagKey }: { flagKey: string }) {
   useEffect(() => {
     const userId = getCookie("optimizelyEndUserId");
     if (!userId) return;
@@ -73,7 +73,7 @@ export function VariationImpression({ flagKey }: { flagKey: string }) {
       const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
       const persona = getCookie("persona");
       // Attributes MUST mirror what middleware used (it produced the served
-      // variation) - including logged_in - or the impression can land on a
+      // variation) - including logged_in - or the decision event can land on a
       // different variation than the one that was rendered.
       const ctx = client.createUserContext(userId, {
         device,
@@ -81,7 +81,7 @@ export function VariationImpression({ flagKey }: { flagKey: string }) {
         logged_in: !!getCookie("bucketing_id"),
         ...(persona ? { persona } : {}),
       });
-      ctx?.decide(flagKey, []); // fire bucketing event for this flag only
+      ctx?.decide(flagKey, []); // fire decision event for this flag only
     });
   }, [flagKey]);
   return null;
@@ -97,7 +97,7 @@ const servedFlagKey = flagVariations.find((fv) => fv.variationKey === servedVari
 return (
   <>
     <OptimizelyComponent content={page} />
-    {servedFlagKey && <VariationImpression flagKey={servedFlagKey} />}
+    {servedFlagKey && <DecisionEvent flagKey={servedFlagKey} />}
   </>
 );`;
 
@@ -107,14 +107,14 @@ const DECISION_SNIPPET = `// Server component - client and userId are resolved u
 
 const userCtx = client.createUserContext(userId, attributes);
 
-// Evaluate without firing an impression:
+// Evaluate without firing a decision event:
 const decision = userCtx.decide(
   "checkout_layout",
   [OptimizelyDecideOption.DISABLE_DECISION_EVENT],
 );
 if (!decision.enabled) return null;
 
-// Variation will be rendered - fire the impression:
+// Variation will be rendered - fire the decision event:
 void userCtx.decide("checkout_layout");
 
 // Variables come back typed - cast to the type you expect:
@@ -125,7 +125,7 @@ return <Hero headline={headline} subheadline={subheadline} variation={decision.v
 const VARIATIONS_SNIPPET = `// The catch-all content route
 // Middleware rewrites: /pricing → /pricing/__v_checkout_layout--single_step
 // Both flagKey and variationKey are encoded in the URL segment so the page
-// knows which flag to fire the bucketing event for - no extra SDK call needed.
+// knows which flag to fire the decision event for - no extra SDK call needed.
 // Keep parsing in one module, shared with middleware:
 // a malformed segment parses to null instead of an undefined variation key.
 import { isVariationSegment, parseVariationSegment } from "@/lib/optimizely/variationPath";
@@ -138,7 +138,7 @@ function extractVariations(slug) {
   return {
     cleanSlug,
     activeVariations: flagVariations.map((fv) => fv.variationKey), // for Graph filter
-    flagVariations,                                                  // for bucketing event
+    flagVariations,                                                  // for decision event
   };
 }
 
@@ -162,7 +162,7 @@ async function CmsPage({ params }) {
   return (
     <>
       <OptimizelyComponent content={page} />
-      {servedFlagKey && <VariationImpression flagKey={servedFlagKey} />}
+      {servedFlagKey && <DecisionEvent flagKey={servedFlagKey} />}
     </>
   );
 }`;
@@ -231,7 +231,7 @@ function routeMatches(pathname, cmsRoute) {
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
-  // Set a stable visitor ID (not httpOnly - browser SDK reads it for bucketing events).
+  // Set a stable visitor ID (not httpOnly - browser SDK reads it for decision events).
   const userId = request.cookies.get("optimizelyEndUserId")?.value ?? crypto.randomUUID();
   if (!request.cookies.get("optimizelyEndUserId")) {
     response.cookies.set("optimizelyEndUserId", userId, {
@@ -429,7 +429,7 @@ export default async function FeatureFlagsDemoPage() {
     <>
       <DemoHero
         title="Experimentation"
-        description="Optimizely Feature Experimentation runs alongside SaaS CMS on the same platform. Flag decisions are evaluated in edge middleware - the URL is rewritten with the variation key before the page renders, enabling full ISR caching per variation. Bucketing events fire client-side after the user sees the variation, connecting A/B experiments directly to editor-created content variations."
+        description="Optimizely Feature Experimentation runs alongside SaaS CMS on the same platform. Flag decisions are evaluated in edge middleware, before the page renders. Carry the variation key in the request path and each variation caches independently. Decision events fire client-side after the user sees the variation, connecting A/B experiments directly to editor-created content variations."
       >
         <div className="flex flex-wrap gap-3 mt-8">
           {["✓ Server-side decisions", "Feature flags · Experiments", "Audience targeting", "Variable delivery", "CMS Variations integration"].map((t) => (
@@ -461,10 +461,11 @@ export default async function FeatureFlagsDemoPage() {
                 <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">this demo</span>
               </div>
               <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
-                Edge middleware evaluates the flag, rewrites the URL with the variation key, and Graph
-                returns the matching CMS content variant - so every variation is its own ISR cache
-                entry. A small client component fires the bucketing event after the visitor sees it.
-                The rest of this page details this path.
+                Edge middleware evaluates the flag, carries the variation key forward on the request,
+                and Graph returns the matching CMS content variant. Put that key in the request path
+                and every variation gets its own ISR cache entry; put it in a header instead and the
+                wiring is simpler, but all variations share one entry unless the CDN is told to vary
+                on it. A small client component fires the decision event after the visitor sees it.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
                 <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Server-rendered - no flicker, full ISR caching per variation</span></div>
@@ -535,7 +536,7 @@ export default async function FeatureFlagsDemoPage() {
             {[
               { n: 5, env: "Edge", icon: ICON_ZAP, accent: "bg-brand/10 text-brand", file: "at the edge, before render", essence: "Pick the variation, put it in the URL", explain: "FX chooses which variation this visitor should see (that choice is the “decision”), and the middleware writes it into the request path so the page can be cached per variation.", code: "decideAll([DISABLE_DECISION_EVENT])\n// → { checkout_layout: { variationKey: 'single_step' } }\n// rewrite: /pricing → /pricing/__v_checkout_layout--single_step", href: "#code-middleware" },
               { n: 6, env: "Server · Graph (cached)", icon: ICON_DATABASE, accent: "bg-tertiary/10 text-tertiary", file: "in the content route", essence: "Fetch the matching content from Graph", explain: "The page asks Optimizely Graph for the content variant whose name matches the chosen variation. The response is cached, so repeat visits stay fast.", code: "variation: {\n  include: 'SOME',\n  value: ['single_step'],\n  includeOriginal: true,\n}", href: "#code-page-route" },
-              { n: 7, env: "Client", icon: ICON_ACTIVITY, accent: "bg-brand/10 text-brand", file: "in the browser, after render", essence: "Record that the visitor saw it", explain: "In the browser, FX logs an “impression” - the event that tells the experiment this visitor was shown this variation, so results can be measured.", code: "decide('checkout_layout')", href: "#code-bucketing-event" },
+              { n: 7, env: "Client", icon: ICON_ACTIVITY, accent: "bg-brand/10 text-brand", file: "in the browser, after render", essence: "Record that the visitor saw it", explain: "In the browser, FX logs a “decision event” - the event that tells the experiment this visitor was shown this variation, so results can be measured.", code: "decide('checkout_layout')", href: "#code-decision-event" },
             ].flatMap((s, i, arr) => [
               <div key={s.n} className="flex-1 min-w-0 bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-2">
@@ -774,7 +775,7 @@ export default async function FeatureFlagsDemoPage() {
             <strong>SDK attributes</strong> passed at decision time, or <strong>ODP segments</strong> the
             visitor already qualifies for. Both are matched on the server - the browser never knows which
             audience it was matched to. Either way the rule resolves to a variation key, and everything
-            downstream (Graph filter, CMS variant, impression) is identical. For the full breakdown of
+            downstream (Graph filter, CMS variant, decision event) is identical. For the full breakdown of
             these two sources - native attributes vs the ODP behavioral layer - see{" "}
             <Link href="/demo/personalization#targeting-sources" className="text-brand hover:underline">Personalization</Link>.
           </p>
@@ -890,16 +891,16 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
                 <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Smaller, faster edge datafile - only CMS flags</span></div>
                 <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">A component experiment can never leak into CMS routing</span></div>
                 <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Independent TTL, ownership, and blast radius</span></div>
-                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Two SDK keys; the client impression must target this project too</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Two SDK keys; the client decision event must target this project too</span></div>
               </div>
             </div>
           </div>
 
           <Callout variant="warning">
-            <strong>If you split projects, the bucketing event must fire against the same project.</strong>{" "}
-            Bucketing happens at the edge in the CMS project, but the impression (step 7) fires in the browser via{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">VariationImpression</code>. Point that client at the CMS
-            project&apos;s public SDK key, or the impression lands in the wrong project and the experiment shows no participants.
+            <strong>If you split projects, the decision event must fire against the same project.</strong>{" "}
+            Bucketing happens at the edge in the CMS project, but the decision event (step 7) fires in the browser via{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">DecisionEvent</code>. Point that client at the CMS
+            project&apos;s public SDK key, or the decision event lands in the wrong project and the experiment shows no participants.
             Everything else - the <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code> cookie,{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_route</code> scoping,{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">includeOriginal</code>, and ISR-per-variation - is unchanged.
@@ -943,9 +944,9 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
           <CodeBlock code={GRAPH_QUERY_SNIPPET} label="Theoretical GraphQL (personal variation active)" />
         </section>
 
-        <section id="code-bucketing-event">
+        <section id="code-decision-event">
           <h2 className="font-display text-lg font-semibold text-on-surface mb-1">
-            Code: Bucketing event (client) <a href="#code-bucketing-event" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
+            Code: Decision event (client) <a href="#code-decision-event" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">#</a>
           </h2>
           <p className="text-sm text-on-surface-variant mb-3">
             Middleware encoded{" "}
@@ -954,11 +955,11 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
             a shared parser{" "}
             already knows the <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey</code> - no extra SDK call. When Graph
             confirms a variation was served, the page mounts{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<VariationImpression />"}</code>, which calls{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<DecisionEvent />"}</code>, which calls{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">decide(flagKey, [])</code>{" "}
             client-side for that flag only. Its attributes must mirror the middleware context that produced the variation.
           </p>
-          <CodeBlock code={BUCKETING_SNIPPET} label="Firing the impression from the client" />
+          <CodeBlock code={BUCKETING_SNIPPET} label="Firing the decision event from the client" />
         </section>
 
         {/* ── Approach comparison ── */}
@@ -984,12 +985,12 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">params</code> (no{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">cookies()</code>) so
                 ISR works. Each variation URL is a separate CDN cache entry.
-                A small client component fires the bucketing event after render.
+                A small client component fires the decision event after render.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
                 <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">~10-50ms TTFB on cached requests</span></div>
                 <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">CDN serves warm requests - server load scales down</span></div>
-                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Bucketing event fires after page load (CSR)</span></div>
+                <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">Decision event fires after page load (CSR)</span></div>
                 <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">More moving parts (middleware + browser SDK)</span></div>
               </div>
             </div>
@@ -1005,12 +1006,12 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
                 The SDK user context is created in the page render, reading cookies
                 for userId and attributes.{" "}
                 <code className="bg-surface-low px-1 rounded font-mono text-xs">decideAll()</code> runs server-side,
-                variation filter goes to Graph, and the bucketing event fires server-side too.
+                variation filter goes to Graph, and the decision event fires server-side too.
                 Simpler code - no middleware changes or client component needed.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">
                 <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Simplest - everything in one server component</span></div>
-                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Bucketing event fires synchronously before HTML</span></div>
+                <div className="flex gap-2"><span className="text-brand font-bold shrink-0">+</span><span className="text-on-surface-variant">Decision event fires synchronously before HTML</span></div>
                 <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">~300-1000ms TTFB on every request (no caching)</span></div>
                 <div className="flex gap-2"><span className="text-error font-bold shrink-0">-</span><span className="text-on-surface-variant">cookies() blocks ISR - force-dynamic is required</span></div>
               </div>
@@ -1046,8 +1047,8 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
           </h2>
           <p className="text-sm text-on-surface-variant mb-3">
             For feature-gating or variable-driven UI outside the CMS page route. The same
-            impression rule applies - call <code className="bg-surface-low px-1 rounded font-mono text-xs">userCtx.decide(flagKey)</code>{" "}
-            (no options, or empty array) when the variation is actually rendered to fire the impression.
+            decision-event rule applies - call <code className="bg-surface-low px-1 rounded font-mono text-xs">userCtx.decide(flagKey)</code>{" "}
+            (no options, or empty array) when the variation is actually rendered to fire the decision event.
           </p>
           <CodeBlock code={DECISION_SNIPPET} label="Deciding a flag in a server component" />
         </section>
@@ -1166,7 +1167,7 @@ const decision = userCtx.decide("my_flag", [DISABLE_DECISION_EVENT]);`} />
           <><strong className="text-on-surface">includeOriginal: true</strong> means users outside the experiment always get the original content. Safe to add the filter before any CMS variations exist.</>,
           <><strong className="text-on-surface">Datafile is cached for 60 seconds</strong> via Next.js fetch revalidation. Changes in the FX dashboard propagate within one minute with no server restart.</>,
           <><strong className="text-on-surface">React cache() is scoped to a single HTTP request.</strong> Wrapping the user context factory in React <code className="bg-surface-low px-1 rounded font-mono text-xs">cache()</code> means any number of server components can call it and share one context per request. Concurrent visitors each get their own completely isolated context; nothing is shared across users.</>,
-          <><strong className="text-on-surface">DISABLE_DECISION_EVENT</strong> suppresses bucketing events during the middleware routing pass. Once the variation is rendered, <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<VariationImpression flagKey={...} />"}</code> mounts client-side and fires the impression for that flag only - its attributes must mirror the middleware context, or the impression can bucket differently than what was served.</>,
+          <><strong className="text-on-surface">DISABLE_DECISION_EVENT</strong> suppresses decision events during the middleware routing pass. Once the variation is rendered, <code className="bg-surface-low px-1 rounded font-mono text-xs">{"<DecisionEvent flagKey={...} />"}</code> mounts client-side and fires the decision event for that flag only - its attributes must mirror the middleware context, or the decision event can bucket differently than what was served.</>,
           <><strong className="text-on-surface">cms_route scopes an experiment to a page.</strong> The middleware only applies a variation whose <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_route</code> matches the current path, so many CMS experiments can run across the site without colliding or fragmenting each other&apos;s ISR cache. There is no server-side re-decide - <code className="bg-surface-low px-1 rounded font-mono text-xs">page._metadata.variation</code> confirms what Graph served.</>,
           <><strong className="text-on-surface">Variations work on any content type</strong> - pages, shared blocks, navigation. Wherever Graph accepts a variation filter, the SDK wires in seamlessly.</>,
           <><strong className="text-on-surface">CMS variations must be created in Visual Builder, but can then be updated via the Management API.</strong> The REST API silently ignores the <code className="bg-surface-low px-1 rounded font-mono text-xs">variation</code> field on <code className="bg-surface-low px-1 rounded font-mono text-xs">POST</code> - you cannot create a named variation programmatically. But creating one in the UI generates a new draft <strong>version</strong> that you can PATCH and publish.</>,
