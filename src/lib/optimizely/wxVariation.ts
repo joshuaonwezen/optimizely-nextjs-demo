@@ -65,11 +65,17 @@ export const WX_GLOBAL = "__optiWxCms";
 // callback activation, or an audience that needed async data). See below.
 export const WX_EVENT = "opti-wx-cms";
 
-// Ceiling on the hold. Long enough for an ISR/CDN-cached RSC payload, short enough
-// that the worst case is a brief hold rather than a page that looks broken. The
-// timer lives in the inline script rather than in React so a page that never
-// hydrates still reveals itself.
-export const WX_HOLD_MS = 600;
+// Failsafe ceiling on the hold. In the normal case the hold is released the moment
+// the variation renders (WxVariationSwap's __v_ branch), so this only fires when the
+// swap fails or never completes - including the case where React never hydrates,
+// which is why the timer lives in the inline script rather than in a component.
+//
+// 600ms was measured to be too tight: against a COLD ISR entry for the variation
+// route the swap landed at ~1800ms, so the failsafe fired first and the visitor got a
+// flash of base content before the variation - the worst of both. A warm entry swaps
+// in ~300ms. 1500ms covers the cold case, matches Optimizely's own anti-flicker
+// guidance, and equals SETTLE_TIMEOUT_MS in lib/tracking/activeVariations.ts.
+export const WX_HOLD_MS = 1500;
 
 // Rendered once, statically, in the root layout's <head>.
 export const WX_HOLD_STYLE = `html[${WX_PENDING_ATTR}] [${WX_REGION_ATTR}]{visibility:hidden}`;
@@ -83,6 +89,13 @@ export interface WxCmsGlobal {
   names: string[];
   /** Installed by wxReaderScript(); absent only if that never ran. */
   read?: () => { v: string; e: string | null } | null;
+  /**
+   * The clean path whose swap has already been started, latched here rather than in
+   * component state because WxVariationSwap may remount across the navigation. It is
+   * also what lets the address bar be restored to the clean path without the
+   * resulting pathname change starting the swap over again.
+   */
+  doneFor?: string | null;
 }
 
 // Serialize for embedding in an inline <script>. Variation names come from the CMS,

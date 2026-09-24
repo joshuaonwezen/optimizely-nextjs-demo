@@ -1079,6 +1079,15 @@ ${mappingEntries.length > 0
             visitor, it stays a single cached entry - the buckets do not fragment the cache.
           </p>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            The variation route carries a{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">__v_wx--&lt;name&gt;</code>{" "}
+            segment, and once the variation is on screen the clean path is put back in the address bar
+            with <code className="bg-surface-low px-1 rounded font-mono text-xs">replaceState</code>, so
+            the segment stays an implementation detail. The router keeps its own tree, so a refresh still
+            re-fetches the variation, while a hard reload starts from base content and simply swaps again.
+            The URL remains addressable if you type it, which is what the verification step below uses.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
             Identity is already shared:{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code>{" "}
             is written domain-wide by middleware and is the same identifier the Web snippet uses. Both
@@ -1126,7 +1135,7 @@ ${mappingEntries.length > 0
                     { label: "Hydration", sub: "reads the matched name" },
                     { label: "Soft navigation", sub: "/__v_wx--wx_name" },
                     { label: "Graph filter", sub: "variation: { include: SOME }" },
-                    { label: "CMS variant", sub: "region revealed", highlight: true },
+                    { label: "CMS variant", sub: "clean URL restored", highlight: true },
                   ].map((step, i, arr) => (
                     <div key={step.label} className="flex items-center gap-3">
                       <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
