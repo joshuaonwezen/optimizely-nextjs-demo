@@ -13,6 +13,13 @@ import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/opti
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { isVariationSegment, parseVariationSegment, type FlagVariation } from "@/lib/optimizely/variationPath";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
+import WxVariationSwap from "@/components/personalization/WxVariationSwap";
+import {
+  selectWxVariations,
+  wxPrepaintScript,
+  WX_FLAG_KEY,
+  WX_REGION_ATTR,
+} from "@/lib/optimizely/wxVariation";
 import { getVisitorContext } from "@/lib/optimizely/visitor";
 import { queryOdpSegments, resolveVariationKey } from "@/lib/optimizely/odp";
 
@@ -74,11 +81,23 @@ async function fetchPageMeta(
   }
 }
 
+// variation: { include: ALL } is REQUIRED, not defensive. Verified against Graph:
+// without it, _Page returns base items only - 0 of 50 items on this instance came
+// back with a non-null variation - so `variation` in the selection set was always
+// null. Two consequences, one of them pre-existing: the WX allowlist below would
+// always be empty, and the variation branch of the step-2 fallback (which selects on
+// exactly this field) could never match and always fell through to baseFallback.
+// Step 1 normally resolves the variation, so that branch is a latent bug rather than
+// a live one, but it is only latent by luck.
+//
+// limit raised to 50 with it: on a page carrying several variations the base versions
+// and the variations share this budget, and at 10 a variation could be crowded out.
 const KEY_QUERY = /* GraphQL */ `
   query FindPageKey($urls: [String]) {
     _Page(
+      variation: { include: ALL }
       where: { _metadata: { url: { default: { in: $urls } } } }
-      limit: 10
+      limit: 50
     ) {
       items { _metadata { key version variation } }
     }
@@ -217,20 +236,26 @@ async function CmsPage({
     if (hit) page = pickMatch(hit);
   }
 
+  // The page's own variation names. Needed on the happy path now, not only in the
+  // step-2 fallback below, because the WX bridge's allowlist comes from here: a
+  // variation name is accepted only if this page actually has it. fetchPageKeys is
+  // "use cache" + cacheTag(CACHE_TAGS.page), so this costs one cold Graph request per
+  // URL set per hour and is shared by every visitor.
+  let keyItems: NonNullable<NonNullable<KeyResult["_Page"]>["items"]> = [];
+  try {
+    const keyResult = await fetchPageKeys(urls);
+    keyItems = keyResult?._Page?.items ?? [];
+  } catch (error) {
+    // Graph unavailable - the fallback below degrades to notFound(), and the WX
+    // allowlist degrades to empty, which means base content. Never an error page.
+    console.error("[CmsPage] Key lookup failed:", error);
+  }
+
   // Step 2: Fallback for pages where getContentByPath returns nothing because
   // _Content.item resolves to null when multiple items share the same URL.
   // _Page.items has no such restriction — use it to find key+variation by name,
   // then fall back to the highest base version.
   if (!page) {
-    let keyItems: NonNullable<NonNullable<KeyResult["_Page"]>["items"]> = [];
-    try {
-      const keyResult = await fetchPageKeys(urls);
-      keyItems = keyResult?._Page?.items ?? [];
-    } catch (error) {
-      // Graph unavailable — fall through to notFound()
-      console.error("[CmsPage] Key lookup failed:", error);
-    }
-
     const candidates = keyItems
       .map((i) => i._metadata)
       .filter((m): m is { key: string; version: string | number; variation: string | null } => !!(m?.key && m?.version));
@@ -265,10 +290,29 @@ async function CmsPage({
     ? (flagVariations.find((fv) => fv.variationKey === servedVariation)?.flagKey ?? null)
     : null;
 
+  // Web Experimentation bridge. Only wx_*-prefixed CMS variations take part, which is
+  // what makes this per-page opt-in: a page with none renders exactly what it did
+  // before, with no script and no wrapper. The pre-paint script and the held region
+  // are emitted only on a clean path - when a variation segment is already present the
+  // decision has been made (FX wins, or this IS the WX render), so there is nothing to
+  // hold and nothing to decide. WxVariationSwap still mounts in that case: on the
+  // post-swap render it is what releases the hold.
+  const wxVariations = selectWxVariations(keyItems.map((i) => i._metadata?.variation));
+  const wxDecidable = wxVariations.length > 0 && flagVariations.length === 0;
+
+  const content = <OptimizelyComponent content={page} />;
+
   return (
     <>
-      <OptimizelyComponent content={page} />
-      {servedFlagKey && <FxBucketingEvent flagKey={servedFlagKey} />}
+      {wxDecidable && (
+        <script dangerouslySetInnerHTML={{ __html: wxPrepaintScript(wxVariations) }} />
+      )}
+      {wxDecidable ? <div {...{ [WX_REGION_ATTR]: "" }}>{content}</div> : content}
+      {/* A WX decision has no FX flag behind it, so it must not fire an FX impression. */}
+      {servedFlagKey && servedFlagKey !== WX_FLAG_KEY && (
+        <FxBucketingEvent flagKey={servedFlagKey} />
+      )}
+      {wxVariations.length > 0 && <WxVariationSwap variations={wxVariations} />}
     </>
   );
 }

@@ -14,6 +14,7 @@ import AutoTracker from "@/components/AutoTracker";
 import StickyOfferBar from "@/components/layout/StickyOfferBar";
 import RatesBar from "@/components/layout/RatesBar";
 import TrustSection from "@/components/layout/TrustSection";
+import { WX_HOLD_STYLE } from "@/lib/optimizely/wxVariation";
 import "./globals.css";
 
 // Each family is ONE localFont() call with a src array, so font-weight resolves
@@ -128,6 +129,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: gtmInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: odpInitScript }} />
+        {/* Holds the page region while a Web Experimentation variation is being
+            swapped in (see lib/optimizely/wxVariation.ts). Static and always present
+            so it costs nothing on the pages that never set the attribute.
+            `visibility` rather than `display`: layout stays reserved, so the hold
+            cannot cause a shift when the content appears. */}
+        <style dangerouslySetInnerHTML={{ __html: WX_HOLD_STYLE }} />
       </head>
       <body
         className={`${vcNudge.variable} ${dieGrotesk.variable} ${robotoMono.variable} min-h-screen bg-surface text-on-surface font-body antialiased overflow-x-clip`}

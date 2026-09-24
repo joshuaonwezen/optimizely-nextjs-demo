@@ -994,21 +994,28 @@ ${mappingEntries.length > 0
 
         {/* Web Experimentation bridge */}
         <section id="web-experimentation-bridge">
-          <DemoSectionHeading id="web-experimentation-bridge">Web Experimentation → CMS Content: a Fallback Bridge{" "}</DemoSectionHeading>
+          <DemoSectionHeading id="web-experimentation-bridge">Web Experimentation → CMS Content, on the First Pageview{" "}</DemoSectionHeading>
 
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
             Teams that already run Web Experimentation and then adopt a headless CMS almost always hit the
             same question: how do I make my WX experiments and personalization serve content from the CMS
-            content model? It is worth slowing down here, because the instinct - bridge WX straight into
-            Graph - is usually not the best answer. There are three ways to get a WX-style change onto the
-            page, and the bridge is the last resort, not the default.
+            content model? There are three ways to get a WX-style change onto the page. Two of them decide
+            on the server; the third keeps WX as the decisioning engine and is what the rest of this
+            section covers.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            The ordering is what makes it work. WX decides <strong>in the browser</strong>, after the
+            server has rendered and sent the page - so it cannot influence that response. But the WX
+            snippet is a <strong>blocking script in the document head</strong>, which means its decision
+            exists <strong>before the browser parses the body or paints anything</strong>. That is the
+            opening: the page can read a decision WX has already made, synchronously, with no network
+            call and nothing stored.
           </p>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
-            The root of it: WX decides <strong>in the browser, after</strong> the server has already
-            rendered and sent the page. A server-side decision (FX or ODP-direct) happens <strong>before</strong>{" "}
-            the response, so the CMS variant is baked into the first paint. That ordering is why the two
-            server-side options below have no lag and no flicker, and why the bridge - reaching backwards
-            from a client-side decision to server-rendered CMS content - always costs you one or the other.
+            An earlier version of this bridge passed the decision through a cookie, which meant it could
+            only act on the visitor&apos;s <em>second</em> request. Nothing about the integration required
+            that, and the cookie is gone. The cost has moved rather than disappeared, though, and it is
+            spelled out at the end of the section.
           </p>
 
           <div className="grid md:grid-cols-3 gap-4 mb-8">
@@ -1040,43 +1047,42 @@ ${mappingEntries.length > 0
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex flex-col gap-3">
               <h3 className="font-display font-semibold text-on-surface">Bridge WX to the CMS</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
-                Only when you must keep <strong>WX as the decisioning engine</strong> <em>and</em> the
-                content must come from the <strong>CMS content model</strong>. That narrow case is what the
-                rest of this section covers - either persist the decision and act on it on the next request,
-                or refetch client-side on the same view, with a flicker. Expect one of those two
-                tradeoffs.
+                For when you must keep <strong>WX as the decisioning engine</strong> <em>and</em> the
+                content must come from the <strong>CMS content model</strong>. The page reads the decision
+                WX already made before first paint and routes the render to the matching CMS variation, so
+                it applies on the first pageview with nothing written to storage. The cost is that the
+                affected region is held for one cached request while the variation arrives.
               </p>
-              <span className="self-start text-xs px-2 py-0.5 rounded-full bg-surface-low text-on-surface-variant font-medium">last resort</span>
+              <span className="self-start text-xs px-2 py-0.5 rounded-full bg-surface-low text-on-surface-variant font-medium">no cookie, first view</span>
             </div>
           </div>
 
           <h3 className="font-display text-lg font-bold text-on-surface mt-8 mb-2">
-            The bridge, for that edge case
+            How the bridge works
           </h3>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
-            Web Experimentation buckets visitors entirely in the browser - its snippet evaluates
-            audience rules after the HTML has already been sent. There are two ways to connect that
-            client-side bucket to a CMS variation; pick by goal:
+            A CMS variation whose name begins with{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">wx_</code>{" "}
+            opts its page into the bridge. That prefix is doing three jobs at once: it is the allowlist
+            that stops a made-up name reaching Graph, it is the per-page opt-in (a page with no{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">wx_</code> variation emits no
+            extra markup and pays nothing), and it keeps WX clear of the unprefixed names, which are
+            reserved for matching Feature Experimentation variation keys.
           </p>
-          <ul className="text-sm text-on-surface-variant mb-4 max-w-3xl space-y-2">
-            <li><strong className="text-on-surface">Experiment measured over a journey</strong> - the{" "}
-              <strong>persisted-decision</strong> method (walked through below): WX records the bucket,
-              the edge reads it on the <strong>next</strong> request and routes the content query to the
-              variant. No flicker; the one-request lag is invisible across a multi-page journey.</li>
-            <li><strong className="text-on-surface">First-touch personalization on the landing page itself</strong> - a
-              client-side <strong>refetch</strong>: once the snippet resolves the variation, a client component
-              refetches the variant from Graph (reusing the same{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">variation: {`{ include: SOME, includeOriginal: true }`}</code>{" "}
-              filter) and swaps it in on the <strong>same</strong> view. Content is fetched twice and there is
-              a brief flicker - the same tradeoff as{" "}
-              <Link href="/demo/feature-experimentation#approaches" className="text-brand hover:underline">Approach C - Client-side only</Link>.</li>
-          </ul>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            On a page that has opted in, the server sends a short inline script and wraps the content in a
+            holdable region. The script reads{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">getExperimentStates</code>{" "}
+            synchronously, intersects the variation names WX bucketed this visitor into with the names the
+            page actually has, and on a match hides the region and hands the name to a client component,
+            which soft-navigates to the variation route. Because the base response is identical for every
+            visitor, it stays a single cached entry - the buckets do not fragment the cache.
+          </p>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
             Identity is already shared:{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">optimizelyEndUserId</code>{" "}
             is written domain-wide by middleware and is the same identifier the Web snippet uses. Both
-            products see the same visitor with no extra coordination needed. The walkthrough below
-            implements the persisted-decision method.
+            products see the same visitor with no extra coordination needed.
           </p>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Sharing a visitor ID is not the same as sharing what you know about that visitor, though,
@@ -1090,17 +1096,17 @@ ${mappingEntries.length > 0
             same one-request lag as the persisted decision.
           </p>
 
-          {/* Two-request architecture diagram */}
+          {/* Single-request architecture diagram */}
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 mb-8">
-            <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-4">How the two-request bridge works</p>
+            <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-4">One pageview, no storage</p>
             <div className="space-y-4">
               <div>
-                <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mb-2">Request 1 - base content + WX fires</p>
+                <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mb-2">Head - blocking, before any paint</p>
                 <div className="flex flex-wrap items-center gap-3">
                   {[
-                    { label: "Server responds", sub: "base CMS content in HTML" },
-                    { label: "WX snippet runs", sub: "evaluates experiment rules" },
-                    { label: "Decision persisted", sub: "flag--variation" },
+                    { label: "WX snippet runs", sub: "decision now in memory" },
+                    { label: "Inline script reads", sub: "getExperimentStates()" },
+                    { label: "Region held", sub: "matched name only" },
                   ].map((step, i, arr) => (
                     <div key={step.label} className="flex items-center gap-3">
                       <div className="text-center rounded-xl px-4 py-3 min-w-[130px] bg-surface-low">
@@ -1114,13 +1120,13 @@ ${mappingEntries.length > 0
               </div>
               <div className="border-t border-ghost-border" />
               <div>
-                <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mb-2">Request 2+ - CMS variation served</p>
+                <p className="text-[10px] font-mono text-on-surface-variant/60 uppercase tracking-wider mb-2">Same pageview - variation swapped in</p>
                 <div className="flex flex-wrap items-center gap-3">
                   {[
-                    { label: "Sent with next request", sub: "read at the edge" },
-                    { label: "Middleware reads", sub: "folds it into the URL" },
+                    { label: "Hydration", sub: "reads the matched name" },
+                    { label: "Soft navigation", sub: "/__v_wx--wx_name" },
                     { label: "Graph filter", sub: "variation: { include: SOME }" },
-                    { label: "CMS variant", sub: "or original fallback", highlight: true },
+                    { label: "CMS variant", sub: "region revealed", highlight: true },
                   ].map((step, i, arr) => (
                     <div key={step.label} className="flex items-center gap-3">
                       <div className={`text-center rounded-xl px-4 py-3 min-w-[130px] ${step.highlight ? "bg-brand/10 border border-brand/30" : "bg-surface-low"}`}>
@@ -1133,32 +1139,33 @@ ${mappingEntries.length > 0
                 </div>
               </div>
             </div>
+            <p className="text-[10px] font-mono text-on-surface-variant/60 mt-4">
+              A visitor in no matching experiment never sets the attribute, so nothing is held and the base
+              response paints as normal.
+            </p>
           </div>
 
           {/* Step 1 + 2 */}
           <div className="space-y-6 max-w-2xl mb-6">
             <Step number={1} title="Create the CMS variation in Visual Builder">
               In the CMS, open the page you want to experiment on and click{" "}
-              <strong>Add variation</strong>. Name the variation to exactly match the variation key
-              string you will write from Web Experimentation - for example{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">treatment</code>.
-              The name is case-sensitive and must be an exact string match. Edit the variation&apos;s
-              composition and publish it.
+              <strong>Add variation</strong>. Name it with the{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">wx_</code> prefix - for
+              example <code className="bg-surface-low px-1 rounded font-mono text-xs">wx_treatment</code>.
+              Edit the variation&apos;s composition and publish it. Variations can only be{" "}
+              <em>created</em> in the Visual Builder UI; no REST path creates one.
             </Step>
 
-            <Step number={2} title="Configure the WX custom JS action">
-              In the Web Experimentation UI, add a{" "}
-              <strong>Custom JS action</strong> to your experiment - one per variation bucket. The
-              action fires when WX assigns a visitor to that bucket. Write the cookie{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">wx_variation</code>{" "}
-              with the value <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey--variationKey</code>,
-              where <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey</code>{" "}
-              is a stable namespace you choose and{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">variationKey</code>{" "}
-              is the CMS variation name from step 1. For the control/original bucket, omit the cookie
-              write entirely - Graph&apos;s{" "}
+            <Step number={2} title="Name the WX variation identically">
+              In the Web Experimentation UI, name the experiment&apos;s variation exactly the same string,{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">wx_treatment</code>,
+              case-sensitive. That is the entire WX-side configuration: <strong>no Custom JS action</strong>,
+              no cookie, no snippet edit. Leave the control variation named anything that is not a CMS
+              variation name and it falls through to base content, which Graph&apos;s{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">includeOriginal: true</code>{" "}
-              always falls back to base content when no matching variation is found.
+              guarantees. If the visitor is in the experiment&apos;s <strong>holdback</strong>, they also
+              get base content - the bridge checks that explicitly, because serving a holdback visitor the
+              variation would corrupt the result.
             </Step>
           </div>
 
@@ -1166,85 +1173,116 @@ ${mappingEntries.length > 0
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-4 py-3 border-b border-ghost-border bg-surface-low">
-                <span className="text-xs font-mono text-on-surface-variant">WX custom JS action (variation bucket)</span>
+                <span className="text-xs font-mono text-on-surface-variant">The pre-paint read (inline, before any paint)</span>
               </div>
-              <CodeBlock code={`// Paste into the Custom JS action in Web Experimentation.
-// Create one action per variation bucket.
-// Fires when WX assigns a visitor to this variation.
+              <CodeBlock code={`// Emitted by the page only when it has wx_* variations.
+// Runs after the blocking WX snippet, so the decision is
+// already in memory: no network, no storage, no callback.
 
-var flagKey = "homepage";      // stable namespace - any string
-var variationKey = "treatment"; // must exactly match CMS variation name
+var states = window.optimizely
+  .get("state")
+  .getExperimentStates({ isActive: true });
 
-document.cookie =
-  "wx_variation=" + flagKey + "--" + variationKey +
-  "; path=/; max-age=86400; SameSite=Lax";
+for (var id in states) {
+  var s = states[id];
+  // A holdback visitor is the control - they get base.
+  // Only this shape exposes the flag; getVariationMap()
+  // would report a bucket for them and skew the test.
+  if (s.isInExperimentHoldback) continue;
+  live[s.variation.name] = s.experimentName;
+}
 
-// For the control/original bucket: omit this cookie write.
-// includeOriginal: true in Graph returns base content as fallback.`} />
+// NAMES is the page's own wx_* variation list, so an
+// unknown name can never reach Graph. Iterating NAMES
+// keeps the winner deterministic across experiments.
+for (var i = 0; i < NAMES.length; i++) {
+  if (live[NAMES[i]]) { hold(NAMES[i]); break; }
+}`} />
             </div>
 
             <div className="bg-surface-lowest border border-ghost-border rounded-2xl overflow-hidden">
               <div className="px-4 py-3 border-b border-ghost-border bg-surface-low">
-                <span className="text-xs font-mono text-on-surface-variant">src/middleware.ts (bridge - already live)</span>
+                <span className="text-xs font-mono text-on-surface-variant">WxVariationSwap.tsx (the swap)</span>
               </div>
-              <CodeBlock code={`// After FX decisions are collected, middleware also reads the
-// WX cookie and encodes that variation into the URL for it.
-// FX takes precedence: WX only applies when FX has no active
-// decision for the same flagKey.
+              <CodeBlock code={`// Routes to the variation using the same URL shape
+// middleware builds for FX, so the catch-all page needs
+// no new Graph query - it already reads __v_ segments.
 
-const wxVariation = request.cookies.get("wx_variation")?.value;
-// e.g. "homepage--treatment"
+const hit = window.__optiWxCms.read();
 
-if (wxVariation && wxVariation.includes("--")) {
-  const [wxFlagKey] = wxVariation.split("--");
-  const covered = cmsVariationSegments.some(
-    (s) => s.startsWith(VARIATION_PREFIX + wxFlagKey + "--")
-  );
-  if (!covered) {
-    cmsVariationSegments.push(VARIATION_PREFIX + wxVariation);
-    // /pricing → /pricing/<prefix>checkout_layout--single_step
-    // page.tsx extracts "treatment" → Graph serves the CMS variant
-  }
-}`} />
+if (hit) {
+  // Attribution first: WX reports its own conversions,
+  // but exp_variant_string on GA4 events comes from here.
+  recordVariation(hit.e, hit.v);
+
+  startTransition(() => {
+    router.replace(
+      pathname + "/__v_wx--" + hit.v,
+      { scroll: false }
+    );
+  });
+}
+
+// The hold is released when the transition settles. A
+// timer in the inline script is the backstop, so a page
+// that never hydrates still reveals itself.`} />
             </div>
           </div>
 
           {/* Step 3 + 4 */}
           <div className="space-y-6 max-w-2xl mb-8">
-            <Step number={3} title="Verify the integration in DevTools">
-              You can test this without a live WX experiment. In the browser console, set the same
-              cookie your middleware reads - whatever you named it - to a{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">flag--variation</code>{" "}
-              pair your datafile actually knows, then navigate to the experiment page. In DevTools
-              Network, find the HTML request: the rewrite response header should show the internal
-              URL with the variation folded into the path. Clear the cookie and reload to confirm
-              base content returns.
+            <Step number={3} title="Verify it without a live WX experiment">
+              Two halves can be checked independently. For the server half, request the variation route
+              directly -{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">/savings/__v_wx--wx_treatment</code>{" "}
+              - and confirm it returns the variation rather than a 307. A name the CMS does not have is
+              redirected away, so the same request with a made-up name is the negative test. For the
+              browser half, open a page that has a{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">wx_</code> variation and call{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">window.__optiWxCms.read()</code>{" "}
+              in the console: it returns the matched name and experiment, or null when the visitor is in
+              no matching bucket.
             </Step>
 
             <Step number={4} title="FX and Web Experimentation can coexist">
-              FX and WX can run simultaneously on the same page. If an FX flag is active for the
-              same <code className="bg-surface-low px-1 rounded font-mono text-xs">flagKey</code>,
-              the FX decision wins and the WX cookie is ignored for that key. WX tracks its own
-              decision events and conversions client-side via the snippet - no server-side decision event
-              tracking is needed for WX experiments.
+              FX and WX can run simultaneously on the same page, and FX wins: it decides on the server, so
+              by the time the browser could read a WX decision the URL already carries an FX variation
+              segment and the bridge stands down. The two never fight over the same render. A WX decision
+              also deliberately fires <strong>no</strong> FX impression - there is no FX flag behind it,
+              and recording one would put a phantom decision in FX&apos;s reporting.
             </Step>
           </div>
 
           <div className="space-y-3">
             <Callout variant="warning">
-              <strong>The cookie lag suits experiments, not first-touch personalization.</strong>{" "}
-              An experiment is measured across many visitors and multi-page journeys, so a variant that only
-              appears from the second request is invisible in aggregate. Personalization tailors the page the
-              visitor is on <em>now</em> - if the variant waits for their second view, you have already served
-              the generic version once, and they may never return. For that, use the same-view client-side
-              refetch, or better a server-side path (Paths 1-3).
+              <strong>The cost is now largest-contentful-paint, for bucketed visitors only.</strong>{" "}
+              Holding the region means a visitor in a matching experiment waits one cached request before
+              anything paints there, so their LCP is worse than if the server had decided. Nobody else pays
+              it: a visitor in no matching experiment, one in the holdback, or anyone with the snippet
+              blocked never sets the attribute and paints base content immediately. If you can move the
+              decision to the server - FX, or the ODP-direct paths above - do that instead and the hold
+              disappears entirely. This is the honest reason the server-side paths are still marked
+              recommended.
             </Callout>
 
             <Callout variant="note">
-              <strong>Web Experimentation statistics are unaffected by the bridge.</strong>{" "}
-              WX tracks its own decision events and conversions via the snippet - the server-side
-              cookie bridge does not interfere with WX reporting. The bridge only changes which
-              CMS content variant is served; all statistical analysis stays in the WX dashboard.
+              <strong>Some activation modes decide too late to hold.</strong>{" "}
+              The synchronous read only works because the snippet is blocking and the page uses WX&apos;s
+              default immediate activation. With polling, callback or manual activation, or an audience that
+              needs a network call, the decision lands after first paint. The bridge still applies the
+              variation in that case, but as a visible change rather than a held region, since holding
+              speculatively would tax every visitor to help a few. Client-side navigation behaves the same
+              way, for the same reason.
+            </Callout>
+
+            <Callout variant="note">
+              <strong>Web Experimentation statistics are unaffected.</strong>{" "}
+              WX tracks its own decision events and conversions via the snippet, and the bridge only changes
+              which CMS content variant is served - all statistical analysis stays in the WX dashboard. The
+              variation and its experiment name are also recorded into the shared variation map, so GA4
+              events carry it in{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">exp_variant_string</code>{" "}
+              alongside FX variations.
             </Callout>
           </div>
         </section>

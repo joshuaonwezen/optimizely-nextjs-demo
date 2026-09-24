@@ -29,7 +29,7 @@ const LEGEND: { color: string; label: string; dashed: boolean }[] = [
   { color: "var(--error)", label: "Graph returns content", dashed: true },
   { color: "var(--primary-fill)", label: "Publish webhook - revalidateTag drops the ISR entry", dashed: true },
   { color: "var(--tertiary)", label: "FX and WX decisions reach the app", dashed: false },
-  { color: "var(--tertiary)", label: "WX decision persisted, read on the next request", dashed: true },
+  { color: "var(--tertiary)", label: "WX decision read in the browser, same pageview", dashed: true },
   { color: "var(--secondary-container)", label: "Behavioural events to ODP", dashed: false },
   { color: "var(--secondary-container)", label: "ODP audiences back to the server as a variation key", dashed: true },
   { color: "var(--primary-dim)", label: "Mark AI agents assist authoring (dev-time, via MCP)", dashed: true },
@@ -69,7 +69,7 @@ const PRODUCTS: {
   {
     name: "Web Experimentation",
     role: "Visual, marketer-owned client-side testing on top of the same visitor identity as Feature Experimentation. Useful for changes that do not need a code deploy.",
-    mechanism: "The snippet must load blocking in the head, or the original paints before the variation applies. Because it decides in the browser after the server has already responded, connecting it to server-rendered content means persisting that decision somewhere the next request carries, and letting the server act on it then. Traffic should run both ways: push what you know about the visitor in as user attributes, and a marketer can target a content taxonomy term or a data-platform audience from the visual editor without a deploy. Audiences evaluate at page activation, so attributes pushed after the page loads apply from the next one.",
+    mechanism: "The snippet must load blocking in the head, or the original paints before the variation applies. That same blocking load is what connects it to server-rendered content: the decision exists before the body is parsed, so the page can read it synchronously and route the render to the matching CMS variation on the first pageview, with nothing stored. Check the experiment holdback when you read it, or the control sees the variation. Traffic should run both ways: push what you know about the visitor in as user attributes, and a marketer can target a content taxonomy term or a data-platform audience from the visual editor without a deploy. Audiences evaluate at page activation, so attributes pushed after the page loads apply from the next one.",
   },
   {
     name: "DAM / CMP Assets",
@@ -318,7 +318,7 @@ export default function OptimizelyOnePage() {
           <p className="text-sm text-on-surface-variant mb-8 max-w-2xl">
             Content supply on the left, Graph as the hub, the application in the middle split by
             runtime, and the decisioning and data products on the right. Solid edges are the request
-            path; dashed edges leave it - a decision persisted for the next request, or an export
+            path; dashed edges leave it - a decision made in the browser, or an export
             into systems you own.
           </p>
 
@@ -479,7 +479,7 @@ export default function OptimizelyOnePage() {
 
               <Box x={940} y={280} w={200} hc="var(--tertiary)"
                 title="Web Experimentation"
-                sub={["client-side snippet", "shares the visitor cookie", "bridges into middleware"]} />
+                sub={["client-side snippet", "shares the visitor cookie", "read before first paint"]} />
 
               <Box x={940} y={388} w={200} h={68} hc="var(--on-surface-variant)" dashed
                 title="Content Recommendations"
@@ -508,8 +508,8 @@ export default function OptimizelyOnePage() {
               <text x={476} y={244} textAnchor="middle" fill="var(--error)" fontSize={9} fontStyle="italic" fontFamily="system-ui,sans-serif">content</text>
               <text x={424} y={333} textAnchor="middle" fill="var(--primary-fill)" fontSize={9} fontFamily="system-ui,sans-serif">publish webhook · revalidateTag</text>
               <text x={869} y={96} textAnchor="middle" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">datafile · decideAll</text>
-              <text x={814} y={120} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">persisted decision</text>
-              <text x={814} y={131} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">read next request</text>
+              <text x={814} y={120} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">decision read</text>
+              <text x={814} y={131} textAnchor="start" fill="var(--tertiary)" fontSize={8.5} fontFamily="system-ui,sans-serif">before first paint</text>
               <text x={826} y={356} textAnchor="start" fill="var(--secondary-container)" fontSize={8.5} fontFamily="system-ui,sans-serif">mb_* events</text>
               <text x={869} y={206} textAnchor="middle" fill="var(--secondary-container)" fontSize={8.5} fontFamily="system-ui,sans-serif">segments</text>
               <text x={610} y={176} textAnchor="start" fill="var(--on-surface-variant)" fontSize={8.5} fontFamily="system-ui,sans-serif">variation in the URL</text>
@@ -652,10 +652,10 @@ export default function OptimizelyOnePage() {
               },
               {
                 title: "Client decision to server render",
-                blurb: "The loop that makes a client-side tool safe on a statically cached site. The visual editor picks its variation in the browser, but the visible render on the next navigation is server-side, so there is no flash of the original.",
+                blurb: "The loop that makes a client-side tool safe on a statically cached site. The visual editor picks its variation in the browser before first paint, and the render it routes to is server-side and cached, so the content still comes from the CMS and there is no flash of the original.",
                 steps: [
                   { label: "Visual editor", sub: "decides in browser" },
-                  { label: "Persisted decision", sub: "carried on next request" },
+                  { label: "Read pre-paint", sub: "same pageview, no storage" },
                   { label: "Validate at the edge", sub: "reject unknown keys", highlight: true },
                   { label: "Carried to the server", sub: "path keys the cache" },
                   { label: "Cached variant", sub: "its own cache entry" },

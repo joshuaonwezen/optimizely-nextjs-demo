@@ -404,7 +404,21 @@ if (/^\/demo(\/|$)/.test(pathname)) return response;
 if (pathname.includes(".segments/")) return response;
 ```
 
-A path that already contains `__v_` was requested directly (middleware never sees its own rewrites). Segments the FX datafile knows are kept, anything else is 307-redirected away, and the `opti_wx_variation` cookie is validated the same way - so visitors cannot mint arbitrary ISR entries. Segment parsing/formatting lives in `src/lib/optimizely/variationPath.ts`, shared by middleware and the catch-all page.
+A path that already contains `__v_` was requested directly (middleware never sees its own rewrites). Segments are 307-redirected away unless they validate, so visitors cannot mint arbitrary ISR entries - but the two sources validate against different authorities: an FX segment against the FX datafile, and a `__v_wx--*` segment against the CMS's own variation names (`/api/cms-variations`, read over HTTP because middleware has no Data Cache, same as `/api/redirects`). Segment parsing/formatting lives in `src/lib/optimizely/variationPath.ts`, shared by middleware and the catch-all page.
+
+### Web Experimentation drives CMS variations client-side, not through middleware
+
+WX decides in the browser, so it never reaches middleware. A CMS variation named `wx_*` (`WX_VARIATION_PREFIX`) opts a page in; the catch-all then emits a pre-paint inline script that reads the already-made WX decision synchronously and `WxVariationSwap` soft-navigates to `/__v_wx--<name>`. See `src/lib/optimizely/wxVariation.ts`.
+
+- **Name the WX variation exactly the CMS variation name, including the `wx_` prefix.** That match is the entire configuration - no Custom JS action, no env var, and no FX flag.
+- **The prefix is what keeps WX out of the FX namespace.** Unprefixed names are reserved for matching FX variation keys (see above), so an unprefixed WX variation would hijack the persona variations.
+- **Read `getExperimentStates({isActive:true})`, never `getVariationMap()`.** Only the former exposes `isInExperimentHoldback`; a holdback visitor must get base content or the experiment is corrupted. (The field is `isInExperimentHoldback` - `isInHoldback` does not exist in the snippet.)
+- **WX variations do not fragment the ISR cache key** on the base render: the page ships one cached response to every bucket, and only the post-swap `__v_wx--*` route is a separate entry.
+- There was a cookie transport (`opti_wx_variation`) before this. It is gone: it needed a second pageview, and it validated WX names against the FX datafile, so it silently did nothing unless a phantom FX flag was mirrored for every WX experiment.
+
+### The variation filter is required to see variation items at all
+
+`_Page`/`_Content` exclude variations by default. Verified against Graph: `_Page(limit: 50)` with no `variation` argument returned 0 items with a non-null `variation`, while `variation: { include: ALL }` on the same query returned them. So any query that reads `_metadata.variation` must pass a `variation` argument or the field is always null. `limit` is capped at 100 (1000 is a `400 Invalid 'limit'`), so prefer the facet - `facets { _metadata { variation(limit: 100) { name } } }` with `limit: 0` - when you want the distinct names rather than the items.
 
 Add a similar early-return whenever a new non-CMS route is introduced (landing pages, auth flows, etc.).
 

@@ -67,7 +67,16 @@ function flagVariationIndex(datafile: string): Map<string, Set<string>> {
   return index;
 }
 
-/** True when the datafile defines this flag and the flag can serve this variation. */
+/**
+ * True when the datafile defines this flag and the flag can serve this variation.
+ *
+ * Validates against the FX DATAFILE ONLY, so it is not usable for a Web
+ * Experimentation variation - WX experiments do not appear in the FX datafile. Using
+ * it for one is how the old cookie bridge came to require a phantom FX flag mirrored
+ * for every WX experiment, with no warning when someone forgot: the segment was just
+ * silently dropped. WX names are validated against the CMS's own variation names
+ * instead; see lib/optimizely/wxVariation.ts and lib/cmsVariations.ts.
+ */
 export function isKnownVariation(datafile: string, { flagKey, variationKey }: FlagVariation): boolean {
   return flagVariationIndex(datafile).get(flagKey)?.has(variationKey) ?? false;
 }

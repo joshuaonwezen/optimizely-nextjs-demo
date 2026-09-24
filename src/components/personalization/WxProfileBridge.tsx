@@ -7,17 +7,22 @@ import { getActiveVariations } from "@/lib/tracking/activeVariations";
 // Hands Web Experimentation the same visitor profile everything else reads.
 //
 // WX already shares the optimizelyEndUserId cookie with FX (visitorCookie.ts writes
-// it at registrable-domain scope) and can push a variation INTO the server through
-// opti_wx_variation. What it could not do is see anything about the visitor: persona,
-// ODP segments, the categories they read. So a marketer building a WX audience on a
-// CMS taxonomy term or an ODP segment needed a developer. After this they do not.
+// it at registrable-domain scope), and a WX decision now drives CMS variations through
+// wxVariation.ts + WxVariationSwap. What it could not do is see anything about the
+// visitor: persona, ODP segments, the categories they read. So a marketer building a WX
+// audience on a CMS taxonomy term or an ODP segment needed a developer. After this they
+// do not.
 //
 // Timing, and it is worth being honest about on the demo page: the WX snippet is a
 // blocking <script> in <head>, so window.optimizely exists well before this runs, but
 // WX evaluates audiences at page-activation time and this push lands after hydration.
-// The attributes therefore apply to the NEXT activation - the same semantics as the
-// existing opti_wx_variation cookie bridge, where the first page load always serves
-// base content.
+// The attributes therefore apply to the NEXT activation.
+//
+// That lag is specific to THIS component and is not shared by the variation bridge,
+// which reads a decision WX has already made rather than trying to influence the one
+// it is about to make. WxVariationSwap's activate push on navigation does partially
+// mitigate it on soft navs, but a first-load audience built on these attributes still
+// takes effect one activation late.
 
 // Before the snippet loads, window.optimizely is a plain bootstrap array. Once it
 // initialises, the snippet REPLACES it with its own object that exposes push(). So

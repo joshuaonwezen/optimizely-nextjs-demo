@@ -488,8 +488,8 @@ export default async function FeatureFlagsDemoPage() {
                 component first.
               </p>
               <p className="text-sm text-on-surface-variant leading-relaxed flex-1">
-                Routing a WX bucket to a real CMS variation needs a bridge (a cookie on the next request, or a
-                client-side refetch with a flicker). <strong>Not covered in this demo</strong> - see the{" "}
+                Routing a WX bucket to a real CMS variation needs a bridge - the page reads the decision
+                before first paint and routes to the CMS variation on the same pageview. See the{" "}
                 <Link href="/demo/personalization#web-experimentation-bridge" className="text-brand hover:underline">Web Experimentation bridge</Link>.
               </p>
               <div className="space-y-1.5 text-xs pt-2 border-t border-ghost-border">

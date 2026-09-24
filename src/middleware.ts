@@ -9,14 +9,15 @@ import { fetchDatafile } from "@/lib/optimizely/datafile";
 import { appendVisitorCookie } from "@/lib/optimizely/visitorCookie";
 import { buildFxAttributes, requestHost, VISITOR_ID_COOKIE } from "@/lib/optimizely/fxAttributes";
 import { loadRedirectRules, matchRedirect } from "@/lib/redirects";
+import { loadCmsVariationNames } from "@/lib/cmsVariations";
 import {
   formatVariationSegment,
   isKnownVariation,
   isVariationSegment,
   parseVariationSegment,
   VARIATION_MARKER,
-  type FlagVariation,
 } from "@/lib/optimizely/variationPath";
+import { isWxVariation, WX_FLAG_KEY } from "@/lib/optimizely/wxVariation";
 
 // Safety backstop against a pathological config that scopes many CMS experiments
 // to the same route. Route-scoping (cms_route) is the primary control; this only
@@ -55,12 +56,6 @@ const noOpRequestHandler = {
   }),
 };
 
-// A datafile-known variation for a `flagKey--variationKey` string, else null.
-function knownVariation(datafile: string, value: string): FlagVariation | null {
-  const variation = parseVariationSegment(`${VARIATION_MARKER}${value}`);
-  return variation && isKnownVariation(datafile, variation) ? variation : null;
-}
-
 export async function middleware(request: NextRequest) {
   const host = requestHost(request.headers);
   const existingId = request.cookies.get(VISITOR_ID_COOKIE)?.value;
@@ -89,16 +84,32 @@ export async function middleware(request: NextRequest) {
   if (pathname.includes(".segments/")) return response;
 
   // Middleware never sees its own rewrites, so a __v_ path here was requested
-  // directly. Keep segments the datafile knows (variation URLs stay shareable for
-  // demos) and redirect away the rest, so made-up segments can't mint ISR entries.
+  // directly - either a shared demo URL, or the soft navigation WxVariationSwap
+  // performs. Keep the segments we can vouch for and redirect away the rest, so
+  // made-up segments can't mint ISR entries.
+  //
+  // Two authorities, because the two paths have different sources of truth. An FX
+  // segment is validated against the FX datafile. A WX segment (reserved flag key
+  // `wx`) has no FX flag behind it by design, so it is validated against the CMS's
+  // own variation names - which is also what removes the old requirement to mirror a
+  // phantom flag into the datafile just to get a WX segment past this check.
   if (pathname.includes(VARIATION_MARKER)) {
     const datafile = await fetchDatafile(3000);
     if (!datafile) return response;
     const segments = pathname.split("/");
+    const wxNames = segments.some(
+      (s) => parseVariationSegment(s)?.flagKey === WX_FLAG_KEY
+    )
+      ? await loadCmsVariationNames(request.nextUrl.origin)
+      : [];
     const kept = segments.filter((segment) => {
       if (!isVariationSegment(segment)) return true;
       const variation = parseVariationSegment(segment);
-      return variation !== null && isKnownVariation(datafile, variation);
+      if (variation === null) return false;
+      if (variation.flagKey === WX_FLAG_KEY) {
+        return isWxVariation(variation.variationKey) && wxNames.includes(variation.variationKey);
+      }
+      return isKnownVariation(datafile, variation);
     });
     if (kept.length === segments.length) return response;
     const url = request.nextUrl.clone();
@@ -164,21 +175,15 @@ export async function middleware(request: NextRequest) {
     // Append one __v_ segment per active decision encoding flagKey--variationKey.
     // e.g. /savings → /savings/__v_homepage--business
     // The page reads flagKey from the segment — no extra SDK call needed client-side.
+    // Web Experimentation is deliberately absent here. WX decides in the browser, so
+    // it no longer reaches the server through middleware at all: the page emits a
+    // pre-paint reader and WxVariationSwap soft-navigates to the __v_wx-- path. That
+    // removed the cookie, removed the one-request lag, and removed the WX segment that
+    // used to be appended AFTER the MAX_CMS_VARIATIONS slice below - which meant the
+    // documented cap could be exceeded by one.
     const cmsVariationSegments = activeDecisions.map((d) =>
       formatVariationSegment({ flagKey: d.flagKey, variationKey: d.variationKey as string })
     );
-
-    // Web Experimentation cookie-bridge: if a WX custom JS action wrote
-    // opti_wx_variation=<flagKey>--<variationKey>, inject it as a __v_ segment on the
-    // next request (the cookie is written client-side so the first page load always
-    // serves base content). FX takes precedence — WX only applies when FX has no
-    // active decision for the same flagKey. The cookie is visitor-writable, so it only
-    // applies when the datafile defines that flag and variation.
-    const wxCookie = request.cookies.get("opti_wx_variation")?.value;
-    const wxVariation = wxCookie ? knownVariation(datafile, wxCookie) : null;
-    if (wxVariation && !activeDecisions.some((d) => d.flagKey === wxVariation.flagKey)) {
-      cmsVariationSegments.push(formatVariationSegment(wxVariation));
-    }
 
     if (cmsVariationSegments.length === 0) return response;
 
