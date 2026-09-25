@@ -30,6 +30,56 @@ export const metadata: Metadata = {
   title: "Web Experimentation",
 };
 
+// The two routes side by side. Timings are measured on this instance against the
+// live WX experiment on /investments.
+const ROUTE_COST_TABLE: Array<{ dimension: string; softNav: string; prePaint: string }> = [
+  {
+    dimension: "First paint (LCP)",
+    softNav: "Held region stays blank until the variation lands: ~300ms warm, ~1800ms cold",
+    prePaint: "Variation is in the first paint, so the same as base content",
+  },
+  {
+    dimension: "Layout shift (CLS)",
+    softNav: "None. visibility keeps the box, so nothing moves",
+    prePaint: "None. The flip happens before the first paint",
+  },
+  {
+    dimension: "Main-thread work (INP)",
+    softNav: "An RSC fetch plus a full subtree reconcile, right after hydration",
+    prePaint: "Both subtrees hydrate and run their effects",
+  },
+  {
+    dimension: "Extra requests",
+    softNav: "One per bucketed visitor, cached and shared by the bucket",
+    prePaint: "None",
+  },
+  {
+    dimension: "HTML payload",
+    softNav: "Base only",
+    prePaint: "Base plus the variant: ~44KB raw, ~2.6KB gzip on this page",
+  },
+  {
+    dimension: "Who pays it",
+    softNav: "Only visitors bucketed into a matching variation",
+    prePaint: "Every visitor of the page, bucketed or not",
+  },
+  {
+    dimension: "What gets indexed",
+    softNav: "Base content",
+    prePaint: "Base content, plus a hidden second copy in the source",
+  },
+  {
+    dimension: "URL hygiene",
+    softNav: "A __v_ URL exists; canonical and sitemap keep it out of the index",
+    prePaint: "No extra URL exists at all",
+  },
+  {
+    dimension: "Multiple variations",
+    softNav: "Any number",
+    prePaint: "One only, otherwise it falls back to soft navigation",
+  },
+];
+
 export default async function WebExperimentationDemoPage() {
   return (
     <>
@@ -411,12 +461,54 @@ query ListContent($where: _ContentWhereInput, $variation: VariationInput) {
             </div>
           </div>
 
-          <p className="text-sm text-on-surface-variant max-w-3xl">
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             Nothing in that route knows a swap happened.{" "}
             <InlineCode>router.replace</InlineCode> fetches the RSC payload for the variation path
             and React reconciles it into the tree already on screen. There is no reload. The
             variation route is its own ISR entry, shared by everyone in the bucket, so the rest of
             the bucket pays no Graph round trip at all.
+          </p>
+
+          <h3 className="font-display text-lg font-bold text-on-surface mb-2">What it costs</h3>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            The metric this route moves is <strong>LCP</strong>, the moment the biggest thing on
+            screen finishes painting. The hold is <InlineCode>visibility: hidden</InlineCode>, which
+            paints nothing, so nothing inside the held region can be the LCP element until the hold
+            releases. For a bucketed visitor that pushes LCP out to the swap: roughly 300ms against
+            a warm ISR entry, and ~1800ms measured against a cold one. If your hero sits inside the
+            region, the hero is the LCP, so that delay is the whole above-the-fold experience.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            <strong>CLS</strong>, how much the layout jumps around, is the one thing the design
+            deliberately protects. Holding with <InlineCode>visibility</InlineCode> rather than{" "}
+            <InlineCode>display</InlineCode> keeps the box, so revealing the region shifts nothing.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            <strong>INP</strong>, how quickly the page answers a tap, gets the worst of it. The swap
+            is an RSC fetch followed by React reconciling a whole page subtree, and it lands right
+            after hydration, which is already the busiest moment on the main thread. There is also
+            one extra request per bucketed visitor, and the variation route is its own ISR entry, so
+            each <InlineCode>wx_</InlineCode> variation doubles the cached entries for that page.
+            The first visitor into a cold bucket pays the full Graph round trip, which is exactly
+            the ~1800ms case.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            For <strong>SEO</strong> this route is safe by default, with one gap worth closing
+            yourself. The variation URL canonicalises back to the clean path, because{" "}
+            <InlineCode>generateMetadata</InlineCode> strips the variation segment before it looks
+            anything up, and the sitemap only ever lists clean routes. So{" "}
+            <InlineCode>/savings/__v_wx--wx_treatment</InlineCode> should not be indexed as a page
+            of its own. The gap is that <InlineCode>robots.txt</InlineCode> does not disallow{" "}
+            <InlineCode>__v_</InlineCode>, and a canonical is a hint rather than a directive. If one
+            of those URLs ever leaks into a link, a crawler can fetch it and get a 200. In
+            production, a <InlineCode>noindex</InlineCode> on variation routes or a{" "}
+            <InlineCode>Disallow: /*__v_</InlineCode> line is the belt to that canonical&apos;s
+            braces.
+          </p>
+          <p className="text-sm text-on-surface-variant max-w-3xl">
+            The consolation is that only bucketed visitors pay any of this. A visitor in no matching
+            experiment, one in the holdback, or anyone with the snippet blocked never sets the
+            attribute, so nothing is held and base content paints immediately.
           </p>
         </section>
 
@@ -611,15 +703,56 @@ if (hit && revealable(hit.v)) {
 //   RecommendationBlockClient  would fetch twice`} />
           </div>
 
-          <Callout variant="note">
-            <strong>What the duplicate markup costs.</strong>{" "}
-            On this page the second subtree is about 44KB raw, but only ~2.6KB gzipped, because the
-            copy compresses against itself. Two things are unsupported inside a{" "}
-            <InlineCode>wx_</InlineCode> variation. Forms, because the duplicated element ids mean a
-            label can focus the hidden copy. And a hero background image, because its{" "}
-            <InlineCode>priority</InlineCode> preload is emitted from the head regardless of CSS and
-            would compete for LCP.
-          </Callout>
+          <h3 className="font-display text-lg font-bold text-on-surface mb-2">What it costs</h3>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            Speed is where this route wins, and that is the point of it. There is no hold and no
+            request, so a bucketed visitor&apos;s <strong>LCP</strong> matches a base
+            visitor&apos;s. <strong>CLS</strong> is untouched too, because the flip lands before the
+            first paint and nothing on screen ever changes.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            The bill arrives in the payload, and <strong>everyone pays it</strong>. The server
+            cannot know which bucket a visitor is in, so the duplicate subtree ships to every
+            visitor of that page, including the holdback and everyone in no experiment at all. That
+            is the exact inverse of soft navigation, where only bucketed visitors pay anything.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            The ~2.6KB gzipped figure flatters it, too. Compression only helps the wire. The browser
+            still parses both copies, builds DOM nodes for both, and React still hydrates both, so
+            the real cost is DOM size and main-thread hydration work rather than the ~44KB raw. That
+            shows up as <strong>TBT and INP</strong>, how long the main thread is blocked and how
+            quickly the page answers a tap, and it is felt on low-end devices rather than on your
+            laptop. <InlineCode>isInactiveVariant()</InlineCode> stops the hidden copy firing
+            duplicate analytics, but it does not stop the work.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            For <strong>SEO</strong>, the page now contains the content twice. A crawler sees two{" "}
+            <InlineCode>&lt;h1&gt;</InlineCode> elements on any page whose variation contains a
+            product hero, every heading and paragraph twice, and every{" "}
+            <InlineCode>alt</InlineCode> string twice. Google does index{" "}
+            <InlineCode>display: none</InlineCode> content and discounts it, so this is unlikely to
+            hurt rankings, but it muddies the page outline and it will confuse any audit tool you
+            point at the page. Duplicate element ids are also invalid HTML, which is the real reason
+            forms are unsupported inside a variation: a <InlineCode>&lt;label for&gt;</InlineCode>{" "}
+            can resolve to the hidden copy. Anchor targets and{" "}
+            <InlineCode>aria-labelledby</InlineCode> have the same hazard, and if you ever add
+            JSON-LD to a block, the page will carry two copies of the same structured data. One
+            image caveat belongs here too: a hero background with{" "}
+            <InlineCode>priority</InlineCode> preloads from the head regardless of CSS, so the
+            hidden copy would compete for LCP bandwidth.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            Where this route beats the other outright is URL hygiene. No{" "}
+            <InlineCode>__v_</InlineCode> URL is ever created, so there is nothing to canonicalise,
+            nothing to keep out of the sitemap and nothing that can leak.
+          </p>
+          <p className="text-sm text-on-surface-variant max-w-3xl">
+            Two limits to plan around. A client-side navigation has no blocking script, so the
+            reveal lands after the paint and the visitor watches base content change: the same
+            flicker soft navigation has, in the one case pre-paint cannot avoid. And the route
+            handles exactly one variation per page. An A/B/C test falls back to soft navigation
+            automatically, which is the right behaviour but not always the one you expected.
+          </p>
         </section>
 
         {/* Setting it up */}
@@ -696,48 +829,98 @@ if (hit && revealable(hit.v)) {
         {/* Caveats */}
         <section id="caveats">
           <DemoSectionHeading id="caveats">Caveats and Costs{" "}</DemoSectionHeading>
-          <div className="space-y-3">
-            <Callout variant="warning">
-              <strong>Soft navigation narrows the flicker, it does not remove it.</strong>{" "}
-              A bucketed visitor&apos;s region is held blank until the variation arrives. Against a
-              warm ISR entry that is roughly 300ms and nothing flashes. Against a cold entry for the
-              variation route the swap has been measured at ~1800ms, which outruns the 1500ms hold
-              failsafe: the hold releases, base content paints, and the visitor sees it change. An
-              in-app navigation always looks like that, because there is no blocking script to hold
-              behind. Nobody outside a matching experiment pays either cost. A visitor in no
-              matching experiment, one in the holdback, or anyone with the snippet blocked never
-              sets the attribute and paints base content immediately. If you can move the decision
-              to the server, using FX or the ODP-direct paths, do that and both the hold and the
-              flicker go away. That is the honest reason the server-side routes are still marked
-              recommended.
-            </Callout>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
+            The two routes side by side, then the things that are true of both.
+          </p>
 
-            <Callout variant="note">
-              <strong>Some activation modes decide too late to hold.</strong>{" "}
-              The synchronous read only works because the snippet is blocking and the page uses
-              WX&apos;s default immediate activation. With polling, callback or manual activation,
-              or an audience that needs a network call, the decision lands after first paint. The
-              bridge still applies the variation, but as a visible change rather than a held region.
-              Holding speculatively would tax every visitor to help a few.
-            </Callout>
-
-            <Callout variant="note">
-              <strong>This demo carries both routes at once.</strong>{" "}
-              The route switch is client-side, so it can be flipped without a server round trip.
-              That means <em>both</em> routes ship the duplicate markup here, and the demo shows the
-              timing difference faithfully but not the payload difference. In production you would
-              pick one route and render only that.
-            </Callout>
-
-            <Callout variant="note">
-              <strong>Web Experimentation statistics are unaffected.</strong>{" "}
-              WX tracks its own decision events and conversions through the snippet. The bridge only
-              changes which CMS content variant is served, so all statistical analysis stays in the
-              WX dashboard. The variation and its experiment name are also recorded into the shared
-              variation map, so GA4 events carry it in{" "}
-              <InlineCode>exp_variant_string</InlineCode> alongside FX variations.
-            </Callout>
+          <div className="overflow-x-auto rounded-2xl border border-ghost-border mb-8">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-surface-low border-b border-ghost-border">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant"></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Soft navigation</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Pre-paint swap</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ghost-border">
+                {ROUTE_COST_TABLE.map((row) => (
+                  <tr key={row.dimension} className="bg-surface-lowest hover:bg-surface-low transition-colors">
+                    <td className="px-4 py-3 font-medium text-on-surface whitespace-nowrap">{row.dimension}</td>
+                    <td className="px-4 py-3 text-xs text-on-surface-variant">{row.softNav}</td>
+                    <td className="px-4 py-3 text-xs text-on-surface-variant">{row.prePaint}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+
+          <h3 className="font-display text-lg font-bold text-on-surface mb-2">
+            What both routes cost you
+          </h3>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            The WX snippet is a blocking script in the head. That is deliberate, and it is what
+            makes the whole bridge possible, but it means every visitor on every page waits for it
+            before the first paint, whether or not they are in an experiment. It is the entry fee
+            for this approach, and it is paid site-wide.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            A WX variation also cannot change the page&apos;s{" "}
+            <InlineCode>&lt;title&gt;</InlineCode>, meta description or OG image, in either route.{" "}
+            <InlineCode>generateMetadata</InlineCode> strips variation segments before it looks
+            anything up, so the metadata always comes from the base page. If your test rewrites the
+            headline, the search result and the social card still show the original.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
+            And crawlers get base content either way, because neither route changes the server
+            response for them. For an A/B test that is exactly right, and it is what Google asks
+            for. For personalization it is a real limitation: the segment-specific content is
+            invisible to search, so anything that has to rank must live in the base version.
+          </p>
+
+          <h3 className="font-display text-lg font-bold text-on-surface mb-2">
+            When soft navigation loses its own race
+          </h3>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
+            The hold narrows the flicker, it does not remove it. Against a warm ISR entry the swap
+            is roughly 300ms and nothing flashes. Against a cold entry for the variation route it
+            has been measured at ~1800ms, which outruns the 1500ms hold failsafe. The hold releases,
+            base content paints, and the visitor watches it change: the worst of both, and the
+            reason the failsafe is not set higher is that a longer blank region is worse still. If
+            you can move the decision to the server, with FX or the ODP-direct paths, both the hold
+            and the flicker go away. That is the honest reason the server-side routes are still
+            marked recommended.
+          </p>
+
+          <h3 className="font-display text-lg font-bold text-on-surface mb-2">
+            Some activation modes decide too late to hold
+          </h3>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
+            The synchronous read only works because the snippet is blocking and the page uses
+            WX&apos;s default immediate activation. With polling, callback or manual activation, or
+            an audience that needs a network call, the decision lands after the first paint. The
+            bridge still applies the variation, but as a visible change rather than a held region.
+            Holding speculatively would tax every visitor to help a few.
+          </p>
+
+          <h3 className="font-display text-lg font-bold text-on-surface mb-2">
+            This demo carries both routes at once
+          </h3>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl">
+            The route switch is client-side, so it can be flipped without a server round trip. That
+            means <em>both</em> routes ship the duplicate markup here. The demo shows the timing
+            difference faithfully but not the payload difference, so read the payload row of the
+            table as what you would get in production, where you would pick one route and render
+            only that.
+          </p>
+
+          <Callout variant="note">
+            <strong>Web Experimentation statistics are unaffected.</strong>{" "}
+            WX tracks its own decision events and conversions through the snippet. The bridge only
+            changes which CMS content variant is served, so all statistical analysis stays in the WX
+            dashboard. The variation and its experiment name are also recorded into the shared
+            variation map, so GA4 events carry it in <InlineCode>exp_variant_string</InlineCode>{" "}
+            alongside FX variations.
+          </Callout>
         </section>
 
         {/* Personalization with WX */}
