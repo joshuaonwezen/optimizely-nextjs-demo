@@ -895,8 +895,9 @@ export default function ArchitecturePage() {
             {[
               { href: "/demo/optimizely-one",         label: "Optimizely One Platform",    description: "The same picture widened to the whole stack: Graph, ODP, FX, Web Exp, DAM, Recs, and Mark AI." },
               { href: "/demo/caching",                label: "ISR Caching",                description: "Cache layers, revalidation tags, webhooks, and what kills ISR." },
-              { href: "/demo/feature-experimentation", label: "Experimentation",    description: "Feature flags, A/B tests, and how a variation is chosen and served." },
-              { href: "/demo/personalization",         label: "Personalization",            description: "Audience targeting and serving content per visitor persona." },
+              { href: "/demo/feature-experimentation", label: "Feature Experimentation", description: "Feature flags, A/B tests, and how a variation is chosen and served." },
+              { href: "/demo/web-experimentation",     label: "Web Experimentation",       description: "A browser-side decision serving server-rendered CMS content." },
+              { href: "/demo/odp",                     label: "ODP",                        description: "Behavioural segments driving the Graph variation filter directly." },
               { href: "/demo/error-handling",          label: "Error Handling",             description: "Graceful degradation: error boundaries, fallbacks, and not-found handling." },
               { href: "/demo/media",                   label: "Media & DAM",                description: "Asset workflow, image delivery, and next/image optimization." },
             ].map(({ href, label, description }) => (

@@ -26,6 +26,21 @@ export function formatVariationSegment({ flagKey, variationKey }: FlagVariation)
   return `${VARIATION_MARKER}${flagKey}${FLAG_VAR_SEP}${variationKey}`;
 }
 
+/**
+ * The same path with any variation segments removed - the page's stable identity.
+ *
+ * A variation route is the SAME page as its clean path, so anything that treats a
+ * pathname change as a new pageview has to compare these instead. Without it the WX
+ * soft-nav swap looks like a navigation: measured, it made AutoTracker reset its
+ * dedupe set and re-fire mb_feature_viewed, and made FxBucketingEvent remount and fire
+ * a second FX impression for every flag the page had already reported.
+ */
+export function cleanPathname(pathname: string | null | undefined): string {
+  if (!pathname) return "/";
+  const kept = pathname.split("/").filter((segment) => !isVariationSegment(segment));
+  return kept.join("/") || "/";
+}
+
 interface DatafileVariations {
   featureFlags?: Array<{ key: string; experimentIds?: string[]; rolloutId?: string }>;
   experiments?: Array<{ id: string; variations?: Array<{ key: string }> }>;

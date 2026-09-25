@@ -27,8 +27,10 @@ export function getDemoCategories(): DemoCategory[] {
     {
       label: "Integrations",
       links: [
-        { href: "/demo/feature-experimentation", label: "Experimentation", description: "A/B tests, flags, and bucketing" },
-        { href: "/demo/personalization",          label: "Personalization",         description: "Audiences, personas, and variation filter" },
+        { href: "/demo/personalization",          label: "Personalization",         description: "Four paths compared: which product to reach for" },
+        { href: "/demo/feature-experimentation", label: "Feature Experimentation", description: "Edge decisions, the variation URL segment, FX audiences" },
+        { href: "/demo/web-experimentation",     label: "Web Experimentation",     description: "Client-side decisions driving CMS variations" },
+        { href: "/demo/odp",                      label: "ODP",                     description: "Profiles, segments, and personalizing Graph directly" },
         { href: "/demo/event-tracking",           label: "Event Tracking",          description: "Global tracking layer and conversion events" },
         { href: "/demo/external-content",         label: "External Content",        description: "Third-party data via Content Source API" },
       ],

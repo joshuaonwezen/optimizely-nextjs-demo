@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { isInactiveVariant } from "@/lib/optimizely/wxVariation";
 import ArticleCard from "@/components/articles/ArticleCard";
 import type { ArticleListItem } from "@/lib/graphql/queries/GetArticles";
 import type { TaxonomyTermMeta } from "@/lib/taxonomy";
@@ -45,8 +46,15 @@ export default function RecommendationBlockClient({
   const pathname = usePathname();
   const [data, setData] = useState<Response | null>(null);
   const [failed, setFailed] = useState(false);
+  // Anchor so the effect can tell which variant subtree it is in (see isInactiveVariant).
+  const anchor = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
+    // On a WX pre-paint page both the base and the variant subtree hydrate, so a copy of
+    // this block inside the inactive one would fetch a second time for nothing. CSS does
+    // not stop effects.
+    if (isInactiveVariant(anchor.current)) return;
+
     let cancelled = false;
     const params = new URLSearchParams({ limit: String(limit) });
     // Never recommend the page being read.
@@ -73,6 +81,7 @@ export default function RecommendationBlockClient({
   if (!data) {
     return (
       <div className={`grid gap-4 ${columnsClassName}`} aria-hidden>
+        <span ref={anchor} hidden aria-hidden="true" />
         {Array.from({ length: limit }).map((_, i) => (
           <div
             key={i}
@@ -87,6 +96,7 @@ export default function RecommendationBlockClient({
 
   return (
     <>
+      <span ref={anchor} hidden aria-hidden="true" />
       {showReason && (
         <p className={`text-xs mb-4 ${mutedClassName}`}>{SOURCE_LABEL[data.source]}</p>
       )}

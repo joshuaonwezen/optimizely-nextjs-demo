@@ -6,6 +6,14 @@ import { trackEvent } from "@/lib/tracking";
 import { clearSegment, PERSONA_LABELS, useCurrentSegment, writeSegment, type Persona } from "@/lib/segment";
 import { readCookie } from "@/lib/tracking/cookies";
 import { DEMO_BUCKETING_ID_COOKIE, DEMO_PAGE_VIEWS_COOKIE, VISITOR_ID_COOKIE } from "@/lib/optimizely/cookieNames";
+import {
+  readWxMode,
+  WX_GLOBAL,
+  WX_MODE_KEY,
+  WX_MODE_PREPAINT,
+  WX_MODE_SOFTNAV,
+  type WxMode,
+} from "@/lib/optimizely/wxVariation";
 
 // Segment options mirror the personas the homepage can serve. new_visitor is the
 // default (no persona / base experience, before any section has been browsed).
@@ -33,7 +41,9 @@ function AudienceRow({ name, mapped }: { name: string; mapped: boolean }) {
   );
 }
 
-export default function AudienceSwitcher() {
+export default function DemoSettings() {
+  const [wxMode, setWxMode] = useState<WxMode>(WX_MODE_SOFTNAV);
+  const [wxActive, setWxActive] = useState<{ v: string | null; e: string | null } | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
   const [bucketingId, setBucketingId] = useState("");
   const [userId, setUserId] = useState("anonymous");
@@ -82,6 +92,11 @@ export default function AudienceSwitcher() {
     setLoggedIn(!!bid);
     setUserId(readCookie(VISITOR_ID_COOKIE) || "anonymous");
     setFrequentCustomer(!!readCookie(DEMO_PAGE_VIEWS_COOKIE));
+    setWxMode(readWxMode());
+    // What the WX bridge actually resolved on this page, so a presenter can see which
+    // mechanism produced what is on screen. Null on any page with no wx_ variation.
+    const wx = (window as unknown as Record<string, { v?: string | null; e?: string | null } | undefined>)[WX_GLOBAL];
+    setWxActive(wx ? { v: wx.v ?? null, e: wx.e ?? null } : null);
 
     function handleOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -133,6 +148,24 @@ export default function AudienceSwitcher() {
     router.refresh();
   }
 
+  // Switches which mechanism delivers a WX-decided CMS variation. localStorage rather
+  // than a cookie because the choice has to be readable by the inline pre-paint script,
+  // and because a cookie could not change a statically prerendered page anyway. Reloads
+  // for the same reason resetVisitorId does: the decision is made during page load, so
+  // router.refresh() would leave the old mechanism in place.
+  function selectWxMode(next: WxMode) {
+    if (next === wxMode) return;
+    try {
+      window.localStorage.setItem(WX_MODE_KEY, next);
+    } catch {
+      // Blocked storage: the mode cannot be persisted, so leave it on the default.
+      return;
+    }
+    setWxMode(next);
+    trackEvent("mb_wx_mode_switch", { mode: next });
+    window.location.reload();
+  }
+
   async function resetVisitorId() {
     if (loading) return;
     setLoading(true);
@@ -145,7 +178,7 @@ export default function AudienceSwitcher() {
   }
 
   return (
-    <div data-component="AudienceSwitcher" ref={ref} className="fixed bottom-16 right-6 z-50 flex flex-col items-end gap-2">
+    <div data-component="DemoSettings" ref={ref} className="fixed bottom-16 right-6 z-50 flex flex-col items-end gap-2">
       {open && (
         <div className="bg-surface-lowest border border-outline-variant rounded-2xl shadow-xl overflow-hidden w-56">
 
@@ -236,6 +269,44 @@ export default function AudienceSwitcher() {
             )}
           </div>
 
+          {/* WX delivery - which mechanism applies a Web Experimentation decision to CMS
+              content. Both are real; they differ in whether the variation is in the first
+              paint. See /demo/web-experimentation. */}
+          <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider border-t border-outline-variant mt-1">
+            WX delivery
+          </p>
+          <div className="px-4 pb-3 space-y-2">
+            <div className="flex gap-2">
+              {[
+                { value: WX_MODE_SOFTNAV, label: "Soft nav" },
+                { value: WX_MODE_PREPAINT, label: "Pre-paint" },
+              ].map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => selectWxMode(value as WxMode)}
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    wxMode === value
+                      ? "bg-brand text-on-brand"
+                      : "bg-surface-low text-on-surface hover:bg-surface"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs font-mono text-on-surface-variant">
+              {wxMode === WX_MODE_PREPAINT
+                ? "revealed before first paint · no request"
+                : "held, then one cached request"}
+            </p>
+            {wxActive && (
+              <p className="text-xs font-mono text-on-surface-variant">
+                variation → {wxActive.v ?? "(no matching bucket)"}
+                {wxActive.e ? ` · ${wxActive.e}` : ""}
+              </p>
+            )}
+          </div>
+
           {/* Attributes section */}
           <p className="px-4 pt-3 pb-2 text-xs font-mono text-on-surface-variant uppercase tracking-wider border-t border-outline-variant mt-1">
             Attributes
@@ -322,7 +393,7 @@ export default function AudienceSwitcher() {
             clipRule="evenodd"
           />
         </svg>
-        <span className="text-on-surface-variant text-xs">Audience</span>
+        <span className="text-on-surface-variant text-xs">Settings</span>
         <span>{loading ? "Switching…" : currentLabel}</span>
         {loggedIn && (
           <span className="text-xs bg-brand/10 text-brand px-1.5 py-0.5 rounded font-mono">auth</span>

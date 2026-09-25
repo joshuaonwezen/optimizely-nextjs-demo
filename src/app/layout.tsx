@@ -14,7 +14,7 @@ import AutoTracker from "@/components/AutoTracker";
 import StickyOfferBar from "@/components/layout/StickyOfferBar";
 import RatesBar from "@/components/layout/RatesBar";
 import TrustSection from "@/components/layout/TrustSection";
-import { WX_HOLD_STYLE } from "@/lib/optimizely/wxVariation";
+import { WX_HOLD_STYLE, WX_REVEAL_STYLE } from "@/lib/optimizely/wxVariation";
 import "./globals.css";
 
 // Each family is ONE localFont() call with a src array, so font-weight resolves
@@ -129,12 +129,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: gtmInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: odpInitScript }} />
-        {/* Holds the page region while a Web Experimentation variation is being
-            swapped in (see lib/optimizely/wxVariation.ts). Static and always present
-            so it costs nothing on the pages that never set the attribute.
-            `visibility` rather than `display`: layout stays reserved, so the hold
-            cannot cause a shift when the content appears. */}
-        <style dangerouslySetInnerHTML={{ __html: WX_HOLD_STYLE }} />
+        {/* Web Experimentation variation delivery, both modes (wxVariation.ts). The hold
+            rule covers soft-nav: `visibility` rather than `display` so layout stays
+            reserved and the hold cannot shift content. The reveal rules cover pre-paint,
+            and use `display` because a visibility-hidden duplicate still intersects and
+            would double-fire AutoTracker's view events. Both are static and live here
+            rather than in the page precisely so the page emits no extra sibling node -
+            a per-page <style> shifted the client tree by one and broke hydration. */}
+        <style dangerouslySetInnerHTML={{ __html: WX_HOLD_STYLE + WX_REVEAL_STYLE }} />
       </head>
       <body
         className={`${vcNudge.variable} ${dieGrotesk.variable} ${robotoMono.variable} min-h-screen bg-surface text-on-surface font-body antialiased overflow-x-clip`}

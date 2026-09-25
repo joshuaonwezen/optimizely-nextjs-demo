@@ -734,8 +734,10 @@ export default function OptimizelyOnePage() {
             {[
               { href: "/demo/architecture", label: "Architecture & CMS Editions", note: "The request and publish flow in isolation, plus SaaS CMS vs CMS 13" },
               { href: "/demo/caching", label: "Caching", note: "ISR, \"use cache\", cache tags and the publish webhook" },
-              { href: "/demo/feature-experimentation", label: "Experimentation", note: "Flags, bucketing and the variation URL segment" },
-              { href: "/demo/personalization", label: "Personalization", note: "ODP audiences, personas and the Web Experimentation bridge" },
+              { href: "/demo/feature-experimentation", label: "Feature Experimentation", note: "Flags, bucketing and the variation URL segment" },
+              { href: "/demo/web-experimentation", label: "Web Experimentation", note: "Reading the browser-side decision before first paint" },
+              { href: "/demo/odp", label: "ODP", note: "Profiles, segments and the direct path to Graph" },
+              { href: "/demo/personalization", label: "Personalization", note: "The four paths compared, and when to use which" },
               { href: "/demo/event-tracking", label: "Event Tracking", note: "The mb_* event layer and its three destinations" },
               { href: "/demo/external-content", label: "External Content", note: "Registering a non-CMS system through the Content Source API" },
               { href: "/demo/media", label: "Media & DAM Assets", note: "Asset references, renditions and CDN resizing" },

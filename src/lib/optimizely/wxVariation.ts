@@ -1,12 +1,10 @@
-// Web Experimentation -> CMS variation, without a cookie and on the first pageview.
+// Web Experimentation -> CMS variation, decided before first paint.
 //
 // The WX snippet is a blocking <script> in <head> (layout.tsx), so by the time any
 // body markup is parsed the bucketing decision already exists in the browser, and
 // window.optimizely.get("state") can be read synchronously with no network call.
 // That is the whole mechanism: read the variation NAME, match it against the
-// variations this page actually has in the CMS, and route the render to it. The
-// previous design wrote a cookie from a WX Custom JS action and could therefore only
-// act on the NEXT request.
+// variations this page actually has in the CMS, and route the render to it.
 //
 // We read getExperimentStates({ isActive: true }) rather than the more obvious
 // getVariationMap(). Verified against the live snippet, each entry is
@@ -28,8 +26,8 @@
 // behind it, so it must not look like one: `servedFlagKey` feeds <FxBucketingEvent>,
 // which calls FX decide() and fires a real impression. Tagging the segment `wx`
 // keeps that guard to one comparison, and makes the segment's provenance obvious in
-// a URL. It is also why WX variations no longer need a phantom flag mirrored into
-// the FX datafile just to pass validation.
+// a URL. It is also why a WX variation needs no phantom flag mirrored into the FX
+// datafile just to pass validation.
 export const WX_FLAG_KEY = "wx";
 
 // Only CMS variations whose name starts with this participate in the WX bridge.
@@ -80,6 +78,91 @@ export const WX_HOLD_MS = 1500;
 // Rendered once, statically, in the root layout's <head>.
 export const WX_HOLD_STYLE = `html[${WX_PENDING_ATTR}] [${WX_REGION_ATTR}]{visibility:hidden}`;
 
+// Two delivery mechanisms, switchable from the demo Settings panel so the two can be
+// compared on a real page.
+//
+//   soft-nav (default) - hold the region, soft-navigate to /__v_wx--<name>, restore the
+//                        clean URL. One extra cached request; the variation is NOT in the
+//                        first paint.
+//   pre-paint          - the server already sent base AND the variant; flip an attribute
+//                        on <html> before first paint and CSS reveals the right one. No
+//                        request, no hold, no URL change.
+//
+// The choice lives in localStorage, not a cookie, on purpose: a cookie cannot change a
+// statically prerendered page (which is why FX routes its decisions through a middleware
+// segment rewrite), so a server-side switch would cost the catch-all its prerender. The
+// consequence, which the demo page states plainly: the server sends both subtrees in
+// BOTH modes, so the demo shows the timing difference honestly but not the payload
+// difference. In production you would pick one and render only that.
+export const WX_MODE_KEY = "demo_wx_mode";
+export const WX_MODE_SOFTNAV = "softnav";
+export const WX_MODE_PREPAINT = "prepaint";
+export type WxMode = typeof WX_MODE_SOFTNAV | typeof WX_MODE_PREPAINT;
+
+/** Reads the mode in the browser. Soft-nav unless pre-paint was explicitly chosen. */
+export function readWxMode(): WxMode {
+  try {
+    return window.localStorage.getItem(WX_MODE_KEY) === WX_MODE_PREPAINT
+      ? WX_MODE_PREPAINT
+      : WX_MODE_SOFTNAV;
+  } catch {
+    // Blocked storage (private mode, cleared site data): fall back to the default.
+    return WX_MODE_SOFTNAV;
+  }
+}
+
+// Marks each rendered subtree. The tokens are FIXED, not variation names, and the
+// variant's real name rides along in WX_VARIANT_NAME_ATTR - that is what lets the reveal
+// CSS be a static constant in the layout instead of a per-page <style> tag.
+//
+// Emitting that <style> next to the content was also a real bug: it added a node to the
+// page's sibling list that the client tree did not have in the same place, which shifted
+// alignment by one and produced a hydration mismatch (server `<a data-component=
+// "ProductCardBlock">` against a client `Column` <div>). Keep the reveal CSS static.
+export const WX_VARIANT_ATTR = "data-cms-variant";
+export const WX_VARIANT_NAME_ATTR = "data-cms-variant-name";
+export const WX_ACTIVE_ATTR = "data-cms-variation";
+export const WX_BASE_VARIANT = "__base__";
+export const WX_VARIANT_TOKEN = "__variant__";
+
+/**
+ * The reveal CSS. Static, because the tokens are fixed - it lives in the root layout's
+ * <head> alongside WX_HOLD_STYLE and never varies per page.
+ *
+ * Default state is base-visible and the variant hidden, which is what makes JS-off,
+ * WX-blocked and no-decision all render base correctly without a line of script running.
+ * The pre-paint script flips it by setting WX_ACTIVE_ATTR on <html>.
+ *
+ * `display`, not `visibility`: AutoTracker's IntersectionObserver has no visibility
+ * check, and a `visibility:hidden` element still intersects, so a hidden duplicate
+ * would fire mb_feature_viewed a second time. `display:none` generates no boxes.
+ */
+export const WX_REVEAL_STYLE = [
+  `[${WX_VARIANT_ATTR}="${WX_VARIANT_TOKEN}"]{display:none}`,
+  `html[${WX_ACTIVE_ATTR}] [${WX_VARIANT_ATTR}="${WX_VARIANT_TOKEN}"]{display:revert}`,
+  `html[${WX_ACTIVE_ATTR}] [${WX_VARIANT_ATTR}="${WX_BASE_VARIANT}"]{display:none}`,
+].join("");
+
+/**
+ * True when `el` sits inside a variant subtree that is NOT the active one.
+ *
+ * Both subtrees hydrate, and effects run regardless of CSS, so any client component that
+ * fires an analytics event or a fetch on mount must check this or it does its work twice.
+ * Three call sites need it today: FxBucketingEvent (which fires a REAL FX impression, so
+ * a duplicate permanently skews the experiment), AutoTracker, and
+ * RecommendationBlockClient. Any new client component placed inside a variation needs it
+ * too - see CLAUDE.md.
+ */
+export function isInactiveVariant(el: Element | null | undefined): boolean {
+  if (!el) return false;
+  const wrapper = el.closest(`[${WX_VARIANT_ATTR}]`);
+  if (!wrapper) return false;
+  const active = document.documentElement.hasAttribute(WX_ACTIVE_ATTR)
+    ? WX_VARIANT_TOKEN
+    : WX_BASE_VARIANT;
+  return wrapper.getAttribute(WX_VARIANT_ATTR) !== active;
+}
+
 export interface WxCmsGlobal {
   /** The matched CMS variation name, or null when nothing matched (yet). */
   v: string | null;
@@ -89,6 +172,8 @@ export interface WxCmsGlobal {
   names: string[];
   /** Installed by wxReaderScript(); absent only if that never ran. */
   read?: () => { v: string; e: string | null } | null;
+  /** Which mechanism the pre-paint script chose, for the Settings panel to display. */
+  mode?: string;
   /**
    * The clean path whose swap has already been started, latched here rather than in
    * component state because WxVariationSwap may remount across the navigation. It is
@@ -113,19 +198,30 @@ function embed(value: unknown): string {
  * WX experiments at once. That means zero WX-side configuration: naming a WX
  * variation to match a CMS variation name is the entire setup.
  */
-export function wxPrepaintScript(variationNames: string[]): string {
+export function wxPrepaintScript(variationNames: string[], dualRendered: boolean): string {
   return [
     wxReaderScript(),
     "(function(){",
     `var NAMES=${embed(variationNames)},G=${embed(WX_GLOBAL)},A=${embed(WX_PENDING_ATTR)},E=${embed(WX_EVENT)},HOLD=${WX_HOLD_MS};`,
+    `var ACTIVE=${embed(WX_ACTIVE_ATTR)},MODEKEY=${embed(WX_MODE_KEY)},PREPAINT=${embed(WX_MODE_PREPAINT)},DUAL=${dualRendered ? "1" : "0"};`,
     "var g=window[G];g.names=NAMES;",
     "var root=document.documentElement;",
-    // Never hold twice. A __v_ path is already the variation render (a direct hit,
-    // or the soft navigation that this script triggered on the previous view).
+    // localStorage can throw outright on a blocked-storage profile, and this script
+    // must never be the reason a page fails to render.
+    "var prepaint=false;try{prepaint=localStorage.getItem(MODEKEY)===PREPAINT;}catch(e){}",
+    // Pre-paint can only reveal a variant the server actually sent. Without one, setting
+    // the attribute would hide base and show nothing, so fall back to the soft-nav path.
+    "if(!DUAL)prepaint=false;",
+    "g.mode=prepaint?PREPAINT:'softnav';",
+    // Never act twice. A __v_ path is already the variation render (a direct hit, or the
+    // soft navigation that this script triggered on the previous view).
     `if(location.pathname.indexOf(${embed("/__v_")})!==-1)return;`,
     "var hit=g.read();",
     "if(hit){",
     "  g.v=hit.v;g.e=hit.e;",
+    // Pre-paint mode: the variant is already in the document, so naming the active one
+    // is the entire swap. No hold, no failsafe, no request - CSS does it before paint.
+    "  if(prepaint){root.setAttribute(ACTIVE,hit.v);return;}",
     "  root.setAttribute(A,'');",
     "  setTimeout(function(){root.removeAttribute(A);},HOLD);",
     "  return;",
@@ -144,6 +240,10 @@ export function wxPrepaintScript(variationNames: string[]): string {
     "    var late=g.read();",
     "    if(!late)return;",
     "    g.v=late.v;g.e=late.e;",
+    // In pre-paint mode a late decision still applies, just after first paint - the
+    // reveal is a visible change rather than something the visitor never sees. The event
+    // is dispatched either way so attribution is recorded in both modes.
+    "    if(prepaint){root.setAttribute(ACTIVE,late.v);}",
     "    try{document.dispatchEvent(new Event(E));}catch(e){}",
     "  }});",
     "}catch(e){}",

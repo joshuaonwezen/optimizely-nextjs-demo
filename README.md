@@ -26,8 +26,10 @@ A production-style reference implementation for Optimizely SaaS CMS + Feature Ex
 ### Integrations
 | Demo page | What it covers |
 |-----------|---------------|
-| `/demo/feature-experimentation` | A/B tests, flags, and bucketing |
-| `/demo/personalization` | Audiences, personas, and variation filter |
+| `/demo/personalization` | Four paths compared: which product to reach for |
+| `/demo/feature-experimentation` | Edge decisions, the variation URL segment, FX audiences |
+| `/demo/web-experimentation` | Client-side decisions driving CMS variations |
+| `/demo/odp` | Profiles, segments, and personalizing Graph directly |
 | `/demo/event-tracking` | Global tracking layer and conversion events |
 | `/demo/external-content` | Third-party data via Content Source API |
 

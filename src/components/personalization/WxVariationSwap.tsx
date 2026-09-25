@@ -1,18 +1,24 @@
 "use client";
 
-import { startTransition, useEffect } from "react";
+import { startTransition, useEffect, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  readWxMode,
+  WX_ACTIVE_ATTR,
   WX_EVENT,
   WX_GLOBAL,
+  WX_MODE_PREPAINT,
   WX_PENDING_ATTR,
+  WX_VARIANT_ATTR,
+  WX_VARIANT_NAME_ATTR,
+  WX_VARIANT_TOKEN,
   wxReaderScript,
   wxVariationPath,
   type WxCmsGlobal,
 } from "@/lib/optimizely/wxVariation";
 import { clearVariation, recordVariation } from "@/lib/tracking/activeVariations";
 
-// Second half of the cookieless WX bridge. The inline pre-paint script (see
+// Second half of the WX bridge. The inline pre-paint script (see
 // wxVariation.ts) has already read the WX decision synchronously and, on a match,
 // hidden the held region. This component does the routing: a soft navigation to the
 // __v_wx--<name> path, which is the same URL shape middleware builds for FX, so the
@@ -23,8 +29,8 @@ import { clearVariation, recordVariation } from "@/lib/tracking/activeVariations
 // Soft navigation rather than a reload: the RSC payload for that path is ISR-cached
 // and shared by everyone in the bucket, so the swap is one cached fetch.
 //
-// It also has to handle client-side navigation, which the previous cookie bridge
-// never did. Two separate things break on a soft nav, and both are fixed here:
+// It also has to handle client-side navigation. Two separate things break on a soft
+// nav, and both are fixed here:
 //   1. React does not execute an inline <script> it inserts during a navigation, so
 //      the pre-paint reader is not re-installed - hence the injection below.
 //   2. WX itself does not re-evaluate on a History API navigation, so without an
@@ -48,6 +54,23 @@ const globalState = (): WxCmsGlobal | undefined =>
 
 function clearHold() {
   document.documentElement.removeAttribute(WX_PENDING_ATTR);
+}
+
+// Ask WX to re-evaluate for this URL. Harmless on a hard load (the snippet has already
+// activated) and required after a client-side navigation, which WX does not notice.
+function pushActivate() {
+  try {
+    const wx = window.optimizely as unknown as { push?: (e: unknown) => void } | undefined;
+    if (typeof wx?.push === "function") wx.push({ type: "activate" });
+  } catch {
+    // WX blocked or not loaded: fall through to base content.
+  }
+}
+
+// True when the server actually rendered a subtree for this variation name.
+function revealable(name: string): boolean {
+  const el = document.querySelector(`[${WX_VARIANT_ATTR}="${WX_VARIANT_TOKEN}"]`);
+  return !!el && el.getAttribute(WX_VARIANT_NAME_ATTR) === name;
 }
 
 // Runs the one canonical reader. Injected as a real <script> element because that
@@ -99,7 +122,25 @@ export default function WxVariationSwap({ variations }: { variations: string[] }
   const router = useRouter();
   const pathname = usePathname();
 
+  // Nothing here may run during hydration. The server sends BOTH subtrees; the variation
+  // route sends one. Acting from the mount effect let the replacement tree land while
+  // React was still hydrating the two-subtree HTML, throwing "server rendered HTML didn't
+  // match the client" on roughly half of first loads. A setTimeout was measured to be
+  // insufficient.
+  //
+  // useSyncExternalStore is the signal: React takes the server snapshot (false) while
+  // hydrating and the client snapshot (true) afterwards, re-rendering once when they
+  // differ. Same shape as WxProfileBridge, and unlike a setState-in-effect it does not
+  // trip react-hooks/set-state-in-effect. The subscribe is a no-op because this never
+  // changes again after hydration.
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
   useEffect(() => {
+    if (!hydrated) return;
     ensureReader();
     const state = globalState();
 
@@ -121,6 +162,33 @@ export default function WxVariationSwap({ variations }: { variations: string[] }
       return;
     }
 
+    state.names = variations;
+
+    // Pre-paint mode. On a hard load the inline script has already revealed the variant and
+    // this is only attribution. On a CLIENT-SIDE navigation neither of those happened: React
+    // does not execute the inline script, and WX does not re-evaluate for the new URL, so
+    // without the two calls below the page silently stays on base content. The reveal is
+    // post-paint here by necessity - a client navigation has no blocking script.
+    if (readWxMode() === WX_MODE_PREPAINT) {
+      clearHold();
+      pushActivate();
+      const hit = state.v ? { v: state.v, e: state.e } : (state.read?.() ?? null);
+      // Only reveal a variant the server actually sent. Setting the attribute when no
+      // matching subtree exists would hide base and show nothing - the same trap the
+      // inline script's DUAL guard covers.
+      if (hit && revealable(hit.v)) {
+        state.v = hit.v;
+        state.e = hit.e;
+        if (!document.documentElement.hasAttribute(WX_ACTIVE_ATTR)) {
+          document.documentElement.setAttribute(WX_ACTIVE_ATTR, hit.v);
+        }
+        reportVariation(hit.e ?? "wx", hit.v);
+        return;
+      }
+      // No variant on the page to reveal: fall through to the soft-nav path, which can
+      // still fetch the variation route.
+    }
+
     // Already swapped this page and the URL has been cleaned: the variation is on
     // screen even though the path looks untouched. Re-running the read here is what
     // would otherwise swap forever.
@@ -133,10 +201,6 @@ export default function WxVariationSwap({ variations }: { variations: string[] }
     // A clean path with no swap of ours: drop any variation carried over from the
     // previous page so it stops tagging events here.
     reportVariation(null, null);
-
-    // The allowlist is per page, so refresh it before any read - on a soft nav the
-    // global still carries the previous page's names.
-    state.names = variations;
 
     const go = (name: string, experiment: string | null) => {
       if (state.doneFor === pathname) return;
@@ -156,14 +220,7 @@ export default function WxVariationSwap({ variations }: { variations: string[] }
       });
     };
 
-    // Ask WX to re-evaluate for this URL. Harmless on first load (the snippet has
-    // already activated) and required after a soft nav.
-    try {
-      const wx = window.optimizely as unknown as { push?: (e: unknown) => void } | undefined;
-      if (typeof wx?.push === "function") wx.push({ type: "activate" });
-    } catch {
-      // WX blocked or not loaded: fall through to base content.
-    }
+    pushActivate();
 
     const hit = state.read?.() ?? null;
     if (hit) {
@@ -181,7 +238,7 @@ export default function WxVariationSwap({ variations }: { variations: string[] }
     };
     document.addEventListener(WX_EVENT, onLate);
     return () => document.removeEventListener(WX_EVENT, onLate);
-  }, [pathname, router, variations]);
+  }, [hydrated, pathname, router, variations]);
 
   return null;
 }

@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { trackEvent } from "@/lib/tracking";
 import { personaFromPath, readSegment, reconcileSegment, writeSegment } from "@/lib/segment";
+import { isInactiveVariant } from "@/lib/optimizely/wxVariation";
+import { cleanPathname } from "@/lib/optimizely/variationPath";
 
 function parseTags(raw: string | null): Record<string, unknown> {
   if (!raw) return {};
@@ -26,6 +28,10 @@ function isOutbound(href: string): boolean {
 
 export default function AutoTracker() {
   const pathname = usePathname();
+  // A WX variation route is the same page as its clean path, so page identity - and
+  // therefore every dedupe set below - must ignore the __v_ segment. Otherwise the
+  // soft-nav swap reads as a navigation and re-fires the view events.
+  const page = cleanPathname(pathname);
   const scrollMarks = useRef(new Set<number>());
   const timeMarks = useRef(new Set<number>());
   // Set when the page view starts (see the pathname effect); Date.now() during render is impure.
@@ -103,7 +109,7 @@ export default function AutoTracker() {
       for (const mark of [25, 50, 75, 100]) {
         if (pct >= mark && !scrollMarks.current.has(mark)) {
           scrollMarks.current.add(mark);
-          trackEvent("mb_scroll_depth", { depth: mark, path: window.location.pathname });
+          trackEvent("mb_scroll_depth", { depth: mark, path: cleanPathname(window.location.pathname) });
         }
       }
     }
@@ -127,7 +133,12 @@ export default function AutoTracker() {
   // thresholds — the browser batches these natively with no scroll overhead.
   useEffect(() => {
     const marks = viewedMarks.current;
-    const elements = document.querySelectorAll<HTMLElement>("[data-track-view]");
+    // Skip blocks inside an inactive WX variant subtree. display:none already stops them
+    // intersecting, so this is belt-and-braces for the moment between hydration and the
+    // reveal, and it also keeps the index below stable against the hidden copy.
+    const elements = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-track-view]")
+    ).filter((el) => !isInactiveVariant(el));
     if (!elements.length) return;
 
     const observer = new IntersectionObserver(
@@ -155,25 +166,25 @@ export default function AutoTracker() {
 
     elements.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [pathname]);
+  }, [page]);
 
   useEffect(() => {
-    if (lastPath.current === pathname) return;
-    lastPath.current = pathname;
+    if (lastPath.current === page) return;
+    lastPath.current = page;
     scrollMarks.current = new Set();
     timeMarks.current = new Set();
     viewedMarks.current = new Set();
     pageStart.current = Date.now();
 
-    if (pathname?.startsWith("/demo")) {
-      trackEvent("mb_demo_page_view", { path: pathname });
+    if (page.startsWith("/demo")) {
+      trackEvent("mb_demo_page_view", { path: page });
     }
 
     // Realtime audience: qualify the visitor for a segment based on the section
     // they are browsing. writeSegment mirrors it to sessionStorage + the
     // demo_persona cookie so FX serves the matching homepage variation on the
     // next request. Only fire when the derived persona actually changed.
-    const persona = personaFromPath(pathname);
+    const persona = personaFromPath(page);
     if (persona && persona !== readSegment() && writeSegment(persona)) {
       trackEvent("mb_segment_qualified", { segment: persona });
     }
@@ -182,11 +193,11 @@ export default function AutoTracker() {
       window.setTimeout(() => {
         if (timeMarks.current.has(secs)) return;
         timeMarks.current.add(secs);
-        trackEvent("mb_time_on_page", { seconds: secs, path: pathname ?? "" });
+        trackEvent("mb_time_on_page", { seconds: secs, path: page });
       }, secs * 1000)
     );
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [pathname]);
+  }, [page]);
 
   return null;
 }
