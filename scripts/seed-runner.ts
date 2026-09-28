@@ -49,7 +49,12 @@ async function main() {
   // the run before the optional CMS-content steps (seed-consultants) ever run.
   // They live in optional[] below.
   const required: [string, string[]][] = [
-    ["npx", ["@optimizely/cms-cli@latest", "config", "push", "optimizely.config.mjs", "--force"]],
+    // `--no-install` + no `@latest`: use the @optimizely/cms-cli version pinned in
+    // package.json (2.2.0). `@latest` pulled cms-cli 3.0.0, whose npx-cached install
+    // cannot load its own commands ("Cannot find package 'react'" from
+    // @optimizely/cms-sdk/dist/esm/react/server.js), so `config push` was not found
+    // and every instance's seed aborted on step 1.
+    ["npx", ["--no-install", "@optimizely/cms-cli", "config", "push", "optimizely.config.mjs", "--force"]],
     ["npx", ["tsx", "scripts/seed-content.ts"]],
     // QuoteBlock shared blocks that back the homepage CustomerVoicesBlock content
     // areas. Pure Management API (no Graph dependency), so it's required, not

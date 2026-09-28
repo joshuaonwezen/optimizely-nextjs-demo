@@ -30,7 +30,7 @@ For content seeding you need a dedicated **API key** created in the CMS UI:
 | `OPTIMIZELY_CMS_CLIENT_ID` / `_SECRET` | Content management (seed scripts, Management API) | Settings → API Keys in CMS UI |
 | `OPTIMIZELY_APP_KEY` / `_SECRET` | Graph webhook registration (Basic auth) | Settings → API Keys in CMS UI |
 
-For additional CMS instances, suffix both sets with the instance suffix (`_JOSHCMS`, `_HARRYNEWCMS`, `_MOSTINNEWCMS`, `_APJCMS`, ...) and register the instance in `src/lib/optimizely/seedInstances.ts` so the `/demo/management-api` seed tool can resolve the right pair.
+For additional CMS instances, suffix both sets with the instance suffix (`_JOSHCMS`, `_HARRYNEWCMS`, `_MOSTINNEWCMS`, `_APJCMS`, `_VACMS`, ...) and register the instance in `src/lib/optimizely/seedInstances.ts` so the `/demo/management-api` seed tool can resolve the right pair.
 
 ### v1 API — endpoint and payload rules
 

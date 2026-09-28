@@ -74,7 +74,7 @@ async function fetchFooter(locale: string): Promise<GetFooterResult> {
 
 Rules this imposes:
 
-- **The `try`/`catch` goes INSIDE the cached function, not outside.** This is the opposite of the instinct and of what an earlier version of this file said. A rejected promise inside `"use cache"` fails static generation outright (*"Error occurred prerendering page"*) and **no `try`/`catch` at the call site can rescue it** — the boundary swallows the rejection first. The empty result of an outage is still **written into the cache entry**, so `cachedQueryFailed()` lowers that entry's lifetime to `revalidate: 30` / `expire: 300` (cacheLife keeps the smallest value per field; `expire` must not go below 300s or a prerender treats the entry as dynamic). Use it in every catch; the one deliberate exception is `GetSupportedLocales.ts`, whose failure is a permanent property of the instance. Call-site `try`/`catch` blocks are still worth keeping — after this change they only catch *mapping* errors.
+- **The `try`/`catch` goes INSIDE the cached function, not outside.** This is the opposite of the instinct and of what an earlier version of this file said. A rejected promise inside `"use cache"` fails static generation outright (*"Error occurred prerendering page"*) and **no `try`/`catch` at the call site can rescue it** — the boundary swallows the rejection first. The empty result of an outage is still **written into the cache entry**, so `cachedQueryFailed()` lowers that entry's lifetime to `revalidate: 30` / `expire: 300` (cacheLife keeps the smallest value per field; `expire` must not go below 300s or a prerender treats the entry as dynamic). Use it in every catch; the one deliberate exception is `GetSupportedLocales.ts`, whose failure (introspection unavailable) is a permanent property of the deployment rather than a transient outage. Call-site `try`/`catch` blocks are still worth keeping — after this change they only catch *mapping* errors.
 - **Nothing keyed on unbounded user input goes inside a boundary.** Arguments are the cache key, so a `"use cache"` function taking a search phrase or a geocoded lat/lon mints a permanent entry per distinct input that is never read again. `/api/search`, `/api/search/autocomplete` and `getNearbyLocations()` all call `request()` directly for this reason; `getLocations()` (no arguments) is cached.
 
 - **`experimental.useCache: true` must stay in `next.config.ts`.** `cacheTag()` throws `E886` without it. This is deliberately *not* `cacheComponents: true`, which would also force `ppr: true` and require Suspense boundaries around every dynamic read.
@@ -145,7 +145,7 @@ Geo search works in Optimizely Graph (a common misconception says it doesn't). T
 
 Graph returns only `location { lat lon }` — **no computed distance** — so compute the "X km away" label yourself with Haversine (see `src/lib/geo.ts`). Reference implementation: `BankLocation` source, `getNearbyLocations()` in `src/lib/graphql/queries/GetLocations.ts`, `/api/locations/nearby` (takes `?q=<place>&radius=<km>`, geocodes the place, then runs the geo query), and the `BranchFinderBlock` rendered on `/locations` and `/en/help/branches`. Both pages are bound to the **same** shared block by `scripts/seed-branch-finder.ts` (one block per instance - each CMS has its own key).
 
-**The indexed URL of a root-level page depends on the instance's container setup.** On a BlankExperience/folder root (personal, harryNewCMS, mostinNewCMS, toddCMS, apjCMS) Graph indexes `/locations/` - bare, like `/about/` and `/mortgage/`, so several `// /en/...` comments in `PAGE_KEYS` are stale there. On a DynamicExperience-as-start-page root (joshCMS) the same page indexes as `/en/locations/`. Both answer at `/locations` because `buildUrlCandidates` in the catch-all tries `/en/{path}/` before `/{path}/` - so resolve pages by querying Graph for `url.default`, never by assuming either form.
+**The indexed URL of a root-level page depends on the instance's container setup.** On a BlankExperience/folder root (personal, harryNewCMS, mostinNewCMS, toddCMS, apjCMS) Graph indexes `/locations/` - bare, like `/about/` and `/mortgage/`, so several `// /en/...` comments in `PAGE_KEYS` are stale there. On a DynamicExperience-as-start-page root (joshCMS) the same page indexes as `/en/locations/`. **The root's content type is not on its own a reliable predictor**: v&aCMS was auto-provisioned a DynamicExperience start page by `ensureExperienceStartPage()` and still indexes all 81 pages **bare** (verified 2026-09-28), so joshCMS's `/en/` shape comes from how its container was set up by hand, not from the type alone - always check Graph. Both answer at `/locations` because `buildUrlCandidates` in the catch-all tries `/en/{path}/` before `/{path}/` - so resolve pages by querying Graph for `url.default`, never by assuming either form.
 
 ---
 
@@ -199,8 +199,8 @@ carries them anywhere. Each instance gets them explicitly:
   decides where the **app** registers the types (registry, `generateMetadata` SEO fragment). Add a host only
   after its push is done AND Graph's schema sync has caught up - registering types Graph does not know adds
   fragments for unknown types and breaks **every** page on that instance.
-- Live on **every** instance as of 2026-09-16: personal, joshCMS, harryNewCMS, mostinNewCMS, kastleNewCMS,
-  toddCMS and apjCMS. apjCMS only gained the `Composition` property format on 2026-09-16; before that its push
+- Live on **every** instance as of 2026-09-28: personal, joshCMS, harryNewCMS, mostinNewCMS, kastleNewCMS,
+  toddCMS, apjCMS and v&aCMS. apjCMS only gained the `Composition` property format on 2026-09-16; before that its push
   skipped itself, which is what the capability check is for. On kastleNewCMS the seeded page stays a **draft**
   (approval workflow) until someone approves it.
 
@@ -344,6 +344,18 @@ The SDK's `createQuery` **removes** any property with `indexingType === "disable
 When the field is included (indexingType omitted) and DAM is enabled, the SDK attaches `image { key url { ...ContentUrl } ...ContentReferenceItem }`, so `data.image` returns `{ key, url: { default }, item: { Url, Renditions, AltText, ... } }`. Render it with `getPreviewUtils().src(ref)` (adds the preview token in edit mode) + `damAssets().getSrcset/getAlt`, falling back to `url.default` for CMS globalassets. On a non-DAM instance the same field returns just `{ key, url: { default } }` (no `item`) and renders via the `url.default` fallback. See ImageBlock / RenditionImageBlock / HeroBlock and the `/demo/media` page.
 
 **Deploy ordering (learned the hard way):** removing `indexingType` from an existing reference is a **breaking change** that must be pushed with `opti:push --force` to **every CMS instance the code is deployed against** (personal, joshCMS, harryNewCMS, mostinNewCMS, …). A `disabled` field is absent from Graph's schema, so code that queries `image { … }` fails on any un-pushed instance with `Cannot query field "image" on type "ImageBlock"` — and because every page's query embeds all component fragments, that error takes down **every page**, not just image pages. Graph exposes the field only after a **~10 min schema-sync lag** following the push. So: push the schema to all instances and wait for the sync **before** deploying code that queries the newly-enabled field.
+
+### Supported locales come from the `Locales` enum, never a hardcoded list
+
+`getSupportedLocales()` introspects Graph's `Locales` enum (filtering the `ALL` / `NEUTRAL` sentinels). It used to query `_SiteDefinition`, **which does not exist in any of our Graph deployments** — it 400s on every instance — so the function always fell through to a hardcoded `[en, nl]`. `NavigationHeader` and `Footer` loop over every non-`en` locale to prefetch localized nav/footer/settings, and **a locale absent from the enum is a GraphQL validation error, not a missing-content case that degrades gracefully**. So every one of those queries 400'd wherever `nl` did not exist, taking out the nav, footer and site settings on the whole instance:
+
+| instance | `Locales` enum | old behavior |
+|---|---|---|
+| personal | `en, nl` | worked by luck |
+| v&aCMS, apjCMS | `en` | `nl` 400s → no nav/footer/settings |
+| toddCMS | `en, de, es, sv` | `nl` 400s, and de/es/sv were never offered |
+
+Fixed 2026-09-28. Never reintroduce a hardcoded locale pair: the only safe fallback is `[en]`, since `en` is the primary locale everywhere. Seeding Dutch is opt-in (`--localize`), so any instance can legitimately have just `en`.
 
 ### `isLocalized: true` — per-language field values
 

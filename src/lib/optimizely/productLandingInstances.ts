@@ -14,6 +14,7 @@ export const PRODUCT_LANDING_CMS_HOSTS = new Set([
   "app-opononboards2c23t002.cms.optimizely.com", // kastleNewCMS
   "app-opononboardyt09bt002.cms.optimizely.com", // toddCMS
   "app-opon12saasw5l98p001.cms.optimizely.com", // apjCMS
+  "app-opon12saasw5l98t002.cms.optimizely.com", // v&aCMS
 ]);
 
 export function supportsProductLanding(
