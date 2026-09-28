@@ -347,13 +347,15 @@ When the field is included (indexingType omitted) and DAM is enabled, the SDK at
 
 ### Supported locales come from the `Locales` enum, never a hardcoded list
 
-`getSupportedLocales()` introspects Graph's `Locales` enum (filtering the `ALL` / `NEUTRAL` sentinels). It used to query `_SiteDefinition`, **which does not exist in any of our Graph deployments** — it 400s on every instance — so the function always fell through to a hardcoded `[en, nl]`. `NavigationHeader` and `Footer` loop over every non-`en` locale to prefetch localized nav/footer/settings, and **a locale absent from the enum is a GraphQL validation error, not a missing-content case that degrades gracefully**. So every one of those queries 400'd wherever `nl` did not exist, taking out the nav, footer and site settings on the whole instance:
+`getSupportedLocales()` introspects Graph's `Locales` enum (filtering the `ALL` / `NEUTRAL` sentinels). It used to query `_SiteDefinition`, **which does not exist in any of our Graph deployments** — it 400s on every instance — so the function always fell through to a hardcoded `[en, nl]`. `NavigationHeader` and `Footer` loop over every non-`en` locale to prefetch localized nav/footer/settings, and **a locale absent from the enum is a GraphQL validation error, not a missing-content case that degrades gracefully**:
 
 | instance | `Locales` enum | old behavior |
 |---|---|---|
 | personal | `en, nl` | worked by luck |
-| v&aCMS, apjCMS | `en` | `nl` 400s → no nav/footer/settings |
+| v&aCMS, apjCMS | `en` | the three `nl` prefetches 400 on every render |
 | toddCMS | `en, de, es, sv` | `nl` 400s, and de/es/sv were never offered |
+
+**Scope it correctly:** the English nav/footer/settings were *never* affected — those fetch with `locale: ["en"]` and always worked. What broke was only the non-`en` prefetch of each, so the cost was three failed Graph queries per uncached render (plus `cachedQueryFailed()` shortening those cache entries, so they retried often), a locale menu offering NL where no Dutch content existed, and toddCMS's real locales never being offered.
 
 Fixed 2026-09-28. Never reintroduce a hardcoded locale pair: the only safe fallback is `[en]`, since `en` is the primary locale everywhere. Seeding Dutch is opt-in (`--localize`), so any instance can legitimately have just `en`.
 

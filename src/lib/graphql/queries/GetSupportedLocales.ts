@@ -9,7 +9,9 @@ import { graphClient } from "@/lib/optimizely/graphClient";
 // which used to be [en, nl] - and callers loop over every non-en locale to prefetch
 // localized nav/footer/settings. A locale missing from the enum is not a missing-
 // content case that degrades gracefully; it is a GraphQL *validation* error, so
-// every one of those queries 400'd on any instance without `nl`:
+// those prefetches 400'd on any instance without `nl`. (The English nav/footer were
+// never affected - they fetch with locale ["en"]. The cost was three failed queries
+// per uncached render and a locale menu offering NL where no Dutch content exists.)
 //
 //   personal ALL,NEUTRAL,en,nl     apjcms  ALL,NEUTRAL,en          (nl 400s)
 //   vacms    ALL,NEUTRAL,en        toddcms ALL,NEUTRAL,en,de,es,sv (nl 400s)
