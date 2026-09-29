@@ -408,6 +408,8 @@ const { cleanSlug, activeVariations } = extractVariations(slug);
 
 // includeOriginal is what keeps an unmatched visitor served:
 // without it Graph returns nothing rather than base content.
+// stored: false keeps Graph from freezing the variation value into a
+// stored query template and serving it to every visitor.
 const variationFilter = activeVariations.length > 0
   ? {
       variation: {
@@ -415,6 +417,7 @@ const variationFilter = activeVariations.length > 0
         value: activeVariations,
         includeOriginal: true,
       },
+      stored: false,
     }
   : undefined;
 

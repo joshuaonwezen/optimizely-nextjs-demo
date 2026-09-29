@@ -101,9 +101,15 @@ export default async function Page({ params }) {
 
   // 3. Build the Graph variation filter and fetch the page.
   //    includeOriginal: true is required - without it, unmatched visitors
-  //    get no content at all instead of the default page.
+  //    get no content at all instead of the default page. stored: false is
+  //    required too: a Graph stored query template binds the variation value
+  //    of the request that registered it, so every visitor would be served
+  //    whichever variation was asked for first.
   const variationFilter = variationKey
-    ? { variation: { include: "SOME" as const, value: [variationKey], includeOriginal: true } }
+    ? {
+        variation: { include: "SOME" as const, value: [variationKey], includeOriginal: true },
+        stored: false,
+      }
     : undefined;
 
   const url = "/" + ((await params).slug ?? []).join("/");

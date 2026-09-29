@@ -282,8 +282,11 @@ graphClient().request(GET_NAVIGATION_QUERY, {});
 
 // ✅ Variation filter - structure is fixed; only value[] changes.
 // Finite combinations ([], ["personal"], ["business"]) → Graph CDN caches each.
+// stored: false is required: a stored query template binds the variation value
+// of the request that registered it and then ignores the one you send.
 getContentByPath(url, {
   variation: { include: "SOME", value: activeVariations, includeOriginal: true },
+  stored: false,
 });
 
 // ❌ Anti-pattern: per-visitor data inside variables → every request is unique.

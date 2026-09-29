@@ -240,13 +240,18 @@ const PERSONALIZATION_SNIPPET = `// The submit to ODP to FX loop:
 //    Audience condition: logged_in = true to variation "returning_users"
 
 // 4. [[...slug]]/page.tsx passes a variation filter to Graph.
-//    include: "ALL", not "SOME" - two bugs in cms-sdk 3.0.x make SOME unusable.
-//    Its metadata probe never forwards the $v1..$vN variables (Graph answers 500),
-//    and includeOriginal never reaches the generated query at all. ALL needs no
-//    variables and returns the base item alongside every variation; the match is
-//    picked client-side, which is where selection always happened anyway.
+//    includeOriginal: true keeps a visitor who matches no variation served:
+//    Graph returns the base version alongside any match. stored: false is
+//    required with it - a Graph stored query template binds the variation
+//    value of whichever request registered it, so every visitor would get
+//    the first variation served.
 const [page] = await client.getContentByPath(url, {
-  variation: { include: "ALL" },
+  variation: {
+    include: "SOME",
+    value: ["returning_users"],
+    includeOriginal: true,
+  },
+  stored: false,
 });
 
 // 5. Graph returns the CMS variation an editor built in Visual Builder

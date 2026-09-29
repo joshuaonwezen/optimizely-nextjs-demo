@@ -155,9 +155,14 @@ async function CmsPage({ params }) {
   const { slug } = await params;
   const { cleanSlug, activeVariations, flagVariations } = extractVariations(slug);
 
-  // Pass variation keys to Graph - same filter as always, now sourced from URL not cookies
+  // Pass variation keys to Graph - same filter as always, now sourced from URL not cookies.
+  // stored: false opts out of Graph stored queries, which would otherwise freeze the
+  // variation value from the first request and serve it to every visitor.
   const variationOption = activeVariations.length > 0
-    ? { variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true } }
+    ? {
+        variation: { include: "SOME" as const, value: activeVariations, includeOriginal: true },
+        stored: false,
+      }
     : undefined;
 
   const client = getClient();
@@ -653,7 +658,7 @@ export default async function FeatureFlagsDemoPage() {
             <CodeBlock
               code={activeVariations.length === 0
                 ? `// No active variation keys - flags disabled, or user not bucketed into\n// any active variation. The "off" delivery rule is excluded: it returns\n// variationKey: "off" but no CMS variation named "off" exists.\nvariationOption = undefined`
-                : `variationOption = {\n  variation: {\n    include: "SOME",\n    value: ${JSON.stringify(activeVariations)},\n    includeOriginal: true,\n  },\n}`}
+                : `variationOption = {\n  variation: {\n    include: "SOME",\n    value: ${JSON.stringify(activeVariations)},\n    includeOriginal: true,\n  },\n  stored: false,\n}`}
             />
             {activeVariations.length === 0 && (
               <p className="text-xs text-on-surface-variant mt-3">

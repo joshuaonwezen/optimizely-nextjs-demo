@@ -106,47 +106,42 @@ Rules this imposes:
 - `GetNavigation.ts` — **production**. Fetches the shared `Navigation` block (named `"Navigation Menu"`) by type via `Navigation(limit: 1)`; used by `NavigationHeader`. Use this pattern for new work.
 - `GetNavigationFromHierarchy.ts`, `GetNavigationFromContentType.ts`, `GetNavigationFromFlags.ts` — reference implementations consumed only by the `/demo/navigation` comparison page. Do not wire these into site chrome.
 
-### Use `variation: { include: "ALL" }` and pick client-side — `include: "SOME"` is broken in cms-sdk 3.0.x
+### A variation filter needs `includeOriginal: true` AND `stored: false` — and cms-sdk ≥ 3.0.2
 
-Historically the rule was "always set `includeOriginal: true`, or visitors matching no variation key get no content at all". **That no longer works.** Two bugs in `getContentByPath`, both present in 3.0.0 **and 3.0.1** (verified against the shipped `graph/operations.js` + `graph/filters.js`, which are byte-identical between the two releases):
-
-1. With `include: "SOME"` the SDK emits `$v1..$vN` into its **metadata probe** query and uses them in the variation clause, but `getContentMetaData()` builds that query's variables from the path filter alone and never forwards the variation values. Graph receives `variation: { include: SOME, value: [null, null] }` and answers **HTTP 500**. The catch-all's `tryUrl` swallows it as a miss, so the page renders `notFound()`.
-2. **`includeOriginal` never reaches the generated query.** The SDK's own `GraphVariationInput` type accepts it, and `getVariationMode()` ignores it entirely — so the flag the old rule depended on is silently dropped.
-
-It only ever showed up on `/`, because the homepage is the only page this app requests with a variation filter. It also only reproduces **with** a persona: a bare `curl /` sends no `demo_persona`/FX cookies, so `filterValues` is empty, no filter is sent and the page renders fine. **Test variation changes with `-H "Cookie: demo_persona=business"`, never a bare curl.**
+A visitor whose variation key matches nothing on the page must still get the base version, and `includeOriginal: true` is what guarantees it. The catch-all is the reference:
 
 ```ts
 // src/app/[[...slug]]/page.tsx
-const variationFilter = filterValues.length > 0 ? { variation: { include: "ALL" as const } } : undefined;
+const variationFilter =
+  filterValues.length > 0
+    ? {
+        variation: { include: "SOME" as const, value: filterValues, includeOriginal: true },
+        stored: false,
+      }
+    : undefined;
 ```
 
-`ALL` needs no variables (bug 1 cannot fire) and returns the base item alongside every variation (bug 2 is moot). Selection was always ours anyway: `pickMatch` filters the returned items to `filterValues`, so the eligible set is exactly what `SOME` used to return. Cost is one extra item per variation (5 on the homepage).
+**`stored: false` is not optional, and leaving it out is near-undetectable.** The SDK sends every query as a Graph **stored query template** (`stored: true` is the default since 3.0.0: `?stored=true` plus a `cg-stored-query: template` header). A stored template binds the variation value from whichever request registered it, so `value: [$v1]` keeps answering with that first variation for every later value — one persona's content served to everyone, with a 200 and no error anywhere. The path variables in the same query substitute correctly; it is the `variation` argument specifically.
 
-**This is a workaround, not the intended shape — revert it when a fixed SDK ships.** As of 2026-09-29, **3.0.1 is still `latest`** (published 2026-09-28) and the fix has not landed. Check with `npm view @optimizely/cms-sdk dist-tags`.
+Verified against Graph with the SDK's own generated query, same body, only the header/param differing:
 
-**Release notes are not a reliable signal here — check the shipped code.** Both defects are visible in `node_modules` in one look:
+| request shape | `v1: personal` | `v1: mortgages` | `v1: investments` |
+|---|---|---|---|
+| `stored=true` (SDK default) | `business` | `business` | `business` |
+| `stored=false` | `personal` | `mortgages` | `investments` |
 
-```bash
-# Bug 2 is fixed when this prints a hit. In 3.0.0/3.0.1 `includeOriginal`
-# appears in no shipped .js at all, only in the .d.ts.
-grep -rl includeOriginal node_modules/@optimizely/cms-sdk/dist/esm/graph/*.js
+`cache=false` does **not** help — this is the stored template, not the result cache. `include: "ALL"` never showed it either, because that shape sends no variables at all, which is part of why the 3.0.x workaround looked clean.
 
-# Bug 1 is fixed when getContentMetaData takes the variation values and merges
-# them into `variables`. In 3.0.0/3.0.1 its variables are the path filter + withForms.
-grep -A7 'async function getContentMetaData' \
-  node_modules/@optimizely/cms-sdk/dist/esm/graph/operations.js
-```
+`pickMatch` then selects the FX/ODP match out of the returned items, falling back to the item whose `variation` is null — `items[0]` is not safe, since Graph does not guarantee the base comes first. It selects on `variationValues`, the same authority the step-2 `KEY_QUERY` fallback uses.
 
-**The revert is two edits in `src/app/[[...slug]]/page.tsx`, and they must be made together:**
+**Do not downgrade below cms-sdk 3.0.2.** `getContentByPath` had two bugs in **3.0.0 and 3.0.1** that made this shape unusable, which is why the code briefly used `include: "ALL"` with client-side selection (reverted 2026-09-29 on 3.0.2):
 
-1. The filter at `variationFilter` goes back to `{ variation: { include: "SOME" as const, value: filterValues, includeOriginal: true } }`, and the long comment above it comes out.
-2. `pickMatch` goes back to matching on `variationValues` instead of `filterValues`. The `filterValues` match exists *only* to compensate for `ALL` returning variations we did not ask for; with `SOME` the server narrows again and matching on `filterValues` would be wrong.
+1. With `include: "SOME"` the SDK emitted `$v1..$vN` into its **metadata probe** query and used them in the variation clause, but `getContentMetaData()` built that query's variables from the path filter alone. Graph received `variation: { include: SOME, value: [null, null] }` and answered **HTTP 500**; `tryUrl` swallowed it as a miss, so the page rendered `notFound()`.
+2. `includeOriginal` never reached the generated query — `GraphVariationInput` accepted it and `getVariationMode()` discarded it.
 
-Reverting (2) also clears a known asymmetry: `pickMatch` currently selects on `filterValues` while the step-2 `KEY_QUERY` fallback further down still selects on `variationValues`, so the two paths can disagree while the WX dual path is active.
+3.0.2 fixes both (`getContentMetaData` takes the variation input and merges `getVariationVariables()`; `getVariationMode`/`getVariationClause` carry `includeOriginal` through).
 
-**Verify the revert with a persona, never a bare curl** — `curl -H "Cookie: demo_persona=business" localhost:3000/`. A bare request leaves `filterValues` empty, sends no filter at all, and renders fine whether or not the SDK is fixed. Check each persona serves distinct content (BASE "Our products"; `business` / `personal` / `mortgages` / `investments` each their own).
-
-**Docs that still teach the old `SOME` + `includeOriginal` pattern were deliberately left alone**, because the revert makes them correct again: `src/app/demo/graph-queries/page.tsx`, `src/app/demo/personalization/page.tsx`, the "Graph then falls back to base via `includeOriginal`" comment earlier in `src/app/[[...slug]]/page.tsx`, and the verification query printed by `scripts/seed-homepage-variations.ts` (that last one is raw Graph, so it still works today — only the SDK path is broken).
+**Test variation changes with `-H "Cookie: demo_persona=business"`, never a bare curl — and check more than one persona.** A bare `curl /` sends no `demo_persona`/FX cookies, so `filterValues` is empty, no filter is sent at all and the page renders fine no matter what the filter code does: that is what hid the 500 for days. One persona is not enough either — `business` alone looked perfect while the stored template served business content to all four. Check each persona serves its own content (BASE "Our products"; `personal` "Your money, your milestones"; `business` "Every financial tool your business needs"; `mortgages` "Mortgages for every move"; `investments` "Grow your money with confidence"), and that a page **without** the decided variation still renders its base (`curl localhost:3000/about/__v_homepage--investments`). Only `/` carries variations in practice — it is the only page this app requests with a filter.
 
 ### CMS Variations cannot be CREATED via the API, but CAN be UPDATED once created in the UI
 The `variation` field exists on `ContentMetadata` in the Graph schema, and `_Page` accepts a `VariationInput` filter. But the Management API (`POST /v1/content` and `POST /content/{key}/versions`) silently ignores the `variation` field on write — stored items always have `variation: null`.
@@ -392,7 +387,7 @@ The canonical instance list lives in `src/lib/optimizely/seedInstances.ts`. A sc
 `optimizely.config.mjs` globs `./src/components/**/*.tsx` — no manual config edit needed when adding a new block.
 
 ### CLI commands
-The CLI is pinned in `package.json` (3.0.1) and every script runs it with `npx --no-install`, i.e. from `node_modules`. **Keep it that way.** In cms-sdk **3.0.0** the package root re-exported `initForms` from `react/server`, which made the root entry import `react` — a *peer* dependency — so a standalone `npx @optimizely/cms-cli` had no react on disk and every command failed to load with `Cannot find package 'react'`. That surfaced as "unknown command `config push`" and aborted every instance's seed on step 1. **3.0.1 reverted that re-export**, so the root is react-free again and `initForms` must be imported from `@optimizely/cms-sdk/react/server`. The `--no-install` pin is still right: it keeps the CLI and the SDK on the same version instead of silently fetching a new major.
+The CLI is pinned in `package.json` (3.0.2) and every script runs it with `npx --no-install`, i.e. from `node_modules`. **Keep it that way.** In cms-sdk **3.0.0** the package root re-exported `initForms` from `react/server`, which made the root entry import `react` — a *peer* dependency — so a standalone `npx @optimizely/cms-cli` had no react on disk and every command failed to load with `Cannot find package 'react'`. That surfaced as "unknown command `config push`" and aborted every instance's seed on step 1. **3.0.1 reverted that re-export**, so the root is react-free again and `initForms` must be imported from `@optimizely/cms-sdk/react/server`. The `--no-install` pin is still right: it keeps the CLI and the SDK on the same version instead of silently fetching a new major.
 
 - `npm run opti:login` — verify credentials (`optimizely-cms-cli login`)
 - `npx optimizely-cms-cli config pull` — download existing CMS content types and generate TypeScript files (use `--output ./src/content-types --group` to organize by base type)
