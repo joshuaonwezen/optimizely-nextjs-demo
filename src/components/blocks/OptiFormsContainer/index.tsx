@@ -3,11 +3,13 @@ import {
   OptimizelyGridSection,
   getPreviewUtils,
 } from "@optimizely/cms-sdk/react/server";
+import { FormStep, partitionFormNodes } from "@optimizely/cms-sdk/forms/react";
 import { cacheTag } from "next/cache";
 import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { NodeWrapper } from "@/components/experience/CompositionExperience";
 import { asSdkContent, type CompositionNode } from "@/components/cms/sdkTypes";
+import FormShell from "./FormShell";
 
 interface OptiFormsContainerData {
   key?: string | null;
@@ -17,7 +19,9 @@ interface OptiFormsContainerData {
   Description?: string | null;
   SubmitUrl?: { default?: string | null } | null;
   SubmitConfirmationMessage?: string | null;
+  DependencyRules?: unknown;
   nodes?: CompositionNode[] | null;
+  _metadata?: { key?: string | null } | null;
   __context?: { edit?: boolean } | null;
 }
 
@@ -27,7 +31,14 @@ interface OptiFormsContainerData {
 const FORM_PROPS_QUERY = /* GraphQL */ `
   query FormContainerProps($name: String!) {
     OptiFormsContainerData(where: { _metadata: { displayName: { eq: $name } } }, limit: 1) {
-      items { Title Description SubmitUrl { default } SubmitConfirmationMessage }
+      items {
+        _metadata { key }
+        Title
+        Description
+        SubmitUrl { default }
+        SubmitConfirmationMessage
+        DependencyRules
+      }
     }
   }
 `;
@@ -36,14 +47,16 @@ type OptiFormsContainerProps = OptiFormsContainerData & {
   content?: OptiFormsContainerData;
   /** Field blocks rendered directly (the /demo/forms page); the CMS passes `nodes` instead. */
   children?: ReactNode;
+  /** Renders the submit request/response panel (/demo/forms only). */
+  showDebug?: boolean;
 };
 
-// Form fields nest inside the container as composition child nodes. The native
-// CMS structure is section (OptiFormsContainerData) → row → column → elements,
-// so the container renders its grid like a section. Stacked, full-width layout.
-// Rows and columns carry no styling of their own - plain preview-attributed divs.
-
 type FormPropsResult = { OptiFormsContainerData?: { items?: OptiFormsContainerData[] } };
+
+/** A structure node (step, row, column) as opposed to a component node. */
+type StructureNode = Extract<CompositionNode, { nodes?: unknown }>;
+
+const isStepNode = (node: CompositionNode): node is StructureNode => node.nodeType === "step";
 
 // Only the display name crosses the cache boundary. The component's own props
 // hold SDK composition nodes and the NodeWrapper component, none of which
@@ -81,46 +94,72 @@ export default async function OptiFormsContainer(props: OptiFormsContainerProps)
 
   const { pa } = getPreviewUtils(asSdkContent(node));
 
-  // A real <form> scopes OptiFormsSubmit to this container's fields (several forms
-  // can share a page) and gives Enter-to-submit plus native required validation.
-  // OptiFormsSubmit intercepts the submit event, so the form never navigates.
+  // Editors put Next / Previous / Submit wherever they like, often each in its own
+  // row. partitionFormNodes pulls them out at any depth so they lay out as one
+  // footer, and drops the rows left empty behind them.
+  const { content: contentNodes, buttons } = partitionFormNodes(nodes);
+  const steps = contentNodes.filter(isStepNode);
+
   return (
-    <form
-      data-component="OptiFormsContainer"
-      className="py-16"
-      data-form-submit-url={data.SubmitUrl?.default ?? "/api/form-submit"}
-      data-form-success-message={data.SubmitConfirmationMessage ?? "Thank you! We'll be in touch soon."}
-    >
-      <div className="max-w-2xl mx-auto px-8">
-        {data.Title && (
-          <h2
-            {...pa("Title")}
-            className="font-display text-3xl font-extrabold mb-4 text-on-surface"
-          >
-            {data.Title}
-          </h2>
+    <div data-component="OptiFormsContainer" className="py-16">
+      <FormShell
+        action={data.SubmitUrl?.default ?? "/api/form-submit"}
+        successMessage={data.SubmitConfirmationMessage ?? "Thank you! We'll be in touch soon."}
+        formKey={data._metadata?.key ?? node.key ?? undefined}
+        steps={steps}
+        rules={data.DependencyRules}
+        showDebug={props.showDebug}
+      >
+        <div className="max-w-2xl mx-auto px-8">
+          {data.Title && (
+            <h2
+              {...pa("Title")}
+              className="font-display text-3xl font-extrabold mb-4 text-on-surface"
+            >
+              {data.Title}
+            </h2>
+          )}
+          {data.Description && (
+            <p {...pa("Description")} className="text-base mb-2 text-on-surface-variant">
+              {data.Description}
+            </p>
+          )}
+          {data.__context?.edit && (
+            <p
+              {...pa("SubmitConfirmationMessage")}
+              className="mt-4 text-xs font-mono text-on-surface-variant/60 cursor-pointer hover:text-on-surface-variant transition-colors"
+            >
+              Success: {data.SubmitConfirmationMessage || "Click to set success message..."}
+            </p>
+          )}
+        </div>
+
+        {/* A multi-step form: only the active step is visible, but every step stays
+            mounted so values survive stepping back and submit validates all of them.
+            OptimizelyGridSection has no handler for nodeType "step" - it renders one
+            as a bare fragment - so the steps are wrapped here rather than there. */}
+        {steps.length > 0
+          ? steps.map((step, index) => (
+              <FormStep key={step.key} index={index} node={step}>
+                <OptimizelyGridSection
+                  nodes={step.nodes ?? []}
+                  row={NodeWrapper}
+                  column={NodeWrapper}
+                />
+              </FormStep>
+            ))
+          : contentNodes.length > 0 && (
+              <OptimizelyGridSection nodes={contentNodes} row={NodeWrapper} column={NodeWrapper} />
+            )}
+
+        {buttons.length > 0 && (
+          <div className="max-w-2xl mx-auto px-8 pt-4 flex flex-wrap gap-3">
+            <OptimizelyGridSection nodes={buttons} row={NodeWrapper} column={NodeWrapper} />
+          </div>
         )}
-        {data.Description && (
-          <p
-            {...pa("Description")}
-            className="text-base mb-2 text-on-surface-variant"
-          >
-            {data.Description}
-          </p>
-        )}
-        {data.__context?.edit && (
-          <p
-            {...pa("SubmitConfirmationMessage")}
-            className="mt-4 text-xs font-mono text-on-surface-variant/60 cursor-pointer hover:text-on-surface-variant transition-colors"
-          >
-            Success: {data.SubmitConfirmationMessage || "Click to set success message..."}
-          </p>
-        )}
-      </div>
-      {nodes.length > 0 && (
-        <OptimizelyGridSection nodes={nodes} row={NodeWrapper} column={NodeWrapper} />
-      )}
-      {props.children}
-    </form>
+
+        {props.children}
+      </FormShell>
+    </div>
   );
 }

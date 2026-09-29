@@ -278,6 +278,27 @@ html[data-theme="dark"] .code-block-body .shiki span {
   @apply shadow-ambient -translate-y-0.5;
 }
 
+/* Utility: header dropdown entrance. Exit stays instant - NavDropdown unmounts
+   the panel on close, so there is nothing left to animate out. */
+@keyframes nav-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.nav-panel-in {
+  animation: nav-panel-in 120ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-panel-in {
+    animation: none;
+  }
+}
+
 /* Utility: insight rail — signature vertical accent line */
 .insight-rail {
   @apply relative pl-6;

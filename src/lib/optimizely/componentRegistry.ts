@@ -1,12 +1,15 @@
 import {
   config,
-  contentType,
   initContentTypeRegistry,
   initDisplayTemplateRegistry,
   BlankExperienceContentType,
   BlankSectionContentType,
 } from "@optimizely/cms-sdk";
-import { initReactComponentRegistry } from "@optimizely/cms-sdk/react/server";
+// initForms comes from react/server, NOT the package root. cms-sdk 3.0.0 re-exported
+// it from the root, which made the root entry import react - and since react is a
+// peer dependency that broke every standalone `npx @optimizely/cms-cli` invocation.
+// 3.0.1 reverted that re-export, so importing it from the root now fails to resolve.
+import { initForms, initReactComponentRegistry } from "@optimizely/cms-sdk/react/server";
 import type { ComponentType } from "react";
 
 import * as HeroBlockModule from "@/components/blocks/HeroBlock";
@@ -47,6 +50,10 @@ import OptiFormsTextbox from "@/components/blocks/OptiFormsTextbox";
 import OptiFormsTextarea from "@/components/blocks/OptiFormsTextarea";
 import OptiFormsSelection from "@/components/blocks/OptiFormsSelection";
 import OptiFormsSubmit from "@/components/blocks/OptiFormsSubmit";
+import OptiFormsNumber from "@/components/blocks/OptiFormsNumber";
+import OptiFormsUrl from "@/components/blocks/OptiFormsUrl";
+import OptiFormsChoice from "@/components/blocks/OptiFormsChoice";
+import OptiFormsReset from "@/components/blocks/OptiFormsReset";
 import ArticleListBlock from "@/components/blocks/ArticleListBlock";
 import { NavigationItemType, NavigationType, NavigationBlock, NavigationItemPreview } from "@/components/blocks/NavigationItemBlock";
 import { FooterType, FooterPreview } from "@/components/layout/Footer";
@@ -96,81 +103,11 @@ config({
 // instance whose Graph lacks the types would break every page there.
 const PRODUCT_LANDING = supportsProductLanding();
 
-// Deeper composition nesting (native forms) and extra `composition`-type properties
-// both need query text the SDK does not generate. See compositionProperties.ts.
+// Extra `composition`-type properties need query text the SDK does not generate.
+// See compositionProperties.ts. (Forms nesting depth used to need a patch here too;
+// cms-sdk 3.0.0 handles it natively.)
 patchCompositionQueries();
 if (PRODUCT_LANDING) registerCompositionProperties([ProductLandingExperienceType]);
-
-// Native Optimizely Forms type schemas — defined here so opti:push does NOT discover
-// them (the buildConfig glob only covers src/components/**/*.tsx, not src/lib/).
-// These types are already registered in the CMS after forms activation
-// (Settings > Forms Settings > Activate); we just tell the SDK their property
-// shapes so it includes them in auto-generated composition GraphQL fragments.
-const OptiFormsContainerDataType = contentType({
-  key: "OptiFormsContainerData",
-  displayName: "Form Container",
-  baseType: "_component",
-  compositionBehaviors: ["sectionEnabled", "elementEnabled"],
-  properties: {
-    Title:                        { type: "string", displayName: "Title" },
-    Description:                  { type: "string", displayName: "Description" },
-    SubmitUrl:                    { type: "url",    displayName: "Submit URL" },
-    SubmitConfirmationMessage:    { type: "string", displayName: "Submit Confirmation Message" },
-    ResetConfirmationMessage:     { type: "string", displayName: "Reset Confirmation Message" },
-    ShowSummaryMessageAfterSubmission: { type: "boolean", displayName: "Show Summary" },
-  },
-});
-
-const OptiFormsTextboxElementType = contentType({
-  key: "OptiFormsTextboxElement",
-  displayName: "Text Input",
-  baseType: "_component",
-  compositionBehaviors: ["elementEnabled"],
-  properties: {
-    Label:          { type: "string",  displayName: "Label" },
-    Placeholder:    { type: "string",  displayName: "Placeholder" },
-    AutoComplete:   { type: "boolean", displayName: "Autocomplete" },
-    PredefinedValue:{ type: "string",  displayName: "Predefined Value" },
-    Validators:     { type: "string",  displayName: "Validators" },
-  },
-});
-
-const OptiFormsTextareaElementType = contentType({
-  key: "OptiFormsTextareaElement",
-  displayName: "Text Area",
-  baseType: "_component",
-  compositionBehaviors: ["elementEnabled"],
-  properties: {
-    Label:       { type: "string", displayName: "Label" },
-    Placeholder: { type: "string", displayName: "Placeholder" },
-    Validators:  { type: "string", displayName: "Validators" },
-  },
-});
-
-const OptiFormsSelectionElementType = contentType({
-  key: "OptiFormsSelectionElement",
-  displayName: "Selection",
-  baseType: "_component",
-  compositionBehaviors: ["elementEnabled"],
-  properties: {
-    Label:            { type: "string",  displayName: "Label" },
-    Validators:       { type: "string",  displayName: "Validators" },
-    AllowMultiSelect: { type: "boolean", displayName: "Allow Multiple" },
-    // Options is a JSON scalar containing the array of choice items
-    Options:          { type: "string",  displayName: "Options" },
-  },
-});
-
-const OptiFormsSubmitElementType = contentType({
-  key: "OptiFormsSubmitElement",
-  displayName: "Submit Button",
-  baseType: "_component",
-  compositionBehaviors: ["elementEnabled"],
-  properties: {
-    Label:   { type: "string", displayName: "Label" },
-    Tooltip: { type: "string", displayName: "Tooltip" },
-  },
-});
 
 // Standard blocks. Each module under src/components/blocks exports exactly one
 // contentType(), its displayTemplate()s and the React component as default, so
@@ -245,11 +182,6 @@ export function initComponentRegistry() {
     CaseStudyPageType,
     ConsultantPageType,
     ...BLOCK_MODULES.map(blockContentType),
-    OptiFormsContainerDataType,
-    OptiFormsTextboxElementType,
-    OptiFormsTextareaElementType,
-    OptiFormsSelectionElementType,
-    OptiFormsSubmitElementType,
     NavigationItemType,
     NavigationType,
     FooterType,
@@ -276,10 +208,10 @@ export function initComponentRegistry() {
   // than row/column, and the object-map path crashes on undefined
   // (getEntryWithFallback calls contentType.endsWith). The function path
   // lets us guard and restore 2.0.0's silent-fallback behavior.
-  // Re-verified against cms-sdk 2.2.0: getComponent now short-circuits to the
-  // function resolver before reaching getEntryWithFallback (and that method also
-  // guards `typeof resolver === 'function'`), so the crash path is bypassed and the
-  // `if (!name)` guard below still absorbs the getComponent(undefined) call - keep.
+  // Re-verified against cms-sdk 3.0.0 (and 2.2.0 before it): getComponent still
+  // short-circuits to the function resolver before reaching getEntryWithFallback, so
+  // the crash path is bypassed and the `if (!name)` guard below still absorbs the
+  // getComponent(undefined) call - keep.
   // Values are loosely typed: each component declares its own props, which the
   // SDK passes at render time.
   const componentMap: Record<string, unknown> = {
@@ -302,12 +234,7 @@ export function initComponentRegistry() {
     Hero: HeroBlockModule.default,
     ArticleListBlock,
 
-    // Native Optimizely Forms
-    OptiFormsContainerData: OptiFormsContainer,
-    OptiFormsTextboxElement: OptiFormsTextbox,
-    OptiFormsTextareaElement: OptiFormsTextarea,
-    OptiFormsSelectionElement: OptiFormsSelection,
-    OptiFormsSubmitElement: OptiFormsSubmit,
+    // Native Optimizely Forms are registered separately, via initForms() below.
 
     // Shared blocks previewed on their own in the CMS
     Navigation: NavigationBlock,
@@ -328,6 +255,29 @@ export function initComponentRegistry() {
       const entry = componentMap[name] ?? (name.endsWith("Property") ? componentMap[name.slice(0, -8)] : undefined);
       return entry as ComponentType | undefined;
     },
+  });
+
+  // Native Optimizely Forms. initForms registers the SDK's own OptiForms content
+  // types AND their React components, replacing the five type schemas this file used
+  // to declare by hand. It writes to lists the SDK keeps separate from the two init*
+  // calls above, so the order of the three does not matter.
+  //
+  // All ten element types have a component. The SDK registers every one of them
+  // whether or not you map it, and an unmapped type renders a visible "No component
+  // found" box rather than nothing, so leaving any out is a visible defect for an
+  // editor. Range shares the number component: the CMS models both as a numeric
+  // field, and a slider with no configured bounds is worse than an input.
+  initForms({
+    container: OptiFormsContainer,
+    textbox: OptiFormsTextbox,
+    textarea: OptiFormsTextarea,
+    selection: OptiFormsSelection,
+    submit: OptiFormsSubmit,
+    number: OptiFormsNumber,
+    range: OptiFormsNumber,
+    url: OptiFormsUrl,
+    choice: OptiFormsChoice,
+    reset: OptiFormsReset,
   });
 
   initialized = true;

@@ -7,10 +7,11 @@ import {
 } from "@optimizely/cms-sdk/react/server";
 import type { ExperienceContent } from "@/components/cms/sdkTypes";
 
-// SDK 2.2.0 never hands a block its display template key (OptimizelyComponent only
-// forwards content + displaySettings), so blocks that branch on
+// The SDK never hands a block its display template key (OptimizelyComponent forwards
+// only content + displaySettings + tag), so blocks that branch on
 // props.displayTemplateKey always rendered their default layout. OptimizelyComponent
 // spreads any extra prop into the block, so the wrappers inject the key here.
+// Still true in cms-sdk 3.0.0 - re-checked on the 2.2.0 -> 3.0.0 upgrade.
 function withTemplateKey(children: React.ReactNode, node: { displayTemplateKey?: string | null }, extra = {}) {
   if (!isValidElement(children)) return children;
   return cloneElement(children as React.ReactElement<Record<string, unknown>>, {

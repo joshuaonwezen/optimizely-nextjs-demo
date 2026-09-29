@@ -195,12 +195,22 @@ export function MobileDrawer({ tree, demoCategories, locales, currentLocale, pat
                       <Chevron open={isOpen} />
                     </button>
                     {isOpen && (
-                      <ul className="ml-3 pl-3 border-l-2 border-ghost-border space-y-0.5 mb-2">
-                        {category.links.map((link) => (
+                      <ul className="ml-3 pl-3 space-y-0.5 mb-2">
+                        {category.links.map((link, i) => (
                           <li key={link.href}>
+                            {link.group && link.group !== category.links[i - 1]?.group && (
+                              <p className="type-eyebrow mt-2 mb-0.5 text-[10px] text-on-surface-variant/55">
+                                {link.group}
+                              </p>
+                            )}
                             <Link
                               href={link.href}
-                              className="block py-1.5 text-sm font-medium text-on-surface-variant hover:text-brand transition-colors"
+                              aria-current={pathname === link.href ? "page" : undefined}
+                              className={`block rounded-lg px-2 py-1.5 text-sm font-medium transition-colors ${
+                                pathname === link.href
+                                  ? "bg-surface-low text-brand"
+                                  : "text-on-surface-variant hover:bg-surface-low hover:text-brand"
+                              }`}
                             >
                               {link.label}
                             </Link>

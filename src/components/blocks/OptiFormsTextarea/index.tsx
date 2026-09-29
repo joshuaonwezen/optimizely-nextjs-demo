@@ -1,15 +1,23 @@
-import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { useId } from "react";
-import { isRequired, slugify } from "../_shared/formFields";
+"use client";
+
+import {
+  FormElement,
+  getPreviewUtils,
+  useFormField,
+} from "@optimizely/cms-sdk/forms/react";
+import { asFieldContent, fieldName, readValidators } from "../_shared/formFields";
+import { FieldChrome, INPUT_CLASS, INVALID_CLASS } from "../_shared/formFieldUi";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
-const INPUT_CLASS =
-  "w-full px-4 py-3 rounded-lg text-sm outline-none transition-shadow focus:ring-2 focus:ring-brand/30 bg-surface-lowest text-on-surface border border-ghost-border";
-
+// Validators is `type: "json"`. It arrives parsed from a direct field selection
+// but as a JSON string from the SDK's composition fragment; readValidators()
+// accepts either.
 interface OptiFormsTextareaData {
   Label?: string | null;
   Placeholder?: string | null;
-  Validators?: string | null;
+  PredefinedValue?: string | null;
+  SubmissionFieldName?: string | null;
+  Validators?: unknown;
 }
 
 type OptiFormsTextareaProps = OptiFormsTextareaData & {
@@ -19,31 +27,32 @@ type OptiFormsTextareaProps = OptiFormsTextareaData & {
 export default function OptiFormsTextarea(props: OptiFormsTextareaProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(asSdkContent(data));
-  const name = slugify(data.Label);
-  // Not derived from the label: two fields with the same label would share an id.
-  const id = useId();
-  const required = isRequired(data.Validators);
+  const name = fieldName(data);
+  const { fieldProps, isRequired, errors, showErrors, errorProps } = useFormField<HTMLTextAreaElement>({
+    content: asFieldContent(data),
+    name,
+    validators: readValidators(data.Validators),
+  });
 
   return (
-    <div data-component="OptiFormsTextarea" className="max-w-2xl mx-auto px-8 py-3">
-      {data.Label && (
-        <label
-          {...pa("Label")}
-          htmlFor={id}
-          className="block text-sm font-medium mb-2 text-on-surface"
-        >
-          {data.Label}
-          {required && <span className="text-error"> *</span>}
-        </label>
-      )}
-      <textarea
-        id={id}
-        name={name}
-        placeholder={data.Placeholder ?? undefined}
-        required={required}
-        rows={4}
-        className={`${INPUT_CLASS} resize-y`}
-      />
-    </div>
+    <FormElement content={asSdkContent(data)}>
+      <FieldChrome
+        component="OptiFormsTextarea"
+        label={data.Label}
+        htmlFor={name}
+        required={isRequired}
+        labelAttrs={pa("Label")}
+        errors={errors}
+        showErrors={showErrors}
+        errorProps={errorProps}
+      >
+        <textarea
+          {...fieldProps}
+          placeholder={data.Placeholder ?? undefined}
+          rows={4}
+          className={`${INPUT_CLASS} resize-y ${showErrors ? INVALID_CLASS : ""}`}
+        />
+      </FieldChrome>
+    </FormElement>
   );
 }

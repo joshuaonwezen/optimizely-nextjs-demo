@@ -35,11 +35,36 @@ async function forwardToOdp(body: Record<string, unknown>): Promise<void> {
   }
 }
 
+interface SubmitEnvelope {
+  targetUrl?: unknown;
+  payload?: Record<string, unknown>;
+  formKey?: unknown;
+}
+
+// The SDK's createJsonSubmitHandler posts { targetUrl, payload, formKey } rather
+// than the field values on their own. The hand-built ContactFormBlock still posts
+// a flat object, so accept both and unwrap to the same shape.
+function unwrap(raw: unknown): { body: Record<string, unknown>; envelope: SubmitEnvelope | null } {
+  if (raw && typeof raw === "object" && "payload" in raw) {
+    const envelope = raw as SubmitEnvelope;
+    if (envelope.payload && typeof envelope.payload === "object") {
+      return { body: envelope.payload, envelope };
+    }
+  }
+  return { body: (raw ?? {}) as Record<string, unknown>, envelope: null };
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const { body, envelope } = unwrap(await request.json());
 
     console.log("[Form Submission]", JSON.stringify(body, null, 2));
+    if (envelope) {
+      console.log("[Form Submission] via SDK handler", {
+        targetUrl: envelope.targetUrl,
+        formKey: envelope.formKey,
+      });
+    }
 
     await forwardToOdp(body).catch((err: unknown) => {
       console.warn("[Form Submission] ODP forward failed:", err);

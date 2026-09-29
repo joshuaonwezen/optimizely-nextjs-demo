@@ -7,7 +7,7 @@ import {
   SPACING, CONTENT_WIDTH, HEADING_SIZE, TEXT_ALIGN, spacingClass, widthClass, withDefault,
 } from "../_shared/displayTemplateSettings";
 import { BlockHeader } from "../_shared/BlockHeader";
-import { asSdkContent } from "@/components/cms/sdkTypes";
+import { asSdkComponentContent, asSdkContent } from "@/components/cms/sdkTypes";
 
 export const FaqContainerBlockType = contentType({
   key: "FaqContainerBlock",
@@ -76,7 +76,7 @@ export default function FaqContainerBlock(props: FaqContainerBlockProps) {
         <div {...pa("faqItems")} className="space-y-2">
           {data.faqItems.map((item, i) => (
             <BlockErrorBoundary key={i}>
-              <OptimizelyComponent content={asSdkContent(item)} />
+              <OptimizelyComponent content={asSdkComponentContent(item)} />
             </BlockErrorBoundary>
           ))}
         </div>

@@ -7,11 +7,17 @@ export const NavigationItemType = contentType({
   baseType: "_component",
   properties: {
     label: { type: "string", displayName: "Label", isLocalized: true },
-    // cms-sdk 2.2.0 (CMS-54088) made contentReference a union requiring allowedTypes|
-    // restrictedTypes at the type level. href is an unconstrained ref (any page is a valid
-    // nav target), so `restrictedTypes: []` satisfies the type and round-trips through the
-    // CMS server as unconstrained — same effective schema as before, no allowlist narrowing.
-    href: { type: "contentReference", displayName: "URL", restrictedTypes: [] },
+    // A nav target is always a page: seed-nav writes href as cms://content/<page-key>,
+    // and resolveLinkHref() turns it into that page's url.default. So the two page base
+    // types are the accurate constraint, not an absence of one.
+    //
+    // This was `restrictedTypes: []` until the 3.0.0 upgrade - a workaround for cms-sdk
+    // 2.2.0 (CMS-54088) making contentReference a union that required
+    // allowedTypes|restrictedTypes. cms-cli 3.0.0 validates constraints at push time and
+    // rejects both an empty list and no list at all ("causes excessive GraphQL fragment
+    // generation at runtime"), so an unconstrained ref is no longer expressible. Naming
+    // the base types is what that validation is asking for.
+    href: { type: "contentReference", displayName: "URL", allowedTypes: ["_page", "_experience"] },
     description: { type: "string", displayName: "Description", isLocalized: true },
     openInNewTab: { type: "boolean", displayName: "Open in New Tab" },
     // Content area — editors drop child NavigationItems here

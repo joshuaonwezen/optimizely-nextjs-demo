@@ -9,6 +9,7 @@ A production-style reference implementation for Optimizely SaaS CMS + Feature Ex
 |-----------|---------------|
 | `/demo/visual-builder` | Blocks, compositions, and display templates |
 | `/demo/display-templates` | Every template variant and setting rendered side by side |
+| `/demo/sdk-setup` | contentType options, SDK API surface, query debugging |
 | `/demo/content-modelling` | Content types and properties |
 | `/demo/contracts` | Shared contracts, mappings, and bindings |
 | `/demo/preview` | In-context editing and draft content |

@@ -49,11 +49,15 @@ async function main() {
   // the run before the optional CMS-content steps (seed-consultants) ever run.
   // They live in optional[] below.
   const required: [string, string[]][] = [
-    // `--no-install` + no `@latest`: use the @optimizely/cms-cli version pinned in
-    // package.json (2.2.0). `@latest` pulled cms-cli 3.0.0, whose npx-cached install
-    // cannot load its own commands ("Cannot find package 'react'" from
-    // @optimizely/cms-sdk/dist/esm/react/server.js), so `config push` was not found
-    // and every instance's seed aborted on step 1.
+    // `--no-install` + no `@latest`: always run the @optimizely/cms-cli version pinned
+    // in package.json, from node_modules.
+    //
+    // Never reintroduce `@latest` here. cms-cli depends on cms-sdk, whose root entry
+    // imports `react` (for initForms) as of 3.0.0, and react is a PEER dependency - so
+    // a standalone npx install has no react on disk and every command fails to load
+    // ("Cannot find package 'react'" from @optimizely/cms-sdk/dist/esm/react/server.js).
+    // `config push` was then reported as an unknown command and every instance's seed
+    // aborted on step 1. Resolving from node_modules, where react is installed, works.
     ["npx", ["--no-install", "@optimizely/cms-cli", "config", "push", "optimizely.config.mjs", "--force"]],
     ["npx", ["tsx", "scripts/seed-content.ts"]],
     // QuoteBlock shared blocks that back the homepage CustomerVoicesBlock content

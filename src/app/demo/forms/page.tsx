@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import DemoHero from "@/components/demo/DemoHero";
 import OptiFormsContainer from "@/components/blocks/OptiFormsContainer";
 import OptiFormsTextbox from "@/components/blocks/OptiFormsTextbox";
 import OptiFormsTextarea from "@/components/blocks/OptiFormsTextarea";
 import OptiFormsSelection from "@/components/blocks/OptiFormsSelection";
 import OptiFormsSubmit from "@/components/blocks/OptiFormsSubmit";
+import ContactFormBlock from "@/components/blocks/ContactFormBlock";
 import CodeBlock from "@/components/demo/CodeBlock";
 import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
@@ -12,146 +14,220 @@ export const metadata: Metadata = {
   title: "Forms Demo",
 };
 
-const FRAGMENT_SNIPPET = `// Native Optimizely Forms types - no contentType() needed, they are pre-registered
-// in the CMS after activation. The SDK auto-generates GraphQL fragments from the
-// schema hints in componentRegistry.ts so all properties are fetched automatically.
+// The shapes below are exactly what Graph returns for a native form. Validators
+// and Options are `type: "json"`, so they arrive as arrays, not strings - and
+// toValidators() returns [] for anything that is not already an array, so a
+// JSON string here would silently disable validation.
+const REQUIRED = [{ type: "RequiredValidator", errorMessage: "This field is required." }];
+const EMAIL_VALIDATORS = [
+  { type: "RequiredValidator", errorMessage: "This field is required." },
+  { type: "EmailValidator", errorMessage: "Please enter a valid email address." },
+];
+const TOPIC_OPTIONS = [
+  { label: "Account help", value: "account" },
+  { label: "Card query", value: "card" },
+  { label: "Mortgage", value: "mortgage" },
+  { label: "Other", value: "other" },
+];
 
-// src/components/blocks/OptiFormsContainer/index.tsx
-export default function OptiFormsContainer(props) {
-  const data = props.content ?? props;
-  return (
-    <section
-      data-form-submit-url={data.SubmitUrl?.default ?? "/api/form-submit"}
-      data-form-success-message={data.SubmitConfirmationMessage}
-    >
-      <h2>{data.Title}</h2>
-      <p>{data.Description}</p>
-    </section>
-  );
-}
+const FIELD_SNIPPET = `// Native Optimizely Forms types - no contentType() needed. The SDK ships their
+// schemas and initForms() registers them, so a field component is only ever the
+// markup: useFormField does the naming, validation and rule visibility.
 
-// src/components/blocks/OptiFormsTextbox/index.tsx
+// src/components/blocks/OptiFormsTextbox/index.tsx - "use client"
 export default function OptiFormsTextbox(props) {
   const data = props.content ?? props;
-  const name = data.Label?.toLowerCase().replace(/\\s+/g, "_") ?? "field";
-  const required = isRequired(data.Validators);  // checks for RequiredValidator in JSON array
-  return (
-    <div>
-      <label htmlFor={name}>{data.Label}{required && " *"}</label>
-      <input id={name} name={name} type="text" placeholder={data.Placeholder} required={required} />
-    </div>
-  );
-}
+  const validators = toValidators(data.Validators);   // Graph returns JSON, not a string
 
-// src/components/blocks/OptiFormsSelection/index.tsx
-// Options is a JSON scalar from Graph - parse it to get the choice array.
-// AllowMultiSelect (boolean) controls single vs. multi-select.
-export default function OptiFormsSelection(props) {
-  const data = props.content ?? props;
-  const items = data.Options ? JSON.parse(data.Options) : [];
-  return (
-    <select multiple={data.AllowMultiSelect ?? false}>
-      {items.map((item, i) => (
-        <option key={i} value={item.value ?? item.label}>{item.label}</option>
-      ))}
-    </select>
-  );
-}
-
-// src/components/blocks/OptiFormsSubmit/index.tsx - "use client"
-// Same DOM-scoped collection as before: scans closest("main") for all inputs,
-// reads data-form-submit-url, validates required fields, POSTs JSON payload.`;
-
-const SUBMIT_SNIPPET = `// OptiFormsSubmit - "use client"
-async function handleClick() {
-  const scope     = ref.current?.closest("main") ?? document.body;
-  const configEl  = scope.querySelector("[data-form-submit-url]");
-  const submitUrl = configEl?.getAttribute("data-form-submit-url") ?? "/api/form-submit";
-  const msg       = configEl?.getAttribute("data-form-success-message");
-
-  // Collect every input, textarea, and select within the same page scope.
-  // Works because Visual Builder renders form elements as flat siblings.
-  const inputs  = scope.querySelectorAll("input, textarea, select");
-  const payload: Record<string, string> = {};
-  let valid = true;
-  inputs.forEach((el) => {
-    if (el.name) payload[el.name] = el.value;
-    if (el.required && !el.value) valid = false;
+  const { fieldProps, isRequired, errors, showErrors, errorProps } = useFormField({
+    content: asFieldContent(data),
+    name: fieldName(data),                            // slugify(getFieldName(data))
+    validators,
   });
 
-  if (!valid) { inputs.forEach((el) => el.required && !el.value && el.reportValidity()); return; }
+  // EmailValidator -> type="email", RegularExpressionValidator -> pattern="..."
+  const { type, ...validationAttrs } = getHtmlValidationAttributes(validators);
 
-  const res = await fetch(submitUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (res.ok) { setStatus("success"); if (msg) setSuccessMessage(msg); }
+  return (
+    <FormElement content={data}>                      {/* dependency rules can hide it */}
+      <label htmlFor={fieldProps.id}>{data.Label}{isRequired && " *"}</label>
+      <input {...fieldProps} {...validationAttrs} type={type ?? "text"} />
+      {showErrors && <p {...errorProps}>{errors[0]}</p>}
+    </FormElement>
+  );
 }`;
+
+const SHELL_SNIPPET = `// src/components/blocks/OptiFormsContainer/FormShell.tsx - "use client"
+//
+// THE TRAP: FormWrapper calls useFormSubmission() but does NOT render
+// FormSubmissionProvider itself. It only wraps its children in the validation and
+// rules providers. Leave the provider out and the form throws on first render.
+
+export default function FormShell(props) {
+  return (
+    <FormSubmissionProvider>      {/* required, and not supplied by FormWrapper */}
+      <FormBody {...props} />
+    </FormSubmissionProvider>
+  );
+}
+
+function FormBody({ action, successMessage, steps, rules, children }) {
+  const { formSuccess, errorMessage } = useFormSubmission();
+
+  // Resolving means success, throwing means failure. That contract is the whole
+  // interface: FormWrapper resets the fields, returns to step 0 and scrolls to
+  // #form-alert on success, and surfaces an Error's message on failure.
+  const submitHandler = async (formData, context) => {
+    const res = await fetch(action, { method: "POST", body: json(formData) });
+    if (!res.ok) throw new Error(\`Submission failed with status \${res.status}\`);
+    trackEvent("mb_form_submit", { ... });
+    identifyCustomer({ email: payload.email });
+  };
+
+  return (
+    <FormWrapper action={action} submitHandler={submitHandler} steps={steps} rules={rules}>
+      {formSuccess ? <SuccessPanel id="form-alert" /> : children}
+      {errorMessage && <p role="alert">{errorMessage}</p>}
+    </FormWrapper>
+  );
+}`;
+
+const CONTAINER_SNIPPET = `// src/components/blocks/OptiFormsContainer/index.tsx - a SERVER component.
+// It keeps its "use cache" Graph self-fetch (a referenced shared Form Container
+// arrives without its scalar props) and renders the client shell around
+// server-rendered children.
+
+// Editors put Next / Previous / Submit wherever they like, often each in its own
+// row. partitionFormNodes pulls them out at any depth and drops the rows left
+// empty behind them, so they lay out as one footer however the form was authored.
+const { content, buttons } = partitionFormNodes(nodes);
+const steps = content.filter(n => n.nodeType === "step");
+
+<FormShell action={...} steps={steps} rules={data.DependencyRules}>
+  {steps.map((step, index) => (
+    // OptimizelyGridSection has NO handler for nodeType "step" - it renders one as
+    // a bare fragment, which is why every step used to show at once. Wrapping is
+    // the consumer's job.
+    <FormStep key={step.key} index={index} node={step}>
+      <OptimizelyGridSection nodes={step.nodes} row={NodeWrapper} column={NodeWrapper} />
+    </FormStep>
+  ))}
+  <OptimizelyGridSection nodes={buttons} row={NodeWrapper} column={NodeWrapper} />
+</FormShell>`;
 
 const REGISTRY_SNIPPET = `// src/lib/optimizely/componentRegistry.ts
 //
-// Native form type schemas live here - NOT in src/components/**/*.tsx -
-// so opti:push (which globs src/components/**/*.tsx) does not try to push
-// them. They are already in the CMS after activation.
+// initForms() is the whole registration: it registers the SDK's own OptiForms type
+// schemas AND maps your components onto them. Nothing here is ever pushed - the
+// types are already in the CMS after activation, and opti:push only globs
+// src/components/**/*.tsx anyway.
+//
+// Import from react/server, NOT the package root. 3.0.0 exported it from both,
+// which made the root entry pull in react (a peer dependency) and broke every
+// standalone npx @optimizely/cms-cli call. 3.0.1 reverted that re-export.
+import { initForms } from "@optimizely/cms-sdk/react/server";
 
-const OptiFormsContainerDataType = contentType({
-  key: "OptiFormsContainerData",
-  baseType: "_component",
-  properties: {
-    Title: { type: "string" }, Description: { type: "string" },
-    SubmitUrl: { type: "url" }, SubmitConfirmationMessage: { type: "string" },
-  },
+initForms({
+  container: OptiFormsContainer,
+  textbox:   OptiFormsTextbox,
+  textarea:  OptiFormsTextarea,
+  selection: OptiFormsSelection,
+  submit:    OptiFormsSubmit,
+  // The SDK registers all ten element types whether or not you map one, and an
+  // unmapped type renders a visible "No component found" box rather than nothing.
+  // So map every one. Range shares the number component: the CMS models both as a
+  // numeric field, and a slider with no configured bounds is worse than an input.
+  number: OptiFormsNumber, range: OptiFormsNumber, url: OptiFormsUrl,
+  choice: OptiFormsChoice, reset: OptiFormsReset,
 });
 
-// OptiFormsSelectionElement - field names differ from what you might guess:
-//   Options (JSON scalar, not Items[])      AllowMultiSelect (not AllowMultipleChoices)
-// Getting these wrong causes ALL pages to 404 - the SDK includes these fields in its
-// auto-generated composition fragment, and Graph returns a schema error for unknown fields.
-const OptiFormsSelectionElementType = contentType({
-  key: "OptiFormsSelectionElement",
-  baseType: "_component",
-  properties: {
-    Label: { type: "string" },
-    AllowMultiSelect: { type: "boolean" },  // NOT AllowMultipleChoices
-    Options: { type: "string" },            // JSON scalar in Graph, NOT an Items array
-    Validators: { type: "string" },
-  },
-});
+// Order does not matter: initForms writes to lists the SDK keeps separate from
+// initContentTypeRegistry / initReactComponentRegistry, so neither wipes the other.
+initContentTypeRegistry([...yourOwnTypes]);
+initReactComponentRegistry({ resolver: yourOwnResolver });`;
 
-initContentTypeRegistry([
-  ...otherTypes,
-  OptiFormsContainerDataType,
-  OptiFormsSelectionElementType,
-  // OptiFormsTextboxElementType, OptiFormsTextareaElementType, OptiFormsSubmitElementType
-]);
+const VALIDATION_SNIPPET = `// @optimizely/cms-sdk/forms/validation - framework-free, usable on the server too.
 
-initReactComponentRegistry({ resolver: {
-  OptiFormsContainerData: OptiFormsContainer,
-  OptiFormsTextboxElement: OptiFormsTextbox,
-  OptiFormsTextareaElement: OptiFormsTextarea,
-  OptiFormsSelectionElement: OptiFormsSelection,
-  OptiFormsSubmitElement: OptiFormsSubmit,
-}});`;
+isFieldRequired(validators)          // folds "requirevalidator" / "requiredvalidator"
+validateField(value, validators)     // -> FormFieldError[], all seven validator types
+getErrorMessages(errors)             // -> the editor's own ErrorMessage strings
+getHtmlValidationAttributes(v)       // -> { required, type: "email", pattern, ... }
+getFieldName(field)                  // SubmissionFieldName || Label - see the note below
+getSelectionOptions(field)           // Options as an array, string form accepted too
+toValidators(value)                  // Validators is unknown JSON; [] for a non-array
+
+// extractValidatorType() lowercases and folds the naming variants, so you never
+// compare raw CMS casing by hand. Verified against live Graph, a seeded form's
+// Validators come back as:
+//   [{ "type": "RequiredValidator", "errorMessage": "This field is required." },
+//    { "type": "EmailValidator",    "errorMessage": "Please enter a valid email address." }]`;
+
+const STEPS_SNIPPET = `// Multi-step forms. The composition nests one level deeper than a grid section:
+//   section(layoutType:"form") > step > row > column > element
+// The SDK probes whether a page holds a form and expands the composition to depth
+// 8 when it does, leaving ordinary compositions at 4. Nothing to configure.
+
+<FormWrapper steps={steps}>        // steps let rules resolve their jump targets
+  <FormStep index={0} node={step}> // inactive steps stay mounted under display:none,
+    ...fields                      // so values survive stepping back and submitting
+  </FormStep>                      // validates every step, not just the visible one
+</FormWrapper>
+
+// Buttons carry no role property. Optimizely Forms has ONE button element for
+// Next, Previous, Submit and Reset, told apart only by the label:
+useFormButton(content)             // "next" -> next, "previous"/"back" -> previous,
+                                   // anything else -> submit (case-insensitive)
+useFormButton(content, { role: "reset" })   // reset has to be passed explicitly
+
+// Dependency rules (OptiFormsDependencyRule) show and hide fields:
+<FormRulesProvider rules={container.DependencyRules}>   // FormWrapper does this
+  <FormElement content={field}>...</FormElement>        // each field opts in
+// A field hidden by a rule is unregistered from validation, so a hidden required
+// field cannot block submission. In edit mode it renders anyway, or an editor
+// would be left with an empty selectable block.`;
 
 const API_ROUTE_SNIPPET = `// src/app/api/form-submit/route.ts
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  // body = { "Full Name": "Jane", "Email Address": "jane@...", "Message": "..." }
-  // Keys are the Label values of each form element (slugified to snake_case).
+  // The SDK's createJsonSubmitHandler posts { targetUrl, payload, formKey } rather
+  // than the field values on their own. The hand-built ContactFormBlock still posts
+  // a flat object, so accept both and unwrap to the same shape.
+  const { body, envelope } = unwrap(await request.json());
+  // body = { full_name: "Jane", email: "jane@...", topic: "account", message: "..." }
 
-  // Log the submission (swap for your CRM / ODP integration here)
   console.log("[Form Submission]", body);
 
-  // To send to Optimizely Data Platform as a customer event:
-  // await fetch("https://api.zaius.com/v3/events", {
-  //   method: "POST",
-  //   headers: { "x-api-key": process.env.OPTIMIZELY_ODP_API_KEY },
-  //   body: JSON.stringify({ type: "form_submit", identifiers: { email: body.email }, data: body }),
-  // });
+  // Forwarded to Optimizely Data Platform as a customer event. Fire and forget:
+  // a failure is warned and the route still returns 200, so a visitor's submission
+  // never fails because ODP is down.
+  await forwardToOdp(body).catch(err => console.warn(err));
 
-  return NextResponse.json({ success: true });
-}`;
+  return NextResponse.json({ success: true, message: "...", received: body });
+}
+
+// forwardToOdp keys on email and fs_user_id - NOT vuid. OdpSetup stitches the FX
+// visitor id into ODP under fs_user_id, so that is where the profile lives.`;
+
+const CUSTOM_FORM_SNIPPET = `// src/components/blocks/ContactFormBlock/ContactForm.tsx - "use client"
+// The hand-built alternative: a normal content type with normal properties, and a
+// field list fixed in code rather than authored in the CMS.
+
+const [values, setValues] = useState({ full_name: "", email: "", message: "" });
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  const res = await fetch(submitUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(values),          // flat body, no envelope
+  });
+  if (res.ok) { trackSubmit(...); identifyCustomer({ email: values.email }); }
+}
+
+// contentType({ key: "ContactFormBlock", properties: {
+//   heading, intro, submitLabel, successMessage, submitUrl
+// }})
+// An editor controls the copy and the endpoint. They cannot add, remove, reorder
+// or validate a field without a developer.`;
 
 const PERSONALIZATION_SNIPPET = `// The submit to ODP to FX loop:
 
@@ -163,30 +239,33 @@ const PERSONALIZATION_SNIPPET = `// The submit to ODP to FX loop:
 // 3. Next request: FX evaluates "cms_personalization" flag for this user
 //    Audience condition: logged_in = true to variation "returning_users"
 
-// 4. [[...slug]]/page.tsx passes variation key to Graph
+// 4. [[...slug]]/page.tsx passes a variation filter to Graph.
+//    include: "ALL", not "SOME" - two bugs in cms-sdk 3.0.x make SOME unusable.
+//    Its metadata probe never forwards the $v1..$vN variables (Graph answers 500),
+//    and includeOriginal never reaches the generated query at all. ALL needs no
+//    variables and returns the base item alongside every variation; the match is
+//    picked client-side, which is where selection always happened anyway.
 const [page] = await client.getContentByPath(url, {
-  variation: {
-    include: "SOME",
-    value: ["returning_users"],
-    includeOriginal: true,
-  },
+  variation: { include: "ALL" },
 });
 
 // 5. Graph returns the CMS variation an editor built in Visual Builder
 //    specifically for logged-in / returning users
 return <OptimizelyComponent content={page} />;`;
 
-
 export default function FormsPage() {
   return (
     <>
       <DemoHero
         title="Forms & Data Capture"
-        description="Native Optimizely Forms - activate in CMS settings, build forms in the form builder, drag them into any Visual Builder experience. Submissions post to your webhook endpoint and feed the personalization loop: capture to ODP profile to FX audience to targeted content."
+        description="Native Optimizely Forms - activate in CMS settings, build forms in the form builder, drag them into any Visual Builder experience. Rendered by the SDK's own form runtime: validation, multi-step and conditional fields come with it. Submissions post to your endpoint and feed the personalization loop: capture to ODP profile to FX audience to targeted content."
       >
         <div className="flex flex-wrap gap-3 mt-8">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-lowest text-brand">
             OptiFormsContainerData · OptiFormsTextboxElement · OptiFormsTextareaElement · OptiFormsSelectionElement · OptiFormsSubmitElement
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
+            @optimizely/cms-sdk/forms/react
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
             /api/form-submit
@@ -203,50 +282,126 @@ export default function FormsPage() {
         <section id="demo">
           <DemoSectionHeading id="demo">Live Demo</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
-            The form below is rendered directly by the five{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">OptiFormsXxx</code> components
-            with static mock data - the same props the SDK passes when serving a real form from Visual Builder.
-            Fill it in and submit: the button collects all fields via DOM query, POSTs to{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">/api/form-submit</code>, and
-            shows the exact payload sent and the API response received.
+            Two ways to put a form on a page, side by side and both live. On the left, a{" "}
+            <strong>native Optimizely Form</strong> rendered by the SDK&apos;s form runtime from the
+            same props Visual Builder passes. On the right, a{" "}
+            <strong>hand-built block</strong> whose fields live in React, not in the CMS. Submit
+            either one: both POST to{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">/api/form-submit</code>,
+            and the native one prints the exact request and response.
           </p>
-          <div className="border border-ghost-border rounded-2xl overflow-hidden bg-surface-lowest">
-            <OptiFormsContainer
-              Title="Contact Support"
-              Description="Send us a message and we'll get back to you within one business day."
-              SubmitUrl={{ default: "/api/form-submit" }}
-              SubmitConfirmationMessage="Thank you! We'll be in touch soon."
-            >
-              <OptiFormsTextbox
-                Label="Full Name"
-                Placeholder="Jane Smith"
-                Validators={JSON.stringify([{ type: "RequiredValidator" }])}
-              />
-              <OptiFormsTextbox
-                Label="Email Address"
-                Placeholder="jane@example.com"
-                Validators={JSON.stringify([{ type: "RequiredValidator" }])}
-              />
-              <OptiFormsSelection
-                Label="Topic"
-                Options={JSON.stringify([
-                  { label: "Account help", value: "account" },
-                  { label: "Card query", value: "card" },
-                  { label: "Mortgage", value: "mortgage" },
-                  { label: "Other", value: "other" },
-                ])}
-              />
-              <OptiFormsTextarea
-                Label="Message"
-                Placeholder="Describe what you need help with..."
-                Validators={JSON.stringify([{ type: "RequiredValidator" }])}
-              />
-              <OptiFormsSubmit
-                Label="Send Message"
-                showDebug
-              />
-            </OptiFormsContainer>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
+            Try submitting the native form empty, or with{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">not-an-email</code> in
+            the email field. The messages you get back are the editor&apos;s own{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">ErrorMessage</code>{" "}
+            strings from the CMS, enforced by{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">validateField()</code>.
+          </p>
+
+          <div className="grid lg:grid-cols-2 gap-6 items-start">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+                Native form - CMS authored, SDK rendered
+              </p>
+              <div className="border border-ghost-border rounded-2xl overflow-hidden bg-surface-lowest">
+                <OptiFormsContainer
+                  Title="Contact Support"
+                  Description="Send us a message and we'll get back to you within one business day."
+                  SubmitUrl={{ default: "/api/form-submit" }}
+                  SubmitConfirmationMessage="Thank you! We'll be in touch soon."
+                  showDebug
+                >
+                  <OptiFormsTextbox
+                    Label="Full Name"
+                    Placeholder="Jane Smith"
+                    AutoComplete="name"
+                    Validators={REQUIRED}
+                  />
+                  <OptiFormsTextbox
+                    Label="Email"
+                    Placeholder="jane@example.com"
+                    AutoComplete="email"
+                    Validators={EMAIL_VALIDATORS}
+                  />
+                  <OptiFormsSelection Label="Topic" Options={TOPIC_OPTIONS} />
+                  <OptiFormsTextarea
+                    Label="Message"
+                    Placeholder="Describe what you need help with..."
+                    Validators={REQUIRED}
+                  />
+                  <OptiFormsSubmit Label="Send Message" />
+                </OptiFormsContainer>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+                Hand-built block - fields fixed in React
+              </p>
+              <div className="border border-ghost-border rounded-2xl overflow-hidden bg-surface-lowest">
+                <ContactFormBlock
+                  heading="Contact Support"
+                  intro="The same three fields, written by hand. An editor owns the copy and the endpoint, not the field list."
+                  submitLabel="Send Message"
+                  successMessage="Thank you! We'll be in touch soon."
+                  submitUrl={{ default: "/api/form-submit" }}
+                />
+              </div>
+            </div>
           </div>
+
+          <div className="overflow-x-auto mt-8">
+            <table className="w-full text-xs border border-ghost-border rounded-xl overflow-hidden">
+              <thead className="bg-surface-low">
+                <tr>
+                  <th className="text-left px-3 py-2 font-semibold text-on-surface">&nbsp;</th>
+                  <th className="text-left px-3 py-2 font-semibold text-on-surface">Native form</th>
+                  <th className="text-left px-3 py-2 font-semibold text-on-surface">Hand-built block</th>
+                </tr>
+              </thead>
+              <tbody className="text-on-surface-variant">
+                <tr className="border-t border-ghost-border">
+                  <td className="px-3 py-2 font-medium text-on-surface">Who owns the fields</td>
+                  <td className="px-3 py-2">An editor, in the CMS form builder</td>
+                  <td className="px-3 py-2">A developer, in JSX</td>
+                </tr>
+                <tr className="border-t border-ghost-border">
+                  <td className="px-3 py-2 font-medium text-on-surface">Validation</td>
+                  <td className="px-3 py-2">Seven validator types, editor-authored messages</td>
+                  <td className="px-3 py-2">Whatever the markup declares</td>
+                </tr>
+                <tr className="border-t border-ghost-border">
+                  <td className="px-3 py-2 font-medium text-on-surface">Multi-step, conditional fields</td>
+                  <td className="px-3 py-2">Built in</td>
+                  <td className="px-3 py-2">Write it yourself</td>
+                </tr>
+                <tr className="border-t border-ghost-border">
+                  <td className="px-3 py-2 font-medium text-on-surface">Where it can go</td>
+                  <td className="px-3 py-2">DynamicExperience only (Visual Builder)</td>
+                  <td className="px-3 py-2">Any content area or composition</td>
+                </tr>
+                <tr className="border-t border-ghost-border">
+                  <td className="px-3 py-2 font-medium text-on-surface">Posted body</td>
+                  <td className="px-3 py-2"><code className="font-mono">{"{ targetUrl, payload, formKey }"}</code></td>
+                  <td className="px-3 py-2">Flat JSON object</td>
+                </tr>
+                <tr className="border-t border-ghost-border">
+                  <td className="px-3 py-2 font-medium text-on-surface">Reach for it when</td>
+                  <td className="px-3 py-2">Marketing needs to change the form without a deploy</td>
+                  <td className="px-3 py-2">The form is part of a product flow with bespoke behaviour</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p className="text-xs text-on-surface-variant mt-4 max-w-3xl leading-relaxed">
+            Both also appear together on a real CMS page:{" "}
+            <Link href="/contact-form" className="text-brand hover:underline">/contact-form</Link>{" "}
+            is a DynamicExperience carrying the hand-built block as a component node and the shared
+            Form Container as a form section, seeded by{" "}
+            <code className="bg-surface-low px-1 rounded font-mono">scripts/seed-contact-form.ts</code>.
+          </p>
         </section>
 
         {/* Activation */}
@@ -264,8 +419,11 @@ export default function FormsPage() {
             <p className="text-xs font-semibold text-on-surface mb-1">Important constraints</p>
             <ul className="text-xs text-on-surface-variant leading-relaxed space-y-1 list-disc list-inside">
               <li>Native forms only work inside <strong>DynamicExperience</strong> (Visual Builder). Dragging a form onto a ContentArea in a traditional page has no effect.</li>
-              <li>Do <strong>not</strong> run <code className="bg-surface px-1 rounded font-mono">opti:push</code> for native form types - they are already in the CMS. The SDK schema hints for fragment generation live in <code className="bg-surface px-1 rounded font-mono">componentRegistry.ts</code>, not in <code className="bg-surface px-1 rounded font-mono">src/components/**/*.tsx</code>.</li>
-              <li><strong>OptiFormsSelectionElement field names are not what you expect.</strong> The Graph schema uses <code className="bg-surface px-1 rounded font-mono">Options</code> (a JSON scalar, not an <code className="bg-surface px-1 rounded font-mono">Items</code> array) and <code className="bg-surface px-1 rounded font-mono">AllowMultiSelect</code> (not <code className="bg-surface px-1 rounded font-mono">AllowMultipleChoices</code>). Registering the wrong field names in <code className="bg-surface px-1 rounded font-mono">componentRegistry.ts</code> breaks the SDK&apos;s auto-generated composition fragment and causes <strong>every page</strong> to return 404 - Graph rejects the unknown fields at schema validation time.</li>
+              <li>The Management API <strong>cannot create</strong> an <code className="bg-surface px-1 rounded font-mono">OptiFormsContainerData</code> block. Author it once by hand in Visual Builder; its composition (the steps, rows and elements) can then be PATCHed by a script, which is what <code className="bg-surface px-1 rounded font-mono">scripts/seed-form-block.ts</code> does.</li>
+              <li>Do <strong>not</strong> run <code className="bg-surface px-1 rounded font-mono">opti:push</code> for native form types - they are already in the CMS. Since cms-sdk 3.0.0 the SDK owns their schemas, so <code className="bg-surface px-1 rounded font-mono">initForms()</code> is the only registration you write.</li>
+              <li><strong>The SDK registers all ten element types, not just the ones you implement.</strong> An element with no component renders a visible <em>&quot;No component found for content type X&quot;</em> box rather than nothing. Map every one.</li>
+              <li><strong>Field names are not what you would guess</strong> - <code className="bg-surface px-1 rounded font-mono">Options</code> is JSON, not an <code className="bg-surface px-1 rounded font-mono">Items</code> array, and the flag is <code className="bg-surface px-1 rounded font-mono">AllowMultiSelect</code>, not <code className="bg-surface px-1 rounded font-mono">AllowMultipleChoices</code>. This used to be a footgun: a hand-declared schema with a wrong field name made the SDK ask Graph for unknown fields, and <strong>every page</strong> 404&apos;d. The SDK now supplies these names, so the risk is gone - but <code className="bg-surface px-1 rounded font-mono">Validators</code> and <code className="bg-surface px-1 rounded font-mono">Options</code> are typed <code className="bg-surface px-1 rounded font-mono">json</code>, so Graph hands them back already parsed, not as strings to <code className="bg-surface px-1 rounded font-mono">JSON.parse</code>.</li>
+              <li><strong>Forms nest one level deeper than an ordinary composition</strong> (section, step, row, column, element). The SDK probes whether the page holds a form and uses depth 8 when it does, leaving ordinary compositions at 4. Nothing to configure, and the hand-patched depth rewrite this app used before 3.0.0 must not come back - it string-matched the SDK&apos;s generated fragment, and 3.0.0 changed that text, so it would silently no-op.</li>
             </ul>
           </div>
         </section>
@@ -274,57 +432,57 @@ export default function FormsPage() {
         <section id="how-it-works">
           <DemoSectionHeading id="how-it-works">2. How It Works</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
-            Native form elements render as flat siblings in a Visual Builder experience. The submit
-            element uses DOM-scoped field collection (the same approach as before) - no React
-            context or prop-drilling needed.
+            The container is a server component, so it keeps its Graph fetch and its cache. Everything
+            that needs state - validation, steps, submission - lives in a client shell it renders
+            around the fields. The fields themselves are client components bound by{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">useFormField</code>.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4">
-                <p className="text-xs font-semibold text-on-surface mb-1">1. OptiFormsContainerData</p>
+                <p className="text-xs font-semibold text-on-surface mb-1">1. OptiFormsContainerData (server)</p>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  The form container. Renders the title and description. Sets{" "}
-                  <code className="bg-surface px-1 rounded font-mono">data-form-submit-url</code> and{" "}
-                  <code className="bg-surface px-1 rounded font-mono">data-form-success-message</code>{" "}
-                  from <code className="bg-surface px-1 rounded font-mono">SubmitUrl.default</code> and{" "}
-                  <code className="bg-surface px-1 rounded font-mono">SubmitConfirmationMessage</code>.
+                  Renders the title and description, and resolves its own scalar properties from
+                  Graph by display name - a shared Form Container referenced in a page composition
+                  arrives with only the section&apos;s structural fields. Splits the composition into
+                  steps and buttons, then hands both to the client shell.
                 </p>
               </div>
               <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4">
-                <p className="text-xs font-semibold text-on-surface mb-1">2. Form element components</p>
+                <p className="text-xs font-semibold text-on-surface mb-1">2. FormShell (client)</p>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  Each native element type renders the appropriate HTML element.{" "}
-                  <code className="bg-surface px-1 rounded font-mono">OptiFormsTextboxElement</code> - input,{" "}
-                  <code className="bg-surface px-1 rounded font-mono">OptiFormsTextareaElement</code> - textarea,{" "}
-                  <code className="bg-surface px-1 rounded font-mono">OptiFormsSelectionElement</code> - select.
-                  The <code className="bg-surface px-1 rounded font-mono">name</code> attribute is derived from{" "}
-                  <code className="bg-surface px-1 rounded font-mono">Label</code> (slugified). Required state
-                  comes from the <code className="bg-surface px-1 rounded font-mono">Validators</code> array.
+                  <code className="bg-surface px-1 rounded font-mono">FormSubmissionProvider</code> wrapping{" "}
+                  <code className="bg-surface px-1 rounded font-mono">FormWrapper</code>. FormWrapper owns
+                  the <code className="bg-surface px-1 rounded font-mono">&lt;form&gt;</code>, the
+                  validation and rules contexts, the step machine and the submit lifecycle.
                 </p>
               </div>
               <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4">
-                <p className="text-xs font-semibold text-on-surface mb-1">3. OptiFormsSubmitElement</p>
+                <p className="text-xs font-semibold text-on-surface mb-1">3. Field components (client)</p>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  A <code className="bg-surface px-1 rounded font-mono">&quot;use client&quot;</code> component.
-                  On click: reads <code className="bg-surface px-1 rounded font-mono">data-form-submit-url</code>,
-                  collects all inputs in the page scope via DOM query, validates required fields, POSTs JSON,
-                  shows success or error state.
+                  Each element type renders its control and spreads{" "}
+                  <code className="bg-surface px-1 rounded font-mono">fieldProps</code> from{" "}
+                  <code className="bg-surface px-1 rounded font-mono">useFormField</code>: name, value,
+                  required, <code className="bg-surface px-1 rounded font-mono">aria-invalid</code> and{" "}
+                  <code className="bg-surface px-1 rounded font-mono">aria-describedby</code> all come
+                  from the hook, wired to the element&apos;s own Validators.
                 </p>
               </div>
               <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4">
                 <p className="text-xs font-semibold text-on-surface mb-1">4. /api/form-submit</p>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  Receives the JSON payload (keys are slugified Label values). In production: forward to
-                  your CRM or Optimizely Data Platform. The demo logs to console and returns{" "}
-                  <code className="bg-surface px-1 rounded font-mono">{"{ success: true }"}</code>.
+                  Unwraps the SDK envelope, logs the payload, and forwards it to Optimizely Data
+                  Platform as a <code className="bg-surface px-1 rounded font-mono">form_submit</code>{" "}
+                  event keyed on <code className="bg-surface px-1 rounded font-mono">email</code> and{" "}
+                  <code className="bg-surface px-1 rounded font-mono">fs_user_id</code>.
                 </p>
               </div>
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Submit element - DOM-scoped collection</p>
-              <CodeBlock code={SUBMIT_SNIPPET} className="h-full" />
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">The client shell</p>
+              <CodeBlock code={SHELL_SNIPPET} className="h-full" />
             </div>
           </div>
         </section>
@@ -335,10 +493,10 @@ export default function FormsPage() {
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
             Native form types are already registered in the CMS after activation - no{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">opti:push</code> needed for them.
-            We provide schema hints to the SDK in{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">componentRegistry.ts</code> so it
-            includes the correct properties in its auto-generated composition GraphQL fragments, then register
-            the React rendering components under each native type key.{" "}
+            Until cms-sdk 3.0.0 you also had to hand-write each type&apos;s property schema so the SDK would
+            include the right fields in its auto-generated composition fragments. The SDK now ships those
+            schemas, so <code className="bg-surface-low px-1 rounded text-xs font-mono">initForms()</code> is
+            the whole registration: it registers the types <em>and</em> maps your components onto them.{" "}
             <a href="https://github.com/episerver/content-js-sdk/blob/main/docs/3-modelling.md" target="_blank" rel="noopener" className="text-brand hover:underline">SDK docs ↗</a>
           </p>
           <CodeBlock code={REGISTRY_SNIPPET} />
@@ -351,36 +509,121 @@ export default function FormsPage() {
             Each native form type maps to a React component in{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">src/components/blocks/OptiFormsXxx/index.tsx</code>.
             Components do <strong>not</strong> call <code className="bg-surface-low px-1 rounded text-xs font-mono">contentType()</code>{" "}
-            - the schema is provided in <code className="bg-surface-low px-1 rounded text-xs font-mono">componentRegistry.ts</code>.
-            Property names are PascalCase to match the native CMS schema (
+            - the SDK ships the schemas. Property names are PascalCase to match the native CMS schema (
             <code className="bg-surface-low px-1 rounded text-xs font-mono">Label</code>,{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">Placeholder</code>,{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">SubmitUrl</code>, etc.).
           </p>
-          <CodeBlock code={FRAGMENT_SNIPPET} />
+          <CodeBlock code={FIELD_SNIPPET} />
+          <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mt-8 mb-2">
+            The container
+          </p>
+          <CodeBlock code={CONTAINER_SNIPPET} />
+        </section>
+
+        {/* Validation */}
+        <section id="validation">
+          <DemoSectionHeading id="validation">5. Validation</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">@optimizely/cms-sdk/forms/validation</code>{" "}
+            carries no React, so a server component can use it too. Validation runs on every keystroke
+            but only <em>shows</em> once a field has been touched or a submit has been attempted, and a
+            failed submit moves focus to the first invalid field - across steps, if it has to.
+          </p>
+          <CodeBlock code={VALIDATION_SNIPPET} />
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4 mt-6 max-w-3xl">
+            <p className="text-xs font-semibold text-on-surface mb-1">
+              getFieldName() returns the RAW label, not a slug
+            </p>
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              <code className="bg-surface px-1 rounded font-mono">getFieldName(field)</code> is{" "}
+              <code className="bg-surface px-1 rounded font-mono">SubmissionFieldName || Label</code>{" "}
+              and nothing else, so a field labelled &quot;Full Name&quot; posts under the key{" "}
+              <code className="bg-surface px-1 rounded font-mono">&quot;Full Name&quot;</code>, spaces and
+              all. This app wraps it as{" "}
+              <code className="bg-surface px-1 rounded font-mono">slugify(getFieldName(field))</code>{" "}
+              in <code className="bg-surface px-1 rounded font-mono">_shared/formFields.ts</code>: the
+              editor-settable Submission Field Name is honoured, but the payload keys stay snake_case,
+              which is what <code className="bg-surface px-1 rounded font-mono">/api/form-submit</code>{" "}
+              and the ODP <code className="bg-surface px-1 rounded font-mono">email</code> identifier are
+              built on. Anything reading the posted payload downstream depends on that choice, so
+              dropping the wrapper is a data-shape change, not a refactor.
+            </p>
+          </div>
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-xl p-4 mt-4 max-w-3xl">
+            <p className="text-xs font-semibold text-on-surface mb-1">
+              One more thing the hook decides for you
+            </p>
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              <code className="bg-surface px-1 rounded font-mono">fieldProps.id</code> is the field{" "}
+              <em>name</em>, not a generated id. That is what lets{" "}
+              <code className="bg-surface px-1 rounded font-mono">aria-describedby</code> point at the
+              right error message, but it also means two fields sharing a label on one page collide.
+              Give one of them a Submission Field Name in the CMS.
+            </p>
+          </div>
+        </section>
+
+        {/* Steps and rules */}
+        <section id="steps-and-rules">
+          <DemoSectionHeading id="steps-and-rules">6. Multi-step and Conditional Fields</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            These are the two things a hand-rolled form never gets around to. Both are authored in the
+            CMS form builder and need no code beyond wrapping each step and each field.
+          </p>
+          <CodeBlock code={STEPS_SNIPPET} />
+          <p className="text-sm text-on-surface-variant mt-4 max-w-3xl leading-relaxed">
+            The one piece the SDK does <strong>not</strong> do for you:{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">OptimizelyGridSection</code>{" "}
+            has no handler for <code className="bg-surface-low px-1 rounded text-xs font-mono">nodeType: &quot;step&quot;</code>{" "}
+            and renders one as a bare fragment, so without an explicit{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">FormStep</code> wrapper every
+            step of a multi-step form shows at once.
+          </p>
         </section>
 
         {/* API route */}
         <section id="submit-handler">
-          <DemoSectionHeading id="submit-handler">5. The Submit Handler</DemoSectionHeading>
+          <DemoSectionHeading id="submit-handler">7. The Submit Handler</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
-            The route receives a flat JSON object keyed by slugified{" "}
-            <code className="bg-surface-low px-1 rounded text-xs font-mono">Label</code> value (the native
-            forms&apos; field identifier). The Submit URL on the form container is set to{" "}
+            The Submit URL on the form container is set to{" "}
             <code className="bg-surface-low px-1 rounded text-xs font-mono">/api/form-submit</code> in the
-            CMS form builder. Swap the console log for any integration - CRM, email service, or
-            Optimizely Data Platform.
+            CMS form builder, and reaches the handler as{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">context.action</code>. Point a
+            submit handler at a <strong>same-origin</strong> route and forward server-side from there:
+            a browser POST straight to an external webhook is a CORS problem, and any credential it
+            needs would be in the page. That is exactly what the SDK&apos;s{" "}
+            <code className="bg-surface-low px-1 rounded text-xs font-mono">createJsonSubmitHandler</code>{" "}
+            is for.
           </p>
           <CodeBlock code={API_ROUTE_SNIPPET} />
         </section>
 
+        {/* Custom form */}
+        <section id="custom-form">
+          <DemoSectionHeading id="custom-form">8. The Hand-built Alternative</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            Native forms are not always the right answer. A form that is part of a product flow -
+            with its own steps, its own server calls, or fields derived from the signed-in user -
+            is usually better as an ordinary block. The trade is editor control: an editor can change
+            this form&apos;s copy and its endpoint, but not its fields.
+          </p>
+          <CodeBlock code={CUSTOM_FORM_SNIPPET} />
+          <p className="text-sm text-on-surface-variant mt-4 max-w-3xl leading-relaxed">
+            Both forms share one endpoint, so the ODP and analytics path downstream is identical. The
+            route accepts the SDK envelope and a flat body alike - see section 7.
+          </p>
+        </section>
+
         {/* Personalization loop */}
         <section id="personalization-loop">
-          <DemoSectionHeading id="personalization-loop">6. Closing the Personalization Loop</DemoSectionHeading>
+          <DemoSectionHeading id="personalization-loop">9. Closing the Personalization Loop</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl leading-relaxed">
             A form submission is the beginning of a customer profile, not the end.
-            Connect the submit handler to Optimizely Data Platform (ODP) and the
-            submission feeds straight into Feature Experimentation audience conditions -
+            The submit handler feeds Optimizely Data Platform (ODP), and the
+            submission then reaches Feature Experimentation audience conditions -
             which the CMS page route already reads to serve targeted content variations.
           </p>
 
@@ -388,7 +631,7 @@ export default function FormsPage() {
             <pre className="text-xs font-mono text-on-surface-variant leading-relaxed">{`User submits form (email captured)
         |
         +-> POST /api/form-submit
-                +-> POST to ODP: { type: "form_submit", identifiers: { email }, data: payload }
+                +-> POST to ODP: { type: "event", action: "form_submit", identifiers: { email }, data: payload }
                         +-> ODP builds customer profile: { email, logged_in: true, ... }
 
 Next page request (same user, identified by cookie)

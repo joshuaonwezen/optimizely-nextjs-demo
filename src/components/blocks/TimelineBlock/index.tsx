@@ -11,7 +11,7 @@ import {
 } from "../_shared/displayTemplateSettings";
 import { extractKey, type ContentRef, orderByKeys } from "../_shared/contentRefs";
 import { BlockHeader } from "../_shared/BlockHeader";
-import { asSdkContent } from "@/components/cms/sdkTypes";
+import { asSdkComponentContent, asSdkContent } from "@/components/cms/sdkTypes";
 
 export const TimelineBlockType = contentType({
   key: "TimelineBlock",
@@ -128,7 +128,7 @@ export default async function TimelineBlock(props: TimelineBlockProps) {
         <ol {...pa("milestones")} className="list-none p-0">
           {milestones.map((m, i) => (
             <BlockErrorBoundary key={i}>
-              <OptimizelyComponent content={asSdkContent(m)} />
+              <OptimizelyComponent content={asSdkComponentContent(m)} />
             </BlockErrorBoundary>
           ))}
         </ol>

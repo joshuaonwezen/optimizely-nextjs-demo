@@ -123,7 +123,9 @@ Three scripts cover the contact-form demos; they are complementary, not alternat
 | `seed-form-block.ts` | Populates a native OptiForms container with form elements (text, email, select, textarea, submit) | A published "Form Container" shared block created manually in the CMS UI (native forms cannot be created via the API) |
 | `seed-contact-form.ts` | Builds the "Contact (Form)" DynamicExperience (`/help/contact-form`, or `/contact-form` when `/help` isn't indexed): the custom `ContactFormBlock` as a root component node plus the native Form Container as a form section | `seed-contact-pages.ts`, `seed-form-block.ts` |
 
-All three run in the runner's optional phase in this order. If no Form Container block exists in the CMS, `seed-form-block.ts` and `seed-contact-form.ts` warn and skip. Native form elements render only because `compositionProperties.ts` deepens the SDK's composition query (a form nests one level deeper than a grid section).
+All three run in the runner's optional phase in this order. If no Form Container block exists in the CMS, `seed-form-block.ts` and `seed-contact-form.ts` warn and skip. A form nests one level deeper than a grid section (`section > step > row > column > element`), but nothing here has to arrange for that: since cms-sdk 3.0.0 the SDK probes whether a page holds a form and expands the composition to depth 8 when it does. The hand-patched depth rewrite `compositionProperties.ts` used to carry was removed then and must not come back - it string-matched the SDK's generated fragment, which 3.0.0 changed, so it would silently no-op.
+
+`seed-form-block.ts` writes each field's `Validators` in PascalCase (`{ Type, ErrorMessage }`); Graph normalises them to the camelCase `{ type, errorMessage }` the SDK's validation helpers expect, so the two agree. Note that a direct Graph field selection returns `Validators` already parsed, while the **SDK's composition fragment returns it as a JSON string** - `readValidators()` in `src/components/blocks/_shared/formFields.ts` exists for exactly that difference.
 
 ### Instances
 

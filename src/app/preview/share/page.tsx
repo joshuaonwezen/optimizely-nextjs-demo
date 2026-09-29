@@ -33,7 +33,7 @@ async function ExternalPreviewPage({ searchParams }: Props) {
     const ver = target.ver ?? (await resolveLatestVersion(target.key, target.loc));
     if (ver) {
       servedVer = ver;
-      content = await getAdminPreviewClient().getPreviewContent({
+      content = await (await getAdminPreviewClient()).getPreviewContent({
         key: target.key,
         loc: target.loc,
         ver,

@@ -46,7 +46,7 @@ async function PreviewPage({ searchParams }: Props) {
   const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
   const serverRenderedAt = new Date().toISOString();
 
-  const client = getPreviewClient();
+  const client = await getPreviewClient();
   let content = null;
   let fetchError: string | undefined;
   try {

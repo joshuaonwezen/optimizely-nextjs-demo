@@ -28,7 +28,7 @@ export interface ButtonProps {
   fullWidth?: boolean;
   pill?: boolean;
   disabled?: boolean;
-  type?: "button" | "submit";
+  type?: "button" | "submit" | "reset";
   onClick?: MouseEventHandler;
   className?: string;
   /** Overrides the default label typeface - e.g. to respect a block's own

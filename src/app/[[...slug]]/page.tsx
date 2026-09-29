@@ -6,7 +6,7 @@ import { OptimizelyComponent, withAppContext } from "@optimizely/cms-sdk/react/s
 import { supportsProductLanding } from "@/lib/optimizely/productLandingInstances";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { getAllPageRoutes } from "@/lib/graphql/queries/GetAllPagePaths";
-import type { SdkContent } from "@/components/cms/sdkTypes";
+import type { SdkComponentContent } from "@/components/cms/sdkTypes";
 import { LOCALE_RE } from "@/lib/localeUrl";
 import { cacheTag } from "next/cache";
 import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
@@ -239,13 +239,30 @@ async function CmsPage({
     : wxDual
       ? wxVariations
       : variationValues;
+  // `include: ALL`, not `SOME`, because of two cms-sdk 3.0.x bugs in `getContentByPath`
+  // (both present in 3.0.0 and 3.0.1, verified against the shipped code):
+  //
+  //   1. With `include: SOME` the SDK emits `$v1..$vN` into its *metadata* probe query
+  //      and uses them in the variation clause, but `getContentMetaData()` builds its
+  //      variables from the path filter only - it never forwards the variation values.
+  //      Graph receives `variation: { include: SOME, value: [null, null] }` and answers
+  //      HTTP 500. `tryUrl` below swallows that as a miss, so the page 404s. It hit the
+  //      homepage and nothing else, because the homepage is the only page this app asks
+  //      for with a variation filter.
+  //   2. `includeOriginal` is accepted by the SDK's own input type but never reaches the
+  //      generated query, so a visitor matching no variation would get no content at all.
+  //
+  // `ALL` needs no variables (bug 1 cannot fire) and returns the base item alongside the
+  // variations (bug 2 is moot). Selection was always ours anyway - see pickMatch, which
+  // filters to `filterValues` so the eligible set stays exactly what SOME used to return.
+  // Revisit if a later release fixes both; `ALL` costs one extra item per variation.
   const variationFilter =
-    filterValues.length > 0
-      ? { variation: { include: "SOME" as const, value: filterValues, includeOriginal: true } }
-      : undefined;
+    filterValues.length > 0 ? { variation: { include: "ALL" as const } } : undefined;
 
   // getContentByPath/getContent are untyped (any); pin down the fields read here.
-  let page: (SdkContent & { _metadata?: { variation?: string | null } | null }) | null = null;
+  let page:
+    | (SdkComponentContent & { _metadata?: { variation?: string | null } | null })
+    | null = null;
 
   // Step 1: URL-based lookup. Graph returns one item for pages with a single
   // published version; for multi-version pages (e.g. homepage) it returns all
@@ -269,10 +286,13 @@ async function CmsPage({
   // The FX/ODP match, else the explicit base item. Preferring the item whose variation is
   // null over items[0] matters now that a filter can return two items: Graph does not
   // guarantee which comes first, so items[0] could be the variant.
+  // Matches on filterValues, not variationValues: the query now asks for ALL variations
+  // (see variationFilter above), so this is what keeps a variation we deliberately did
+  // not ask for - e.g. an FX variation while the WX dual path is active - from winning.
   const pickMatch = (items: Awaited<ReturnType<typeof tryUrl>>) => {
     const variationMatch =
-      variationValues.length > 0
-        ? items.find((item) => variationValues.includes(variationOf(item) ?? ""))
+      filterValues.length > 0
+        ? items.find((item) => filterValues.includes(variationOf(item) ?? ""))
         : null;
     return variationMatch ?? items.find((item) => !variationOf(item)) ?? items[0];
   };

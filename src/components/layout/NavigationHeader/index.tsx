@@ -38,7 +38,8 @@ export default async function NavigationHeader() {
 
   return (
     <header data-component="NavigationHeader" className="sticky top-0 z-50 backdrop-blur-[20px] bg-nav-glass">
-      <nav data-track-event="mb_nav_click" data-track-tags={JSON.stringify({ source: "header" })} className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+      {/* relative: the Developer mega-menu spans this container rather than hanging off its pill. */}
+      <nav data-track-event="mb_nav_click" data-track-tags={JSON.stringify({ source: "header" })} className="relative max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
         <HomeLogoLink logoText={{ primary: siteSettings.logoTextPrimary, secondary: siteSettings.logoTextSecondary }} />
         <NavItems
           tree={tree}

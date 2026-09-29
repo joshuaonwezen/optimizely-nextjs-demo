@@ -1,5 +1,5 @@
 import { GraphClient } from "@optimizely/cms-sdk";
-import { applyDamMetaProbe } from "./graphPreviewPatches";
+import { resolveDamMode } from "./damMode";
 import { rewriteCompositionQuery } from "./compositionProperties";
 
 type RequestFn = (
@@ -27,16 +27,18 @@ let cached: GraphClient | null = null;
 // publication status, with no token expiry. Used only by the signed external
 // preview route (src/app/preview/share); the credentials never leave the server.
 //
-// The SDK's request() hardcodes `Bearer <token>` / `epi-single <key>`
-// (node_modules/@optimizely/cms-sdk/dist/esm/graph/index.js:193). Patching the
+// The SDK's request() hardcodes `Bearer <token>` / `epi-single <key>` (the
+// `Authorization:` line in GraphClient.request, graph/index.js). Patching the
 // instance's request() to force the Basic header lets the whole getPreviewContent
-// pipeline (type resolution, typed query, context) run unchanged over super-user
-// auth. Mirrors the existing instance-patch pattern in previewClient.ts.
-export function getAdminPreviewClient(): GraphClient {
+// pipeline (type resolution, typed query, context) run unchanged over super-user auth.
+//
+// Async because the DAM mode is a constructor-time `fragment` setting - see damMode.ts.
+export async function getAdminPreviewClient(): Promise<GraphClient> {
   if (cached) return cached;
 
   const client = new GraphClient(process.env.OPTIMIZELY_GRAPH_SINGLE_KEY ?? "", {
     graphUrl: process.env.OPTIMIZELY_GRAPH_GATEWAY,
+    fragment: { dam: await resolveDamMode() },
   });
 
   const holder = client as unknown as { request: RequestFn };
@@ -64,7 +66,6 @@ export function getAdminPreviewClient(): GraphClient {
     return json.data ?? {};
   };
 
-  applyDamMetaProbe(client);
   cached = client;
   return client;
 }
@@ -85,7 +86,7 @@ const LATEST_VERSION_QUERY = `query ExternalPreviewLatestVersion($key: String!, 
 // lastModified rather than picking a max. Returns null when the key/locale is
 // unknown to Graph.
 export async function resolveLatestVersion(key: string, loc: string): Promise<string | null> {
-  const client = getAdminPreviewClient();
+  const client = await getAdminPreviewClient();
   const data = (await (client as unknown as { request: RequestFn }).request(
     LATEST_VERSION_QUERY,
     { key, loc },

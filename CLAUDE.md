@@ -82,6 +82,10 @@ Rules this imposes:
 - **No `cookies()`, `headers()` or `draftMode()` inside a cached function** — it throws. Read dynamic data outside and pass it in as an argument.
 - **Args and the return value must be serializable**, and args form the cache key: `fetchNavigationCached(undefined, "en")` keys as `["$undefined","en"]`.
 - **Preview fetches stay outside the boundary.** A draft must never be cached, and a preview token is dynamic data. `getNavigation()` in `GetNavigation.ts` is the reference: the `previewToken` branch calls `request()` directly (with `cache: false` so Graph's CDN is bypassed too), and only the published branch goes through the cached function.
+- **`config()` options are grouped, not flat (cms-sdk 3.0.0).** `apiKey`, `graphUrl` and `userAgent` stay top-level; everything else moved into two groups. `host`, `cache`, `slot` and the new `stored` are per-request options that live under `query` (and can be overridden on any single call); `richTextFormat`, `compositionDepth`, `expandContracts`, `maxThreshold` (was `maxFragmentThreshold`), `dam` and `typeFilter` live under `fragment` and are **fixed for the client's lifetime** — which is why the preview clients are async factories. Both call sites here pass only `apiKey`/`graphUrl`, so neither needed changing.
+  ```ts
+  config({ apiKey, graphUrl, fragment: { richTextFormat: "json", dam: "off" }, query: { cache: true, host } });
+  ```
 - **Use `graphClient()` from `src/lib/optimizely/graphClient.ts`, not `getClient()` directly**, in anything reachable from `layout.tsx`. `getClient()` throws when `config()` has not run, and `config()` lives in `componentRegistry.ts`, which only **page routes** import — so site chrome calling `getClient()` directly throws on every route that skips the registry (all of `/demo/*`) and silently degrades to static fallback data.
 - `revalidateTag` **does** expire `"use cache"` entries, verified against the publish webhook with `NEXT_PRIVATE_DEBUG_CACHE=1` — the single-argument `revalidateTag` cast in `src/app/api/webhooks/route.ts` needed no change.
 
@@ -102,11 +106,47 @@ Rules this imposes:
 - `GetNavigation.ts` — **production**. Fetches the shared `Navigation` block (named `"Navigation Menu"`) by type via `Navigation(limit: 1)`; used by `NavigationHeader`. Use this pattern for new work.
 - `GetNavigationFromHierarchy.ts`, `GetNavigationFromContentType.ts`, `GetNavigationFromFlags.ts` — reference implementations consumed only by the `/demo/navigation` comparison page. Do not wire these into site chrome.
 
-### Variation filter always needs `includeOriginal: true`
-Without it, visitors who don't match any variation key get no content at all. Always set:
+### Use `variation: { include: "ALL" }` and pick client-side — `include: "SOME"` is broken in cms-sdk 3.0.x
+
+Historically the rule was "always set `includeOriginal: true`, or visitors matching no variation key get no content at all". **That no longer works.** Two bugs in `getContentByPath`, both present in 3.0.0 **and 3.0.1** (verified against the shipped `graph/operations.js` + `graph/filters.js`, which are byte-identical between the two releases):
+
+1. With `include: "SOME"` the SDK emits `$v1..$vN` into its **metadata probe** query and uses them in the variation clause, but `getContentMetaData()` builds that query's variables from the path filter alone and never forwards the variation values. Graph receives `variation: { include: SOME, value: [null, null] }` and answers **HTTP 500**. The catch-all's `tryUrl` swallows it as a miss, so the page renders `notFound()`.
+2. **`includeOriginal` never reaches the generated query.** The SDK's own `GraphVariationInput` type accepts it, and `getVariationMode()` ignores it entirely — so the flag the old rule depended on is silently dropped.
+
+It only ever showed up on `/`, because the homepage is the only page this app requests with a variation filter. It also only reproduces **with** a persona: a bare `curl /` sends no `demo_persona`/FX cookies, so `filterValues` is empty, no filter is sent and the page renders fine. **Test variation changes with `-H "Cookie: demo_persona=business"`, never a bare curl.**
+
 ```ts
-variation: { include: "SOME", value: variationKeys, includeOriginal: true }
+// src/app/[[...slug]]/page.tsx
+const variationFilter = filterValues.length > 0 ? { variation: { include: "ALL" as const } } : undefined;
 ```
+
+`ALL` needs no variables (bug 1 cannot fire) and returns the base item alongside every variation (bug 2 is moot). Selection was always ours anyway: `pickMatch` filters the returned items to `filterValues`, so the eligible set is exactly what `SOME` used to return. Cost is one extra item per variation (5 on the homepage).
+
+**This is a workaround, not the intended shape — revert it when a fixed SDK ships.** As of 2026-09-29, **3.0.1 is still `latest`** (published 2026-09-28) and the fix has not landed. Check with `npm view @optimizely/cms-sdk dist-tags`.
+
+**Release notes are not a reliable signal here — check the shipped code.** Both defects are visible in `node_modules` in one look:
+
+```bash
+# Bug 2 is fixed when this prints a hit. In 3.0.0/3.0.1 `includeOriginal`
+# appears in no shipped .js at all, only in the .d.ts.
+grep -rl includeOriginal node_modules/@optimizely/cms-sdk/dist/esm/graph/*.js
+
+# Bug 1 is fixed when getContentMetaData takes the variation values and merges
+# them into `variables`. In 3.0.0/3.0.1 its variables are the path filter + withForms.
+grep -A7 'async function getContentMetaData' \
+  node_modules/@optimizely/cms-sdk/dist/esm/graph/operations.js
+```
+
+**The revert is two edits in `src/app/[[...slug]]/page.tsx`, and they must be made together:**
+
+1. The filter at `variationFilter` goes back to `{ variation: { include: "SOME" as const, value: filterValues, includeOriginal: true } }`, and the long comment above it comes out.
+2. `pickMatch` goes back to matching on `variationValues` instead of `filterValues`. The `filterValues` match exists *only* to compensate for `ALL` returning variations we did not ask for; with `SOME` the server narrows again and matching on `filterValues` would be wrong.
+
+Reverting (2) also clears a known asymmetry: `pickMatch` currently selects on `filterValues` while the step-2 `KEY_QUERY` fallback further down still selects on `variationValues`, so the two paths can disagree while the WX dual path is active.
+
+**Verify the revert with a persona, never a bare curl** — `curl -H "Cookie: demo_persona=business" localhost:3000/`. A bare request leaves `filterValues` empty, sends no filter at all, and renders fine whether or not the SDK is fixed. Check each persona serves distinct content (BASE "Our products"; `business` / `personal` / `mortgages` / `investments` each their own).
+
+**Docs that still teach the old `SOME` + `includeOriginal` pattern were deliberately left alone**, because the revert makes them correct again: `src/app/demo/graph-queries/page.tsx`, `src/app/demo/personalization/page.tsx`, the "Graph then falls back to base via `includeOriginal`" comment earlier in `src/app/[[...slug]]/page.tsx`, and the verification query printed by `scripts/seed-homepage-variations.ts` (that last one is raw Graph, so it still works today — only the SDK path is broken).
 
 ### CMS Variations cannot be CREATED via the API, but CAN be UPDATED once created in the UI
 The `variation` field exists on `ContentMetadata` in the Graph schema, and `_Page` accepts a `VariationInput` filter. But the Management API (`POST /v1/content` and `POST /content/{key}/versions`) silently ignores the `variation` field on write — stored items always have `variation: null`.
@@ -179,7 +219,7 @@ An `_experience` type can declare extra properties of `type: "composition"`, eac
   ```
   So a three-area page is: two custom properties plus the built-in composition as the bottom.
 - **Content is written through v1** as `properties.<name> = { value: <node tree> }`, the same outline node shape as the built-in composition. preview3 reads the value back as `null` and v1 omits it on a draft read — check the published version or Graph. **Never PATCH a content type through preview3**: it silently resets `allowedTypes` to `[]`.
-- **Graph** types the field as `CompositionStructureNode`, but cms-sdk 2.2.0 has no handler for the property type and emits a bare scalar field, which Graph rejects ("must have a selection of subfields"). [compositionProperties.ts](src/lib/optimizely/compositionProperties.ts) patches `GraphClient.prototype.request` to append `{ ...ICompositionNode }`; `adminPreviewClient` overrides `request` on its instance, so it calls `rewriteCompositionQuery` itself. The same patch deepens the SDK's `ICompositionNode` fragment from 4 to 5 levels: a native form container nests section > step > row > column > element, so at the SDK's depth every form element arrived as an empty column.
+- **Graph** types the field as `CompositionStructureNode`, but cms-sdk (through 3.0.0) has no handler for the property type and emits a bare scalar field, which Graph rejects ("must have a selection of subfields"). [compositionProperties.ts](src/lib/optimizely/compositionProperties.ts) patches `GraphClient.prototype.request` to append `{ ...ICompositionNode }`; `adminPreviewClient` overrides `request` on its instance, so it calls `rewriteCompositionQuery` itself. That patch also used to deepen the SDK's `ICompositionNode` fragment from 4 levels to 5, because a native form container nests section > step > row > column > element and every form element otherwise arrived as an empty column. **Removed in cms-sdk 3.0.0**, which handles it natively and better: depth 8 for forms, applied only to pages that actually contain one. Do not reintroduce it — it string-matched the SDK's generated fragment, and 3.0.0 changed that text, so it would silently no-op instead of failing.
 - A permanently deleted content key stays reserved (POST 409 / GET 404), so reshuffling these properties means the seed needs a new key.
 
 ### Product Landing types - rolled out per instance
@@ -213,6 +253,37 @@ validated against what the CMS *already* has, not against types created in the s
 'ArticleListBlock' cannot be used in a 'outline, grid, form' layout composition"* plus *"Unable to find a
 content type"* for the display template, and nothing is created. Push components first, then experiences,
 then display templates, waiting for each to become visible (the import is eventually consistent).
+
+### Native Optimizely Forms — `initForms()` (cms-sdk 3.0.0)
+
+The SDK ships the OptiForms content types and registers their components in one call. `componentRegistry.ts` used to declare five of these type schemas by hand (so `opti:push` would not discover them); that block is gone.
+
+```ts
+// react/server, NOT the package root: 3.0.0 exported it from both, 3.0.1 only from here.
+import { initForms } from "@optimizely/cms-sdk/react/server";
+
+initForms({ container, textbox, textarea, selection, submit, number, range, url, choice, reset });
+```
+
+- **These types are never pushed.** They exist in the CMS once Forms is activated (Settings > Forms Settings > Activate). `initForms` only tells the SDK their property shapes so they appear in generated composition fragments.
+- **Order does not matter.** `initForms` writes to lists the SDK keeps separate from `initContentTypeRegistry`/`initReactComponentRegistry`, specifically so either can run first.
+- **It registers all ten element types.** An element with no component renders a visible `No component found for content type X` box, not nothing — so all ten are mapped. `range` shares the `number` component (the CMS models both as a numeric field, and a slider with no configured bounds is worse than an input).
+- **Composition depth is automatic.** The SDK probes `formsOnPage` and uses nesting depth 8 only for pages that actually hold a form (ordinary compositions stay at 4). The old hand-rolled depth-5 rewrite is deleted — see the `type: "composition"` note above.
+- **`Validators` and `Options` are `type: "json"`**, not `string`, and `AutoComplete` is a string (an HTML autocomplete token), not a boolean.
+
+#### The form runtime — `@optimizely/cms-sdk/forms/react`
+
+The app renders native forms with the SDK's own runtime, not by hand. Adopted 2026-09-29; before that it hand-rolled everything and `EmailValidator`, multi-step and dependency rules all silently did nothing.
+
+- **`FormWrapper` does NOT render `FormSubmissionProvider`.** It calls `useFormSubmission()` but only wraps its children in the validation and rules providers, so leaving the provider out throws at render. `OptiFormsContainer/FormShell.tsx` supplies it. This is the single easiest thing to get wrong.
+- **The container stays a server component.** It keeps its `"use cache"` Graph self-fetch (a referenced shared Form Container arrives without its scalar properties, so they are resolved by `displayName`) and renders `FormShell` — a client component — around server-rendered children. Field components are `"use client"`.
+- **`Validators` arrives as a JSON STRING from the SDK's composition fragment**, even though a direct Graph field selection returns it parsed. The SDK's own `toValidators()` returns `[]` for a non-array, so using it alone silently disables validation on every CMS-authored form while mock props keep working. Always read validators through `readValidators()` in `_shared/formFields.ts`. `getSelectionOptions()` already handles both forms.
+- **Field names go through `slugify(getFieldName(field))`** (`fieldName()` in `_shared/formFields.ts`). `getFieldName()` alone returns `SubmissionFieldName || Label` — the **raw** label, so "Full Name" would post under `"Full Name"`. The wrapper honours an editor's Submission Field Name while keeping the snake_case keys `/api/form-submit` and the ODP `email` identifier are built on. Dropping it is a data-shape change.
+- **`OptimizelyGridSection` has no handler for `nodeType: "step"`** — it renders one as a bare fragment, so without an explicit `FormStep` wrapper every step of a multi-step form shows at once. The container wraps them, and uses `partitionFormNodes()` to pull Next/Previous/Submit out into one footer.
+- **Button roles come from the label**, since Optimizely Forms has one button element for all four: only the exact words `next`, `previous` and `back` navigate (case-insensitive); everything else submits. `reset` has to be passed explicitly as `useFormButton(content, { role: "reset" })`.
+- **`fieldProps.id` is the field name**, not a generated id, which is what makes `aria-describedby` work — but two fields sharing a label on one page will collide. Give one a Submission Field Name.
+- **`/api/form-submit` accepts two body shapes**: the SDK envelope `{ targetUrl, payload, formKey }` and a flat object (the hand-built `ContactFormBlock` still posts flat). It unwraps to the same shape either way.
+- **The hand-built `ContactFormBlock` is kept on purpose** as the demo contrast, rendered beside the native form on `/demo/forms` and on the seeded `/contact-form` experience. It is not dead code.
 
 ### `compositionBehaviors` — elementEnabled vs sectionEnabled
 - `"elementEnabled"` — leaf block, can be placed inside a grid column; cannot have content area (`type: "array"`) properties
@@ -294,6 +365,8 @@ import { RichText } from "@optimizely/cms-sdk/react/richText";
 
 Apply `pa("body")` to the wrapper `<div>`, NOT to the `<RichText>` component itself.
 
+**`body.html` is no longer fetched by default.** cms-sdk 2.2.0 always selected `{ html, json }`; 3.0.0 added `fragment.richTextFormat` and defaults it to `'json'`. Every richText consumer here goes through `CmsRichText`, which prefers `.json`, so this is a payload win and nothing had to change — but a component that reads `.html` needs the client configured with `fragment: { richTextFormat: 'both' }` (or `'html'`), or the field arrives undefined.
+
 ### `opti:push` requires explicit env var injection
 `.env.local` is not auto-loaded by `opti:push`:
 ```bash
@@ -318,11 +391,16 @@ The canonical instance list lives in `src/lib/optimizely/seedInstances.ts`. A sc
 ### New blocks are auto-discovered
 `optimizely.config.mjs` globs `./src/components/**/*.tsx` — no manual config edit needed when adding a new block.
 
-### CLI 2.0.0 — new commands
+### CLI commands
+The CLI is pinned in `package.json` (3.0.1) and every script runs it with `npx --no-install`, i.e. from `node_modules`. **Keep it that way.** In cms-sdk **3.0.0** the package root re-exported `initForms` from `react/server`, which made the root entry import `react` — a *peer* dependency — so a standalone `npx @optimizely/cms-cli` had no react on disk and every command failed to load with `Cannot find package 'react'`. That surfaced as "unknown command `config push`" and aborted every instance's seed on step 1. **3.0.1 reverted that re-export**, so the root is react-free again and `initForms` must be imported from `@optimizely/cms-sdk/react/server`. The `--no-install` pin is still right: it keeps the CLI and the SDK on the same version instead of silently fetching a new major.
+
 - `npm run opti:login` — verify credentials (`optimizely-cms-cli login`)
 - `npx optimizely-cms-cli config pull` — download existing CMS content types and generate TypeScript files (use `--output ./src/content-types --group` to organize by base type)
+- `npx optimizely-cms-cli config delete [file]` — **3.0.0**; deletes the types the config file *declares*. Note this is the opposite of `scripts/cleanup-types.ts`, which deletes types **not** in the config, so it does not replace it.
 - `npx optimizely-cms-cli content delete <Key>` — delete a single content type
 - `npx optimizely-cms-cli danger delete-all-content-types` — ⚠️ destructive, clears all user-defined types
+
+**3.0.0 validates type constraints at push time.** Every `content`/`contentReference` property (and every `array` whose `items` is one) must declare exactly one of `contentType`, a non-empty `allowedTypes`, or a non-empty `restrictedTypes`. An empty list and no list at all are both rejected, with nothing pushed — the stated reason is that an unbounded property "causes excessive GraphQL fragment generation at runtime". This is a `--dryRun`-visible error, so dry-run a push after touching any reference property.
 
 ### `indexingType` — Graph indexing rules
 
@@ -473,7 +551,7 @@ Lets editors share a link that opens a **draft** in the front end for people wit
 
 - The CMS `preview_token` is a ~5 min JWT and Optimizely provides **no way to extend it or mint a stable one**. Instead the draft is fetched with **App Key + Secret Basic auth** (`OPTIMIZELY_APP_KEY` / `_SECRET`) — Optimizely Graph treats that as super-user and returns content of any publish status, with no expiry. Those creds stay server-side only.
 - The shareable URL carries **no Graph credential** — just `key` / `loc` / optional `ver` plus an HMAC-SHA256 `sig` signed with `OPTIMIZELY_PREVIEW_SECRET` (`src/lib/preview/shareLink.ts`). The signature only stops a recipient from editing the query string to pull other content keys. **Links never expire; rotating `OPTIMIZELY_PREVIEW_SECRET` is the kill switch** for every outstanding link.
-- `src/lib/optimizely/adminPreviewClient.ts` is a `GraphClient` with its private `request()` monkey-patched to force the Basic header (same instance-patch pattern as `previewClient.ts`), so the full `getPreviewContent` pipeline runs unchanged over super-user auth. Shared DAM re-probe lives in `graphPreviewPatches.ts`.
+- `src/lib/optimizely/adminPreviewClient.ts` is a `GraphClient` with its `request()` replaced on the instance to force the Basic header, so the full `getPreviewContent` pipeline runs unchanged over super-user auth. Both it and `previewClient.ts` are **async factories**: the DAM mode is a constructor-time `fragment` setting, so it has to be resolved before the client exists. See `damMode.ts`.
 - `src/app/preview/share/page.tsx` renders read-only — no `communicationinjector.js`, no `NextPreviewComponent`, no debug overlay. Covered by the existing `/preview` middleware exemption.
 - `src/components/preview/PreviewToolbar.tsx` is one client component: a **Share link** button (one click → `copyToClipboard()` copies the signed pinned link; falls back to `execCommand` because the CMS iframe withholds the `clipboard-write` permission) and a diagnostics pill whose panel expands **inside the bar**. It is **portalled into `<div id="preview-topbar-slot">`** (declared first in `src/app/layout.tsx`, so the bar sits above the site nav at the very top). Nothing is `fixed`/`sticky` (both strand at the document bottom inside the CMS preview iframe) and nothing floats over the content. Visitor chrome is stripped on `/preview`: `AudienceSwitcher` via `DemoToolbar`, the FX/ODP banners via `HideOnPreview` in the layout.
 
@@ -690,7 +768,7 @@ If a block has more than one visual layout (e.g. card vs minimal, horizontal vs 
 
 Registering the block module is enough: every block renders all of its own templates (branching on `props.displayTemplateKey`), so `componentRegistry.ts` has no per-tag entries.
 
-**SDK 2.2.0 never passes `displayTemplateKey` to a component** - `OptimizelyComponent` forwards only `content` and `displaySettings`. The key is injected by the wrappers in `src/components/experience/CompositionExperience.tsx`: `NodeWrapper` (every `OptimizelyComposition`) and `GridComponentWrapper` (`OptimizelyGridSection` in `BlankSection.tsx`). Any new composition renderer must pass one of them as `ComponentWrapper`, or every variant silently renders as the default. Until 2026-09-17 this was missing and no variant had ever rendered on a CMS page.
+**The SDK never passes `displayTemplateKey` to a component** (still true in 3.0.0) - `OptimizelyComponent` forwards only `content`, `displaySettings` and `tag`. The key is injected by the wrappers in `src/components/experience/CompositionExperience.tsx`: `NodeWrapper` (every `OptimizelyComposition`) and `GridComponentWrapper` (`OptimizelyGridSection` in `BlankSection.tsx`). Any new composition renderer must pass one of them as `ComponentWrapper`, or every variant silently renders as the default. Until 2026-09-17 this was missing and no variant had ever rendered on a CMS page.
 
 Only add a template when the **layout** changes (different markup/structure). A variant that only changes one style - alignment, a background, rounded corners, width - is a setting on the default template instead. Duplicated templates with identical settings were folded into settings on 2026-09-17 (SectionHeading Centered, FeatureItem Outlined/Brand, OutcomeItem Brand, Image Rounded, Text Narrow, LogoGrid Color, ProductCard Featured).
 

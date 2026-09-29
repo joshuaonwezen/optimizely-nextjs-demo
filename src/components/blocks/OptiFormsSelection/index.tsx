@@ -1,84 +1,85 @@
-import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
-import { useId } from "react";
-import { isRequired, slugify } from "../_shared/formFields";
+"use client";
+
+import {
+  FormElement,
+  getPreviewUtils,
+  useFormField,
+} from "@optimizely/cms-sdk/forms/react";
+import { getSelectionOptions } from "@optimizely/cms-sdk/forms/validation";
+import { asFieldContent, fieldName, readValidators } from "../_shared/formFields";
+import { FieldChrome, INPUT_CLASS, INVALID_CLASS } from "../_shared/formFieldUi";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 
-const INPUT_CLASS =
-  "w-full px-4 py-3 rounded-lg text-sm outline-none transition-shadow focus:ring-2 focus:ring-brand/30 bg-surface-lowest text-on-surface border border-ghost-border";
-
-interface SelectionItem {
-  label?: string | null;
-  value?: string | null;
-  selected?: boolean | null;
-}
-
+// Validators and Options are `type: "json"`. A direct Graph field selection
+// returns them parsed, but the SDK's composition fragment returns them as JSON
+// STRINGS, which is how a CMS-authored form arrives. readValidators() and
+// getSelectionOptions() both accept either form.
 interface OptiFormsSelectionData {
   Label?: string | null;
-  Validators?: string | null;
+  SubmissionFieldName?: string | null;
+  Validators?: unknown;
   AllowMultiSelect?: boolean | null;
-  Options?: string | null;
+  Options?: unknown;
 }
 
 type OptiFormsSelectionProps = OptiFormsSelectionData & {
   content?: OptiFormsSelectionData;
 };
 
-function parseOptions(raw?: unknown): SelectionItem[] {
-  if (!raw) return [];
-  // Graph returns Options as a JSON value (array); demo mock data may pass a string.
-  let parsed: unknown = raw;
-  if (typeof raw === "string") {
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return [];
-    }
-  }
-  return Array.isArray(parsed) ? (parsed as SelectionItem[]) : [];
-}
-
 export default function OptiFormsSelection(props: OptiFormsSelectionProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(asSdkContent(data));
-  const name = slugify(data.Label);
-  const required = isRequired(data.Validators);
-  const items = parseOptions(data.Options);
-  // Not derived from the label: two fields with the same label would share an id.
-  const id = useId();
+  const items = getSelectionOptions(data);
   const multiple = data.AllowMultiSelect ?? false;
-  const optionValue = (item: SelectionItem) => item.value ?? item.label ?? "";
-  // `selected` is applied through the <select>'s defaultValue; React ignores
-  // per-<option> defaults.
-  const selectedValues = items.filter((item) => item.selected).map(optionValue);
-  const defaultValue = multiple ? selectedValues : (selectedValues[0] ?? "");
+  const preselected = items.filter((item) => item.selected).map((item) => item.value ?? item.label);
+
+  const { fieldProps, isRequired, errors, showErrors, errorProps, setValue } =
+    useFormField<HTMLSelectElement>({
+      content: asFieldContent(data),
+      name: fieldName(data),
+      validators: readValidators(data.Validators),
+      defaultValue: (multiple ? preselected.join(",") : preselected[0]) ?? "",
+    });
+
+  // A multi-select reports every selected option; useFormField holds one string,
+  // so they are joined for validation and split back for the control's value.
+  const value = fieldProps.value;
+  const selected = multiple ? value.split(",").filter(Boolean) : value;
+  const labelFor = fieldProps.name;
 
   return (
-    <div data-component="OptiFormsSelection" className="max-w-2xl mx-auto px-8 py-3">
-      {data.Label && (
-        <label
-          {...pa("Label")}
-          htmlFor={id}
-          className="block text-sm font-medium mb-2 text-on-surface"
-        >
-          {data.Label}
-          {required && <span className="text-error"> *</span>}
-        </label>
-      )}
-      <select
-        id={id}
-        name={name}
-        required={required}
-        multiple={multiple}
-        defaultValue={defaultValue}
-        className={INPUT_CLASS}
+    <FormElement content={asSdkContent(data)}>
+      <FieldChrome
+        component="OptiFormsSelection"
+        label={data.Label}
+        htmlFor={labelFor}
+        required={isRequired}
+        labelAttrs={pa("Label")}
+        errors={errors}
+        showErrors={showErrors}
+        errorProps={errorProps}
       >
-        {!multiple && <option value="">Select...</option>}
-        {items.map((item, idx) => (
-          <option key={idx} value={optionValue(item)}>
-            {item.label ?? item.value ?? ""}
-          </option>
-        ))}
-      </select>
-    </div>
+        <select
+          {...fieldProps}
+          multiple={multiple}
+          value={selected}
+          onChange={(event) =>
+            setValue(
+              multiple
+                ? Array.from(event.target.selectedOptions, (option) => option.value).join(",")
+                : event.target.value
+            )
+          }
+          className={`${INPUT_CLASS} ${showErrors ? INVALID_CLASS : ""}`}
+        >
+          {!multiple && <option value="">Select...</option>}
+          {items.map((item, idx) => (
+            <option key={idx} value={item.value ?? item.label ?? ""}>
+              {item.label ?? item.value ?? ""}
+            </option>
+          ))}
+        </select>
+      </FieldChrome>
+    </FormElement>
   );
 }

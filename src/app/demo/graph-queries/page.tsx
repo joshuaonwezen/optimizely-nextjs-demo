@@ -44,8 +44,8 @@ query GetPage($url: String!, $variation: VariationInput) {
         composition {
           ... on CompositionStructureNode {
             nodes {
-              ... on CompositionElementNode {
-                element {
+              ... on CompositionComponentNode {
+                component {
                   ... on HeroBlock {
                     headline subheadline ctaText ctaLink
                     backgroundImage { _metadata { url { default } } }

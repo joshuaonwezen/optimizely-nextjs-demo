@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getDemoCategories } from "@/lib/getDemoLinks";
+import { getDemoCategories, byGroup } from "@/lib/getDemoLinks";
+import type { DemoLink } from "@/lib/getDemoLinks";
 
 export const metadata: Metadata = {
   title: "Developer Demos",
@@ -64,6 +65,40 @@ const LINK_HOVER: Record<string, string> = {
   Architecture:       "hover:border-outline-variant hover:bg-surface-low/50",
   AI:                 "hover:border-tertiary/30 hover:bg-tertiary/10/50",
 };
+
+function DemoCard({ link, categoryLabel }: { link: DemoLink; categoryLabel: string }) {
+  return (
+    <Link
+      href={link.href}
+      className={`group block bg-surface-lowest border border-ghost-border rounded-2xl p-5 transition-all duration-200 ${LINK_HOVER[categoryLabel]}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-display text-base font-semibold text-on-surface group-hover:text-brand transition-colors leading-tight mb-1">
+            {link.label}
+          </p>
+          <p className="text-sm text-on-surface-variant leading-relaxed">
+            {link.description}
+          </p>
+        </div>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          className="shrink-0 mt-0.5 text-on-surface-variant group-hover:text-brand group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
+        >
+          <path d="M3 13L13 3M13 3H7M13 3V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <div className="mt-4 pt-4 border-t border-ghost-border">
+        <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border ${CATEGORY_COLORS[categoryLabel]}`}>
+          {categoryLabel}
+        </span>
+      </div>
+    </Link>
+  );
+}
 
 export default async function DemoIndexPage({
   searchParams,
@@ -182,39 +217,21 @@ export default async function DemoIndexPage({
               </div>
             </div>
 
-            {/* Demo cards */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {category.links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`group block bg-surface-lowest border border-ghost-border rounded-2xl p-5 transition-all duration-200 ${LINK_HOVER[category.label]}`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-display text-base font-semibold text-on-surface group-hover:text-brand transition-colors leading-tight mb-1">
-                        {link.label}
-                      </p>
-                      <p className="text-sm text-on-surface-variant leading-relaxed">
-                        {link.description}
-                      </p>
-                    </div>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      className="shrink-0 mt-0.5 text-on-surface-variant group-hover:text-brand group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
-                    >
-                      <path d="M3 13L13 3M13 3H7M13 3V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+            {/* Demo cards, split by sub-group where the category uses them */}
+            <div className="space-y-8">
+              {byGroup(category.links).map(([group, links]) => (
+                <div key={group}>
+                  {group && (
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-3">
+                      {group}
+                    </p>
+                  )}
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {links.map((link) => (
+                      <DemoCard key={link.href} link={link} categoryLabel={category.label} />
+                    ))}
                   </div>
-                  <div className="mt-4 pt-4 border-t border-ghost-border">
-                    <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border ${CATEGORY_COLORS[category.label]}`}>
-                      {category.label}
-                    </span>
-                  </div>
-                </Link>
+                </div>
               ))}
             </div>
           </section>

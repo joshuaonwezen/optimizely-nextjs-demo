@@ -11,7 +11,7 @@ import {
 } from "../_shared/displayTemplateSettings";
 import { extractKey, orderByKeys, type ContentRef, type ImageRef } from "../_shared/contentRefs";
 import { BlockHeader } from "../_shared/BlockHeader";
-import { asSdkContent } from "@/components/cms/sdkTypes";
+import { asSdkComponentContent, asSdkContent } from "@/components/cms/sdkTypes";
 
 export const TeamGridBlockType = contentType({
   key: "TeamGridBlock",
@@ -127,7 +127,7 @@ export default async function TeamGridBlock(props: TeamGridBlockProps) {
         <div {...pa("members")} className={`grid grid-cols-1 ${columnsClass(ds, "sm:grid-cols-2 md:grid-cols-3")} gap-6`}>
           {members.map((m, i) => (
             <BlockErrorBoundary key={i}>
-              <OptimizelyComponent content={asSdkContent(m)} />
+              <OptimizelyComponent content={asSdkComponentContent(m)} />
             </BlockErrorBoundary>
           ))}
         </div>

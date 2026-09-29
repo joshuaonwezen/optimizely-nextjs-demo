@@ -7,7 +7,7 @@ import { getContentTaxonomy } from "@/lib/graphql/queries/GetTaxonomyTerms";
 import { publicCategoryUris, resolveCategoryUris, termLabel, toTermKey } from "@/lib/taxonomy";
 import ReadCategorySignal from "@/components/personalization/ReadCategorySignal";
 import { extractKey, type ContentRef, type ImageRef, resolveImageUrl } from "@/components/blocks/_shared/contentRefs";
-import { asSdkContent } from "@/components/cms/sdkTypes";
+import { asSdkComponentContent, asSdkContent } from "@/components/cms/sdkTypes";
 
 interface OutcomeData {
   __typename?: string;
@@ -154,7 +154,7 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
       {outcomes.length > 0 && (
         <section className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12 py-8 border-y border-ghost-border">
           {outcomes.map((o, i) => (
-            <OptimizelyComponent key={i} content={asSdkContent(o)} />
+            <OptimizelyComponent key={i} content={asSdkComponentContent(o)} />
           ))}
         </section>
       )}
@@ -179,7 +179,7 @@ export default async function CaseStudyPage({ content }: { content: CaseStudyCon
 
       {testimonial && (
         <section className="my-12">
-          <OptimizelyComponent content={asSdkContent(testimonial)} />
+          <OptimizelyComponent content={asSdkComponentContent(testimonial)} />
         </section>
       )}
 
