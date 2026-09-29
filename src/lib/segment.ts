@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { readCookie } from "@/lib/tracking/cookies";
 import { DEMO_PERSONA_COOKIE } from "@/lib/optimizely/cookieNames";
+import { expireCookieStrings, scopedCookieStrings } from "@/lib/optimizely/cookieScope";
 import { LOCALE_RE } from "@/lib/localeUrl";
 
 // Browsing-derived audience segment. Reuses the existing `persona` FX attribute
@@ -76,6 +77,13 @@ export function personaFromPath(pathname: string | null | undefined): Persona | 
 // mirrored from it so the edge middleware / server can read it. The cookie is
 // session-scoped (no Max-Age) to match sessionStorage - a new browser session
 // resets to new_visitor.
+//
+// Every write goes through cookieScope.ts, domain-wide with the host-only duplicate
+// purged - the same treatment the visitor id gets, and for the same reason. Writing
+// this host-only was a real bug: a `demo_persona` already scoped to the registrable
+// domain could not be overwritten, so the browser sent both, the server read the
+// stale one, and the switcher kept showing the persona you picked (the panel reads
+// sessionStorage, not the cookie) while the page never changed.
 const SEGMENT_STORAGE_KEY = "mb_segment";
 // Exported so other client subscribers (useVisitorProfile) can revalidate when the
 // persona changes, which happens client-side with no server round trip.
@@ -85,6 +93,15 @@ const listeners = new Set<() => void>();
 
 function isPersona(value: string): value is Persona {
   return (PERSONA_SEGMENTS as readonly string[]).includes(value);
+}
+
+// No Max-Age: a session cookie, matching sessionStorage.
+function writePersonaCookie(persona: Persona): void {
+  for (const cookie of scopedCookieStrings(DEMO_PERSONA_COOKIE, persona, {
+    host: window.location.hostname,
+  })) {
+    document.cookie = cookie;
+  }
 }
 
 export function readSegment(): Persona {
@@ -109,7 +126,7 @@ export function writeSegment(persona: Persona): boolean {
     /* storage unavailable */
   }
   // Session cookie (no Max-Age) so the middleware reads it on the next request.
-  document.cookie = `demo_persona=${persona}; Path=/; SameSite=Lax`;
+  writePersonaCookie(persona);
   listeners.forEach((l) => l());
   window.dispatchEvent(new CustomEvent(SEGMENT_EVENT, { detail: persona }));
   return true;
@@ -126,7 +143,9 @@ export function clearSegment(): void {
   } catch {
     /* storage unavailable */
   }
-  document.cookie = "demo_persona=; Path=/; SameSite=Lax; Max-Age=0";
+  for (const cookie of expireCookieStrings(DEMO_PERSONA_COOKIE, window.location.hostname)) {
+    document.cookie = cookie;
+  }
   listeners.forEach((l) => l());
   window.dispatchEvent(new CustomEvent(SEGMENT_EVENT, { detail: "new_visitor" }));
 }
@@ -145,9 +164,7 @@ export function reconcileSegment(): void {
     /* storage unavailable */
   }
   if (stored && isPersona(stored)) {
-    if (readCookie(DEMO_PERSONA_COOKIE) !== stored) {
-      document.cookie = `demo_persona=${stored}; Path=/; SameSite=Lax`;
-    }
+    if (readCookie(DEMO_PERSONA_COOKIE) !== stored) writePersonaCookie(stored);
     return;
   }
   const cookie = readCookie(DEMO_PERSONA_COOKIE);
