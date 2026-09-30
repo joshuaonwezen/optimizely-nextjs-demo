@@ -1,6 +1,7 @@
 import { contentType } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { getFooter, type FooterData } from "@/lib/graphql/queries/GetFooter";
+import { getPreviewNavTree } from "@/lib/graphql/queries/GetPreviewNavTree";
 import { getSupportedLocales } from "@/lib/graphql/queries/GetSupportedLocales";
 import { NavigationItemType } from "@/components/blocks/NavigationItemBlock";
 import { FooterCtaClient } from "./FooterCtaClient";
@@ -40,10 +41,14 @@ type FooterPreviewProps = FooterPreviewData & { content?: FooterPreviewData };
 
 // Editor preview for the Footer block: the tagline plus each link column
 // rendered as it appears at the bottom of the live site.
-export function FooterPreview(props: FooterPreviewProps) {
+//
+// The links under each column are nested NavigationItems, which the preview
+// content does not expand - getPreviewNavTree() re-reads them.
+export async function FooterPreview(props: FooterPreviewProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as Parameters<typeof getPreviewUtils>[0]);
-  const columns = (data.columns ?? []).filter((c): c is RawFooterColumn => Boolean(c));
+  const expanded = (await getPreviewNavTree("columns")) ?? data.columns;
+  const columns = (expanded ?? []).filter((c): c is RawFooterColumn => Boolean(c));
 
   return (
     <div data-component="FooterPreview" className="bg-surface-low min-h-full p-8">

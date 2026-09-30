@@ -1,5 +1,6 @@
 import { contentType } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
+import { getPreviewNavTree } from "@/lib/graphql/queries/GetPreviewNavTree";
 
 export const NavigationItemType = contentType({
   key: "NavigationItem",
@@ -44,8 +45,9 @@ export const NavigationType = contentType({
   },
 });
 
-// Raw NavigationItem shape as the preview route receives it from Graph:
-// children are recursively expanded, href carries base metadata (URL only).
+// Raw NavigationItem shape. The preview route's own content only carries the
+// fields of the item itself - nested items arrive as empty shells - so both
+// previews re-read the subtree through getPreviewNavTree().
 interface RawNavItem {
   label?: string | null;
   description?: string | null;
@@ -135,11 +137,12 @@ function NavTreeList({ nodes }: { nodes: PreviewNavNode[] }) {
 type NavigationItemPreviewProps = RawNavItem & { content?: RawNavItem };
 
 // Editor preview for a single NavigationItem: its fields plus the full subtree
-// of child items (already expanded in the preview data).
-export function NavigationItemPreview(props: NavigationItemPreviewProps) {
+// of child items.
+export async function NavigationItemPreview(props: NavigationItemPreviewProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as PreviewContent);
-  const node = toPreviewNode(data);
+  const children = (await getPreviewNavTree("children")) ?? data.children;
+  const node = toPreviewNode({ ...data, children });
 
   return (
     <div
@@ -192,11 +195,12 @@ type NavigationBlockProps = NavigationData & { content?: NavigationData };
 
 // Editor preview for the Navigation block: a realistic site header bar with
 // every dropdown panel rendered open, so the whole tree is visible at once.
-export function NavigationBlock(props: NavigationBlockProps) {
+export async function NavigationBlock(props: NavigationBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(data as PreviewContent);
-  const items: PreviewNavNode[] = Array.isArray(data.navItems)
-    ? data.navItems.filter((n): n is RawNavItem => Boolean(n)).map(toPreviewNode)
+  const navItems = (await getPreviewNavTree("navItems")) ?? data.navItems;
+  const items: PreviewNavNode[] = Array.isArray(navItems)
+    ? navItems.filter((n): n is RawNavItem => Boolean(n)).map(toPreviewNode)
     : [];
 
   return (
