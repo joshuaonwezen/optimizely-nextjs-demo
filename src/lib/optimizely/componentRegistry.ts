@@ -35,6 +35,7 @@ import * as TimelineMilestoneBlockModule from "@/components/blocks/TimelineMiles
 import * as TimelineBlockModule from "@/components/blocks/TimelineBlock";
 import * as TeamMemberBlockModule from "@/components/blocks/TeamMemberBlock";
 import * as TeamGridBlockModule from "@/components/blocks/TeamGridBlock";
+import * as ConsultantListBlockModule from "@/components/blocks/ConsultantListBlock";
 import * as ComparisonTableBlockModule from "@/components/blocks/ComparisonTableBlock";
 import * as CalloutBlockModule from "@/components/blocks/CalloutBlock";
 import * as RawHtmlBlockModule from "@/components/blocks/RawHtmlBlock";
@@ -137,6 +138,7 @@ const BLOCK_MODULES = [
   TimelineBlockModule,
   TeamMemberBlockModule,
   TeamGridBlockModule,
+  ConsultantListBlockModule,
   ComparisonTableBlockModule,
   CalloutBlockModule,
   RawHtmlBlockModule,

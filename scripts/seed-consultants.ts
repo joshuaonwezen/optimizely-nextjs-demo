@@ -1,5 +1,16 @@
 import { config } from "dotenv";
-import { createContent, discoverRootContainer, getManagementToken, CONTENT_ENDPOINT, apiFetch } from "./_shared";
+import {
+  createContent,
+  discoverRootContainer,
+  ensureSubfolder,
+  getManagementToken,
+  patchPublishedPageProperties,
+  stableKey,
+  CONTENT_ENDPOINT,
+  GRAPH_ENDPOINT,
+  SINGLE_KEY,
+  apiFetch,
+} from "./_shared";
 
 config({ path: ".env.local" });
 
@@ -58,6 +69,31 @@ const CONSULTANTS = [
     routeSegment: "priya-sharma",
   },
 ];
+
+/**
+ * Current mainContent references on the hub page, excluding a given key (so a
+ * re-seed doesn't duplicate the list block it's about to re-add).
+ */
+async function getMainContentKeys(pageKey: string, excludeKey: string): Promise<string[]> {
+  const query = `query MainContent($key: String!) {
+    TraditionalPage(where: { _metadata: { key: { eq: $key } } }, limit: 1) {
+      items { mainContent { _metadata { key } } }
+    }
+  }`;
+  const res = await apiFetch(GRAPH_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `epi-single ${SINGLE_KEY}` },
+    body: JSON.stringify({ query, variables: { key: pageKey } }),
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as {
+    data?: { TraditionalPage?: { items?: Array<{ mainContent?: Array<{ _metadata?: { key?: string } }> }> } };
+  };
+  const items = data.data?.TraditionalPage?.items?.[0]?.mainContent ?? [];
+  return items
+    .map((i) => i._metadata?.key)
+    .filter((k): k is string => Boolean(k) && k !== excludeKey);
+}
 
 async function requestApproval(key: string, label: string): Promise<void> {
   const token = await getManagementToken();
@@ -310,6 +346,38 @@ async function main() {
     // Submit for approval - triggers the CMS workflow and sends the notification email
     await requestApproval(c.key, c.name);
   }
+
+  // Part 5 - list every consultant on the hub page itself. ConsultantListBlock
+  // queries Graph for all ConsultantPage items at render time (no manual
+  // references to maintain as consultants are added/removed), so placing it
+  // once on the hub's Main Content is all this needs.
+  console.log("\n--- Part 5: Consultant List block on the hub page ---");
+  const blocksContainer = await ensureSubfolder("editorial");
+  const listBlockKey = stableKey("mb-consultants", "list-block");
+  await createContent(
+    {
+      key: listBlockKey,
+      contentType: "ConsultantListBlock",
+      container: blocksContainer,
+      locale: "en",
+      status: "published",
+      displayName: "Consultant List - Our Consultants",
+      properties: {
+        heading: "Meet our consultants",
+        subheading: "Specialists across mortgages, business banking, investments, and more.",
+      },
+    },
+    "Consultant List block",
+  );
+
+  const existingMainContent = await getMainContentKeys(HUB_KEY, listBlockKey);
+  await patchPublishedPageProperties(HUB_KEY, {
+    mainContent: [
+      { reference: `cms://content/${listBlockKey}` },
+      ...existingMainContent.map((k) => ({ reference: `cms://content/${k}` })),
+    ],
+  });
+  console.log(`  [patched] Consultants hub mainContent -> ConsultantListBlock + ${existingMainContent.length} existing block(s)`);
 
   console.log("\n=== Done ===");
   console.log(`\nConsultant pages seeded under /en/consultants/`);

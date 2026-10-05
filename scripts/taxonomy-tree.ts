@@ -188,6 +188,13 @@ const TOPIC_RULES: Array<{ match: RegExp; terms: string[] }> = [
   { match: /\/help\//, terms: ["support"] },
   { match: /\/about\//, terms: ["company"] },
   { match: /pricing/, terms: ["rates_and_fees"] },
+  // Bulk-seeded content (scripts/seed-bulk-content.ts). Without these, every
+  // /insights/articles/, /consultants/ and /blogs/ page falls through
+  // termsForUrl with zero matches - which assignCategories() treats as "no
+  // longer tagged" and actively clears on every seed-categories run.
+  { match: /\/insights\/articles\//, terms: ["guides"] },
+  { match: /\/consultants\//, terms: ["support"] },
+  { match: /\/blogs\//, terms: ["guides"] },
 ];
 
 /**
