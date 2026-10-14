@@ -3,6 +3,7 @@ import { OptimizelyComponent, getPreviewUtils } from "@optimizely/cms-sdk/react/
 import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { asSdkComponentContent, asSdkContent } from "@/components/cms/sdkTypes";
 import { CONTENT_AREA_EXCLUDES } from "@/lib/optimizely/contentAreaExcludes.mjs";
+import { pageContainer, type Placement } from "../_shared/displayTemplateSettings";
 
 // One variation inside a VariationContainerBlock: the FX variation key it answers to,
 // plus any blocks. Child-only - it is in CONTENT_AREA_EXCLUDES, so it never appears in
@@ -47,14 +48,27 @@ export interface VariationItemData {
 
 type VariationItemBlockProps = VariationItemData & {
   content?: VariationItemData;
+  placement?: Placement;
 };
+
+// OptimizelyComponent forwards extra props to the block it renders (GridComponentWrapper
+// relies on the same), but its type does not declare them.
+const BlockComponent = OptimizelyComponent as (
+  props: Parameters<typeof OptimizelyComponent>[0] & { placement?: Placement }
+) => ReturnType<typeof OptimizelyComponent>;
 
 // Renders the variation's blocks. VariationContainerBlock decides WHICH variation is
 // shown; this component only lays out what the editor put in it.
+//
+// A variation stands in for a Visual Builder section, so it supplies the page container
+// a section row would (BlankSection's default width) and tells its blocks they sit
+// inside one. Element-level blocks like SectionHeadingBlock and CallToAction bring no
+// container of their own, and rendered bare they ran flush to the viewport edge.
 export default function VariationItemBlock(props: VariationItemBlockProps) {
   const data: VariationItemData = props.content ?? props;
   const { pa } = getPreviewUtils(asSdkContent(data));
   const blocks = data.blocks ?? [];
+  const container = pageContainer(props.placement, "max-w-7xl mx-auto px-8") || undefined;
 
   if (blocks.length === 0) {
     return data.__context?.edit ? (
@@ -65,10 +79,10 @@ export default function VariationItemBlock(props: VariationItemBlockProps) {
   }
 
   return (
-    <div {...pa("blocks")} data-component="VariationItemBlock">
+    <div {...pa("blocks")} data-component="VariationItemBlock" className={container}>
       {blocks.map((block, i) => (
         <BlockErrorBoundary key={i}>
-          <OptimizelyComponent content={asSdkComponentContent(block)} />
+          <BlockComponent content={asSdkComponentContent(block)} placement="element" />
         </BlockErrorBoundary>
       ))}
     </div>

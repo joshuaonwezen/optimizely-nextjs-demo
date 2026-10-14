@@ -5,6 +5,7 @@ import { BlockErrorBoundary } from "@/components/cms/BlockErrorBoundary";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 import { asSdkComponentContent, asSdkContent } from "@/components/cms/sdkTypes";
 import { edgeVariationFor } from "@/lib/optimizely/requestVariations";
+import type { Placement } from "../_shared/displayTemplateSettings";
 import { VariationContainerClient } from "./VariationContainerClient";
 
 // A block-level FX experiment. Editors build one Variation per FX variation key, out of
@@ -59,10 +60,18 @@ function keyOf(variation: VariationItemData): string {
   return variation.variationKey?.trim() ?? "";
 }
 
-function renderVariation(variation: VariationItemData) {
+// OptimizelyComponent forwards extra props to the block it renders, but its type does
+// not declare them.
+const VariationComponent = OptimizelyComponent as (
+  props: Parameters<typeof OptimizelyComponent>[0] & { placement?: Placement }
+) => ReturnType<typeof OptimizelyComponent>;
+
+// Each Variation supplies its own page container; pass "element" where this block
+// already provides one (edit mode) so it is not applied twice.
+function renderVariation(variation: VariationItemData, placement?: Placement) {
   return (
     <BlockErrorBoundary>
-      <OptimizelyComponent content={asSdkComponentContent(variation)} />
+      <VariationComponent content={asSdkComponentContent(variation)} placement={placement} />
     </BlockErrorBoundary>
   );
 }
@@ -93,7 +102,7 @@ export default function VariationContainerBlock(props: VariationContainerBlockPr
                 <span className="text-on-surface font-semibold">{keyOf(variation) || "(no key)"}</span>
                 {i === 0 && " · fallback"}
               </p>
-              {renderVariation(variation)}
+              <div className="px-6">{renderVariation(variation, "element")}</div>
             </div>
           ))}
         </div>
