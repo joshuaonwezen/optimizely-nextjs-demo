@@ -4,6 +4,8 @@ import {
   contract,
   displayTemplate,
 } from "@optimizely/cms-sdk";
+// Blocks kept out of open content areas; shared with VariationItemBlock's content area.
+import { CONTENT_AREA_EXCLUDES } from "./src/lib/optimizely/contentAreaExcludes.mjs";
 
 // SEO contract — metadata properties shared by every routable page type.
 // Consumed by generateMetadata() in src/app/[[...slug]]/page.tsx.
@@ -76,25 +78,6 @@ export const BlogExperienceType = contentType({
     publishedDate: { type: "dateTime", displayName: "Published Date", indexingType: "queryable", sortOrder: 4, isRequired: true },
   },
 });
-
-// Blocks excluded from open page content areas (featuredBlock, mainContent).
-// Kept alongside the "_component" wildcard so new section blocks still auto-appear,
-// but these never make sense as top-level page content. Plain string keys are fine
-// here: this is a .mjs file (no TS PermittedTypes check) and the SDK's buildSkipSet
-// resolves entries via getKeyName(), which accepts concrete key strings.
-const CONTENT_AREA_EXCLUDES = [
-  // Site chrome - never page content
-  "Navigation", "NavigationItem", "Footer", "SiteSettings", "SiteBanner",
-  // Redirect config - data-only, managed from the Shared Blocks tab
-  "RedirectConfig", "RedirectRule",
-  // Native form elements - only valid inside a form container
-  "OptiFormsTextboxElement", "OptiFormsTextareaElement",
-  "OptiFormsSelectionElement", "OptiFormsSubmitElement",
-  // Child-only items - belong inside their container/parent block, not standalone
-  "FaqItemBlock", "TimelineMilestoneBlock", "OutcomeItemBlock",
-  "TeamMemberBlock", "ProductCardBlock", "FeatureItemBlock",
-  "QuoteBlock", "PricingTierBlock", "AuthorBlock",
-];
 
 export const LandingPageType = contentType({
   key: "TraditionalPage",

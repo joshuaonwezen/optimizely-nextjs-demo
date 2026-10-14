@@ -46,6 +46,8 @@ import * as CustomerVoicesBlockModule from "@/components/blocks/CustomerVoicesBl
 import * as SpotlightBlockModule from "@/components/blocks/SpotlightBlock";
 import * as RedirectRuleModule from "@/components/blocks/RedirectRule";
 import * as RedirectConfigModule from "@/components/blocks/RedirectConfig";
+import * as VariationItemBlockModule from "@/components/blocks/VariationItemBlock";
+import * as VariationContainerBlockModule from "@/components/blocks/VariationContainerBlock";
 import OptiFormsContainer from "@/components/blocks/OptiFormsContainer";
 import OptiFormsTextbox from "@/components/blocks/OptiFormsTextbox";
 import OptiFormsTextarea from "@/components/blocks/OptiFormsTextarea";
@@ -149,6 +151,8 @@ const BLOCK_MODULES = [
   SpotlightBlockModule,
   RedirectRuleModule,
   RedirectConfigModule,
+  VariationItemBlockModule,
+  VariationContainerBlockModule,
 ] as const;
 
 type BlockModule = (typeof BLOCK_MODULES)[number];

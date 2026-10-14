@@ -3,13 +3,15 @@
  *   - nav_cta            Nav bar CTA button A/B (buttonText, buttonUrl variables)
  *   - sticky_offer_bar   Bottom sticky bar (message, linkText, linkUrl, expiryLabel variables)
  *   - hero_copy          Hero headline A/B (headline, subheadline variables)
+ *   - savings_offer      VariationContainerBlock A/B/C on /savings-offer (cms_flag, cms_route)
  *
  * Prerequisites - add to .env.local:
  *   OPTIMIZELY_FX_API_TOKEN=<personal access token>
  *   OPTIMIZELY_FX_PROJECT_ID=23385830076
  *
  * Run:
- *   npx tsx scripts/maintenance/seed-fx-flags.ts
+ *   npx tsx scripts/maintenance/seed-fx-flags.ts               # every flag below
+ *   npx tsx scripts/maintenance/seed-fx-flags.ts savings_offer # only the named flag(s)
  */
 
 import { config } from "dotenv";
@@ -150,6 +152,29 @@ const FLAGS: FlagSpec[] = [
       weights: { off: 3400, control: 3300, challenger: 3300 },
     },
   },
+  {
+    // Drives the VariationContainerBlock seeded by scripts/seed-variation-container.ts -
+    // the variation keys must match that script's VARIATIONS exactly. The variables
+    // carry no content: cms_flag + cms_route make middleware decide the flag on
+    // /savings-offer, so the block picks its variation server-side there.
+    key: "savings_offer",
+    name: "Savings Offer (Variation Container)",
+    description: "A/B/C test of the savings promotion built as a Variation Container block on /savings-offer.",
+    variable_definitions: [
+      { key: "cms_flag",  type: "boolean", default_value: "false" },
+      { key: "cms_route", type: "string",  default_value: "" },
+    ],
+    variations: [
+      { key: "control",   name: "Control",   variables: { cms_flag: "true", cms_route: "/savings-offer" } },
+      { key: "rate_led",  name: "Rate-led",  variables: { cms_flag: "true", cms_route: "/savings-offer" } },
+      { key: "bonus_led", name: "Bonus-led", variables: { cms_flag: "true", cms_route: "/savings-offer" } },
+    ],
+    experiment: {
+      key: "savings_offer_experiment",
+      name: "Savings Offer Experiment",
+      weights: { control: 3334, rate_led: 3333, bonus_led: 3333 },
+    },
+  },
 ];
 
 async function flagExists(key: string): Promise<boolean> {
@@ -243,6 +268,13 @@ async function seedFlag(spec: FlagSpec) {
     ] as unknown as object);
     console.log(`  [experiment] A/B rule "${spec.experiment.key}" created`);
 
+    // A new rule is created as a draft (enabled: false). Enabling the ruleset alone
+    // leaves it out of the datafile, so the flag ships with no experiment attached.
+    await req(`/flags/${spec.key}/environments/production/ruleset`, "PATCH", [
+      { op: "replace", path: `/rules/${spec.experiment.key}/enabled`, value: true },
+    ] as unknown as object);
+    console.log(`  [experiment] Rule "${spec.experiment.key}" enabled`);
+
     // Enable the ruleset so the experiment goes live
     await req(`/flags/${spec.key}/environments/production/ruleset/enabled`, "POST");
     console.log(`  [experiment] Ruleset enabled`);
@@ -253,7 +285,12 @@ async function main() {
   console.log("=== Seeding FX flags ===");
   console.log(`Project: ${PROJECT_ID}\n`);
 
-  for (const spec of FLAGS) {
+  // Naming flags limits the run to them. An existing flag whose rule was removed on
+  // purpose would otherwise get the rule re-added and its ruleset re-enabled.
+  const only = process.argv.slice(2);
+  const unknown = only.filter((key) => !FLAGS.some((f) => f.key === key));
+  if (unknown.length > 0) throw new Error(`Unknown flag key(s): ${unknown.join(", ")}`);
+  for (const spec of only.length > 0 ? FLAGS.filter((f) => only.includes(f.key)) : FLAGS) {
     await seedFlag(spec);
   }
 

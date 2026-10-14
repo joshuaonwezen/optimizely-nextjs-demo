@@ -112,6 +112,7 @@ These are normal — they are not failures:
 - `register-webhook.mjs` — interactive prompt for public URL; run manually when needed
 
 FX flags and experiments are managed through the Optimizely Experimentation MCP server (`mcp__exp__*` tools), not via a local seed script.
+The exception is `scripts/maintenance/seed-fx-flags.ts`, which creates the handful of flags the app's own blocks depend on. Run it once per FX project (not per CMS instance), naming the flag to touch only that one: `npx tsx scripts/maintenance/seed-fx-flags.ts savings_offer`. Without arguments it re-checks every flag and re-adds any rule that was removed.
 
 ### Contact form seed scripts — which one to use
 
@@ -126,6 +127,12 @@ Three scripts cover the contact-form demos; they are complementary, not alternat
 All three run in the runner's optional phase in this order. If no Form Container block exists in the CMS, `seed-form-block.ts` and `seed-contact-form.ts` warn and skip. A form nests one level deeper than a grid section (`section > step > row > column > element`), but nothing here has to arrange for that: since cms-sdk 3.0.0 the SDK probes whether a page holds a form and expands the composition to depth 8 when it does. The hand-patched depth rewrite `compositionProperties.ts` used to carry was removed then and must not come back - it string-matched the SDK's generated fragment, which 3.0.0 changed, so it would silently no-op.
 
 `seed-form-block.ts` writes each field's `Validators` in PascalCase (`{ Type, ErrorMessage }`); Graph normalises them to the camelCase `{ type, errorMessage }` the SDK's validation helpers expect, so the two agree. Note that a direct Graph field selection returns `Validators` already parsed, while the **SDK's composition fragment returns it as a JSON string** - `readValidators()` in `src/components/blocks/_shared/formFields.ts` exists for exactly that difference.
+
+### Variation Container demo — `seed-variation-container.ts`
+
+Builds the **Savings Offer** DynamicExperience at `/savings-offer`: a section heading plus a `VariationContainerBlock` bound to the FX flag `savings_offer`, holding three shared `VariationItemBlock`s (`control`, `rate_led`, `bonus_led`), each with its own `SectionHeadingBlock` + `CallToAction`, all in the **Experiments** subfolder. Stable keys; existing blocks are re-patched in place and the page composition is re-published, so re-runs are an upsert. Optional runner step.
+
+The FX side is the `savings_offer` entry in `scripts/maintenance/seed-fx-flags.ts`; its variation keys must match the script's `VARIATIONS` exactly. Its `cms_route` covers `/savings-offer` only, so `/en/savings-offer` (the same page) shows the browser-decided path.
 
 ### Instances
 
@@ -176,7 +183,7 @@ The seed script handles both setups automatically: it always tries to patch the 
 
 **Shared blocks vs content items — two different kinds of CMS items**. *Shared blocks* live inside the "For All Applications" system folder (`SysContentFolder`, well-known key `e56f85d0e8334e02976a2d11fe4d598c`, a child of the top-level content root), show up in the **Shared Blocks** tab, and are what editors bind into **content areas** (`type: "array"` of `content`). *Content items* live elsewhere in the tree, show up in the **Content Manager** tab, and are the targets of **contentReference** properties. A block created directly under the top-level root is a plain content item - it never appears in the Shared Blocks tab. `discoverGlobalRoot()` in `scripts/_shared.ts` resolves the shared-blocks folder; `sweepMisplacedSharedBlocks()` migrates blocks stranded at the root by older seeds.
 
-**Seeded shared blocks are organized into subfolders under "For All Applications"**, not created flat in the folder root. `ensureSubfolder(id)` in `scripts/_shared.ts` creates (idempotently, with fixed keys) and returns the container for each; every seed script passes that as the block's `container`. The six subfolders and their owners:
+**Seeded shared blocks are organized into subfolders under "For All Applications"**, not created flat in the folder root. `ensureSubfolder(id)` in `scripts/_shared.ts` creates (idempotently, with fixed keys) and returns the container for each; every seed script passes that as the block's `container`. The subfolders and their owners:
 
 | Subfolder | Blocks | Seed scripts |
 |---|---|---|
@@ -186,6 +193,7 @@ The seed script handles both setups automatically: it always tries to patch the 
 | Quotes | `QuoteBlock` | seed-content (creates first), seed-quote-blocks |
 | Editorial | modeling blocks, `CalloutBlock`, `CallToAction` | seed-modeling, seed-content |
 | Forms & Tools | `ContactFormBlock`, `BranchFinderBlock` | seed-contact-pages, seed-branch-finder |
+| Experiments | `VariationItemBlock` and the blocks inside each Variation | seed-variation-container |
 
 Because seed-content must create the homepage's bound blocks (Quote cards, the shared Callout/CTA) before its pages, it writes them straight into the Quotes / Editorial subfolders (via `ensureSubfolder("quotes")` / `ensureSubfolder("editorial")`), not its own FAQs container - whichever of seed-content / seed-quote-blocks runs second 409-skips.
 

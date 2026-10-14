@@ -495,6 +495,16 @@ if (pathname.includes(".segments/")) return response;
 
 A path that already contains `__v_` was requested directly (middleware never sees its own rewrites). Segments are 307-redirected away unless they validate, so visitors cannot mint arbitrary ISR entries - but the two sources validate against different authorities: an FX segment against the FX datafile, and a `__v_wx--*` segment against the CMS's own variation names (`/api/cms-variations`, read over HTTP because middleware has no Data Cache, same as `/api/redirects`). Segment parsing/formatting lives in `src/lib/optimizely/variationPath.ts`, shared by middleware and the catch-all page.
 
+### Variation Container block — block-level experiments without a CMS variation
+
+`VariationContainerBlock` (`flagKey` + a content area of `VariationItemBlock`s, each a `variationKey` + a content area of any blocks) puts an experiment on one region of a page. Every variation arrives inline in the page's own query, so there is no Visual Builder variation (which the API cannot create) and no Graph variation filter; the block picks which variation to render. Documented on `/demo/feature-experimentation#variation-container`; demo content from `scripts/seed-variation-container.ts` + the `savings_offer` flag in `scripts/maintenance/seed-fx-flags.ts`.
+
+- **Edge vs browser.** If middleware decided the flag for this request (the flag sets `cms_flag: true` and a `cms_route` covering the page), the catch-all records the `__v_` segments with `setRequestFlagVariations()` and the block reads them through `edgeVariationFor()` (`src/lib/optimizely/requestVariations.ts`, a React `cache()` per-request store - blocks render through `OptimizelyComponent`, which passes them nothing from the page). The server renders that variation only. Otherwise `VariationContainerClient` decides with `useFxDecision`, rendering the fallback until the datafile loads. The wrapper's `data-variation-source` (`edit`/`edge`/`browser`/`fallback`) says which ran.
+- **The first Variation is the fallback** - flag off, visitor not bucketed, or no key matches.
+- **The block fires its own `FxBucketingEvent`**, including for the `off` arm. The catch-all's page-level event only fires when Graph served a CMS variation, and a container's flag has none, so the two do not double-count.
+- **The inner content area excludes `VariationContainerBlock`** (a fragment cannot spread itself; the SDK would return only `__typename`), and `VariationItemBlock` is in `CONTENT_AREA_EXCLUDES` (`src/lib/optimizely/contentAreaExcludes.mjs`, shared with `optimizely.config.mjs` - `.mjs` because the CLI loads the config with a plain `import()`).
+- The registry adds both types to every content-area fragment (`TraditionalPage.mainContent` included), so **both types must be pushed to every instance before this code deploys** - an instance whose Graph lacks them rejects every page query.
+
 ### Web Experimentation drives CMS variations client-side, not through middleware
 
 WX decides in the browser, so it never reaches middleware. A CMS variation named `wx_*` (`WX_VARIATION_PREFIX`) opts a page in; the catch-all then emits a pre-paint inline script that reads the already-made WX decision synchronously and `WxVariationSwap` soft-navigates to `/__v_wx--<name>`. See `src/lib/optimizely/wxVariation.ts`.

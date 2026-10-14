@@ -28,6 +28,18 @@ const profileTs = fs.readFileSync(
   path.join(process.cwd(), "src/lib/optimizely/profile.ts"),
   "utf8"
 );
+const variationContainerTsx = fs.readFileSync(
+  path.join(process.cwd(), "src/components/blocks/VariationContainerBlock/index.tsx"),
+  "utf8"
+);
+const variationContainerClientTsx = fs.readFileSync(
+  path.join(process.cwd(), "src/components/blocks/VariationContainerBlock/VariationContainerClient.tsx"),
+  "utf8"
+);
+const requestVariationsTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/optimizely/requestVariations.ts"),
+  "utf8"
+);
 
 export const metadata: Metadata = {
   title: "Experimentation Demo",
@@ -293,6 +305,67 @@ export async function middleware(request: NextRequest) {
   return NextResponse.rewrite(url, { headers: response.headers });
 }`;
 
+const VARIATION_MODEL_SNIPPET = `// src/components/blocks/VariationItemBlock/index.tsx (simplified)
+export const VariationItemBlockType = contentType({
+  key: "VariationItemBlock",
+  displayName: "Variation",
+  baseType: "_component",
+  properties: {
+    variationKey: { type: "string", isRequired: true },   // = the FX variation key
+    blocks: {
+      type: "array",
+      items: {
+        type: "content",                 // inline-expanded by Graph in the page query
+        allowedTypes: ["_component"],
+        restrictedTypes: [...CONTENT_AREA_EXCLUDES, "VariationContainerBlock"],
+      },
+    },
+  },
+});
+
+// src/components/blocks/VariationContainerBlock/index.tsx (simplified)
+export const VariationContainerBlockType = contentType({
+  key: "VariationContainerBlock",
+  displayName: "Variation Container",
+  baseType: "_component",
+  compositionBehaviors: ["sectionEnabled"],   // a content area rules out elementEnabled
+  properties: {
+    flagKey: { type: "string", isRequired: true },
+    // The first Variation is the fallback
+    variations: { type: "array", items: { type: "content", allowedTypes: [VariationItemBlockType] } },
+  },
+});`;
+
+const VARIATION_PICK_SNIPPET = `// src/lib/optimizely/requestVariations.ts - a per-request store
+const store = cache(() => ({ flagVariations: [] as FlagVariation[] }));
+export function setRequestFlagVariations(v: FlagVariation[]) { store().flagVariations = v; }
+export function edgeVariationFor(flagKey: string) {
+  return store().flagVariations.find((fv) => fv.flagKey === flagKey)?.variationKey ?? null;
+}
+
+// src/app/[[...slug]]/page.tsx - the catch-all records the middleware's __v_ segments
+const { flagVariations } = extractVariations(slug);
+setRequestFlagVariations(flagVariations);
+
+// VariationContainerBlock - a server component
+const edgeKey = edgeVariationFor(flagKey);
+if (edgeKey !== null) {
+  // Middleware decided this flag: render that variation only, no flicker
+  const shown = variations.find((v) => v.variationKey === edgeKey) ?? variations[0];
+  return <>{render(shown)}<FxBucketingEvent flagKey={flagKey} /></>;
+}
+// No segment: server-render every variation, let the browser pick one
+return (
+  <VariationContainerClient
+    flagKey={flagKey}
+    variants={variations.map((v) => ({ key: v.variationKey, node: render(v) }))}
+  />
+);
+
+// VariationContainerClient - "use client"
+const decision = useFxDecision(flagKey);   // null until the datafile loads
+const shown = variants.find((v) => v.key === decision?.variationKey) ?? variants[0];`;
+
 
 
 function FlagCard({ decision }: { decision: FxDecision }) {
@@ -449,6 +522,7 @@ export default async function FeatureFlagsDemoPage() {
 
   const decisions = user.decideAll();
   const heroCopyDecision = decisions["checkout_layout"];
+  const savingsOfferDecision = decisions["savings_offer"];
   const bucketedDecision = bucketingId
     ? user.decide("checkout_layout", { bucketingId })
     : null;
@@ -464,7 +538,7 @@ export default async function FeatureFlagsDemoPage() {
         description="Optimizely Feature Experimentation runs alongside SaaS CMS on the same platform. Flag decisions are evaluated in edge middleware, before the page renders. Carry the variation key in the request path and each variation caches independently. Decision events fire client-side after the user sees the variation, connecting A/B experiments directly to editor-created content variations."
       >
         <div className="flex flex-wrap gap-3 mt-8">
-          {["✓ Server-side decisions", "Feature flags · Experiments", "Audience targeting", "Variable delivery", "CMS Variations integration"].map((t) => (
+          {["✓ Server-side decisions", "Feature flags · Experiments", "Audience targeting", "Variable delivery", "CMS Variations integration", "Variation Container block"].map((t) => (
             <span key={t} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-badge-bg text-on-brand">
               {t}
             </span>
@@ -699,6 +773,179 @@ export default async function FeatureFlagsDemoPage() {
               <span className="text-xs text-on-surface-variant">keys passed to Graph (the filter above)</span>
             </div>
           </div>
+        </section>
+
+        {/* ── Variation Container - block-level experiments ── */}
+        <section id="variation-container">
+          <DemoSectionHeading id="variation-container">Variation Container: Experiment on Part of a Page</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            A CMS variation swaps the whole page. When an experiment only touches one region - an
+            offer, a call to action, a pricing teaser - the <strong>Variation Container</strong> block keeps
+            it there. Editors add one <strong>Variation</strong> per FX variation key, each built from
+            ordinary blocks, inside the page itself.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            Both content areas are <code className="bg-surface-low px-1 rounded font-mono text-xs">type: &quot;content&quot;</code>,
+            so Graph returns the container and <em>every</em> variation inline in the page&apos;s own query.
+            There is no Visual Builder variation to create and no Graph variation filter: the app picks
+            which variation to render from data it already has.
+          </p>
+
+          {/* Content model */}
+          <div className="grid lg:grid-cols-5 gap-4 mb-10">
+            <div className="lg:col-span-2 bg-surface-lowest border border-ghost-border rounded-2xl p-6 flex flex-col gap-3">
+              <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">The content model</p>
+              <pre className="text-[11px] font-mono bg-surface-low text-on-surface rounded-md px-3 py-3 overflow-x-auto leading-relaxed"><code>{`Variation Container
+├── flagKey     savings_offer
+└── variations
+    ├── Variation  control    ← fallback
+    │   └── blocks  Heading, CTA
+    ├── Variation  rate_led
+    │   └── blocks  Heading, CTA
+    └── Variation  bonus_led
+        └── blocks  Heading, CTA`}</code></pre>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                The <strong>variation key</strong> is the same one-string contract as a CMS variation name:
+                it must match the FX variation key exactly, and it is case-sensitive. The{" "}
+                <strong>first</strong> Variation is the fallback - it shows when the flag is off, the visitor
+                is not bucketed, or no key matches.
+              </p>
+            </div>
+            <div className="lg:col-span-3 min-w-0">
+              <CodeBlock code={VARIATION_MODEL_SNIPPET} label="Two content types" />
+            </div>
+          </div>
+
+          {/* Which variation renders */}
+          <PhaseHeader label="Render" caption="which variation a visitor gets" />
+          <div className="flex flex-col lg:flex-row lg:items-stretch gap-2 mb-6">
+            {[
+              { n: 1, env: "Edit mode", icon: null, accent: "bg-surface-low text-on-surface-variant", essence: "Every variation, stacked and labelled", explain: "In Visual Builder there is no decision. Each variation shows under a label with its key, the first marked as the fallback, so editors can build and preview all of them.", code: "__context.edit\n// → all variations" },
+              { n: 2, env: "Edge · server", icon: ICON_ZAP, accent: "bg-brand/10 text-brand", essence: "Middleware decided: render one variation", explain: "When the flag sets cms_flag: true and a cms_route covering this page, middleware appends the same __v_ segment it uses for page variations. The block renders only that variation: no flicker, one ISR entry per variation.", code: "/savings-offer\n// → /savings-offer/__v_savings_offer--rate_led" },
+              { n: 3, env: "Browser", icon: ICON_DATABASE, accent: "bg-tertiary/10 text-tertiary", essence: "No segment: the browser decides", explain: "Any other flag works too. Every variation is server-rendered into the payload, the fallback paints first, and useFxDecision swaps in the visitor's variation once the datafile loads.", code: "useFxDecision('savings_offer')\n// → { variationKey: 'bonus_led' }" },
+            ].flatMap((s, i, arr) => [
+              <div key={s.n} className="flex-1 min-w-0 bg-surface-lowest border border-ghost-border rounded-2xl p-5 flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${s.accent}`}>
+                    {s.icon}{s.env}
+                  </span>
+                  <span className="w-6 h-6 rounded-lg bg-surface-low flex items-center justify-center text-on-surface-variant font-bold font-mono text-xs shrink-0">{s.n}</span>
+                </div>
+                <p className="text-sm font-semibold text-on-surface leading-snug">{s.essence}</p>
+                <p className="text-xs text-on-surface-variant leading-relaxed">{s.explain}</p>
+                <pre className="mt-auto text-[11px] font-mono bg-surface-low text-on-surface rounded-md px-2.5 py-2 overflow-x-auto"><code>{s.code}</code></pre>
+              </div>,
+              i < arr.length - 1 ? (
+                <div key={`${s.n}-arrow`} className="flex items-center justify-center text-on-surface-variant text-lg select-none rotate-90 lg:rotate-0 py-1 lg:py-0" aria-hidden="true">→</div>
+              ) : null,
+            ])}
+          </div>
+          <CodeBlock code={VARIATION_PICK_SNIPPET} label="Choosing the variation" />
+
+          {/* Live - this visitor's decision, and the seeded page in both modes */}
+          <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mt-10 mb-4">
+            Try it: the seeded Savings Offer page
+          </p>
+          <div className="grid sm:grid-cols-3 gap-4 mb-10">
+            <div className="bg-surface-lowest border border-brand/30 rounded-xl px-5 py-4 flex flex-col gap-1">
+              <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider">Your variation</span>
+              <span className="text-sm font-mono text-on-surface">
+                {savingsOfferDecision?.variationKey ?? "-"}
+              </span>
+              <span className="text-xs text-on-surface-variant">
+                {savingsOfferDecision?.variationKey
+                  ? <>flag <code className="font-mono">savings_offer</code>, decided for your visitor id</>
+                  : <>flag <code className="font-mono">savings_offer</code> is not in the datafile</>}
+              </span>
+            </div>
+            <Link href="/savings-offer" className="bg-surface-lowest border border-ghost-border hover:border-brand/40 transition-colors rounded-xl px-5 py-4 flex flex-col gap-1">
+              <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider">Edge-decided</span>
+              <span className="text-sm font-mono text-brand">/savings-offer →</span>
+              <span className="text-xs text-on-surface-variant">inside cms_route: the server renders your variation</span>
+            </Link>
+            <Link href="/en/savings-offer" className="bg-surface-lowest border border-ghost-border hover:border-brand/40 transition-colors rounded-xl px-5 py-4 flex flex-col gap-1">
+              <span className="text-xs text-on-surface-variant font-mono uppercase tracking-wider">Browser-decided</span>
+              <span className="text-sm font-mono text-brand">/en/savings-offer →</span>
+              <span className="text-xs text-on-surface-variant">same page, outside cms_route: the fallback paints, then swaps</span>
+            </Link>
+          </div>
+
+          {/* Comparison with page-level CMS variations */}
+          <div className="overflow-auto rounded-2xl border border-ghost-border mb-10">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-surface-low border-b border-ghost-border">
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold"></th>
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">CMS variation (page)</th>
+                  <th className="text-left px-4 py-3 text-on-surface-variant font-semibold">Variation Container (block)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { dim: "Scope", page: "The whole page - one composition per variation", block: "One region; the rest of the page is shared" },
+                  { dim: "Authored in", page: "Visual Builder → Add variation, a full copy of the page each", block: "Inside the page, one Variation block per key" },
+                  { dim: "Created through the API", page: "No - Visual Builder only", block: "Yes - ordinary content, so it can be seeded" },
+                  { dim: "Graph query", page: "Variation filter: include SOME, includeOriginal, stored: false", block: "The plain page query - every variation inline" },
+                  { dim: "Picks the variation", page: "Graph", block: "The app - on the server or in the browser" },
+                  { dim: "Caching", page: "One ISR entry per variation", block: "Edge: one per variation · Browser: one for all" },
+                  { dim: "Flicker", page: "None", block: "Edge: none · Browser: the fallback paints first" },
+                  { dim: "Payload", page: "The served variation only", block: "Edge: the served variation · Browser: every variation" },
+                  { dim: "Decision event", page: "Fired by the catch-all route", block: "Fired by the block itself" },
+                ].map((row, i) => (
+                  <tr key={row.dim} className={`border-b border-ghost-border ${i % 2 === 0 ? "bg-surface" : "bg-surface-lowest"}`}>
+                    <td className="px-4 py-3 font-semibold text-on-surface">{row.dim}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{row.page}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{row.block}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Configure */}
+          <div className="space-y-8 max-w-2xl mb-8">
+            <Step number={1} title="Create the flag and its variations in Feature Experimentation">
+              One variation per arm - the demo flag{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">savings_offer</code> has{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">control</code>,{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">rate_led</code> and{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">bonus_led</code> - and an A/B
+              rule. For the edge path, give each variation the variables{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_flag: true</code> and a{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_route</code> covering the page.
+              Without them the block still works; the browser decides instead.
+            </Step>
+            <Step number={2} title="Add a Variation Container to the page">
+              In Visual Builder, add it as a section (or drop it into a Traditional Page&apos;s Main Content)
+              and type the flag key exactly.
+            </Step>
+            <Step number={3} title="Add one Variation per variation key">
+              Create a Variation for each FX variation key and build its content from any blocks. Put the
+              control first: the first Variation is the fallback for visitors the flag does not bucket.
+            </Step>
+            <Step number={4} title="Publish and start the rule">
+              No code change and no Visual Builder variation. FX allocates traffic and reports results;
+              the block renders whichever variation each visitor is bucketed into.
+            </Step>
+          </div>
+
+          <Callout variant="note">
+            <strong>The block fires the decision event itself.</strong> It mounts{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">FxBucketingEvent</code> for its flag
+            whenever it renders a decided variation - including the <code className="bg-surface-low px-1 rounded font-mono text-xs">off</code>{" "}
+            arm of an A/B rule, so the control group is counted. If the catch-all route also reports the same flag on
+            that page, <code className="bg-surface-low px-1 rounded font-mono text-xs">FxBucketingEvent</code> still sends
+            one impression per page and flag.
+          </Callout>
+
+          <SourcePanel
+            heading="The Variation Container implementation"
+            files={[
+              { label: "VariationContainerBlock", path: "src/components/blocks/VariationContainerBlock/index.tsx", content: variationContainerTsx },
+              { label: "VariationContainerClient", path: "src/components/blocks/VariationContainerBlock/VariationContainerClient.tsx", content: variationContainerClientTsx },
+              { label: "requestVariations.ts", path: "src/lib/optimizely/requestVariations.ts", content: requestVariationsTs },
+            ]}
+          />
         </section>
 
         {/* ── Live flag demo ── */}

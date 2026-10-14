@@ -116,6 +116,11 @@ async function main() {
     // Build out the block's elements first, then place it on the contact page.
     ["npx", ["tsx", "scripts/seed-form-block.ts"]],
     ["npx", ["tsx", "scripts/seed-contact-form.ts"]],
+    // Savings Offer page with a VariationContainerBlock (FX flag savings_offer). Pure
+    // Management API; optional so an instance without the Variation types pushed warns
+    // instead of aborting. The CTA links resolve /personal/savings from Graph and fall
+    // back to the bare path when it isn't indexed yet.
+    ["npx", ["tsx", "scripts/seed-variation-container.ts"]],
     // Bulk content volume (Articles/Consultants/Case Studies/Blog posts) using
     // existing types. Must run after seed-consultants and seed-blogs above -
     // it reuses their hubs and the shared blog hero image.

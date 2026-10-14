@@ -12,6 +12,7 @@ import { cacheTag } from "next/cache";
 import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { isVariationSegment, parseVariationSegment, type FlagVariation } from "@/lib/optimizely/variationPath";
+import { setRequestFlagVariations } from "@/lib/optimizely/requestVariations";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 import WxVariationSwap from "@/components/personalization/WxVariationSwap";
 import {
@@ -163,6 +164,9 @@ async function CmsPage({
 }) {
   const { slug } = await params;
   const { cleanSlug, activeVariations, flagVariations } = extractVariations(slug);
+  // VariationContainerBlock picks its child from these at render time - the same edge
+  // decision, read without a Graph variation filter (see requestVariations.ts).
+  setRequestFlagVariations(flagVariations);
   const urls = buildUrlCandidates(cleanSlug);
 
   const client = getClient();
