@@ -249,6 +249,14 @@ validated against what the CMS *already* has, not against types created in the s
 content type"* for the display template, and nothing is created. Push components first, then experiences,
 then display templates, waiting for each to become visible (the import is eventually consistent).
 
+### DAM images in reference fields - added per instance
+
+`HeroBlock.backgroundImage` accepts CMP DAM images (`graph:cmp_PublicImageAsset`) as well as CMS media, but only `"_image"` is in the code config: a CMS without the DAM integration rejects that type ("The allowedTypes field contains one or more invalid content types"), and in a full `opti:push` that one error fails the whole content-type import. `scripts/push-dam-allowed-types.ts` adds the DAM type where the CMS accepts it and skips the rest - the CMS's own answer is the capability check. As of 2026-10-14 joshCMS, harryNewCMS, mostinNewCMS and toddCMS have DAM; personal, kastleNewCMS, apjCMS and v&aCMS do not.
+
+- **A normal `opti:push` silently resets the field to `"_image"`** (not flagged as breaking), so re-run the script after one. The seed runner does, as the first of its optional steps.
+- Rendering needs nothing extra: `allowedTypes` does not change the SDK's query for a `contentReference` (always `key`/`url`, plus the DAM item when `damMode` is on), and `HeroBlock` already resolves the URL through `src()`.
+- To open another reference field to DAM images, add it to `DAM_IMAGE_FIELDS` in that script - not to the content type.
+
 ### Native Optimizely Forms — `initForms()` (cms-sdk 3.0.0)
 
 The SDK ships the OptiForms content types and registers their components in one call. `componentRegistry.ts` used to declare five of these type schemas by hand (so `opti:push` would not discover them); that block is gone.

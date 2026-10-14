@@ -16,6 +16,9 @@ export const HeroBlockType = contentType({
     subheadline: { type: "string", displayName: "Subheadline", indexingType: "searchable", isLocalized: true },
     // No indexingType: indexingType:"disabled" makes the SDK omit the reference
     // from its generated fragment, so the image is never queried. Omit it.
+    // Only "_image" here: CMP DAM images (graph:cmp_PublicImageAsset) are added per
+    // instance by scripts/push-dam-allowed-types.ts, because a CMS without the DAM
+    // integration rejects the whole push over that type. Re-run it after opti:push.
     backgroundImage: { type: "contentReference", displayName: "Background Image", allowedTypes: ["_image"] },
     rendition: {
       type: "string",

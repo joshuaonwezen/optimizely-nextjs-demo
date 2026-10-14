@@ -91,6 +91,10 @@ async function main() {
   // Optional steps - failures print a warning and the run continues.
   // These may depend on Graph indexing the content from required steps (~60s lag).
   const optional: [string, string[]][] = [
+    // The config push (step 1) resets HeroBlock.backgroundImage to "_image"; this
+    // re-allows CMP DAM images where the CMS has the DAM integration and skips the rest.
+    // Optional so an unexpected CMS answer warns instead of aborting the seed.
+    ["npx", ["tsx", "scripts/push-dam-allowed-types.ts"]],
     // External Content Source API data (Quote / BankLocation). Kept before the
     // CMS-content steps so BankLocation exists for seed-branch-finder, but
     // optional so a Content Source failure never blocks the steps below. Each
