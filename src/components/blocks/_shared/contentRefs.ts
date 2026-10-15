@@ -9,8 +9,13 @@
  * `_metadata.url.default` on others, so both are optional.
  */
 export type ImageRef =
-  | { url?: { default?: string | null } | null; _metadata?: { url?: { default?: string | null } | null } | null }
+  | {
+      url?: { default?: string | null; graph?: string | null } | null;
+      _metadata?: { url?: { default?: string | null; graph?: string | null } | null } | null;
+    }
   | null;
+
+const RENDITION_GRAPH_PREFIX = "graph://cmp/cmp_PublicImageAssetRendition/";
 
 /**
  * The renderable URL of an image reference, or null when it has none.
@@ -29,6 +34,21 @@ export function resolveImageUrl(
   if (!ref) return null;
   const previewSrc = src as ((input: unknown) => string | undefined) | undefined;
   return previewSrc?.(ref) ?? ref.url?.default ?? ref._metadata?.url?.default ?? null;
+}
+
+/**
+ * Whether the editor picked one of a DAM image's renditions in the picker rather
+ * than the original asset. url.default is then the rendition file, which already
+ * has a fixed size and crop. Serve it as-is: the CMP CDN upscales a rendition URL,
+ * and a crop param would crop it again.
+ *
+ * url.graph is the only signal. cms-sdk 3.0.2's DAM fragments have no case for the
+ * rendition type, so `item` arrives as a bare __typename, which Graph reports as
+ * "cmp_Asset".
+ */
+export function isPickedRendition(ref: ImageRef | undefined): boolean {
+  const graph = ref?.url?.graph ?? ref?._metadata?.url?.graph;
+  return graph?.startsWith(RENDITION_GRAPH_PREFIX) ?? false;
 }
 
 /**

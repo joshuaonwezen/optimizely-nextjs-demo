@@ -2,7 +2,7 @@ import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { BACKGROUND_NONE_DEFAULT, pageContainer, resolveStyleClasses, type Placement } from "../_shared/displayTemplateSettings";
 import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
-import { resolveImageUrl } from "../_shared/contentRefs";
+import { isPickedRendition, resolveImageUrl } from "../_shared/contentRefs";
 import { asDamContent, asSdkContent, asSdkReference } from "@/components/cms/sdkTypes";
 
 // The rendition enum implies a shape; ask the CDN to crop to it (as height/width)
@@ -81,14 +81,19 @@ export default function RenditionImageBlock(props: RenditionImageBlockProps) {
   // Prefer CDN on-the-fly resizing for DAM URLs (responsive widths independent of
   // the asset's renditions, cropped to the selected shape); fall back to the SDK's
   // rendition-based srcset for CMS globalassets.
-  const cropRatio = CROP_RATIOS[data.rendition ?? ""];
-  const cdnSrcSet = buildDamSrcset(
-    imageUrl,
-    undefined,
-    cropRatio ? { action: "crop", aspectRatio: cropRatio } : {},
-  );
+  // A rendition the editor picked in the DAM picker is already the crop, so it
+  // overrides the Crop property and is served as-is (the CDN would upscale it).
+  const pickedRendition = isPickedRendition(data.image);
+  const cropRatio = pickedRendition ? undefined : CROP_RATIOS[data.rendition ?? ""];
+  const cdnSrcSet = pickedRendition
+    ? undefined
+    : buildDamSrcset(
+        imageUrl,
+        undefined,
+        cropRatio ? { action: "crop", aspectRatio: cropRatio } : {},
+      );
   const srcSet = cdnSrcSet ?? getSrcset(asSdkReference(data.image));
-  const baseSrc = damImageUrl(imageUrl, { width: 1280 });
+  const baseSrc = pickedRendition ? imageUrl : damImageUrl(imageUrl, { width: 1280 });
 
   return (
     <figure

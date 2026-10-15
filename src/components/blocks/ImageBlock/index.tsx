@@ -5,7 +5,7 @@ import {
   type Placement,
 } from "../_shared/displayTemplateSettings";
 import { buildDamSrcset, damImageUrl } from "@/lib/optimizely/damImage";
-import { resolveImageUrl } from "../_shared/contentRefs";
+import { isPickedRendition, resolveImageUrl } from "../_shared/contentRefs";
 import { asDamContent, asSdkContent, asSdkReference } from "@/components/cms/sdkTypes";
 
 export const ImageBlockType = contentType({
@@ -127,16 +127,21 @@ export default function ImageBlock(props: ImageBlockProps) {
   // real display widths (independent of whatever renditions the asset has). When
   // an aspect ratio is chosen, crop server-side with the asset's focal point.
   // Falls back to the SDK's rendition-based srcset for CMS globalassets.
-  const cdnSrcSet = buildDamSrcset(
-    imageUrl,
-    undefined,
-    cropRatio
-      ? { action: "crop", aspectRatio: cropRatio, ...focalPercent(data.image) }
-      : {},
-  );
+  // A rendition the editor picked skips the CDN entirely (the CDN would upscale
+  // it); the aspect ratio still applies, but only as the CSS box below.
+  const pickedRendition = isPickedRendition(data.image);
+  const cdnSrcSet = pickedRendition
+    ? undefined
+    : buildDamSrcset(
+        imageUrl,
+        undefined,
+        cropRatio
+          ? { action: "crop", aspectRatio: cropRatio, ...focalPercent(data.image) }
+          : {},
+      );
   const srcSet = cdnSrcSet ?? getSrcset(asSdkReference(data.image));
   // Cap the base src (the srcSet fallback) so it is never the full-res original.
-  const baseSrc = damImageUrl(imageUrl, { width: 1280 });
+  const baseSrc = pickedRendition ? imageUrl : damImageUrl(imageUrl, { width: 1280 });
   const style = resolveStyleClasses(ds, { background: "transparent" });
 
   return (

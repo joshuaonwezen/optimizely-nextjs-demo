@@ -111,6 +111,10 @@ const damImageTs = fs.readFileSync(
   path.join(process.cwd(), "src/lib/optimizely/damImage.ts"),
   "utf8"
 );
+const contentRefsTs = fs.readFileSync(
+  path.join(process.cwd(), "src/components/blocks/_shared/contentRefs.ts"),
+  "utf8"
+);
 
 // CDN on-the-fly resizing - built from the same CMP DAM URL as the srcset demo above.
 // These params only work because the host is *.cmp.optimizely.com.
@@ -924,7 +928,12 @@ export default function MediaDemoPage() {
             <code className="bg-surface-low px-1 rounded font-mono text-xs">url.graph</code> and serve the file
             as-is. If you need a srcset, query the rendition&apos;s{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">Width</code> with the fragment above
-            and leave out every candidate wider than it.
+            and leave out every candidate wider than it.{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">ImageBlock</code> and{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">RenditionImageBlock</code> do the
+            former through <code className="bg-surface-low px-1 rounded font-mono text-xs">isPickedRendition()</code>{" "}
+            (source below). In <code className="bg-surface-low px-1 rounded font-mono text-xs">RenditionImageBlock</code>,
+            a picked rendition also overrides the block&apos;s own Crop property.
           </p>
           <p className="text-xs font-mono text-on-surface-variant mb-6 opacity-60 break-all max-w-3xl">
             buildDamSrcset(rendition): {pickedCdnSrcset}
@@ -1072,6 +1081,7 @@ export default function MediaDemoPage() {
             { label: "LogoGridBlock/index.tsx", path: "src/components/blocks/LogoGridBlock/index.tsx", content: logoGridTs },
             { label: "RenditionImageBlock/index.tsx", path: "src/components/blocks/RenditionImageBlock/index.tsx", content: renditionImageBlockTs },
             { label: "lib/optimizely/damImage.ts", path: "src/lib/optimizely/damImage.ts", content: damImageTs },
+            { label: "_shared/contentRefs.ts", path: "src/components/blocks/_shared/contentRefs.ts", content: contentRefsTs },
           ]}
         />
 
