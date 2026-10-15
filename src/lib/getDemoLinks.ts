@@ -43,6 +43,7 @@ export function getDemoCategories(): DemoCategory[] {
         { group: "Authoring", href: "/demo/media",             label: "Media & DAM Assets",   description: "DAM assets, renditions, and next/image" },
         { group: "Authoring", href: "/demo/forms",             label: "Forms",                description: "Form blocks and submissions" },
         { group: "Authoring", href: "/demo/preview",           label: "Draft Mode & Preview", description: "In-context editing and draft content" },
+        { group: "Authoring", href: "/demo/cms-ui-extensions", label: "CMS UI Extensions",    description: "Sidebar, view and property-editor panels on OCP" },
 
         { group: "Delivery",  href: "/demo/navigation",        label: "Navigation",           description: "Recursive nav trees" },
         { group: "Delivery",  href: "/demo/localization",      label: "Localization",         description: "Multi-language content and routing" },

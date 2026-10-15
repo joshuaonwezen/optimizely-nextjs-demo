@@ -12,6 +12,7 @@ const LANGS = [
   "graphql",
   "css",
   "html",
+  "yaml",
 ] as const;
 
 type SupportedLang = (typeof LANGS)[number];
@@ -76,6 +77,7 @@ export function detectLanguage(code: string, label?: string): SupportedLang {
   if (hint.includes("graphql")) return "graphql";
   if (hint.includes("json")) return "json";
   if (hint.includes("bash") || hint.includes("shell") || hint.includes("terminal")) return "bash";
+  if (/\.ya?ml\b|\byaml\b/.test(hint)) return "yaml";
 
   return "tsx";
 }
