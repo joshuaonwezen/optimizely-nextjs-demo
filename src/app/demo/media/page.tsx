@@ -7,8 +7,9 @@ import SectionAnchor from "@/components/demo/SectionAnchor";
 import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
 import { damAssets } from "@optimizely/cms-sdk";
+import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import { damImageUrl, buildDamSrcset } from "@/lib/optimizely/damImage";
-import { asSdkReference } from "@/components/cms/sdkTypes";
+import { asSdkContent, asSdkReference } from "@/components/cms/sdkTypes";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,26 @@ const OTTERS_IMAGE_REF = {
   },
 };
 
-const { getSrcset: getDamSrcset, getAlt: getDamAlt } = damAssets({});
+// What the SDK's generated query returns when an editor picks the "700px Crop"
+// rendition of Pandas.jpg in the DAM picker. The shape was verified against Graph
+// on joshCMS (2026-10-15): url points at the rendition file, and item carries only
+// a __typename because cms-sdk 3.0.2's DAM fragments have no case for renditions.
+const PICKED_RENDITION_ID = "c04b03acf77811f0b938e24c027d659d";
+const PICKED_RENDITION_URL = `https://images1.cmp.optimizely.com/assets/Pandas.jpg/${PICKED_RENDITION_ID}`;
+const PICKED_RENDITION_REF = {
+  key: PICKED_RENDITION_ID,
+  url: {
+    type: "GRAPH",
+    default: PICKED_RENDITION_URL,
+    hierarchical: PICKED_RENDITION_URL,
+    internal: `cms://content/DamImageSourceRendition/${PICKED_RENDITION_ID}?loc=en`,
+    graph: `graph://cmp/cmp_PublicImageAssetRendition/${PICKED_RENDITION_ID}`,
+    base: null,
+  },
+  item: { __typename: "cmp_Asset" },
+};
+
+const { getSrcset: getDamSrcset, getAlt: getDamAlt, isDamImageAsset } = damAssets({});
 const pandasRenditionSrcset = getDamSrcset(asSdkReference(PANDAS_IMAGE_REF)) ?? "";
 const pandasSrcset = [
   pandasRenditionSrcset,
@@ -63,6 +83,15 @@ const ottersSrcset = [
   ...OTTERS_IMAGE_REF.item.Renditions.map((r) => `${r.Url} ${r.Width}w`),
   `${OTTERS_IMAGE_REF.item.Url} ${OTTERS_IMAGE_REF.item.Width}w`,
 ].join(", ");
+
+// The SDK helpers run against the picked-rendition reference, so the page shows
+// their real output rather than a description of it.
+const pickedRef = asSdkReference(PICKED_RENDITION_REF);
+const pickedSrc = getPreviewUtils(asSdkContent({})).src(pickedRef) ?? "";
+const pickedSrcset = getDamSrcset(pickedRef);
+const pickedAlt = getDamAlt(pickedRef, "Alt text from the CMS property");
+const pickedIsDamImage = isDamImageAsset(pickedRef);
+const pickedCdnSrcset = buildDamSrcset(PICKED_RENDITION_URL) ?? "";
 
 const PROXY_DEMO_SRC = "https://images1.cmp.optimizely.com/assets/Pandas.jpg/c04b03acf77811f0b938e24c027d659d";
 
@@ -372,6 +401,70 @@ export function buildDamSrcset(
     .join(", ");
 }`;
 
+const PICKED_RENDITION_GRAPH_SNIPPET = `// Stored on the property (Management API value):
+//   original asset picked:  "cms://content/DamImageSource/{assetId}"
+//   rendition picked:       "cms://content/DamImageSourceRendition/{renditionId}"
+
+// Graph, for a picked rendition (item fields as the fragment alongside selects them):
+image {
+  key: "c04b03acf77811f0b938e24c027d659d",      // the rendition id, not the asset id
+  url: {
+    default:  "https://images1.cmp.optimizely.com/assets/Pandas.jpg/c04b03ac...",
+    internal: "cms://content/DamImageSourceRendition/c04b03ac...?loc=en",
+    graph:    "graph://cmp/cmp_PublicImageAssetRendition/c04b03ac..."
+  },
+  item: {
+    __typename:    "cmp_PublicImageAssetRendition",
+    RenditionName: "700px Crop",
+    AssetId:       "80c5c96c5b4511f0b6c226cd7b4b8c78",   // the original asset
+    Url:           "https://images1.cmp.optimizely.com/assets/Pandas.jpg/c04b03ac...",
+    Width: 700,
+    Height: 466
+    // No AltText and no Renditions - those live on the original asset.
+  }
+}`;
+
+const PICKED_RENDITION_FRAGMENT_SNIPPET = `// cms-sdk 3.0.2 spreads only cmp_PublicImageAsset / Video / RawFile under item,
+// so a picked rendition arrives as { __typename } and nothing else. Add the
+// rendition type to a query of your own to read its name and dimensions.
+fragment PickedImage on ContentReference {
+  key
+  url { default graph }
+  item {
+    __typename
+    ... on cmp_PublicImageAsset {
+      Url Width Height AltText
+      Renditions { Name Url Width Height }
+    }
+    ... on cmp_PublicImageAssetRendition {
+      RenditionName AssetId Url Width Height
+    }
+  }
+}`;
+
+const PICKED_RENDITION_COMPONENT_SNIPPET = `// The SDK's query already selects url { graph }, so a picked rendition is
+// detectable without a custom fragment.
+const RENDITION_GRAPH_PREFIX = "graph://cmp/cmp_PublicImageAssetRendition/";
+const isPickedRendition = (ref) =>
+  ref?.url?.graph?.startsWith(RENDITION_GRAPH_PREFIX) ?? false;
+
+const { src } = getPreviewUtils(content);
+const { getSrcset, getAlt } = damAssets(content);
+
+// src() reads url.default first - the rendition file when one was picked.
+const imageUrl = src(content.image);
+
+// The editor already chose the size and crop: serve that file as-is rather
+// than a CDN srcset that would upscale it or crop the crop again.
+const srcSet = isPickedRendition(content.image)
+  ? undefined
+  : buildDamSrcset(imageUrl) ?? getSrcset(content.image);
+
+// A rendition has no AltText, so keep an alt text property on the type.
+const alt = getAlt(content.image, content.altText ?? "");
+
+<img src={imageUrl} srcSet={srcSet} alt={alt} />`;
+
 const AUTHOR_RENDITION_SETUP_SNIPPET = `// Add a rendition enum alongside the image field.
 // Enum values must match rendition names in your DAM instance exactly -
 // these are the names shown in the DAM, not file names or URLs.
@@ -438,7 +531,7 @@ export default function MediaDemoPage() {
     <>
       <DemoHero
         title="Media & DAM Assets"
-        description="How to model image properties, query them from Graph, and render them with Next.js Image - including DAM rendition patterns and the two different shapes Graph returns depending on context."
+        description="How to model image properties, query them from Graph, and render them with Next.js Image - including DAM renditions picked by editors or chosen in code, and the two different shapes Graph returns depending on context."
       />
 
       <div className="max-w-7xl mx-auto px-8 py-16 space-y-20">
@@ -587,8 +680,10 @@ export default function MediaDemoPage() {
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
             DAM images in Graph expose pre-generated renditions via{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">cmp_PublicImageAsset</code>.
-            The content picker selects the asset; rendition selection is handled in code. When your
-            DAM stores size variants of the same image - a thumbnail, medium, and large version of
+            When an editor picks the original asset, which size to serve is up to your code (they
+            can also pick one specific rendition instead - see{" "}
+            <a href="#author-rendition-selection" className="text-brand hover:underline font-medium">editor-picked renditions</a>{" "}
+            below). When your DAM stores size variants of the same image - a thumbnail, medium, and large version of
             the same composition - build a{" "}
             <code className="bg-surface-low px-1 rounded font-mono text-xs">srcset</code> string from
             the{" "}
@@ -692,10 +787,11 @@ export default function MediaDemoPage() {
           </p>
 
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5 mb-6 max-w-3xl">
-            <p className="text-xs font-semibold text-on-surface mb-2">Two constraints to remember</p>
+            <p className="text-xs font-semibold text-on-surface mb-2">Three constraints to remember</p>
             <ul className="space-y-1.5 text-xs text-on-surface-variant">
               <li className="flex gap-2"><span className="text-brand shrink-0">→</span>Params work <strong className="text-on-surface">only on <code className="bg-surface px-1 rounded font-mono">*.cmp.optimizely.com</code> DAM URLs</strong>. CMS globalassets and Graph CDN ignore them, so the helper is host-gated and passes those through unchanged.</li>
               <li className="flex gap-2"><span className="text-brand shrink-0">→</span>There is <strong className="text-on-surface">no format or quality param</strong>. Resizing reduces bytes via dimensions, not by forcing WebP/AVIF - the <code className="bg-surface px-1 rounded font-mono">500x500 WEBP</code> rendition still matters when you specifically want WebP output.</li>
+              <li className="flex gap-2"><span className="text-brand shrink-0">→</span>Params work on <strong className="text-on-surface">rendition URLs too, and the CDN upscales</strong>. Do not run a rendition an editor picked through these helpers - see <a href="#author-rendition-selection" className="text-brand hover:underline">editor-picked renditions</a>.</li>
             </ul>
           </div>
 
@@ -740,20 +836,111 @@ export default function MediaDemoPage() {
 
         <section id="author-rendition-selection">
           <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
-            Author-controlled rendition selection
+            Editor-picked renditions
             <SectionAnchor id="author-rendition-selection" label="#" />
           </h2>
           <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
-            Consider a photography asset that has both a portrait crop (used in profile cards) and
-            a landscape crop (used in hero banners). An author placing that asset into a{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">MediaBlock</code> needs
-            to say which crop fits the context -{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">srcset</code> cannot
-            help here because the choice is about composition, not screen size. Add a string{" "}
-            <code className="bg-surface-low px-1 rounded font-mono text-xs">enum</code> property
-            whose values match the rendition names in your DAM instance exactly, and the author
-            picks both the image and the crop. If a component always uses the same crop, pick it
-            by name in code instead - no CMS property needed.
+            Since the 9 October 2026 CMS release, the DAM picker has a{" "}
+            <strong className="text-on-surface">Renditions</strong> tab. An editor can choose one of
+            an image&apos;s renditions (a crop, a smaller size, another format) instead of the
+            original, and that rendition becomes the image. The choice is stored on the property
+            itself, so an ordinary <code className="bg-surface-low px-1 rounded font-mono text-xs">contentReference</code>{" "}
+            image field needs no extra property and no rendition name in code.{" "}
+            <a href="https://docs.optimizely.com/cms-saas/release-notes/2026-cms-saas-release-notes" target="_blank" rel="noopener" className="text-brand hover:underline">Release notes ↗</a>
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-5">
+              <p className="text-xs font-semibold text-on-surface mb-3">Original asset picked</p>
+              <ul className="space-y-1.5 text-xs text-on-surface-variant">
+                <li className="flex gap-2"><span className="text-brand/50 shrink-0">→</span><span>Stored as <code className="bg-surface px-1 rounded font-mono break-all">cms://content/DamImageSource/{"{assetId}"}</code></span></li>
+                <li className="flex gap-2"><span className="text-brand/50 shrink-0">→</span><span><code className="bg-surface px-1 rounded font-mono">url.default</code> is the full-resolution original</span></li>
+                <li className="flex gap-2"><span className="text-brand/50 shrink-0">→</span><span><code className="bg-surface px-1 rounded font-mono">item</code> is a <code className="bg-surface px-1 rounded font-mono">cmp_PublicImageAsset</code> with <code className="bg-surface px-1 rounded font-mono">Renditions</code>, <code className="bg-surface px-1 rounded font-mono">AltText</code> and <code className="bg-surface px-1 rounded font-mono">FocalPoint</code></span></li>
+              </ul>
+            </div>
+            <div className="bg-surface-lowest border border-brand/30 rounded-2xl p-5">
+              <p className="text-xs font-semibold text-brand mb-3">Rendition picked</p>
+              <ul className="space-y-1.5 text-xs text-on-surface-variant">
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span><span>Stored as <code className="bg-surface px-1 rounded font-mono break-all">cms://content/DamImageSourceRendition/{"{renditionId}"}</code></span></li>
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span><span><code className="bg-surface px-1 rounded font-mono">url.default</code> is the rendition file itself</span></li>
+                <li className="flex gap-2"><span className="text-brand shrink-0">→</span><span><code className="bg-surface px-1 rounded font-mono">item</code> is a <code className="bg-surface px-1 rounded font-mono">cmp_PublicImageAssetRendition</code> with <code className="bg-surface px-1 rounded font-mono">RenditionName</code>, <code className="bg-surface px-1 rounded font-mono">AssetId</code>, <code className="bg-surface px-1 rounded font-mono">Width</code> and <code className="bg-surface px-1 rounded font-mono">Height</code>. It has no alt text and no renditions of its own</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <CodeBlock code={PICKED_RENDITION_GRAPH_SNIPPET} label="What is stored, and what Graph returns" />
+            <CodeBlock code={PICKED_RENDITION_FRAGMENT_SNIPPET} label="Fragment - read the rendition's own fields" />
+          </div>
+
+          <h3 className="font-display text-lg font-bold text-on-surface mt-10 mb-2">What the SDK helpers return</h3>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            The query cms-sdk 3.0.2 generates has no case for the rendition type, so{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">item</code> arrives as a bare{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">__typename</code>. Graph reports that as{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">cmp_Asset</code>, not the rendition type, so do not branch on it.{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">src()</code> still resolves correctly because it reads{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">url.default</code> before{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">item.Url</code>. Any component that renders through{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">src()</code> or the{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">url.default</code> fallback therefore shows the
+            picked rendition with no code change. The helpers below ran against that reference when this page rendered.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-8 items-start">
+            <div>
+              <div className="rounded-2xl overflow-hidden border border-ghost-border max-w-[350px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={pickedSrc} alt={pickedAlt} className="w-full h-auto block" />
+              </div>
+              <p className="text-xs text-on-surface-variant mt-2">
+                Pandas.jpg with the <strong className="text-on-surface">700px Crop</strong> rendition picked (700 × 466)
+              </p>
+            </div>
+            <dl className="space-y-3 text-xs">
+              {([
+                ["src(image)", pickedSrc, "The rendition file, from url.default"],
+                ["getSrcset(image)", String(pickedSrcset), "No Renditions on the item, so nothing to build from"],
+                ["getAlt(image, fallback)", pickedAlt, "No AltText on the item, so the fallback you pass"],
+                ["isDamImageAsset(image)", String(pickedIsDamImage), "The type guard only matches cmp_PublicImageAsset"],
+                ["image.url.graph", PICKED_RENDITION_REF.url.graph, "Already in the SDK's query - the reliable way to detect a pick"],
+              ] as const).map(([call, value, note]) => (
+                <div key={call} className="bg-surface-lowest border border-ghost-border rounded-xl px-4 py-3">
+                  <dt className="font-mono text-on-surface">{call}</dt>
+                  <dd className="font-mono text-brand break-all mt-1">{value}</dd>
+                  <dd className="text-on-surface-variant mt-1">{note}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <h3 className="font-display text-lg font-bold text-on-surface mt-10 mb-2">Do not resize the editor&apos;s pick</h3>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl leading-relaxed">
+            The <a href="#cdn-resize" className="text-brand hover:underline">CDN resize params</a> also work on a
+            rendition URL, and the CDN upscales: the 700 × 466 rendition requested at{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">width=1600</code> comes back
+            1600 × 1065. A fixed-width CDN srcset therefore enlarges a small rendition, and an
+            aspect-ratio crop crops the editor&apos;s crop again. Detect the pick from{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">url.graph</code> and serve the file
+            as-is. If you need a srcset, query the rendition&apos;s{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">Width</code> with the fragment above
+            and leave out every candidate wider than it.
+          </p>
+          <p className="text-xs font-mono text-on-surface-variant mb-6 opacity-60 break-all max-w-3xl">
+            buildDamSrcset(rendition): {pickedCdnSrcset}
+          </p>
+          <CodeBlock code={PICKED_RENDITION_COMPONENT_SNIPPET} label="Component - detect a picked rendition and serve it as-is" />
+
+          <h3 className="font-display text-lg font-bold text-on-surface mt-10 mb-2">Choosing a rendition in code instead</h3>
+          <p className="text-sm text-on-surface-variant mb-6 max-w-3xl leading-relaxed">
+            A rendition property, or a rendition name in the component, still fits when the design
+            should own the crop rather than the editor: every card in a grid the same shape,
+            whichever asset is picked. Add a string{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">enum</code> whose values match
+            the rendition names in your DAM exactly, and look the rendition up by name in{" "}
+            <code className="bg-surface-low px-1 rounded font-mono text-xs">item.Renditions</code>. That array
+            only exists when the original asset was picked, so the lookup falls through to whatever
+            URL the reference carries once an editor picks a rendition in the picker.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -874,7 +1061,8 @@ export default function MediaDemoPage() {
           <><strong className="text-on-surface">Image arrays use type: &quot;array&quot; with items: type: &quot;content&quot;.</strong> Graph inline-expands these automatically - all <code className="bg-surface-low px-1 rounded font-mono text-xs">_metadata</code> fields arrive with the page query, no extra fetch needed.</>,
           <><strong className="text-on-surface">damAssets() handles preview token injection automatically.</strong> If you pass a DAM image ref through <code className="bg-surface-low px-1 rounded font-mono text-xs">getSrcset()</code> in edit mode, the helper appends the preview token so the image loads correctly in Visual Builder.</>,
           <><strong className="text-on-surface">CMP public URLs resize on the fly - no rendition required.</strong> Append <code className="bg-surface-low px-1 rounded font-mono text-xs">width</code>/<code className="bg-surface-low px-1 rounded font-mono text-xs">height</code>/<code className="bg-surface-low px-1 rounded font-mono text-xs">action=crop</code>/<code className="bg-surface-low px-1 rounded font-mono text-xs">center_width</code> params to any <code className="bg-surface-low px-1 rounded font-mono text-xs">*.cmp.optimizely.com</code> URL and the CDN returns that size. Use it (host-gated) to build a responsive srcset independent of pre-made renditions. There is no format/quality param, so it saves bytes by dimensions only.</>,
-          <><strong className="text-on-surface">The content picker cannot select a DAM rendition - serve it from code.</strong> All rendition data is available in Graph under <code className="bg-surface-low px-1 rounded font-mono text-xs">cmp_PublicImageAsset.Renditions</code>. Default to building a srcset so the browser picks by viewport width. Expose a rendition dropdown to authors only when renditions represent different crops or formats rather than size variants of the same image.</>,
+          <><strong className="text-on-surface">Editors can pick a DAM rendition in the picker, and it arrives as url.default.</strong> The property stores <code className="bg-surface-low px-1 rounded font-mono text-xs">cms://content/DamImageSourceRendition/{"{id}"}</code> and Graph points <code className="bg-surface-low px-1 rounded font-mono text-xs">url.default</code> at the rendition file, so <code className="bg-surface-low px-1 rounded font-mono text-xs">src()</code> renders it unchanged. cms-sdk 3.0.2 does not query the rendition&apos;s own fields (<code className="bg-surface-low px-1 rounded font-mono text-xs">getSrcset</code> and <code className="bg-surface-low px-1 rounded font-mono text-xs">getAlt</code> fall back, <code className="bg-surface-low px-1 rounded font-mono text-xs">isDamImageAsset</code> is false) and the CDN will upscale it, so detect it from <code className="bg-surface-low px-1 rounded font-mono text-xs">url.graph</code> and serve it as-is.</>,
+          <><strong className="text-on-surface">Choose a rendition in code only when the design should own the crop.</strong> When an editor picks the original asset, build a srcset so the browser picks by viewport width. Add a rendition name property, or hard-code the name, only when every placement must have the same shape whichever asset is picked.</>,
         ]} />
 
         <SourcePanel
