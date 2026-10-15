@@ -21,8 +21,7 @@ export const LogoGridBlockType = contentType({
       type: "array",
       displayName: "Partner Logos",
       // contentReference, not content: only a reference field gets the CMS's DAM image
-      // picker, and a content area expands "_image" into the registered _image types -
-      // there are none - so its logos arrived as { __typename } only.
+      // picker. A DAM asset is not _IContent, so a content area cannot hold one.
       // No indexingType: "disabled" here - it drops the field from Graph and the SDK query.
       // Also takes CMP DAM images where the CMS has DAM: scripts/push-dam-allowed-types.ts.
       items: { type: "contentReference", allowedTypes: ["_image"] },
