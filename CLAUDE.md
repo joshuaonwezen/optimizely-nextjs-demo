@@ -249,13 +249,17 @@ validated against what the CMS *already* has, not against types created in the s
 content type"* for the display template, and nothing is created. Push components first, then experiences,
 then display templates, waiting for each to become visible (the import is eventually consistent).
 
-### DAM images in reference fields - added per instance
+### Image fields take CMS and DAM images - DAM added per instance
 
-`HeroBlock.backgroundImage` accepts CMP DAM images (`graph:cmp_PublicImageAsset`) as well as CMS media, but only `"_image"` is in the code config: a CMS without the DAM integration rejects that type ("The allowedTypes field contains one or more invalid content types"), and in a full `opti:push` that one error fails the whole content-type import. `scripts/push-dam-allowed-types.ts` adds the DAM type where the CMS accepts it and skips the rest - the CMS's own answer is the capability check. As of 2026-10-14 joshCMS, harryNewCMS, mostinNewCMS and toddCMS have DAM; personal, kastleNewCMS, apjCMS and v&aCMS do not.
+Every image field (all `allowedTypes: ["_image"]` properties: the `SEO`/`EditorialContent` contract fields, `BlogExperience`/`TraditionalPage` `heroImage`, `ConsultantPage.photo`, and Hero/Image/RenditionImage/Spotlight/Testimonial/TeamMember/Author/LogoGrid) accepts CMP DAM images (`graph:cmp_PublicImageAsset`) as well as CMS media on instances with the DAM integration. Only `"_image"` is in the code config: a CMS without DAM rejects the DAM type ("The allowedTypes field contains one or more invalid content types"), and in a full `opti:push` that one error fails the whole content-type import. `scripts/push-dam-allowed-types.ts` adds the DAM type where the CMS accepts it and skips the rest - the CMS's own answer is the capability check. As of 2026-10-15 joshCMS, harryNewCMS, mostinNewCMS and toddCMS have DAM; personal, kastleNewCMS, apjCMS and v&aCMS do not.
 
-- **A normal `opti:push` silently resets the field to `"_image"`** (not flagged as breaking), so re-run the script after one. The seed runner does, as the first of its optional steps.
-- Rendering needs nothing extra: `allowedTypes` does not change the SDK's query for a `contentReference` (always `key`/`url`, plus the DAM item when `damMode` is on), and `HeroBlock` already resolves the URL through `src()`.
-- To open another reference field to DAM images, add it to `DAM_IMAGE_FIELDS` in that script - not to the content type.
+- **A normal `opti:push` resets every one of these fields to `"_image"`** (not flagged as breaking), so re-run the script after one. The seed runner does, as the first of its optional steps.
+- **Contract properties are copied, not inherited.** Each type that `extends` a contract keeps its own copy of the contract's properties in the CMS, so patching `SEO.ogImage` leaves `ArticlePage.ogImage` unchanged. The script patches the contract and every type whose `contracts` lists it.
+- **Content type keys differ in case per instance** (joshCMS has `spotlightBlock`). `GET /v1/contenttypes/{key}` matches case-insensitively; a listing does not.
+- Rendering needs nothing extra: `allowedTypes` does not change the Graph type (`ContentReference`) or the SDK's query (always `key`/`url`, plus the DAM item when `damMode` is on), and a DAM reference's `url.default` is the public `*.cmp.optimizely.com` URL (verified on toddCMS), so even the renderers that skip `src()` and the `ogImage { url { default } }` metadata read work.
+- **Image lists must be `contentReference` arrays, never content areas.** Only a reference field gets the CMS's DAM image picker, and the SDK expands a content area's `"_image"` into the *registered* `_image` types - there are none - so its items arrive as `{ __typename }` only. `LogoGridBlock.logos` was a content area until 2026-10-15 and never rendered a logo; it is now `items: { type: "contentReference" }` on all eight instances.
+- **Never change a property's type in the CMS UI.** The SDK builds the query from the code definition, so the CMS and the code must agree. Changing `logos` in the UI to an ImageBlock component made Graph return one object where the query expects a list, and every joshCMS page with a LogoGridBlock failed with *"Expected Iterable, but did not find one for field LogoGridBlock.logos"*. Change the code, then push with `--force`.
+- To add another image field, add it to `DAM_IMAGE_FIELDS` in that script - not to the content type.
 
 ### Native Optimizely Forms — `initForms()` (cms-sdk 3.0.0)
 

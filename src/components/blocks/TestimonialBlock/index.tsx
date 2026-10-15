@@ -18,6 +18,7 @@ export const TestimonialBlockType = contentType({
     authorName: { type: "string", displayName: "Author Name", isLocalized: true },
     authorRole: { type: "string", displayName: "Author Role", isLocalized: true },
     // No indexingType: "disabled" here - it drops the field from Graph and the SDK query.
+    // Also takes CMP DAM images where the CMS has DAM: scripts/push-dam-allowed-types.ts.
     authorImage: { type: "contentReference", displayName: "Author Photo", allowedTypes: ["_image"] },
   },
 });

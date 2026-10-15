@@ -20,6 +20,7 @@ export const AuthorBlockType = contentType({
     // fragment. "disabled" strips it from inline composition expansions and the avatar
     // never reaches the renderer. A contentReference only accepts "disabled" or omitted,
     // so omitting is the only way to include it. Breaking change: push with --force.
+    // Also takes CMP DAM images where the CMS has DAM: scripts/push-dam-allowed-types.ts.
     avatar:      { type: "contentReference", displayName: "Avatar", allowedTypes: ["_image"] },
     linkedinUrl: { type: "url",              displayName: "LinkedIn URL" },
   },

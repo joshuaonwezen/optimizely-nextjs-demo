@@ -14,6 +14,7 @@ export const SpotlightBlockType = contentType({
   properties: {
     person:    { type: "string",           displayName: "Person",    indexingType: "searchable", isLocalized: true },
     quote:     { type: "string",           displayName: "Quote",     indexingType: "searchable", isLocalized: true },
+    // Also takes CMP DAM images where the CMS has DAM: scripts/push-dam-allowed-types.ts.
     image:     { type: "contentReference", displayName: "Image",     allowedTypes: ["_image"] },
     textfield: { type: "richText",         displayName: "Text",      indexingType: "searchable" },
     spacing: {

@@ -20,6 +20,9 @@ export const SEOContract = contract({
     metaDescription: { type: "string", displayName: "Meta Description", isLocalized: true, group: "SEO", sortOrder: 1 },
     // No indexingType here — "disabled" on a _page contentReference would make the SDK
     // skip the field in generated fragments and ogImage would always be null.
+    // Every image field here also takes CMP DAM images where the CMS has DAM: scripts/
+    // push-dam-allowed-types.ts adds them to the contract AND to each type extending it
+    // (each keeps its own copy of the contract's properties).
     ogImage:         { type: "contentReference", displayName: "Social Share Image", allowedTypes: ["_image"], group: "SEO", sortOrder: 2 },
   },
 });
@@ -68,6 +71,7 @@ export const BlogExperienceType = contentType({
     // Hero Image, Heading, Subheading, Author, Published Date.
     // indexingType omitted on the image reference — a contentReference only accepts
     // "disabled", which would strip it from the generated fragment (see CLAUDE.md).
+    // Also takes CMP DAM images where the CMS has DAM: scripts/push-dam-allowed-types.ts.
     heroImage:     { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"], sortOrder: 0, isRequired: true },
     heading:       { type: "string", displayName: "Heading",    indexingType: "searchable", isLocalized: true, sortOrder: 1, isRequired: true },
     subheading:    { type: "string", displayName: "Subheading", indexingType: "searchable", isLocalized: true, sortOrder: 2, isRequired: true },
@@ -88,6 +92,7 @@ export const LandingPageType = contentType({
   properties: {
     heading:    { type: "string",   displayName: "Heading",    indexingType: "searchable", isLocalized: true },
     subheading: { type: "string",   displayName: "Subheading", indexingType: "searchable", isLocalized: true },
+    // Also takes CMP DAM images where the CMS has DAM: scripts/push-dam-allowed-types.ts.
     heroImage:  { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"] },
     body:       { type: "richText", displayName: "Body", indexingType: "searchable", isLocalized: true },
     // content: references a single reusable block from the shared content library.
@@ -118,6 +123,7 @@ export const EditorialContentContract = contract({
   properties: {
     title:     { type: "string",           displayName: "Title",     indexingType: "searchable", isLocalized: true },
     summary:   { type: "string",           displayName: "Summary",   indexingType: "searchable", isLocalized: true },
+    // Also takes CMP DAM images where the CMS has DAM, here and on ArticlePage/CaseStudyPage: see ogImage above.
     heroImage: { type: "contentReference", displayName: "Hero Image", allowedTypes: ["_image"] },
     tags:      { type: "array",            displayName: "Tags",      indexingType: "queryable",  items: { type: "string" } },
   },
@@ -182,6 +188,7 @@ export const ConsultantPageType = contentType({
     jobTitle:  { type: "string",           displayName: "Job Title",     indexingType: "searchable", isLocalized: true },
     summary:   { type: "string",           displayName: "Summary",       indexingType: "searchable", isLocalized: true },
     bio:       { type: "richText",         displayName: "Bio",           indexingType: "searchable", isLocalized: true },
+    // Also takes CMP DAM images where the CMS has DAM: scripts/push-dam-allowed-types.ts.
     photo:     { type: "contentReference", displayName: "Photo",         allowedTypes: ["_image"] },
     expertise: { type: "array",            displayName: "Expertise",     indexingType: "queryable",  items: { type: "string" } },
     email:     { type: "string",           displayName: "Contact Email" },

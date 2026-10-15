@@ -16,6 +16,7 @@ export const ImageBlockType = contentType({
   properties: {
     // No indexingType: the SDK omits indexingType:"disabled" reference fields from
     // its generated fragment (createQuery), so the image would never be queried.
+    // Also takes CMP DAM images where the CMS has DAM: scripts/push-dam-allowed-types.ts.
     image: { type: "contentReference", displayName: "Image", allowedTypes: ["_image"] },
     rendition: {
       type: "string",

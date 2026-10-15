@@ -81,7 +81,7 @@ Always use the seed runner — never call individual seed scripts directly. The 
 | Step | Script | Notes |
 |---|---|---|
 | 1 | `opti:push` | Pushes content type definitions to the CMS |
-| 1b | `push-dam-allowed-types.ts` | Optional, first in the optional phase — re-allows CMP DAM images in `HeroBlock.backgroundImage` where the CMS has the DAM integration (the step-1 push resets it); skips the rest |
+| 1b | `push-dam-allowed-types.ts` | Optional, first in the optional phase — re-allows CMP DAM images alongside CMS media in every image field where the CMS has the DAM integration (the step-1 push resets them to `_image`); skips the rest |
 | 2 | `seed-content.ts` | Creates 19 DynamicExperience/TraditionalPage pages + homepage |
 | 3 | `seed-nav.ts` | Creates NavigationItem tree + Navigation block |
 | 4 | `seed-modeling.ts` | Authors, articles, case studies, milestones, team members, hub pages, Phase D pages |

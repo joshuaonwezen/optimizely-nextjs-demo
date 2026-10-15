@@ -15,6 +15,7 @@ export const TeamMemberBlockType = contentType({
     name:        { type: "string",           displayName: "Name",      indexingType: "searchable", isLocalized: true },
     role:        { type: "string",           displayName: "Role",      isLocalized: true },
     // No indexingType: "disabled" here - it drops the field from Graph and the SDK query.
+    // Also takes CMP DAM images where the CMS has DAM: scripts/push-dam-allowed-types.ts.
     photo:       { type: "contentReference", displayName: "Photo", allowedTypes: ["_image"] },
     bio:         { type: "string",           displayName: "Short bio", indexingType: "searchable", isLocalized: true },
     linkedinUrl: { type: "url",              displayName: "LinkedIn URL" },

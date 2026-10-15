@@ -1,12 +1,13 @@
 import Image from "next/image";
-import { contentType, displayTemplate } from "@optimizely/cms-sdk";
+import { contentType, displayTemplate, damAssets } from "@optimizely/cms-sdk";
 import { getPreviewUtils } from "@optimizely/cms-sdk/react/server";
 import {
   BACKGROUND_NONE_DEFAULT, TEXT_COLOR, TEXT_ALIGN, FONT_STYLE, TEXT_ALIGN_CLASSES,
   isChecked, resolveStyleClasses, withDefault, HEADING_SIZE, SPACING, CONTENT_WIDTH, alignBoxClass, spacingClass, widthClass,
 } from "../_shared/displayTemplateSettings";
 import { BlockHeader } from "../_shared/BlockHeader";
-import { asSdkContent } from "@/components/cms/sdkTypes";
+import { resolveImageUrl, type ImageRef } from "../_shared/contentRefs";
+import { asDamContent, asSdkContent, asSdkReference } from "@/components/cms/sdkTypes";
 
 export const LogoGridBlockType = contentType({
   key: "LogoGridBlock",
@@ -19,8 +20,12 @@ export const LogoGridBlockType = contentType({
     logos: {
       type: "array",
       displayName: "Partner Logos",
+      // contentReference, not content: only a reference field gets the CMS's DAM image
+      // picker, and a content area expands "_image" into the registered _image types -
+      // there are none - so its logos arrived as { __typename } only.
       // No indexingType: "disabled" here - it drops the field from Graph and the SDK query.
-      items: { type: "content", allowedTypes: ["_image"] },
+      // Also takes CMP DAM images where the CMS has DAM: scripts/push-dam-allowed-types.ts.
+      items: { type: "contentReference", allowedTypes: ["_image"] },
     },
   },
 });
@@ -63,12 +68,9 @@ export const LogoGridBlockDefaultTemplate = displayTemplate({
   },
 });
 
-interface LogoItem {
-  _metadata?: {
-    url?: { default?: string | null } | null;
-    displayName?: string | null;
-  } | null;
-}
+// An image reference: { key, url } for CMS media, plus the DAM asset under `item`
+// (Url, Title, AltText) when the instance has DAM.
+type LogoItem = NonNullable<ImageRef> & { item?: { Title?: string | null } | null };
 
 interface LogoGridData {
   heading?:    string | null;
@@ -98,7 +100,8 @@ const FLEX_ALIGN: Record<string, string> = {
 export default function LogoGridBlock(props: LogoGridBlockProps) {
   const data = props.content ?? props;
   const ds = props.displaySettings;
-  const { pa } = getPreviewUtils(asSdkContent(data));
+  const { pa, src } = getPreviewUtils(asSdkContent(data));
+  const { getAlt } = damAssets(asDamContent(data));
 
   const isColor = isChecked(ds, "fullColor");
   const showNames = isChecked(ds, "showNames");
@@ -138,17 +141,18 @@ export default function LogoGridBlock(props: LogoGridBlockProps) {
               </div>
             ))
           : logos.map((logo, i) => {
-              const src  = logo._metadata?.url?.default;
-              const name = logo._metadata?.displayName ?? `Partner ${i + 1}`;
-              if (!src) return null;
+              // src() resolves a DAM asset's URL; the fallbacks cover CMS media.
+              const url  = resolveImageUrl(logo, src);
+              const name = logo.item?.Title ?? `Partner ${i + 1}`;
+              if (!url) return null;
               return (
                 <div key={i} className="flex flex-col items-center gap-1.5">
                   <div
                     className={`relative ${logoWrapper} ${isColor ? "" : "grayscale opacity-70"} hover:grayscale-0 transition-all duration-300 hover:opacity-100`}
                   >
                     <Image
-                      src={src}
-                      alt={name}
+                      src={url}
+                      alt={getAlt(asSdkReference(logo), name)}
                       fill
                       className="object-contain"
                       sizes={imgSizes}
