@@ -487,6 +487,15 @@ Use the `optimizelyEndUserId` cookie set by middleware — never generate a new 
 ### CMS Variation names must exactly match FX variation key strings
 Case-sensitive. If the FX flag has variation key `variation_1`, the CMS variation must be named exactly `variation_1`. A mismatch means the variation is never served.
 
+**`control` is reserved for the original page** (`CONTROL_VARIATION_KEY` in `variationPath.ts`). No CMS variation carries that name, so Graph serves the base item, but the catch-all still renders `FxBucketingEvent` for it. Without that, a CMS experiment's baseline arm would record zero visitors: the page-level impression otherwise only fires when a CMS variation was actually served. Never name a CMS variation `control`.
+
+**CMS experiments are created from the editor by the FX Experiments CMS UI extension**, an OCP app in the sibling repo `../fx-experiments-cms-extension`. From the Experiment sidebar it:
+- creates the flag with `cms_flag`/`cms_route` as variable **defaults**;
+- adds one FX variation per CMS variation, plus `control`;
+- adds an A/B rule with audience, traffic and metrics, and links to `fetch_results_ui_url`.
+
+Prefer it over hand-building flags in the FX UI.
+
 ### FX datafile has 60s cache
 Changes in the FX console take up to 60 seconds to propagate. Wait before concluding a flag isn't working.
 
@@ -509,7 +518,7 @@ A path that already contains `__v_` was requested directly (middleware never see
 
 - **Edge vs browser.** If middleware decided the flag for this request (the flag sets `cms_flag: true` and a `cms_route` covering the page), the catch-all records the `__v_` segments with `setRequestFlagVariations()` and the block reads them through `edgeVariationFor()` (`src/lib/optimizely/requestVariations.ts`, a React `cache()` per-request store - blocks render through `OptimizelyComponent`, which passes them nothing from the page). The server renders that variation only. Otherwise `VariationContainerClient` decides with `useFxDecision`, rendering the fallback until the datafile loads. The wrapper's `data-variation-source` (`edit`/`edge`/`browser`/`fallback`) says which ran.
 - **The first Variation is the fallback** - flag off, visitor not bucketed, or no key matches.
-- **The block fires its own `FxBucketingEvent`**, including for the `off` arm. The catch-all's page-level event only fires when Graph served a CMS variation, and a container's flag has none, so the two do not double-count.
+- **The block fires its own `FxBucketingEvent`**, including for the `off` arm. The page-level event fires when Graph served a CMS variation, and also for a `control` decision (see below) - which `savings_offer` has. Both can then mount for the same flag in one commit, so `FxBucketingEvent` claims its `page|flag` slot synchronously; the second instance decides with the event suppressed and nothing double-counts.
 - **The inner content area excludes `VariationContainerBlock`** (a fragment cannot spread itself; the SDK would return only `__typename`), and `VariationItemBlock` is in `CONTENT_AREA_EXCLUDES` (`src/lib/optimizely/contentAreaExcludes.mjs`, shared with `optimizely.config.mjs` - `.mjs` because the CLI loads the config with a plain `import()`).
 - The registry adds both types to every content-area fragment (`TraditionalPage.mainContent` included), so **both types must be pushed to every instance before this code deploys** - an instance whose Graph lacks them rejects every page query.
 

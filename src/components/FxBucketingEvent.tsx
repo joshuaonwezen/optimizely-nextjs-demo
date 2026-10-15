@@ -34,9 +34,15 @@ export function FxBucketingEvent({ flagKey }: { flagKey: string }) {
     // entry it added. Rollouts have no rule, hence the flag-key fallback.
     let recordedKey: string | null = null;
     let active = true;
+    let fired = false;
 
+    // Claimed synchronously, not after the client loads: two instances for the same flag can
+    // mount in one commit (the catch-all's `control` impression plus a VariationContainerBlock
+    // on that flag), and both would see an unclaimed key and fire. Released in cleanup if this
+    // instance never got to fire, so a StrictMode mount/unmount/remount still reports once.
     const key = `${page}|${flagKey}`;
     const alreadyReported = reportedFor.has(key);
+    if (!alreadyReported) reportedFor.add(key);
 
     void getOptimizelyBrowserClient().then((client) => {
       if (!active || !client) return;
@@ -48,7 +54,7 @@ export function FxBucketingEvent({ flagKey }: { flagKey: string }) {
       const decision = alreadyReported
         ? ctx?.decide(flagKey, [OptimizelyDecideOption.DISABLE_DECISION_EVENT])
         : ctx?.decide(flagKey, []);
-      if (!alreadyReported) reportedFor.add(key);
+      fired = !alreadyReported;
 
       // Report only what this visitor was actually served. The browser can bucket
       // differently than the server, and recording an unserved variation would tag
@@ -69,6 +75,7 @@ export function FxBucketingEvent({ flagKey }: { flagKey: string }) {
 
     return () => {
       active = false;
+      if (!alreadyReported && !fired) reportedFor.delete(key);
       if (recordedKey) clearVariation(recordedKey);
     };
   }, [flagKey, page]);

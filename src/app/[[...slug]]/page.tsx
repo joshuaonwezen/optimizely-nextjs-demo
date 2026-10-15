@@ -11,7 +11,12 @@ import { LOCALE_RE } from "@/lib/localeUrl";
 import { cacheTag } from "next/cache";
 import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
-import { isVariationSegment, parseVariationSegment, type FlagVariation } from "@/lib/optimizely/variationPath";
+import {
+  CONTROL_VARIATION_KEY,
+  isVariationSegment,
+  parseVariationSegment,
+  type FlagVariation,
+} from "@/lib/optimizely/variationPath";
 import { setRequestFlagVariations } from "@/lib/optimizely/requestVariations";
 import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 import WxVariationSwap from "@/components/personalization/WxVariationSwap";
@@ -348,9 +353,12 @@ async function CmsPage({
   }
 
   const servedVariation: string | null = page._metadata?.variation ?? null;
+  // A `control` decision serves the base item on purpose, so it still reports its impression -
+  // without it a CMS experiment's baseline arm records no visitors. Any other decision that
+  // ended on base (the page has no variation of that name) reports nothing, as before.
   const servedFlagKey = servedVariation
     ? (flagVariations.find((fv) => fv.variationKey === servedVariation)?.flagKey ?? null)
-    : null;
+    : (flagVariations.find((fv) => fv.variationKey === CONTROL_VARIATION_KEY)?.flagKey ?? null);
 
   // The variant tree for pre-paint mode, from the same items the base came out of - no
   // extra Graph work. Null when Graph did not return it (a name in keyItems that the

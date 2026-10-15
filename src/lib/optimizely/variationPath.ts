@@ -6,6 +6,13 @@
 export const VARIATION_MARKER = "__v_";
 export const FLAG_VAR_SEP = "--";
 
+// The FX variation that serves a CMS experiment's ORIGINAL page. No CMS variation carries
+// the name, so Graph answers with the base item, and the catch-all fires the FX impression
+// for it anyway - otherwise the baseline arm records no visitors and the experiment has
+// nothing to compare against. Flags created by the FX Experiments CMS extension
+// (fx-experiments-cms-extension) always include it; savings_offer uses it too.
+export const CONTROL_VARIATION_KEY = "control";
+
 export interface FlagVariation {
   flagKey: string;
   variationKey: string;
