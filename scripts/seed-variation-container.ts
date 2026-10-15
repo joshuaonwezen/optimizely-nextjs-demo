@@ -9,7 +9,7 @@
  *       └── variations → VariationItemBlock × 3   (shared, Experiments folder)
  *           └── blocks → SectionHeadingBlock + CallToAction   (shared, Experiments folder)
  *
- * The variation keys below must match the `savings_offer` flag's variation keys in
+ * The variation keys (variation-container-data.ts) must match the `savings_offer` flag's variation keys in
  * scripts/maintenance/seed-fx-flags.ts exactly. That flag sets cms_flag + cms_route
  * "/savings-offer", so middleware decides it there and the block renders the variation
  * server-side. /en/savings-offer is the same page outside cms_route: there the browser
@@ -35,36 +35,13 @@ import {
   stableKey,
   uid,
 } from "./_shared";
+import { FLAG_KEY, NAMESPACE, VARIATIONS, variationItemKey } from "./variation-container-data";
 
 config({ path: ".env.local" });
 
-const NAMESPACE = "mb-experiments";
-const FLAG_KEY = "savings_offer";
 const PAGE_ROUTE = "savings-offer";
 const PAGE_DISPLAY_NAME = "Savings Offer";
 const PAGE_KEY = stableKey(NAMESPACE, `/${PAGE_ROUTE}`);
-
-// Order matters: the first variation is the container's fallback.
-const VARIATIONS = [
-  {
-    key: "control",
-    heading: "Put your savings to work",
-    subheading: "A flexible Easy Saver with instant access, no fees and no notice period.",
-    cta: "Open an Easy Saver",
-  },
-  {
-    key: "rate_led",
-    heading: "Earn 5.10% AER on every penny",
-    subheading: "Our best instant-access rate, variable. No withdrawal limits, interest paid monthly.",
-    cta: "Start earning 5.10%",
-  },
-  {
-    key: "bonus_led",
-    heading: "Get £150 when you switch",
-    subheading: "Open an Easy Saver and move your salary to Mosey Bank within 60 days - we'll add £150.",
-    cta: "Claim my £150",
-  },
-] as const;
 
 /** Create a shared block, or re-patch it in place when its stable key already exists. */
 async function upsertSharedBlock(
@@ -98,7 +75,7 @@ async function main() {
   for (const v of VARIATIONS) {
     const headingKey = stableKey(NAMESPACE, `${FLAG_KEY}:${v.key}:heading`);
     const ctaKey = stableKey(NAMESPACE, `${FLAG_KEY}:${v.key}:cta`);
-    const variationKey = stableKey(NAMESPACE, `${FLAG_KEY}:${v.key}`);
+    const variationKey = variationItemKey(v.key);
 
     await upsertSharedBlock(headingKey, "SectionHeadingBlock", `Savings Offer (${v.key}) - Heading`, folder, {
       heading: v.heading,
