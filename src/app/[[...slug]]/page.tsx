@@ -219,10 +219,11 @@ async function CmsPage({
 
   // FX and ODP take precedence over WX - but only when their decision actually applies to
   // THIS page, which means this page has a variation with that name. The presence of a
-  // variation segment is not enough on its own: the `homepage` flag ships its persona
-  // variations through a rollout with NO cms_route, and routeMatches() treats an absent
-  // cms_route as "every route", so middleware appends `__v_homepage--investments` on pages
-  // that have no `investments` variation at all. Graph then falls back to base via
+  // variation segment is not enough on its own: routeMatches() treats an absent cms_route
+  // as "every route", so a flag without one makes middleware append e.g.
+  // `__v_homepage--investments` on pages that have no `investments` variation at all.
+  // (`homepage` itself was scoped to "/, /en" on 2026-11-05; any route-less CMS flag still
+  // does this.) Graph then falls back to base via
   // includeOriginal, so FX changes nothing there - and gating on the segment alone let it
   // silently disable the WX bridge on every page a visitor had browsed (AutoTracker writes
   // demo_persona from the path, so visiting /investments was enough to kill it).

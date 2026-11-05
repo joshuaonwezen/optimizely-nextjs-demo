@@ -981,10 +981,22 @@ export default async function FeatureFlagsDemoPage() {
             between Feature Experimentation and the CMS.
           </p>
 
+          <Callout variant="note">
+            <strong>Or do steps 1 and 4 from the editor.</strong>{" "}
+            Once the page&apos;s variations exist (step 2), the{" "}
+            <Link href="/demo/cms-ui-extensions#fx-experiments" className="text-brand hover:underline">
+              Feature Experimentation CMS UI extension
+            </Link>{" "}
+            builds the rest from a sidebar beside the page: a flag with {"cms_flag"} and {"cms_route"} as
+            variable defaults, one FX variation per CMS variation plus {"control"} for the original
+            page, and an A/B rule with traffic, audience and metrics. It starts the rule too, and warns
+            when another experiment already runs on the same route.
+          </Callout>
+
           <div className="space-y-8 max-w-2xl">
             <Step number={1} title="Create a flag and targeting rules in Feature Experimentation">
               Create manually in the FX dashboard or via the REST API. This demo uses flag{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">homepage</code> with five
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">homepage</code> with four
               targeted-delivery rules, each serving 100% of its audience:{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">personal</code> (audience: <code className="bg-surface-low px-1 rounded font-mono text-xs">persona == &quot;personal&quot;</code>),{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">business</code> (audience: <code className="bg-surface-low px-1 rounded font-mono text-xs">persona == &quot;business&quot;</code>),{" "}
@@ -993,10 +1005,12 @@ export default async function FeatureFlagsDemoPage() {
               Visitors matching none fall through to the default <code className="bg-surface-low px-1 rounded font-mono text-xs">off</code> variation and see the base homepage. The{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code> attribute is set from the{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">persona</code> cookie. In production that attribute would come from a real signal - CRM data, a session, a segment - rather than a switcher; only the source changes, the audience conditions stay the same.
-              On each variation, set two variation variables:{" "}
+              Set two variables as flag defaults, so every variation - including ones added later - inherits them:{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_flag: true</code> (marks this as a CMS-content experiment the edge should route) and{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_route</code> (the path the variation targets, e.g.{" "}
-              <code className="bg-surface-low px-1 rounded font-mono text-xs">&quot;/&quot;</code> for the homepage, or{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">&quot;/&quot;</code> for the homepage - the demo&apos;s{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">homepage</code> flag uses{" "}
+              <code className="bg-surface-low px-1 rounded font-mono text-xs">&quot;/, /en&quot;</code> to cover both URL styles - or{" "}
               <code className="bg-surface-low px-1 rounded font-mono text-xs">&quot;/products/*&quot;</code> for a section). The middleware only applies a
               variation whose <code className="bg-surface-low px-1 rounded font-mono text-xs">cms_route</code> matches the current page, so you can run many CMS
               experiments across the site without them colliding or fragmenting each other&apos;s cache. Leave{" "}
@@ -1031,7 +1045,8 @@ export default async function FeatureFlagsDemoPage() {
             </Step>
 
             <Step number={4} title="Enable the flag and start the experiment">
-              Turn on the flag and launch the experiment in the FX dashboard. FX handles traffic
+              Turn on the flag and launch the experiment in the FX dashboard, or press Start in the
+              extension&apos;s sidebar. FX handles traffic
               allocation and bucketing; Graph handles content delivery. Analytics, winner declaration,
               and rollout happen entirely in the FX dashboard - no code changes needed.
             </Step>

@@ -494,7 +494,7 @@ Case-sensitive. If the FX flag has variation key `variation_1`, the CMS variatio
 
 **`control` is reserved for the original page** (`CONTROL_VARIATION_KEY` in `variationPath.ts`). No CMS variation carries that name, so Graph serves the base item, but the catch-all still renders `FxBucketingEvent` for it. Without that, a CMS experiment's baseline arm would record zero visitors: the page-level impression otherwise only fires when a CMS variation was actually served. Never name a CMS variation `control`.
 
-**CMS experiments are created from the editor by the FX Experiments CMS UI extension**, an OCP app in the sibling repo `../fx-experiments-cms-extension`. From the Experiment sidebar it:
+**CMS experiments are created from the editor by the Feature Experimentation CMS UI extension**, an OCP app in the sibling repo `../fx-experiments-cms-extension`. From its sidebar it:
 - creates the flag with `cms_flag`/`cms_route` as variable **defaults**;
 - adds one FX variation per CMS variation, plus `control`;
 - adds an A/B rule with audience, traffic and metrics, and links to `fetch_results_ui_url`.

@@ -62,20 +62,25 @@ const TROUBLESHOOTING = [
     fix: "Pass the instance UUID with --scope and let OCP resolve the account. Your personal OCP account may manage no CMS instance at all.",
   },
   {
-    symptom: "A new dev version is published but the CMS still runs the old one",
-    cause: "Installs are pinned to a version.",
-    fix: "ocp directory upgrade app --scope <uuid> -v <version> once the new version reports PUBLISHED.",
+    symptom: "A new dev version is published but the editor still shows the old one",
+    cause: "Publishing a dev version moves the existing installs onto it once it reports PUBLISHED, but an editor tab that is already open keeps the bundle it loaded.",
+    fix: "Check ocp directory list-installs app@<version> lists the install, then reload the editor.",
+  },
+  {
+    symptom: "The panel shows \"[ExtensionService] Failed to invoke function:\" with nothing after it",
+    cause: "The backend threw instead of answering. Most often storage.settings.get on an install that has never saved its settings - it throws rather than returning an empty object.",
+    fix: "Read ocp app logs for the real error. Guard settings reads and keep every await inside the function's try (step 3).",
   },
   {
     symptom: "ocp app logs is empty",
-    cause: "CMS-scoped apps need --scope, and a function only logs what you log.",
-    fix: "ocp app logs --appId app --scope <uuid> --tail, and log each action you route.",
+    cause: "CMS-scoped apps need the managing OCP account and the instance, and a function only logs what you log.",
+    fix: "ocp app logs --appId app --trackerId <ocp-account> --scope <uuid> --from 1h, and log each action you route.",
   },
 ];
 
 const APP_YML = `meta:
   app_id: fx_cms_experiments
-  display_name: FX Experiments
+  display_name: Feature Experimentation
   version: 0.0.1-dev.0
   vendor: optimizely
   summary: Turn a page's CMS variations into an FX A/B test from the editor.
@@ -97,7 +102,7 @@ ui_extensions:
   sidebar:
     - name: fx-experiment
       entry_point: FxExperiment    # build must emit dist/cms-ui-extensions/FxExperiment.js
-      display_name: Experiment
+      display_name: Feature Experimentation   # the panel title and rail tooltip
   view:
     - name: fx-experiments
       entry_point: FxExperiments
@@ -153,21 +158,37 @@ register((context) => (
 
 const FUNCTION_SNIPPET = `// src/backend/functions/CmsUiExtension.ts - one function, routed by action
 import * as App from "@zaiusinc/app-sdk";
-import { storage } from "@zaiusinc/app-sdk";
+import { logger, storage, type ValueHash } from "@zaiusinc/app-sdk";
+
+// Per-install values saved through forms/settings.yml. On an install that has never
+// saved them, the store THROWS ("Failed to get value at app-data/<install>/settings").
+async function readSection<T extends ValueHash>(key: string): Promise<T> {
+  try {
+    return await storage.settings.get<T>(key);
+  } catch {
+    return {} as T;
+  }
+}
 
 export class CmsUiExtension extends App.Function {
   public async perform(): Promise<App.Response> {
     const { action, params } = this.request.bodyJSON ?? {};
 
-    // Per-install values saved through forms/settings.yml
-    const fx = await storage.settings.get<{ apiToken?: string; projectId?: string }>("fx");
-    if (!fx.apiToken) return new App.Response(412, { ok: false, error: "not_configured" });
+    // Anything that escapes perform() reaches the editor as an empty
+    // "[ExtensionService] Failed to invoke function:" - so all of it goes in the try.
+    try {
+      const fx = await readSection<{ apiToken?: string; projectId?: string }>("fx");
+      if (!fx.apiToken) return new App.Response(412, { ok: false, error: "not_configured" });
 
-    switch (action) {
-      case "getStatus":
-        return new App.Response(200, { ok: true, result: await getStatus(fx, params) });
-      default:
-        return new App.Response(400, { ok: false, error: "unknown_action" });
+      switch (action) {
+        case "getStatus":
+          return new App.Response(200, { ok: true, result: await getStatus(fx, params) });
+        default:
+          return new App.Response(400, { ok: false, error: "unknown_action" });
+      }
+    } catch (error) {
+      logger.error("CmsUiExtension failure", action, error);
+      return new App.Response(500, { ok: false, error: "internal_error" });
     }
   }
 }`;
@@ -206,15 +227,19 @@ curl -s -X POST https://api.cms.optimizely.com/oauth/token \\
   console.log(c.instanceId, c.siteUrl)'`;
 
 const DEPLOY = `ocp update                                         # --scope needs CLI 2.0.15+
-ocp app register --appId fx_cms_experiments --name "FX Experiments" --product HUB --personal
+ocp app register --appId fx_cms_experiments --name "Feature Experimentation" --product HUB --personal
+#   --name is fixed here: a later app.yml display_name doesn't rename the directory entry
 ocp app prepare --bump-dev-version --publish       # build on OCP and publish a dev version
 
 ocp directory status fx_cms_experiments@0.0.1-dev.1   # wait for PUBLISHED
 ocp directory install fx_cms_experiments@0.0.1-dev.1 --scope <cms-instance-uuid>
 
-# Every later version
+# Every later dev version: publishing moves the existing installs onto it
+ocp app prepare --bump-dev-version --publish
+ocp directory list-installs fx_cms_experiments@0.0.1-dev.2   # which installs run it
+# Move one install to a specific version
 ocp directory upgrade fx_cms_experiments --scope <cms-instance-uuid> -v 0.0.1-dev.2
-ocp app logs --appId fx_cms_experiments --scope <cms-instance-uuid> --tail`;
+ocp app logs --appId fx_cms_experiments --trackerId <ocp-account> --scope <cms-instance-uuid> --from 1h`;
 
 const FX_FACTS = [
   {
@@ -232,6 +257,14 @@ const FX_FACTS = [
   {
     title: "Results link comes from FX",
     body: "The rule's fetch_results_ui_url, which FX only creates the first time the experiment starts.",
+  },
+  {
+    title: "A link is the extension's own record",
+    body: "One row per page and locale in the install's OCP key-value store: flag, rule, environment, route. Create experiment writes it after building the flag; Link existing flag adopts a flag that has a cms_flag variable and picks its first A/B rule, changing nothing in FX. The site never reads links - visitors are served from FX decisions alone, so unlinking changes nothing for them.",
+  },
+  {
+    title: "It won't start a clashing experiment",
+    body: "The site buckets a visitor into every CMS flag whose cms_route covers the page, but the page shows one variation. So starting is refused while another CMS flag runs an A/B or bandit rule on an overlapping route - the panel names it and the button becomes Start anyway. Targeted deliveries don't count. One list-flags call covers the whole project.",
   },
 ];
 
@@ -407,7 +440,10 @@ export default function CmsUiExtensionsDemoPage() {
             item&apos;s variations, type or properties, the backend reads them from the CMS REST
             API with its own API client - for example {code("GET /v1/content/{key}/locales/{locale}")}{" "}
             lists every version, and named variations carry a {code("variation")} field. The
-            editor&apos;s Variations dropdown and toolbar cannot be extended.
+            editor&apos;s Variations dropdown and toolbar cannot be extended. The sidebar also opens on
+            images and folders and still reports the editor&apos;s locale, which they don&apos;t have -
+            that {code("locales/{locale}")} call answers them with a 404, so check the item&apos;s{" "}
+            {code("locales")} before treating it as an error.
           </Callout>
         </section>
 
@@ -460,7 +496,8 @@ export default function CmsUiExtensionsDemoPage() {
                 One function, an {code("{ action, params }")} body, and an{" "}
                 {code("{ ok, result } | { ok: false, error }")} envelope keeps every surface on the
                 same backend. Credentials come from the per-install settings store, never from the
-                browser.
+                browser. Keep every {code("await")} inside one {code("try")}: an exception that escapes{" "}
+                {code("perform()")} reaches the editor as an empty &ldquo;Failed to invoke function:&rdquo;.
               </p>
               <CodeBlock code={FUNCTION_SNIPPET} language="ts" label="CmsUiExtension.ts" />
             </SetupStep>
@@ -471,7 +508,8 @@ export default function CmsUiExtensionsDemoPage() {
                 {code("Lifecycle.onSettingsForm")} on save - validate the credentials against the
                 real APIs there and only then {code("storage.settings.put")} them. A secret field
                 comes back blank unless the editor retypes it, so keep the stored value when it is
-                empty.
+                empty - and read that stored value through the same guard, because on a fresh install{" "}
+                {code("storage.settings.get")} throws and the first Save would fail.
               </p>
               <CodeBlock code={SETTINGS_YML} language="yaml" label="forms/settings.yml" />
             </SetupStep>
@@ -501,7 +539,8 @@ export default function CmsUiExtensionsDemoPage() {
                 {code("prepare")} uploads the source and builds it on OCP; the UI bundles are
                 hosted by the platform, not by your app. Install only once the version reports
                 PUBLISHED, then fill in the settings form for that install in the OCP App
-                Directory and reload the CMS.
+                Directory and reload the CMS. Later dev versions published the same way replace the
+                running one on existing installs.
               </p>
               <CodeBlock code={DEPLOY} language="bash" label="terminal" />
             </SetupStep>
@@ -523,6 +562,14 @@ export default function CmsUiExtensionsDemoPage() {
               {
                 title: "Yarn Berry needs node-modules",
                 body: "Plug'n'Play is not supported: set nodeLinker: node-modules in .yarnrc.yml. Yarn classic works as is.",
+              },
+              {
+                title: "One extension per app",
+                body: "Give each panel its own OCP app and repo rather than bundling several into one. Each gets its own install, settings, version and logs, so a CMS instance installs only what it needs and one broken backend can't take the other panels down.",
+              },
+              {
+                title: "Wrap Axiom Alert text in one Text",
+                body: "Alert lays out its children as flex items, so loose text next to a <code> or an expression breaks into separate lines with gaps. Put the whole message in a single <Text>.",
               },
               {
                 title: "Shared code stays neutral",
@@ -560,13 +607,13 @@ export default function CmsUiExtensionsDemoPage() {
         </section>
 
         <section id="fx-experiments">
-          <DemoSectionHeading id="fx-experiments">Example: FX Experiments</DemoSectionHeading>
+          <DemoSectionHeading id="fx-experiments">Example: Feature Experimentation</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             The extension built for this site, in the sibling repo{" "}
-            {code("fx-experiments-cms-extension")}. An <strong>Experiment</strong> sidebar turns the
-            open page&apos;s CMS variations into a Feature Experimentation A/B test - start, pause,
-            add variations later, edit metrics and jump to results - and an{" "}
-            <strong>Experiments</strong> view lists every page under test.
+            {code("fx-experiments-cms-extension")}. A <strong>Feature Experimentation</strong> sidebar
+            turns the open page&apos;s CMS variations into an A/B test - start, pause, add variations
+            later, edit metrics and jump to results - or links the page to a flag you already have.
+            An <strong>Experiments</strong> view lists every linked page.
           </p>
 
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
