@@ -7,6 +7,11 @@ import { createHmac, timingSafeEqual } from "crypto";
 // can obtain one - /preview mints a link for whatever key it is asked about, by design.
 // The Graph app key/secret never leave the server, and the share page is read-only.
 // Links never expire; rotating OPTIMIZELY_PREVIEW_SECRET invalidates every outstanding one.
+//
+// The Share preview CMS UI extension (../preview-link-cms-extension, src/backend/lib/shareLink.ts)
+// signs these links itself with the same secret. Changing the canonical string, the hash or
+// the query parameters breaks every link it makes; its shareLink.test.ts pins a signature
+// produced by this file, so update both together.
 
 export type ExternalPreviewTarget = {
   key: string;

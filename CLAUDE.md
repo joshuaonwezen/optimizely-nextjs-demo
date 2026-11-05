@@ -501,6 +501,11 @@ Case-sensitive. If the FX flag has variation key `variation_1`, the CMS variatio
 
 Prefer it over hand-building flags in the FX UI.
 
+Each CMS UI extension is its own OCP app and sibling repo (never bundle several into one app):
+- `../fx-experiments-cms-extension` - Feature Experimentation (above);
+- `../preview-link-cms-extension` - Share preview: signs `/preview/share` links for the version open in the editor (see "External preview links");
+- `../page-performance-cms-extension` - Page performance: GA4 traffic + the FX experiments whose `cms_route` covers the page, read from FX directly (no site API).
+
 ### FX datafile has 60s cache
 Changes in the FX console take up to 60 seconds to propagate. Wait before concluding a flag isn't working.
 
@@ -579,6 +584,7 @@ Lets editors share a link that opens a **draft** in the front end for people wit
 - The CMS `preview_token` is a ~5 min JWT and Optimizely provides **no way to extend it or mint a stable one**. Instead the draft is fetched with **App Key + Secret Basic auth** (`OPTIMIZELY_APP_KEY` / `_SECRET`) — Optimizely Graph treats that as super-user and returns content of any publish status, with no expiry. Those creds stay server-side only.
 - The shareable URL carries **no Graph credential** — just `key` / `loc` / optional `ver` plus an HMAC-SHA256 `sig` signed with `OPTIMIZELY_PREVIEW_SECRET` (`src/lib/preview/shareLink.ts`). The signature only stops a recipient from editing the query string to pull other content keys. **Links never expire; rotating `OPTIMIZELY_PREVIEW_SECRET` is the kill switch** for every outstanding link.
 - `src/lib/optimizely/adminPreviewClient.ts` is a `GraphClient` with its `request()` replaced on the instance to force the Basic header, so the full `getPreviewContent` pipeline runs unchanged over super-user auth. Both it and `previewClient.ts` are **async factories**: the DAM mode is a constructor-time `fragment` setting, so it has to be resolved before the client exists. See `damMode.ts`.
+- **The Share preview CMS UI extension (`../preview-link-cms-extension`) signs these links too**, with the same secret and algorithm. Don't change the canonical string (`key\nver\nloc`), the hash or the query parameters without updating its `shareLink.ts` - its test pins a signature produced by this repo's code.
 - `src/app/preview/share/page.tsx` renders read-only — no `communicationinjector.js`, no `NextPreviewComponent`, no debug overlay. Covered by the existing `/preview` middleware exemption.
 - `src/components/preview/PreviewToolbar.tsx` is one client component: a **Share link** button (one click → `copyToClipboard()` copies the signed pinned link; falls back to `execCommand` because the CMS iframe withholds the `clipboard-write` permission) and a diagnostics pill whose panel expands **inside the bar**. It is **portalled into `<div id="preview-topbar-slot">`** (declared first in `src/app/layout.tsx`, so the bar sits above the site nav at the very top). Nothing is `fixed`/`sticky` (both strand at the document bottom inside the CMS preview iframe) and nothing floats over the content. Visitor chrome is stripped on `/preview`: `AudienceSwitcher` via `DemoToolbar`, the FX/ODP banners via `HideOnPreview` in the layout.
 

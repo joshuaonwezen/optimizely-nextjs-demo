@@ -72,6 +72,11 @@ const TROUBLESHOOTING = [
     fix: "Read ocp app logs for the real error. Guard settings reads and keep every await inside the function's try (step 3).",
   },
   {
+    symptom: "A property editor publishes and installs, but every field keeps its built-in input",
+    cause: "Nothing attaches it to a property. On the instances we tested it is not applied by property type, the Configure Property dialog has no editor choice, and the content-type API has no field for it.",
+    fix: "Ask Optimizely whether property editors are enabled for the instance UUID and how a property binds to one. Sidebars and views work meanwhile.",
+  },
+  {
     symptom: "ocp app logs is empty",
     cause: "CMS-scoped apps need the managing OCP account and the instance, and a function only logs what you log.",
     fix: "ocp app logs --appId app --trackerId <ocp-account> --scope <uuid> --from 1h, and log each action you route.",
@@ -268,6 +273,57 @@ const FX_FACTS = [
   },
 ];
 
+const SHARE_FACTS = [
+  {
+    title: "Signed by the extension, not the site",
+    body: "The backend signs key, version and locale with the site's OPTIMIZELY_PREVIEW_SECRET exactly as src/lib/preview/shareLink.ts does, so the site needs no new endpoint. A unit test in the extension pins a signature produced by the site's own code, so the two can't drift apart unnoticed.",
+  },
+  {
+    title: "Pinned to one version",
+    body: "A variation is a version, so a link to a variation shows that variation's content. A link never follows later edits - share a new one after editing - and never expires. Rotating the secret on the site revokes every link at once.",
+  },
+  {
+    title: "It checks the link opens",
+    body: "After signing, the backend opens the link the way a recipient would. A 404 means the preview secret or site URL is wrong, or Graph hasn't indexed a draft you just saved.",
+  },
+  {
+    title: "Settings",
+    body: "The site URL and that site's preview secret, plus a CMS API client to read the page's versions and which variation each belongs to.",
+  },
+];
+
+const PERFORMANCE_FACTS = [
+  {
+    title: "Experiments without a site API",
+    body: "One FX list-flags call finds the A/B and bandit rules on flags with cms_flag on whose cms_route covers the page's path - the same matching the middleware uses. Results come from GET /v2/experiments/{layer_experiment_id}/results.",
+  },
+  {
+    title: "GA4 through a service account",
+    body: "The backend signs a JWT with the service account's key (node:crypto, no Google SDK) and queries the Data API for the page's path, with or without the locale prefix: 28 days against the 28 before, a daily chart and the top sources.",
+  },
+  {
+    title: "Each source is optional",
+    body: "GA4 and Feature Experimentation are separate settings sections, and the sidebar shows whichever is configured. The service account needs Viewer access on the GA4 property.",
+  },
+  {
+    title: "Analytics can't split FX variations",
+    body: "The middleware serves every FX variation on the same URL, so GA4 sees one page. The per-variation numbers come from the experiment results, not from analytics.",
+  },
+];
+
+function FactGrid({ facts }: { facts: Array<{ title: string; body: string }> }) {
+  return (
+    <div className="grid md:grid-cols-2 gap-6 mb-8">
+      {facts.map(({ title, body }) => (
+        <div key={title} className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
+          <h3 className="font-display font-semibold text-on-surface mb-2">{title}</h3>
+          <p className="text-sm text-on-surface-variant leading-relaxed">{body}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TableHead({ columns }: { columns: string[] }) {
   return (
     <thead>
@@ -408,7 +464,19 @@ export default function CmsUiExtensionsDemoPage() {
             </table>
           </div>
 
-          <EditorSchematic />
+          <Callout variant="warning">
+            <strong>Property editors publish, but can&apos;t be attached yet.</strong>{" "}
+            Since November 2026 OCP&apos;s production builder accepts a {code("property-editor")} entry
+            (in October it refused one with &ldquo;the builder did not emit a bundle URL/hash&rdquo;). On
+            the instance behind this site nothing attaches one to a property, though: a string editor
+            was not applied to string properties, the Configure Property dialog has no editor choice,
+            and the content-type API has no field for it. Until Optimizely enables them for your
+            instance, build sidebars and views.
+          </Callout>
+
+          <div className="mt-8">
+            <EditorSchematic />
+          </div>
         </section>
 
         <section id="context">
@@ -509,7 +577,8 @@ export default function CmsUiExtensionsDemoPage() {
                 real APIs there and only then {code("storage.settings.put")} them. A secret field
                 comes back blank unless the editor retypes it, so keep the stored value when it is
                 empty - and read that stored value through the same guard, because on a fresh install{" "}
-                {code("storage.settings.get")} throws and the first Save would fail.
+                {code("storage.settings.get")} throws and the first Save would fail. The file is required
+                even when an app has no settings: {code("sections: []")} passes validation.
               </p>
               <CodeBlock code={SETTINGS_YML} language="yaml" label="forms/settings.yml" />
             </SetupStep>
@@ -609,8 +678,9 @@ export default function CmsUiExtensionsDemoPage() {
         <section id="fx-experiments">
           <DemoSectionHeading id="fx-experiments">Example: Feature Experimentation</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            The extension built for this site, in the sibling repo{" "}
-            {code("fx-experiments-cms-extension")}. A <strong>Feature Experimentation</strong> sidebar
+            The first of three extensions built for this site, each its own OCP app and repo. This one
+            is in the sibling repo {code("fx-experiments-cms-extension")}. A{" "}
+            <strong>Feature Experimentation</strong> sidebar
             turns the open page&apos;s CMS variations into an A/B test - start, pause, add variations
             later, edit metrics and jump to results - or links the page to a flag you already have.
             An <strong>Experiments</strong> view lists every linked page.
@@ -631,14 +701,7 @@ export default function CmsUiExtensionsDemoPage() {
             />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            {FX_FACTS.map(({ title, body }) => (
-              <div key={title} className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
-                <h3 className="font-display font-semibold text-on-surface mb-2">{title}</h3>
-                <p className="text-sm text-on-surface-variant leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
+          <FactGrid facts={FX_FACTS} />
 
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-6">
             <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-2">
@@ -664,14 +727,69 @@ export default function CmsUiExtensionsDemoPage() {
           </Callout>
         </section>
 
+        <section id="share-preview">
+          <DemoSectionHeading id="share-preview">Example: Share preview</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            In the sibling repo {code("preview-link-cms-extension")}. A <strong>Share preview</strong>{" "}
+            sidebar gives the editor a link to the exact version open in the editor - its content and
+            its variation - that anyone can open without a CMS login and that never expires. It also
+            lists a link to the newest version of the original page and of each variation.
+          </p>
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
+            <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
+              One share link
+            </p>
+            <Pipeline
+              steps={[
+                { label: "Editor opens a version", sub: "key + version + locale" },
+                { label: "OCP function", sub: "signs with the preview secret", highlight: true },
+                { label: "/preview/share", sub: "key, loc, ver, sig" },
+                { label: "This site", sub: "verifies, reads Graph with App Key", highlight: true },
+                { label: "Recipient", sub: "no login, no expiry" },
+              ]}
+            />
+          </div>
+
+          <FactGrid facts={SHARE_FACTS} />
+
+          <Callout variant="note">
+            <strong>It needs the site&apos;s signed route.</strong>{" "}
+            The CMS&apos;s {code("preview_token")} lasts about five minutes, no API issues a longer one,
+            and Graph rejects the CMS API client&apos;s own token for drafts. Only the site can render a
+            draft in its real design, so the link points at this site&apos;s{" "}
+            <Link href="/demo/preview#external-preview" className="text-brand hover:underline">
+              /preview/share route
+            </Link>
+            . On another front end, the extension needs an equivalent signed route there.
+          </Callout>
+        </section>
+
+        <section id="page-performance">
+          <DemoSectionHeading id="page-performance">Example: Page performance</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            In the sibling repo {code("page-performance-cms-extension")}. A{" "}
+            <strong>Page performance</strong> sidebar shows how the open page performs: GA4 traffic for the
+            last 28 days against the 28 before, and every Feature Experimentation test that targets the
+            page, with its status, traffic, variations and primary-metric results.
+          </p>
+
+          <FactGrid facts={PERFORMANCE_FACTS} />
+        </section>
+
         <section id="related">
           <DemoSectionHeading id="related">Related Demos</DemoSectionHeading>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               {
                 href: "/demo/feature-experimentation",
                 title: "Feature Experimentation",
                 body: "How the site serves CMS variations from FX decisions - the contract the example extension writes to",
+              },
+              {
+                href: "/demo/preview",
+                title: "Preview",
+                body: "The /preview/share route the Share preview extension signs links for, and why the CMS preview token can't be shared",
               },
               {
                 href: "/demo/management-api",

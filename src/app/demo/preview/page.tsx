@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import DemoHero from "@/components/demo/DemoHero";
 import CodeBlock from "@/components/demo/CodeBlock";
 import { StepBadge } from "@/components/ui/StepBadge";
@@ -349,6 +350,14 @@ export default function PreviewDemoPage() {
             (the route also accepts a version-less link that resolves the newest version). The external route
             (<code className="bg-surface-low px-1 rounded text-xs font-mono">/preview/share</code>) renders
             read-only - no edit overlays, no communicationinjector.
+          </p>
+          <p className="text-sm text-on-surface-variant mt-4 max-w-3xl">
+            Editors don&apos;t have to open the preview first: the <strong>Share preview</strong>{" "}
+            <Link href="/demo/cms-ui-extensions#share-preview" className="text-brand hover:underline">
+              CMS UI extension
+            </Link>{" "}
+            signs the same links from a sidebar in the CMS editor, for the version open there and for the
+            newest version of each variation.
           </p>
         </section>
 
