@@ -7,6 +7,7 @@ import Script from "next/script";
 import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { getPreviewClient } from "@/lib/optimizely/previewClient";
 import { graphClient } from "@/lib/optimizely/graphClient";
+import { getCmsUrl } from "@/lib/optimizely/cmsUrl";
 import { PREVIEW_DIAGNOSTIC_QUERY } from "@/lib/graphql/queries/PreviewDiagnostic";
 import { buildExternalPreviewQuery } from "@/lib/preview/shareLink";
 import PreviewToolbar, {
@@ -43,7 +44,7 @@ function localeToString(locale: unknown): string | null {
 
 async function PreviewPage({ searchParams }: Props) {
   const params = await searchParams;
-  const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
+  const cmsUrl = getCmsUrl();
   const serverRenderedAt = new Date().toISOString();
 
   const client = await getPreviewClient();

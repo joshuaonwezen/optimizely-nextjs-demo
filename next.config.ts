@@ -1,13 +1,14 @@
 import type { NextConfig } from "next";
 import bundleAnalyzer from "@next/bundle-analyzer";
 import { CACHE_TTL } from "./src/lib/optimizely/client";
+import { getCmsUrl } from "./src/lib/optimizely/cmsUrl";
 
 // `npm run analyze` opens the treemap; a normal build is unaffected.
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "1",
 });
 
-const cmsUrl = process.env.NEXT_PUBLIC_OPTIMIZELY_CMS_URL ?? "";
+const cmsUrl = getCmsUrl();
 
 const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
