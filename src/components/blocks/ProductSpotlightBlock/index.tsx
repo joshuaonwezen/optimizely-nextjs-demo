@@ -7,7 +7,7 @@ import { formatDate } from "@/lib/formatDate";
 
 export const ProductSpotlightType = contentType({
   key: "ProductSpotlight",
-  displayName: "Product spotlight",
+  displayName: "Product Spotlight",
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
@@ -36,7 +36,6 @@ export const ProductSpotlightType = contentType({
       isLocalized: true,
       sortOrder: 30,
     },
-    showFeatures: { type: "boolean", displayName: "Show key features", sortOrder: 40 },
   },
 });
 
@@ -44,7 +43,6 @@ interface ProductSpotlightData {
   productId?: string | null;
   heading?: string | null;
   ctaText?: string | null;
-  showFeatures?: boolean | null;
   __context?: { edit?: boolean } | null;
 }
 
@@ -92,7 +90,7 @@ export default function ProductSpotlightBlock(props: ProductSpotlightBlockProps)
       </p>
       {product.rate.note && <p className="text-xs text-on-surface-variant">{product.rate.note}</p>}
       <p className="text-sm leading-relaxed text-on-surface-variant">{product.summary}</p>
-      {data.showFeatures && (
+      {product.features.length > 0 && (
         <ul className="space-y-1.5 text-sm text-on-surface">
           {product.features.map((feature) => (
             <li key={feature} className="flex gap-2">

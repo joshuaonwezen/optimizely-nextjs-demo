@@ -315,11 +315,11 @@ const PERFORMANCE_FACTS = [
 const PICKER_FACTS = [
   {
     title: "The content stores an ID, the site renders the rest",
-    body: "Editors pick from GET /api/catalog/products - this site's stand-in for a core-banking product API. The Product spotlight block stores only the product ID, and renders the current name, rate and link from the same catalog, so a rate change never needs a content edit.",
+    body: "Editors pick from GET /api/catalog/products - this site's stand-in for a core-banking product API. The Product Spotlight block stores only the product ID, and renders the current name, rate and link from the same catalog, so a rate change never needs a content edit.",
   },
   {
     title: "Scoped by content type",
-    body: "The editor lands on every long string, so its backend looks up the open item's content type (CMS REST GET /v1/content/{key}, cached per item). Product spotlight's only long string is productId - its other text fields are shortString on purpose - so that field becomes the picker and every other long string stays a plain text field.",
+    body: "The editor lands on every long string, so its backend looks up the open item's content type (CMS REST GET /v1/content/{key}, cached per item). Product Spotlight's only long string is productId - its other text fields are shortString on purpose - so that field becomes the picker and every other long string stays a plain text field.",
   },
   {
     title: "Small and forgiving",
@@ -802,7 +802,7 @@ export default function CmsUiExtensionsDemoPage() {
           <DemoSectionHeading id="product-picker">Example: Product picker</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
             In the sibling repo {code("product-picker-cms-extension")}. A <strong>property editor</strong>{" "}
-            that turns the Product field of a <strong>Product spotlight</strong> block into a dropdown of
+            that turns the Product field of a <strong>Product Spotlight</strong> block into a dropdown of
             the bank&apos;s products, grouped by category with each product&apos;s rate.
           </p>
 
@@ -814,7 +814,7 @@ export default function CmsUiExtensionsDemoPage() {
               steps={[
                 { label: "CMS mounts the editor", sub: "on every long string" },
                 { label: "OCP function", sub: "item's content type?", highlight: true },
-                { label: "Product spotlight", sub: "catalog dropdown" },
+                { label: "Product Spotlight", sub: "catalog dropdown" },
                 { label: "Anything else", sub: "plain text field" },
                 { label: "Site renders", sub: "name + rate from the catalog", highlight: true },
               ]}
