@@ -34,6 +34,7 @@ const KEEP = new Set([
   "TextBlock",
   "ProductCardBlock",
   "ProductSpotlight",
+  "CampaignBanner",
   "ProductHeroBlock",
   "FeatureItemBlock",
   "SectionHeadingBlock",
@@ -112,6 +113,7 @@ const ORPHANED_NAV_ITEM_KEYS = [
 // Display templates actively used by this application - keep all of these.
 
 const KEEP_TEMPLATES = new Set([
+  "CampaignBannerDefaultTemplate",
   "HeroBlockDefaultTemplate",
   "ProductHeroCompactTemplate",
   "SectionHeadingDefaultTemplate",

@@ -331,6 +331,25 @@ const PICKER_FACTS = [
   },
 ];
 
+const COLOR_FACTS = [
+  {
+    title: "A color field, not a text box",
+    body: "A native color swatch, a hex input that only ever saves a valid #rrggbb (or nothing), the brand palette as one-click swatches, and a readout of whether white or dark text reads better on the color, with its WCAG contrast ratio.",
+  },
+  {
+    title: "Campaign Banner uses it",
+    body: "The Campaign Banner block's Background color is a long string made for it - bind it under Settings > Content Types > Campaign Banner > Background color > Editor: Color picker, on each instance. The site picks white or dark text by the same contrast rule (src/lib/color.ts), so what the editor is shown is what renders.",
+  },
+  {
+    title: "Brand palette in the app settings",
+    body: "An admin lists the swatches as \"Lime #abff44, Mosey green #197050, ...\"; one unreadable entry rejects the whole list rather than silently dropping a brand color. Until one is saved, editors get the Mosey Bank brand colors - and can still pick any other color.",
+  },
+  {
+    title: "Safe with bad values",
+    body: "A value that isn't a hex color is flagged in the editor and never saved; on the site, the banner falls back to Mosey green and tells editors why in edit mode.",
+  },
+];
+
 function FactGrid({ facts }: { facts: Array<{ title: string; body: string }> }) {
   return (
     <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -700,7 +719,7 @@ export default function CmsUiExtensionsDemoPage() {
         <section id="fx-experiments">
           <DemoSectionHeading id="fx-experiments">Example: Feature Experimentation</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            The first of four extensions built for this site, each its own OCP app and repo. This one
+            The first of five extensions built for this site, each its own OCP app and repo. This one
             is in the sibling repo {code("fx-experiments-cms-extension")}. A{" "}
             <strong>Feature Experimentation</strong> sidebar
             turns the open page&apos;s CMS variations into an A/B test - start, pause, add variations
@@ -823,6 +842,18 @@ export default function CmsUiExtensionsDemoPage() {
           </div>
 
           <FactGrid facts={PICKER_FACTS} />
+        </section>
+
+        <section id="color-picker">
+          <DemoSectionHeading id="color-picker">Example: Color picker</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            In the sibling repo {code("color-picker-cms-extension")}. A second <strong>property editor</strong>, with
+            no API behind its choices this time: it turns the Background color of a <strong>Campaign Banner</strong>{" "}
+            into a color field. Both editors are offered on long strings; the Editor setting on each property decides
+            which one, if any, it gets.
+          </p>
+
+          <FactGrid facts={COLOR_FACTS} />
         </section>
 
         <section id="related">

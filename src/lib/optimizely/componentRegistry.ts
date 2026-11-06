@@ -45,6 +45,7 @@ import * as QuoteBlockModule from "@/components/blocks/QuoteBlock";
 import * as CustomerVoicesBlockModule from "@/components/blocks/CustomerVoicesBlock";
 import * as SpotlightBlockModule from "@/components/blocks/SpotlightBlock";
 import * as ProductSpotlightBlockModule from "@/components/blocks/ProductSpotlightBlock";
+import * as CampaignBannerBlockModule from "@/components/blocks/CampaignBannerBlock";
 import * as RedirectRuleModule from "@/components/blocks/RedirectRule";
 import * as RedirectConfigModule from "@/components/blocks/RedirectConfig";
 import * as VariationItemBlockModule from "@/components/blocks/VariationItemBlock";
@@ -151,6 +152,7 @@ const BLOCK_MODULES = [
   CustomerVoicesBlockModule,
   SpotlightBlockModule,
   ProductSpotlightBlockModule,
+  CampaignBannerBlockModule,
   RedirectRuleModule,
   RedirectConfigModule,
   VariationItemBlockModule,
