@@ -77,6 +77,11 @@ const TROUBLESHOOTING = [
     fix: "Make the field a long string: in code, type \"string\" with no format. There is no per-field setting - the editor lands on every long string, so scope it in your own code (see the Product picker below).",
   },
   {
+    symptom: "An editor scoped by content type stays a plain text field on an inline Visual Builder element",
+    cause: "For an inline element, context.content is the page the element sits on, not the element, and PropertyState.settings arrives as {} - nothing tells the editor which element or field it is on.",
+    fix: "Decide from the data: read the open draft (CMS REST GET /v1/content/{key}/versions/{version}) and look for the element, and treat a value that is already a valid ID as the field. The Product picker below does both.",
+  },
+  {
     symptom: "ocp app logs is empty",
     cause: "CMS-scoped apps need the managing OCP account and the instance, and a function only logs what you log.",
     fix: "ocp app logs --appId app --trackerId <ocp-account> --scope <uuid> --from 1h, and log each action you route.",
@@ -318,8 +323,8 @@ const PICKER_FACTS = [
     body: "Editors pick from GET /api/catalog/products - this site's stand-in for a core-banking product API. The Product Spotlight block stores only the product ID, and renders the current name, rate and link from the same catalog, so a rate change never needs a content edit.",
   },
   {
-    title: "Scoped by content type",
-    body: "The editor lands on every long string, so its backend looks up the open item's content type (CMS REST GET /v1/content/{key}, cached per item). Product Spotlight's only long string is productId - its other text fields are shortString on purpose - so that field becomes the picker and every other long string stays a plain text field.",
+    title: "Finding the product field",
+    body: "The editor lands on every long string and the CMS doesn't say which one - for an inline Visual Builder element the open item is even the page, not the element. So the backend decides per field: a field holding a catalog product ID is the picker, any other filled field stays text, and an empty field is the picker on a Product Spotlight shared block, or on a page whose draft holds a Product Spotlight with no product yet. On a page that is a best guess, so the picker offers \"Type text instead\". Product Spotlight's only long string is productId - its other text fields are shortString on purpose.",
   },
   {
     title: "Small and forgiving",
@@ -327,7 +332,7 @@ const PICKER_FACTS = [
   },
   {
     title: "Settings",
-    body: "The site URL (the catalog lives at /api/catalog/products), the content types that get the picker (default ProductSpotlight), and a CMS API client for the content-type lookup.",
+    body: "The site URL (the catalog lives at /api/catalog/products), the content types that get the picker (default ProductSpotlight), and a CMS API client to read the open item's type and draft.",
   },
 ];
 
@@ -813,8 +818,8 @@ export default function CmsUiExtensionsDemoPage() {
             <Pipeline
               steps={[
                 { label: "CMS mounts the editor", sub: "on every long string" },
-                { label: "OCP function", sub: "item's content type?", highlight: true },
-                { label: "Product Spotlight", sub: "catalog dropdown" },
+                { label: "OCP function", sub: "the product field?", highlight: true },
+                { label: "Product field", sub: "catalog dropdown" },
                 { label: "Anything else", sub: "plain text field" },
                 { label: "Site renders", sub: "name + rate from the catalog", highlight: true },
               ]}
