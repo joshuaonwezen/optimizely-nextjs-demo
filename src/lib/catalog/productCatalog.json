@@ -1,0 +1,105 @@
+{
+  "updatedAt": "2026-11-06",
+  "products": [
+    {
+      "id": "easy-access-saver",
+      "name": "Easy Access Saver",
+      "category": "savings",
+      "rate": { "value": 4.6, "label": "AER", "basis": "variable" },
+      "summary": "Save from £1 and take your money out whenever you need it, with no penalties.",
+      "features": ["Withdraw any time, no notice", "Open with £1", "FSCS protected up to £85,000"],
+      "url": "/personal/savings/easy-access-savings",
+      "icon": "savings"
+    },
+    {
+      "id": "fixed-saver-1y",
+      "name": "1-Year Fixed Saver",
+      "category": "savings",
+      "rate": { "value": 5.1, "label": "AER", "basis": "fixed", "note": "Rate fixed for 12 months" },
+      "summary": "Lock in our best savings rate for a year and know exactly what you'll earn.",
+      "features": ["Open with £500", "Interest paid monthly or at maturity", "FSCS protected up to £85,000"],
+      "url": "/personal/savings/fixed-rate-savings",
+      "icon": "savings"
+    },
+    {
+      "id": "cash-isa",
+      "name": "Easy Access Cash ISA",
+      "category": "savings",
+      "rate": { "value": 4.35, "label": "AER", "basis": "variable", "note": "Tax-free" },
+      "summary": "Tax-free interest on up to £20,000 a year, with access whenever you need it.",
+      "features": ["£20,000 annual ISA allowance", "Transfer in ISAs from other providers", "Open with £1"],
+      "url": "/personal/savings",
+      "icon": "savings"
+    },
+    {
+      "id": "current-account-standard",
+      "name": "Standard Current Account",
+      "category": "current-account",
+      "rate": { "value": 2.5, "label": "AER", "basis": "variable", "note": "On credit balances, £4 a month" },
+      "summary": "Everyday banking with instant payments and interest on your balance.",
+      "features": ["Instant payments", "Spending insights in the app", "Fee-free cash withdrawals"],
+      "url": "/personal/current-account",
+      "icon": "account"
+    },
+    {
+      "id": "current-account-premium",
+      "name": "Premium Current Account",
+      "category": "current-account",
+      "rate": { "value": 3.5, "label": "AER", "basis": "variable", "note": "On the first £20k, £10 a month" },
+      "summary": "Our highest current account rate, plus travel perks for £10 a month.",
+      "features": ["Worldwide travel insurance", "Fee-free spending abroad", "Priority support"],
+      "url": "/personal/current-account",
+      "icon": "account"
+    },
+    {
+      "id": "balance-transfer-card",
+      "name": "Balance Transfer Credit Card",
+      "category": "credit-card",
+      "rate": { "value": 0, "label": "APR", "basis": "fixed", "note": "For 12 months on balance transfers, then 24.9% APR variable" },
+      "summary": "Move your card balance over and pay no interest on it for a year.",
+      "features": ["0% on balance transfers for 12 months", "3% transfer fee", "Manage it all in the app"],
+      "url": "/personal/credit-cards",
+      "icon": "account"
+    },
+    {
+      "id": "fixed-mortgage-2y",
+      "name": "2-Year Fixed Mortgage",
+      "category": "mortgage",
+      "rate": { "value": 4.29, "label": "initial rate", "basis": "fixed", "note": "Fixed for 2 years, 6.8% APRC overall" },
+      "summary": "Fixed monthly payments for two years, up to 85% loan-to-value.",
+      "features": ["Up to 85% loan-to-value", "£999 product fee", "Overpay up to 10% a year"],
+      "url": "/mortgage",
+      "icon": "mortgage"
+    },
+    {
+      "id": "first-time-buyer-mortgage",
+      "name": "First-Time Buyer Mortgage",
+      "category": "mortgage",
+      "rate": { "value": 4.49, "label": "initial rate", "basis": "fixed", "note": "Fixed for 5 years, 6.4% APRC overall" },
+      "summary": "Buy your first home with a 5% deposit and £500 cashback on completion.",
+      "features": ["Up to 95% loan-to-value", "£500 cashback", "No product fee"],
+      "url": "/mortgage/first-time-buyers",
+      "icon": "mortgage"
+    },
+    {
+      "id": "business-current-account",
+      "name": "Business Current Account",
+      "category": "business",
+      "rate": { "value": 1.25, "label": "AER", "basis": "variable", "note": "On balances over £10,000" },
+      "summary": "No monthly fee for your first 12 months, with invoicing and accounting built in.",
+      "features": ["12 months fee-free", "Syncs with Xero and QuickBooks", "Dedicated business support"],
+      "url": "/business/business-banking/business-current-account",
+      "icon": "business"
+    },
+    {
+      "id": "stocks-and-shares-isa",
+      "name": "Stocks & Shares ISA",
+      "category": "investment",
+      "rate": { "value": 0.25, "label": "annual fee", "basis": "fixed", "note": "Capital at risk" },
+      "summary": "Invest up to £20,000 a year tax-free in ready-made portfolios.",
+      "features": ["Ready-made portfolios", "Invest from £25 a month", "Capital at risk"],
+      "url": "/investments",
+      "icon": "savings"
+    }
+  ]
+}

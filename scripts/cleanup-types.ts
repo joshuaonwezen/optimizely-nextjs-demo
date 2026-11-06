@@ -33,6 +33,7 @@ const KEEP = new Set([
   "CallToAction",
   "TextBlock",
   "ProductCardBlock",
+  "ProductSpotlight",
   "ProductHeroBlock",
   "FeatureItemBlock",
   "SectionHeadingBlock",

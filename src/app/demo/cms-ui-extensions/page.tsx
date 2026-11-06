@@ -26,7 +26,7 @@ const INJECTION_POINTS = [
   },
   {
     point: "property-editor",
-    where: "Replaces the built-in editor for a single property",
+    where: "Replaces the built-in editor on every long-string property (string, no format)",
     bound: "One property of the item",
     api: "property.get() / set() / subscribe() (SDK 1.1.0+)",
   },
@@ -72,9 +72,9 @@ const TROUBLESHOOTING = [
     fix: "Read ocp app logs for the real error. Guard settings reads and keep every await inside the function's try (step 3).",
   },
   {
-    symptom: "A property editor publishes and installs, but every field keeps its built-in input",
-    cause: "Nothing attaches it to a property. On the instances we tested it is not applied by property type, the Configure Property dialog has no editor choice, and the content-type API has no field for it.",
-    fix: "Ask Optimizely whether property editors are enabled for the instance UUID and how a property binds to one. Sidebars and views work meanwhile.",
+    symptom: "A property editor publishes and installs, but the field keeps its built-in input",
+    cause: "The field isn't a long string. The CMS only mounts property editors on string properties without a format - shortString (what the CMS UI's String creates) and selectOne keep their own input, whatever property_format the manifest declares.",
+    fix: "Make the field a long string: in code, type \"string\" with no format. There is no per-field setting - the editor lands on every long string, so scope it in your own code (see the Product picker below).",
   },
   {
     symptom: "ocp app logs is empty",
@@ -115,12 +115,13 @@ ui_extensions:
 
 const PROPERTY_EDITOR_YML = `ui_extensions:
   property-editor:
-    - name: brand-color
-      entry_point: BrandColor
-      display_name: Brand color
+    - name: product-picker
+      entry_point: ProductPicker
+      display_name: Product picker
       metadata:
-        property_type: string        # string | richtext | integer | float | boolean
-        property_format: shortstring # optional refinement`;
+        property_type: string   # string | richtext | integer | float | boolean
+        # no property_format: in our tests only long strings got the editor;
+        # shortstring is accepted by the build but never mounted`;
 
 const OCP_CONFIG = `// ocp-app.config.mjs - adds the ui_extensions manifest schema and the bundle validator
 import { defineConfig } from "@zaiusinc/app-sdk";
@@ -311,6 +312,25 @@ const PERFORMANCE_FACTS = [
   },
 ];
 
+const PICKER_FACTS = [
+  {
+    title: "The content stores an ID, the site renders the rest",
+    body: "Editors pick from GET /api/catalog/products - this site's stand-in for a core-banking product API. The Product spotlight block stores only the product ID, and renders the current name, rate and link from the same catalog, so a rate change never needs a content edit.",
+  },
+  {
+    title: "Scoped by content type",
+    body: "The editor lands on every long string, so its backend looks up the open item's content type (CMS REST GET /v1/content/{key}, cached per item). Product spotlight's only long string is productId - its other text fields are shortString on purpose - so that field becomes the picker and every other long string stays a plain text field.",
+  },
+  {
+    title: "Small and forgiving",
+    body: "Native select and textarea, no component library: ~220 KB per iframe. Until its settings are saved, or if a lookup fails, every field stays a working text field. A stored ID the catalog no longer lists is kept and marked, not wiped.",
+  },
+  {
+    title: "Settings",
+    body: "The site URL (the catalog lives at /api/catalog/products), the content types that get the picker (default ProductSpotlight), and a CMS API client for the content-type lookup.",
+  },
+];
+
 function FactGrid({ facts }: { facts: Array<{ title: string; body: string }> }) {
   return (
     <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -465,13 +485,14 @@ export default function CmsUiExtensionsDemoPage() {
           </div>
 
           <Callout variant="warning">
-            <strong>Property editors publish, but can&apos;t be attached yet.</strong>{" "}
-            Since November 2026 OCP&apos;s production builder accepts a {code("property-editor")} entry
-            (in October it refused one with &ldquo;the builder did not emit a bundle URL/hash&rdquo;). On
-            the instance behind this site nothing attaches one to a property, though: a string editor
-            was not applied to string properties, the Configure Property dialog has no editor choice,
-            and the content-type API has no field for it. Until Optimizely enables them for your
-            instance, build sidebars and views.
+            <strong>Property editors work - on every long string at once.</strong>{" "}
+            The CMS mounts a {code("property-editor")} extension on each long-string property (a
+            string with no format) and on nothing else: {code("shortString")} and choice fields keep
+            their own input, whatever {code("property_format")} the manifest declares. There is no
+            per-field setting, and the editor isn&apos;t told which property it is on - it only gets
+            the value, a readonly flag and optional {code("settings")}. So decide inside the editor
+            where to do something special, and render a plain text field everywhere else. Keep the
+            bundle small: it loads in an iframe on every long-string field of the item.
           </Callout>
 
           <div className="mt-8">
@@ -678,7 +699,7 @@ export default function CmsUiExtensionsDemoPage() {
         <section id="fx-experiments">
           <DemoSectionHeading id="fx-experiments">Example: Feature Experimentation</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            The first of three extensions built for this site, each its own OCP app and repo. This one
+            The first of four extensions built for this site, each its own OCP app and repo. This one
             is in the sibling repo {code("fx-experiments-cms-extension")}. A{" "}
             <strong>Feature Experimentation</strong> sidebar
             turns the open page&apos;s CMS variations into an A/B test - start, pause, add variations
@@ -775,6 +796,32 @@ export default function CmsUiExtensionsDemoPage() {
           </p>
 
           <FactGrid facts={PERFORMANCE_FACTS} />
+        </section>
+
+        <section id="product-picker">
+          <DemoSectionHeading id="product-picker">Example: Product picker</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            In the sibling repo {code("product-picker-cms-extension")}. A <strong>property editor</strong>{" "}
+            that turns the Product field of a <strong>Product spotlight</strong> block into a dropdown of
+            the bank&apos;s products, grouped by category with each product&apos;s rate.
+          </p>
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
+            <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
+              One long-string field
+            </p>
+            <Pipeline
+              steps={[
+                { label: "CMS mounts the editor", sub: "on every long string" },
+                { label: "OCP function", sub: "item's content type?", highlight: true },
+                { label: "Product spotlight", sub: "catalog dropdown" },
+                { label: "Anything else", sub: "plain text field" },
+                { label: "Site renders", sub: "name + rate from the catalog", highlight: true },
+              ]}
+            />
+          </div>
+
+          <FactGrid facts={PICKER_FACTS} />
         </section>
 
         <section id="related">

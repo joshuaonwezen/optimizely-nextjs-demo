@@ -44,6 +44,7 @@ import * as BranchFinderBlockModule from "@/components/blocks/BranchFinderBlock"
 import * as QuoteBlockModule from "@/components/blocks/QuoteBlock";
 import * as CustomerVoicesBlockModule from "@/components/blocks/CustomerVoicesBlock";
 import * as SpotlightBlockModule from "@/components/blocks/SpotlightBlock";
+import * as ProductSpotlightBlockModule from "@/components/blocks/ProductSpotlightBlock";
 import * as RedirectRuleModule from "@/components/blocks/RedirectRule";
 import * as RedirectConfigModule from "@/components/blocks/RedirectConfig";
 import * as VariationItemBlockModule from "@/components/blocks/VariationItemBlock";
@@ -149,6 +150,7 @@ const BLOCK_MODULES = [
   QuoteBlockModule,
   CustomerVoicesBlockModule,
   SpotlightBlockModule,
+  ProductSpotlightBlockModule,
   RedirectRuleModule,
   RedirectConfigModule,
   VariationItemBlockModule,

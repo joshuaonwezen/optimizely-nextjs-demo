@@ -504,7 +504,8 @@ Prefer it over hand-building flags in the FX UI.
 Each CMS UI extension is its own OCP app and sibling repo (never bundle several into one app):
 - `../fx-experiments-cms-extension` - Feature Experimentation (above);
 - `../preview-link-cms-extension` - Share preview: signs `/preview/share` links for the version open in the editor (see "External preview links");
-- `../page-performance-cms-extension` - Page performance: GA4 traffic + the FX experiments whose `cms_route` covers the page, read from FX directly (no site API).
+- `../page-performance-cms-extension` - Page performance: GA4 traffic + the FX experiments whose `cms_route` covers the page, read from FX directly (no site API);
+- `../product-picker-cms-extension` - Product picker: a **property editor** that turns `ProductSpotlight.productId` into a dropdown from `GET /api/catalog/products` (`src/lib/catalog/productCatalog.json`). The CMS mounts property editors on **every long string** (string, no format) and on nothing else, so the picker scopes itself by content type and is a plain text field elsewhere. **Keep `productId` the only long string on `ProductSpotlight`** (other text fields use `format: "shortString"`), and keep the catalog's `{updatedAt, products: [{id, name, category, rate}]}` shape - the extension reads it.
 
 ### FX datafile has 60s cache
 Changes in the FX console take up to 60 seconds to propagate. Wait before concluding a flag isn't working.
