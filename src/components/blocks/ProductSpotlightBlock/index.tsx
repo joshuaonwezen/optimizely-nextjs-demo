@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { asSdkContent } from "@/components/cms/sdkTypes";
 import { CATEGORY_LABELS, formatRate, getProduct, productCatalog } from "@/lib/catalog/products";
 import { formatDate } from "@/lib/formatDate";
+import { resolveLinkHref } from "@/lib/optimizely/resolveLinkHref";
 
 export const ProductSpotlightType = contentType({
   key: "ProductSpotlight",
@@ -36,6 +37,14 @@ export const ProductSpotlightType = contentType({
       isLocalized: true,
       sortOrder: 30,
     },
+    // Native page picker. Instances seed product pages at different paths, so the
+    // catalog's path is only the fallback.
+    link: {
+      type: "url",
+      displayName: "Button link (optional)",
+      description: "Defaults to the product's page from the catalog.",
+      sortOrder: 40,
+    },
   },
 });
 
@@ -43,12 +52,13 @@ interface ProductSpotlightData {
   productId?: string | null;
   heading?: string | null;
   ctaText?: string | null;
+  link?: { default?: string | null; hierarchical?: string | null } | null;
   __context?: { edit?: boolean } | null;
 }
 
 type ProductSpotlightBlockProps = ProductSpotlightData & { content?: ProductSpotlightData };
 
-export default function ProductSpotlightBlock(props: ProductSpotlightBlockProps) {
+export default async function ProductSpotlightBlock(props: ProductSpotlightBlockProps) {
   const data = props.content ?? props;
   const { pa } = getPreviewUtils(asSdkContent(data));
   const product = getProduct(data.productId);
@@ -70,6 +80,7 @@ export default function ProductSpotlightBlock(props: ProductSpotlightBlockProps)
   }
 
   const updated = formatDate(productCatalog().updatedAt);
+  const href = (await resolveLinkHref(data.link)) ?? product.url;
 
   return (
     <section
@@ -104,7 +115,7 @@ export default function ProductSpotlightBlock(props: ProductSpotlightBlockProps)
       )}
       <div className="mt-auto pt-2">
         <Button
-          href={product.url}
+          href={href}
           size="compact"
           pill
           data-track-event="mb_product_spotlight_click"
