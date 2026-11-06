@@ -12,10 +12,11 @@ export const ProductSpotlightType = contentType({
   baseType: "_component",
   compositionBehaviors: ["sectionEnabled", "elementEnabled"],
   properties: {
-    // The type's ONLY long string (a string with no format). CMS property editors mount
-    // on long strings only, and the Product picker extension turns the field into a
-    // catalog dropdown on this content type alone. Keep every other text field
-    // shortString so it keeps the CMS's own input.
+    // The type's ONLY long string (a string with no format), the kind the Product picker
+    // CMS UI extension is offered on. Bind it on each instance: Settings > Content Types >
+    // Product Spotlight > Product > User Interface > Editor: Product picker (the binding
+    // is CMS-only, so opti:push doesn't set it). The other text fields are shortString so
+    // they never offer it.
     productId: {
       type: "string",
       displayName: "Product",

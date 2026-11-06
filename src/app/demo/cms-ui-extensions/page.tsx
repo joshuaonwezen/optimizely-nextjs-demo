@@ -26,7 +26,7 @@ const INJECTION_POINTS = [
   },
   {
     point: "property-editor",
-    where: "Replaces the built-in editor on every long-string property (string, no format)",
+    where: "Replaces the built-in editor on the properties an admin binds it to (property settings > Editor)",
     bound: "One property of the item",
     api: "property.get() / set() / subscribe() (SDK 1.1.0+)",
   },
@@ -73,13 +73,8 @@ const TROUBLESHOOTING = [
   },
   {
     symptom: "A property editor publishes and installs, but the field keeps its built-in input",
-    cause: "The field isn't a long string. The CMS only mounts property editors on string properties without a format - shortString (what the CMS UI's String creates) and selectOne keep their own input, whatever property_format the manifest declares.",
-    fix: "Make the field a long string: in code, type \"string\" with no format. There is no per-field setting - the editor lands on every long string, so scope it in your own code (see the Product picker below).",
-  },
-  {
-    symptom: "An editor scoped by content type stays a plain text field on an inline Visual Builder element",
-    cause: "For an inline element, context.content is the page the element sits on, not the element, and PropertyState.settings arrives as {} - nothing tells the editor which element or field it is on.",
-    fix: "Decide from the data: read the open draft (CMS REST GET /v1/content/{key}/versions/{version}) and look for the element, and treat a value that is already a valid ID as the field. The Product picker below does both.",
+    cause: "Nobody bound it to the property. The CMS mounts a property editor only where it is picked as the property's Editor, and only properties of the kind the manifest declares offer it - property_type string with no property_format means long strings, so a shortString or choice field doesn't list it.",
+    fix: "Settings > Content Types > the type > the property > User Interface > Editor: pick the extension. Do it on every instance - the binding isn't in the content-type API, so a code push doesn't set it. If the Editor list doesn't show the extension, make the field a long string (type \"string\" with no format).",
   },
   {
     symptom: "ocp app logs is empty",
@@ -125,8 +120,8 @@ const PROPERTY_EDITOR_YML = `ui_extensions:
       display_name: Product picker
       metadata:
         property_type: string   # string | richtext | integer | float | boolean
-        # no property_format: in our tests only long strings got the editor;
-        # shortstring is accepted by the build but never mounted`;
+        # no property_format: offered on long strings (string, no format).
+        # An admin binds it per property: property settings > Editor`;
 
 const OCP_CONFIG = `// ocp-app.config.mjs - adds the ui_extensions manifest schema and the bundle validator
 import { defineConfig } from "@zaiusinc/app-sdk";
@@ -323,16 +318,16 @@ const PICKER_FACTS = [
     body: "Editors pick from GET /api/catalog/products - this site's stand-in for a core-banking product API. The Product Spotlight block stores only the product ID, and renders the current name, rate and link from the same catalog, so a rate change never needs a content edit.",
   },
   {
-    title: "Finding the product field",
-    body: "The editor lands on every long string and the CMS doesn't say which one - for an inline Visual Builder element the open item is even the page, not the element. So the backend decides per field: a field holding a catalog product ID is the picker, any other filled field stays text, and an empty field is the picker on a Product Spotlight shared block, or on a page whose draft holds a Product Spotlight with no product yet. On a page that is a best guess, so the picker offers \"Type text instead\". Product Spotlight's only long string is productId - its other text fields are shortString on purpose.",
+    title: "Bound to one property",
+    body: "Settings > Content Types > Product Spotlight > Product > User Interface > Editor: Product picker, on each instance - the binding isn't in the content-type REST API, so opti:push can't set it. It then works the same on a shared block and on an inline Visual Builder element. Product Spotlight's only long string is productId, so that is the only field there that offers it.",
   },
   {
     title: "Small and forgiving",
-    body: "Native select and textarea, no component library: ~220 KB per iframe. Until its settings are saved, or if a lookup fails, every field stays a working text field. A stored ID the catalog no longer lists is kept and marked, not wiped.",
+    body: "Native select, no component library: ~220 KB per iframe. If the catalog can't be read (no site URL saved, site down), the field falls back to a plain text field that says why. A stored ID the catalog no longer lists is kept and marked, not wiped.",
   },
   {
     title: "Settings",
-    body: "The site URL (the catalog lives at /api/catalog/products), the content types that get the picker (default ProductSpotlight), and a CMS API client to read the open item's type and draft.",
+    body: "Only the site URL - the catalog lives at /api/catalog/products, and saving checks that it lists products. The extension needs no CMS credentials.",
   },
 ];
 
@@ -490,14 +485,15 @@ export default function CmsUiExtensionsDemoPage() {
           </div>
 
           <Callout variant="warning">
-            <strong>Property editors work - on every long string at once.</strong>{" "}
-            The CMS mounts a {code("property-editor")} extension on each long-string property (a
-            string with no format) and on nothing else: {code("shortString")} and choice fields keep
-            their own input, whatever {code("property_format")} the manifest declares. There is no
-            per-field setting, and the editor isn&apos;t told which property it is on - it only gets
-            the value, a readonly flag and optional {code("settings")}. So decide inside the editor
-            where to do something special, and render a plain text field everywhere else. Keep the
-            bundle small: it loads in an iframe on every long-string field of the item.
+            <strong>Property editors work - on the properties you bind them to.</strong>{" "}
+            Every property of the kind the manifest declares ({code("property_type")} plus optional{" "}
+            {code("property_format")} - no format means long strings) offers the extension under{" "}
+            <strong>Settings &gt; Content Types &gt; the property &gt; User Interface &gt; Editor</strong>,
+            and the CMS mounts it only where it is picked there. That binding lives in the CMS, not in
+            the content-type API or your code, so set it on each instance. The editor itself isn&apos;t
+            told which property it is on - it gets the value, a readonly flag and {code("settings")}{" "}
+            (empty so far), and for an inline Visual Builder element {code("content.get()")} returns
+            the page, not the element.
           </Callout>
 
           <div className="mt-8">
@@ -813,14 +809,14 @@ export default function CmsUiExtensionsDemoPage() {
 
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
             <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
-              One long-string field
+              One bound property
             </p>
             <Pipeline
               steps={[
-                { label: "CMS mounts the editor", sub: "on every long string" },
-                { label: "OCP function", sub: "the product field?", highlight: true },
-                { label: "Product field", sub: "catalog dropdown" },
-                { label: "Anything else", sub: "plain text field" },
+                { label: "Admin binds it", sub: "property > Editor" },
+                { label: "CMS mounts the editor", sub: "on that property only" },
+                { label: "OCP function", sub: "reads the catalog", highlight: true },
+                { label: "Catalog dropdown", sub: "stores the product ID" },
                 { label: "Site renders", sub: "name + rate from the catalog", highlight: true },
               ]}
             />
