@@ -304,10 +304,12 @@ function TermTree({ nodes }: { nodes: TermNode[] }) {
   );
 }
 
+// Sorted so one set of filters has one URL: click order would otherwise mint a
+// separate URL (and cache entry) for every permutation.
 function buildHref(active: string[], toggle: string): string {
   const next = active.includes(toggle)
     ? active.filter((c) => c !== toggle)
-    : [...active, toggle];
+    : [...active, toggle].sort();
   const params = new URLSearchParams();
   next.forEach((c) => params.append("category", c));
   const str = params.toString();
@@ -320,7 +322,7 @@ export default async function CategoriesDemoPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const sp = await searchParams;
-  const active = sp.category
+  const requested = sp.category
     ? Array.isArray(sp.category)
       ? sp.category
       : [sp.category]
@@ -331,6 +333,10 @@ export default async function CategoriesDemoPage({
   // term beneath it as well.
   const taxonomy = await getTaxonomyTerms();
   const terms = taxonomy.terms;
+  // Only real term keys, deduped and sorted: the filter is fetchBrowse's cache
+  // key, so arbitrary query strings must not each mint a cache entry.
+  const known = new Set(terms.map((t) => t.key));
+  const active = [...new Set(requested)].filter((c) => known.has(c)).sort();
 
   const [browse, unfiltered] = await Promise.all([
     fetchBrowse(8, active.length ? expandToUris(terms, active) : null),
@@ -485,6 +491,8 @@ export default async function CategoriesDemoPage({
                 active.length ? (
                   <Link
                     href="?#browse"
+                    rel="nofollow"
+                    prefetch={false}
                     className="text-xs text-brand/60 hover:text-brand transition-colors"
                   >
                     Clear filters
@@ -507,8 +515,13 @@ export default async function CategoriesDemoPage({
                         const isRollUpOnly = row.ownCount === 0;
                         return (
                           <li key={row.key}>
+                            {/* nofollow + no prefetch: every row is a new
+                                filter combination (see DEMO_PATH in
+                                robots.ts). */}
                             <Link
                               href={buildHref(active, row.key)}
+                              rel="nofollow"
+                              prefetch={false}
                               style={{ paddingLeft: `${8 + row.depth * 14}px` }}
                               className={`flex items-center justify-between pr-3 py-1.5 rounded-lg text-xs transition-colors ${
                                 isActive

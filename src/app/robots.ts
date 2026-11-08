@@ -60,13 +60,20 @@ const SEO_CRAWLERS = [
   "serpstatbot",
 ];
 
+// The /demo pages are SDK documentation, not site content, and the faceted ones
+// (categories, listing) are crawler traps: every facet link adds one more
+// ?category= param, so each filtered page links to ~50 new URLs and the URL
+// space never ends. One crawler there made millions of uncacheable requests.
+// robots.txt matching is a prefix match, so this covers /demo and every query.
+const DEMO_PATH = "/demo";
+
 // Served at /robots.txt. Advisory only: well-behaved bots honour it, but scrapers
 // that ignore it or spoof their user agent have to be blocked at the edge.
 export default function robots(): MetadataRoute.Robots {
   const siteUrl = getSiteUrl();
   return {
     rules: [
-      { userAgent: "*", allow: "/", disallow: ["/preview", "/api/"] },
+      { userAgent: "*", allow: "/", disallow: ["/preview", "/api/", DEMO_PATH] },
       { userAgent: [...AI_CRAWLERS, ...SEO_CRAWLERS], disallow: "/" },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,

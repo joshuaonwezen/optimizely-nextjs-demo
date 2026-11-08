@@ -378,9 +378,10 @@ function buildFacetHref(
   toggle: string,
   cursor: string | null = null
 ): string {
+  // Sorted so one set of filters has one URL, not one per click order.
   const next = active.includes(toggle)
     ? active.filter(c => c !== toggle)
-    : [...active, toggle];
+    : [...active, toggle].sort();
   const params = new URLSearchParams();
   next.forEach(c => params.append("category", c));
   if (cursor) params.set("cursor", cursor);
@@ -414,8 +415,12 @@ function FacetSidebarLive({
           const href = buildFacetHref(activeCategories, row.key);
           return (
             <li key={row.key}>
+              {/* nofollow + no prefetch: every row is a new filter combination
+                  (see DEMO_PATH in robots.ts). */}
               <Link
                 href={href}
+                rel="nofollow"
+                prefetch={false}
                 style={{ paddingLeft: `${8 + row.depth * 14}px` }}
                 className={`flex items-center justify-between pr-3 py-1.5 rounded-lg text-xs transition-colors ${
                   isActive
@@ -470,6 +475,8 @@ function PaginationBar({
         {activeCursor && (
           <Link
             href={prevHref}
+            rel="nofollow"
+            prefetch={false}
             className="text-xs px-3 py-1.5 rounded-lg border border-ghost-border text-on-surface-variant hover:bg-surface-low transition-colors"
           >
             First page
@@ -478,6 +485,8 @@ function PaginationBar({
         {nextCursor && (
           <Link
             href={nextHref}
+            rel="nofollow"
+            prefetch={false}
             className="text-xs px-3 py-1.5 rounded-lg bg-brand text-on-brand hover:opacity-90 transition-opacity"
           >
             Next page
@@ -506,7 +515,7 @@ export default async function ListingDemoPage({
 }) {
   const sp = await searchParams;
 
-  const activeCategories = sp.category
+  const requestedCategories = sp.category
     ? Array.isArray(sp.category) ? sp.category : [sp.category]
     : [];
   const activeCursor = typeof sp.cursor === "string" ? sp.cursor : null;
@@ -518,6 +527,10 @@ export default async function ListingDemoPage({
   // term beneath it too.
   const taxonomy = await getTaxonomyTerms();
   const terms = taxonomy.terms;
+  // Only real term keys, deduped and sorted: the filter is part of
+  // getArticles' cache key, so arbitrary query strings must not each mint an entry.
+  const known = new Set(terms.map(t => t.key));
+  const activeCategories = [...new Set(requestedCategories)].filter(c => known.has(c)).sort();
 
   const [listResult, facetsResult] = await Promise.all([
     getArticles({ limit: 6 }),
