@@ -4,8 +4,6 @@ import { Callout } from "@/components/blocks/CalloutBlock";
 import DemoHero from "@/components/demo/DemoHero";
 import DemoSectionHeading from "@/components/demo/DemoSectionHeading";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Personalization: Choosing a Path",
 };

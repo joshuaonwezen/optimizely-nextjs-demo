@@ -57,6 +57,32 @@ const nextConfig: NextConfig = {
   },
 
   /**
+   * Demo pages with query-string filters are split so the bare URL stays static:
+   * page.tsx reads no searchParams and is prerendered, and a request carrying a
+   * filter param is rewritten to the dynamic filtered/ twin. A page that awaits
+   * searchParams renders per request for every URL, so the CDN never caches it.
+   * beforeFiles, because afterFiles rewrites never fire on a path that already
+   * matches a page. The query string passes through to the destination.
+   */
+  async rewrites() {
+    const toFiltered = (path: string, params: string[]) =>
+      params.map((key) => ({
+        source: path,
+        has: [{ type: "query" as const, key }],
+        destination: `${path}/filtered`,
+      }));
+    return {
+      beforeFiles: [
+        ...toFiltered("/demo", ["category"]),
+        ...toFiltered("/demo/categories", ["category"]),
+        ...toFiltered("/demo/listing", ["category", "cursor"]),
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
+
+  /**
    * Allow Next.js Image to load images from the Optimizely CMS and Graph CDN.
    */
   images: {
