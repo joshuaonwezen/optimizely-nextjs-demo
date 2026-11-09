@@ -47,6 +47,8 @@ const GET_REDIRECT_RULES_QUERY = /* GraphQL */ `
 
 // Leading slash, collapse repeated slashes, drop the trailing slash (except
 // root). Absolute http(s) destinations are left untouched.
+// This and the filter/sort in getRedirectRules() are mirrored by the Redirects CMS UI
+// extension (../redirect-manager-cms-extension, src/shared/redirects.ts) - change both together.
 function normalizeRedirectPath(input: string): string {
   let s = (input ?? "").trim();
   if (!s) return "";

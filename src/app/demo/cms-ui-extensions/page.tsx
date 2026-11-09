@@ -121,6 +121,8 @@ const PROPERTY_EDITOR_YML = `ui_extensions:
       metadata:
         property_type: string   # string | richtext | integer | float | boolean
         # no property_format: offered on long strings (string, no format).
+        # property_format: shortstring is the only format, and only for string.
+        # json and reference properties can't get a custom editor.
         # An admin binds it per property: property settings > Editor`;
 
 const OCP_CONFIG = `// ocp-app.config.mjs - adds the ui_extensions manifest schema and the bundle validator
@@ -247,6 +249,126 @@ ocp directory list-installs fx_cms_experiments@0.0.1-dev.2   # which installs ru
 ocp directory upgrade fx_cms_experiments --scope <cms-instance-uuid> -v 0.0.1-dev.2
 ocp app logs --appId fx_cms_experiments --trackerId <ocp-account> --scope <cms-instance-uuid> --from 1h`;
 
+const GITHUB = "https://github.com/joshuaonwezen";
+
+const EXTENSIONS = [
+  {
+    name: "Feature Experimentation",
+    anchor: "fx-experiments",
+    repo: "fx-experiments-cms-extension",
+    surface: "Sidebar + view",
+    talksTo: "FX Flags API, CMS REST API",
+    settings: "FX token with write access, project, environment, default audiences; a CMS API client",
+    perInstance: "-",
+    reuse: "convention",
+    expects: "A front end that serves CMS variations by FX decision: the CMS variation name is the FX variation key, middleware reads the cms_flag and cms_route flag variables, and the original page counts as the control arm.",
+    elsewhere: "Build that into the front end (the Feature Experimentation demo shows this site's version). The extension itself needs no change.",
+  },
+  {
+    name: "Share preview",
+    anchor: "share-preview",
+    repo: "preview-link-cms-extension",
+    surface: "Sidebar",
+    talksTo: "CMS REST API, this site's /preview/share",
+    settings: "Site URL and its preview secret; a CMS API client",
+    perInstance: "-",
+    reuse: "convention",
+    expects: "A /preview/share route on the front end that checks the same signature (HMAC-SHA256 over key, version and locale) and renders the draft through Graph's App Key and secret.",
+    elsewhere: "Add that route - src/lib/preview/shareLink.ts and src/app/preview/share are the reference - or point shareUrl() in the extension at your own route.",
+  },
+  {
+    name: "Page performance",
+    anchor: "page-performance",
+    repo: "page-performance-cms-extension",
+    surface: "Sidebar",
+    talksTo: "GA4 Data API, FX Flags API and experiment results",
+    settings: "GA4 property ID and service account key; FX token (read), project, environment - each optional",
+    perInstance: "-",
+    reuse: "partial",
+    expects: "GA4 that records page paths - nothing site-specific. The experiments half finds FX flags by this site's cms_flag and cms_route variables.",
+    elsewhere: "The GA4 half works as it is. For experiments, use the same flag variables, or change pageExperiments() to however your flags name their pages.",
+  },
+  {
+    name: "Product picker",
+    anchor: "product-picker",
+    repo: "product-picker-cms-extension",
+    surface: "Property editor",
+    talksTo: "This site's /api/catalog/products",
+    settings: "Site URL",
+    perInstance: "Bind Product Spotlight > Product",
+    reuse: "convention",
+    expects: "A catalog at {site}/api/catalog/products answering { updatedAt, products: [{ id, name, category, rate }] }, and a block that renders the product from its ID.",
+    elsewhere: "Serve that shape from your own API, or change the one file that reads it (src/backend/lib/catalog.ts). Bind the property on each instance.",
+  },
+  {
+    name: "Color picker",
+    anchor: "color-picker",
+    repo: "color-picker-cms-extension",
+    surface: "Property editor",
+    talksTo: "Nothing - the palette is an app setting",
+    settings: "Brand palette (optional)",
+    perInstance: "Bind Campaign Banner > Background color",
+    reuse: "plug",
+    expects: "A long-string property to bind it to. The front end renders the stored #rrggbb however it likes.",
+    elsewhere: "Nothing to change: bind the property and, optionally, save your brand palette in the settings.",
+  },
+  {
+    name: "Link checker",
+    anchor: "link-checker",
+    repo: "link-checker-cms-extension",
+    surface: "Sidebar",
+    talksTo: "CMS REST API, Graph, this site and external URLs",
+    settings: "Site URL; Graph single key; a CMS API client (read)",
+    perInstance: "-",
+    reuse: "plug",
+    expects: "Any SaaS CMS instance. Internal links are checked at the URLs Graph gives pages, so the front end should serve those paths, as a Graph-routed site does.",
+    elsewhere: "Nothing to change: fill in the site URL, Graph key and CMS client. A front end that rewrites page URLs (other domains per language, extra prefixes) would show false 404s.",
+  },
+  {
+    name: "Redirects",
+    anchor: "redirects",
+    repo: "redirect-manager-cms-extension",
+    surface: "View + sidebar",
+    talksTo: "Graph, this site's /api/redirects, CMS REST API (writes)",
+    settings: "Site URL; Graph single key; a CMS API client with write access",
+    perInstance: "-",
+    reuse: "convention",
+    expects: "This site's content model: Redirect Config and Redirect Rule types with the same keys and properties, a front end that applies them the way this site's middleware does, and optionally /api/redirects for the live check.",
+    elsewhere: "Push those two types and port the middleware check (src/lib/redirects.ts), or change graph.ts and manager.ts to your own redirect model.",
+  },
+  {
+    name: "Translation status",
+    anchor: "translations",
+    repo: "translation-status-cms-extension",
+    surface: "Sidebar + view",
+    talksTo: "CMS REST API, Graph",
+    settings: "Graph single key; a CMS API client (read)",
+    perInstance: "-",
+    reuse: "plug",
+    expects: "Any SaaS CMS instance: it only reads the CMS REST API and Graph.",
+    elsewhere: "Nothing to change: fill in the Graph key and CMS client.",
+  },
+];
+
+const REUSE_LABELS: Record<string, string> = {
+  plug: "Plug and play",
+  partial: "Partly",
+  convention: "Needs code on the site",
+};
+
+const REUSE_ORDER = ["plug", "partial", "convention"];
+
+const OWN_COPY = `git clone https://github.com/joshuaonwezen/link-checker-cms-extension
+cd link-checker-cms-extension && yarn install
+
+# App ids are unique across OCP: pick your own in app.yml (and package.json "name")
+#   meta.app_id: acme_link_checker
+
+ocp app register --appId acme_link_checker --name "Link checker" --product HUB --personal
+ocp app prepare --bump-dev-version --publish
+ocp directory install acme_link_checker@0.0.1-dev.1 --scope <your-cms-instance-uuid>
+# then fill in the settings for that install in the OCP App Directory`;
+
 const FX_FACTS = [
   {
     title: "CMS variations in, FX experiment out",
@@ -272,7 +394,47 @@ const FX_FACTS = [
     title: "It won't start a clashing experiment",
     body: "The site buckets a visitor into every CMS flag whose cms_route covers the page, but the page shows one variation. So starting is refused while another CMS flag runs an A/B or bandit rule on an overlapping route - the panel names it and the button becomes Start anyway. Targeted deliveries don't count. One list-flags call covers the whole project.",
   },
+  {
+    title: "Variation names it won't use",
+    body: "control is the original page, and off and on are the variations FX gives every new flag, so no CMS variation may carry those names. Adding a CMS variation to a running experiment asks first, because it re-splits the traffic.",
+  },
+  {
+    title: "An Experiments view for the instance",
+    body: "The view lists every page linked on this CMS instance with its experiment's status, traffic split and primary metric, and links to the results and the flag.",
+  },
+  {
+    title: "Settings",
+    body: "An FX personal access token with write access to the project's flags and events, the project ID, the environment the rule goes in (production unless set) and optional default audience IDs for new rules. Plus a CMS API client to read the page's versions.",
+  },
 ];
+
+const FX_FLAG_SNIPPET = `public async createFlag(flagKey: string, name: string, description: string, route: string): Promise<FxFlag> {
+  const flag = await this.request<FxFlag>('Create flag', \`\${this.flagsBase}/flags\`, {
+    method: 'POST',
+    body: JSON.stringify({
+      key: flagKey,
+      name,
+      description,
+      variable_definitions: {
+        [CMS_FLAG_VARIABLE]: {key: CMS_FLAG_VARIABLE, type: 'boolean', default_value: 'true'},
+        [CMS_ROUTE_VARIABLE]: {key: CMS_ROUTE_VARIABLE, type: 'string', default_value: route},
+      },
+    }),
+  });
+  return flag as FxFlag;
+}`;
+
+const FX_LINKS_SNIPPET = `export async function getLink(contentKey: string, locale: string): Promise<ExperimentLink | null> {
+  const id = field(contentKey, locale);
+  const row = await storage.kvStore.get<KVHash>(LINKS_KEY, [id]);
+  const link = row[id] as unknown as ExperimentLink | undefined;
+  return link?.flagKey ? link : null;
+}
+
+export async function saveLink(link: ExperimentLink): Promise<void> {
+  const id = field(link.contentKey, link.locale);
+  await storage.kvStore.patch<KVHash>(LINKS_KEY, {[id]: link} as unknown as KVHash);
+}`;
 
 const SHARE_FACTS = [
   {
@@ -291,7 +453,39 @@ const SHARE_FACTS = [
     title: "Settings",
     body: "The site URL and that site's preview secret, plus a CMS API client to read the page's versions and which variation each belongs to.",
   },
+  {
+    title: "Pages only",
+    body: "The sidebar also opens on images and folders. The site only renders pages, so for those it says so instead of showing the CMS's 404.",
+  },
 ];
+
+const SHARE_SIGN_SNIPPET = `// Must stay identical to the signing in optimizely-nextjs-demo src/lib/preview/shareLink.ts:
+// HMAC-SHA256 over "key\\nver\\nloc" with the site's OPTIMIZELY_PREVIEW_SECRET, base64url.
+// The site's /preview/share checks it and renders that version through Graph's App
+// Key/Secret, not the CMS's ~5-minute preview token, so the link never expires.
+// Rotating the secret on the site revokes every link at once.
+export function signShare(t: ShareTarget, secret: string): string {
+  return createHmac('sha256', secret).update(\`\${t.key}\\n\${t.ver}\\n\${t.loc}\`).digest('base64url');
+}
+
+/** \`siteUrl\` is an origin (plus optional path) without a trailing slash. */
+export function shareUrl(siteUrl: string, t: ShareTarget, secret: string): string {
+  const params = new URLSearchParams({key: t.key, loc: t.loc, ver: t.ver, sig: signShare(t, secret)});
+  return \`\${siteUrl}/preview/share?\${params.toString()}\`;
+}`;
+
+const SHARE_CHECK_SNIPPET = `export async function checkLink(deps: Deps, ref: ContentRef, version: string): Promise<LinkCheck> {
+  if (!version) throw new ActionError('missing_version', 'No version to check.');
+  const target = await resolveTarget(deps, ref);
+  const url = shareUrl(deps.site.url, {key: target.key, loc: target.locale, ver: version}, deps.site.previewSecret);
+  try {
+    const res = await fetch(url, {redirect: 'follow', signal: AbortSignal.timeout(CHECK_TIMEOUT_MS)});
+    return {status: res.status, ok: res.status === 200};
+  } catch (error) {
+    const reason = error instanceof Error && error.name === 'TimeoutError' ? 'timed out' : 'failed';
+    throw new ActionError('site_unreachable', \`Opening the link on \${deps.site.url} \${reason}.\`);
+  }
+}`;
 
 const PERFORMANCE_FACTS = [
   {
@@ -303,14 +497,58 @@ const PERFORMANCE_FACTS = [
     body: "The backend signs a JWT with the service account's key (node:crypto, no Google SDK) and queries the Data API for the page's path, with or without the locale prefix: 28 days against the 28 before, a daily chart and the top sources.",
   },
   {
+    title: "What it shows",
+    body: "Page views, users, engagement rate, engagement time per user and key events, each against the previous 28 days, plus a daily views chart (with a table view) and the top traffic sources. Per experiment: status, traffic, variations and the primary metric's results, with links to the results page and the flag.",
+  },
+  {
     title: "Each source is optional",
-    body: "GA4 and Feature Experimentation are separate settings sections, and the sidebar shows whichever is configured. The service account needs Viewer access on the GA4 property.",
+    body: "GA4 and Feature Experimentation are separate settings sections, and the sidebar shows whichever is configured. The service account needs Viewer access on the GA4 property; a read-only FX token is enough, since it only lists flags and reads results.",
   },
   {
     title: "Analytics can't split FX variations",
     body: "The middleware serves every FX variation on the same URL, so GA4 sees one page. The per-variation numbers come from the experiment results, not from analytics.",
   },
 ];
+
+const PERFORMANCE_ROUTE_SNIPPET = `/**
+ * Whether a flag's cms_route covers \`path\`, by the rules of routeMatches() in the
+ * site's middleware: comma-separated entries, "/*" for everything, "/x/*" for a prefix
+ * (including "/x" itself), otherwise exact. An empty route covers every path.
+ */
+export function routeMatches(path: string, cmsRoute: string | null | undefined): boolean {
+  if (!cmsRoute || !cmsRoute.trim()) return true;
+  const clean = path.replace(/\\/$/, '') || '/';
+  return cmsRoute.split(',').some((raw) => {
+    const entry = raw.trim();
+    if (!entry) return false;
+    if (entry === '/*') return true;
+    if (entry.endsWith('/*')) {
+      const prefix = entry.slice(0, -2).replace(/\\/$/, '') || '/';
+      return clean === prefix || clean.startsWith(\`\${prefix}/\`);
+    }
+    return clean === (entry.replace(/\\/$/, '') || '/');
+  });
+}`;
+
+const PERFORMANCE_RULES_SNIPPET = `export function pageExperiments(flags: FxFlagListItem[], cfg: FxConfig, path: string): ExperimentWithoutResults[] {
+  const found = flags.flatMap((flag) => {
+    const env = flag.environments?.[cfg.environmentKey];
+    const cmsFlag = flag.variable_definitions?.[CMS_FLAG_VARIABLE]?.default_value;
+    const route = flag.variable_definitions?.[CMS_ROUTE_VARIABLE]?.default_value ?? '';
+    if (flag.archived || !env || String(cmsFlag).toLowerCase() !== 'true' || !routeMatches(path, route)) return [];
+    return (env.rules_detail ?? [])
+      .filter((rule) => EXPERIMENT_RULE_TYPES.has(rule.type) && rule.status !== 'archived')
+      .map(
+        (rule): ExperimentWithoutResults => ({
+          flagKey: flag.key,
+          ruleKey: rule.key,
+          // ... name, type, status, traffic, variations, results and flag links
+          experimentId: rule.layer_experiment_id ? String(rule.layer_experiment_id) : null,
+        }),
+      );
+  });
+  return found.sort((a, b) => Number(b.live) - Number(a.live));
+}`;
 
 const PICKER_FACTS = [
   {
@@ -331,6 +569,82 @@ const PICKER_FACTS = [
   },
 ];
 
+const PICKER_HOOK_SNIPPET = `/** The bound string property of a property-editor extension, kept in sync with the editor. */
+export function useStringProperty(context: ExtensionContext) {
+  const [value, setValue] = useState('');
+  const [readonly, setReadonly] = useState(true);
+  // ... settings, loaded and saveError are kept the same way
+
+  useEffect(() => {
+    let active = true;
+    const apply = (state: PropertyState) => {
+      if (!active) return;
+      setValue(typeof state.value === 'string' ? state.value : '');
+      setReadonly(state.readonly);
+    };
+    // Initial value - subscribe() only reports later changes.
+    void context.property.get().then(apply);
+    const unsubscribe = context.property.subscribe(apply);
+    void context.extension.setReady();
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [context]);
+
+  const save = useCallback(
+    async (next: string) => {
+      setValue(next);
+      const result = await context.property.set(next);
+      setSaveError(result.success ? null : result.error || 'The CMS rejected the value.');
+    },
+    [context],
+  );
+
+  return {value, readonly, settings, loaded, save, saveError};
+}`;
+
+const PICKER_SELECT_SNIPPET = `const picked = options.find((o) => o.value === value);
+const groups = new Map<string, ProductOption[]>();
+for (const o of options) groups.set(o.group, [...(groups.get(o.group) ?? []), o]);
+
+return (
+  <>
+    {/* Native select: the browser draws its menu, so the field's iframe can't clip it. */}
+    <select aria-label="Product" disabled={readonly} onChange={(e) => onPick(e.target.value)} style={CONTROL} value={value}>
+      <option value="">- Choose a product -</option>
+      {/* Keep a stored ID the catalog no longer lists, so opening the item doesn't wipe it. */}
+      {value && !picked && <option value={value}>{value} (not in the catalog)</option>}
+      {[...groups].map(([group, items]) => (
+        <optgroup key={group} label={group}>
+          {items.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+    {/* ... the picked product's rate, and a warning for an ID the catalog dropped */}
+  </>
+);`;
+
+const CATALOG_SNIPPET = `{
+  "updatedAt": "2026-11-06",
+  "products": [
+    {
+      "id": "easy-access-saver",
+      "name": "Easy Access Saver",
+      "category": "savings",
+      "rate": { "value": 4.6, "label": "AER", "basis": "variable" },
+      "summary": "Save from £1 and take your money out whenever you need it, with no penalties.",
+      "features": ["Withdraw any time, no notice", "Open with £1", "FSCS protected up to £85,000"],
+      "url": "/personal/savings/easy-access-savings",
+      "icon": "savings"
+    }
+  ]
+}`;
+
 const COLOR_FACTS = [
   {
     title: "A color field, not a text box",
@@ -346,7 +660,248 @@ const COLOR_FACTS = [
   },
   {
     title: "Safe with bad values",
-    body: "A value that isn't a hex color is flagged in the editor and never saved; on the site, the banner falls back to Mosey green and tells editors why in edit mode.",
+    body: "Typing #abc saves #aabbcc. A value that isn't a hex color is flagged, never saved, and snaps back when the field loses focus; dragging the native picker saves once it settles (300 ms), not on every step. On the site, the banner falls back to Mosey green and tells editors why in edit mode.",
+  },
+];
+
+const COLOR_RULE_SNIPPET = `/** "#1a73e8" for a #rgb or #rrggbb value (any case, spaces trimmed), else null. */
+export function normalizeHex(value: string | null | undefined): string | null {
+  const v = (value ?? '').trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(v)) return v;
+  if (/^#[0-9a-f]{3}$/.test(v)) return \`#\${v[1]}\${v[1]}\${v[2]}\${v[2]}\${v[3]}\${v[3]}\`;
+  return null;
+}
+
+// ... luminance() and contrastRatio(): the WCAG 2.x formulas
+
+/** White or ink text, whichever reads better on the background, and how well. */
+export function readableText(background: string): {color: string; ratio: number} {
+  const onWhite = contrastRatio(background, WHITE);
+  const onInk = contrastRatio(background, INK);
+  return onWhite >= onInk ? {color: WHITE, ratio: onWhite} : {color: INK, ratio: onInk};
+}`;
+
+const COLOR_INPUT_SNIPPET = `const commitLater = (next: string) => {
+  cancelPending();
+  timer.current = window.setTimeout(() => {
+    timer.current = null;
+    if (next !== value) void save(next);
+  }, SAVE_DELAY_MS);
+};
+
+<input
+  aria-invalid={invalid}
+  aria-label="Hex color"
+  disabled={disabled}
+  onBlur={() => {
+    typing.current = false;
+    // Only a valid color (or nothing) is ever saved; anything else snaps back.
+    if (hex || draft.trim() === '') commit(hex ?? '');
+    else setDraft(value);
+  }}
+  onChange={(e) => {
+    const next = e.target.value;
+    setDraft(next);
+    const valid = normalizeHex(next);
+    if (valid || next.trim() === '') commitLater(valid ?? '');
+    else cancelPending();
+  }}
+  value={draft}
+/>`;
+
+const LINKS_COLLECT_SNIPPET = `private string(value: string, where: string, propType: string | undefined, name: string) {
+  if (contentKeyOf(value)) {
+    // A url field links to the content; a contentReference field renders it.
+    return this.add(value, propType === 'url' ? 'link' : 'reference', where);
+  }
+  if (looksLikeHtml(value)) return this.html(value, where);
+  const linkish = propType === 'url' || ((propType === undefined || propType === 'unknown') && LINKISH_NAME.test(name));
+  if (linkish && looksLikeUrl(value)) this.add(value, 'link', where);
+}`;
+
+const LINKS_CONTENT_SNIPPET = `async function judgeContent(link: FoundLink, key: string, locale: string): Promise<Partial<CheckedLink> & Judgement> {
+  const isLink = link.kind === 'link';
+  if (!(await item(key))) {
+    return isLink
+      ? {
+          verdict: 'broken',
+          status: 'Points at deleted content',
+          hint: "The site renders nothing for this link. Pick the target again, or remove the link.",
+        }
+      : {verdict: 'broken', status: 'Deleted content', hint: 'This leaves a gap on the page. Remove it, or pick other content.'};
+  }
+  const live: PublishedItem | null = await published(\`\${key}|\${locale}\`);
+  if (!live) {
+    return isLink
+      ? {
+          verdict: 'broken',
+          status: \`Target not published in \${locale}\`,
+          hint: "The site hides links to content visitors can't see. Publish the target, or pick another page.",
+        }
+      : {verdict: 'warning', status: \`Not published in \${locale}\`, hint: "Visitors don't see it until it is published."};
+  }
+  if (live.url && (isLink || live.isPage)) {
+    const page = await judgePage(live.url, live.url);
+    return {...page, status: \`\${live.url}: \${page.status}\`};
+  }
+  if (isLink) return {verdict: 'warning', status: 'Links to an item with no URL', hint: 'Only pages can be linked to.'};
+  return {verdict: 'ok', status: 'Published'};
+}`;
+
+const REDIRECTS_TRACE_SNIPPET = `/** Every redirect a visitor to \`path\` goes through: the browser follows each one back through the middleware. */
+export function trace<R extends RedirectRule>(path: string, rules: R[]): Trace<R> {
+  const hops: Array<Hop<R>> = [];
+  let current = path;
+  const seen = new Set([norm(current)]);
+  while (!isAbsolute(current)) {
+    const hit = matchRule(current, rules);
+    if (!hit) break;
+    hops.push({from: current, to: hit.toPath, status: hit.status, rule: hit.rule});
+    current = hit.toPath;
+    if (hops.length >= MAX_HOPS || (!isAbsolute(current) && seen.has(norm(current)))) return {hops, final: current, loop: true};
+    seen.add(norm(current));
+  }
+  return {hops, final: current, loop: false};
+}`;
+
+const REDIRECTS_WRITE_SNIPPET = `/**
+ * Publishes a new version of \`key\` with some properties changed and every other one kept.
+ *
+ * POST /versions makes a BLANK draft - it does not copy the properties of the published
+ * version - so publishing a partial patch would wipe the rest. This is the site's
+ * patchPublishedPageProperties() (scripts/_shared.ts): read the published properties, make
+ * the draft, merge-patch the full set onto it, publish.
+ */
+export async function publishWithChanges(
+  cms: CmsClient,
+  key: string,
+  locale: string,
+  label: string,
+  change: (current: PropertyData) => PropertyData,
+): Promise<{published: boolean; version: string}> {
+  const versions = await cms.listVersions(key, locale, 20);
+  const live = versions.find((v) => v.status === 'published' && !v.variation);
+  if (!live) throw new ActionError('not_published', \`\${label} has no published version to change.\`);
+
+  // Someone's unpublished edit, based on the old published version, would undo this change
+  // when they publish it.
+  const pending = versions.find((v) => !v.variation && Number(v.version) > Number(live.version) && v.status !== 'previous');
+  if (pending) {
+    throw new ActionError(
+      'unpublished_changes',
+      \`\${label} has unpublished changes (version \${pending.version}, \${pending.status}). Publish or discard them in the CMS first, or they would undo this change.\`,
+    );
+  }
+
+  await cms.createDraft(key, locale, live.displayName);
+  const draft = newestDraftAfter(await cms.listVersions(key, locale, 5), live);
+  if (!draft) throw new ActionError('no_draft', \`The CMS didn't create a draft of \${label}. Try again.\`);
+
+  await cms.patchVersion(key, draft.version, {properties: change({...(live.properties ?? {})})});
+  return {published: await cms.publish(key, draft.version), version: draft.version};
+}`;
+
+const TRANSLATIONS_COMPARE_SNIPPET = `export function compareFields(source: LocalizedField[], target: LocalizedField[]): Comparison {
+  const byId = new Map(target.map((f) => [f.id, f]));
+  const byPosition = new Map(target.map((f) => [f.position, f]));
+  const result: Comparison = {empty: [], same: [], translated: 0, total: 0};
+  for (const field of source) {
+    if (!field.text) continue;
+    result.total++;
+    const text = (byId.get(field.id) ?? byPosition.get(field.position))?.text ?? '';
+    if (!text) result.empty.push(field);
+    else if (normalize(text) === normalize(field.text) && field.text.length > 3 && /\\p{L}/u.test(field.text)) result.same.push(field);
+    else result.translated++;
+  }
+  return result;
+}`;
+
+const TRANSLATIONS_LOCALES_SNIPPET = `/**
+ * The instance's languages, from Graph's Locales enum - the same source as the site's
+ * getSupportedLocales(). The enum spells region locales with an underscore (ja_JP); the CMS
+ * REST API and _metadata.locale use a hyphen (ja-JP).
+ */
+export async function instanceLocales(cfg: GraphConfig): Promise<string[]> {
+  const data = await graphQuery<{__type?: {enumValues?: Array<{name: string}>}}>(cfg, '{ __type(name: "Locales") { enumValues { name } } }');
+  return (data.__type?.enumValues ?? [])
+    .map((v) => v.name)
+    .filter((n) => n !== 'ALL' && n !== 'NEUTRAL')
+    .map((n) => n.replace(/_/g, '-'));
+}`;
+
+const LINK_FACTS = [
+  {
+    title: "Finds the links the site hides",
+    body: "A url field that points at internal content is stored as cms://content/{key}. When that content is deleted or unpublished, Graph can't resolve it and the site's resolveLinkHref() returns nothing - the button disappears with no error anywhere. The sidebar reports it as broken, with where it sits on the page.",
+  },
+  {
+    title: "No per-type code",
+    body: "It walks the version's properties and Visual Builder composition generically: url fields, <a href> and <img src> in rich text and HTML (a Raw HTML block included), blocks in content areas and image fields, and the shared blocks the page uses, one level deep. Content type definitions only supply the labels.",
+  },
+  {
+    title: "Opened the way a visitor would",
+    body: "Site paths are fetched on the site with redirects off: a 404 is broken, a redirect to another page is worth a look (link to the target directly), and a trailing-slash redirect is followed to where it lands. External URLs get HEAD, then GET; a 401, 403 or 429 means it couldn't check, not that the link is broken.",
+  },
+  {
+    title: "Settings",
+    body: "The site URL, the instance's Graph single key (published content only - what visitors get) and a read-only CMS API client. Variation versions can't be read through the CMS API, so on one it offers to check the original page instead.",
+  },
+];
+
+const REDIRECT_FACTS = [
+  {
+    title: "The same rules as the middleware",
+    body: "src/shared/redirects.ts reproduces this site's normalizeRedirectPath(), the filter and sort in getRedirectRules() and matchRedirect(), and a test pins their behavior - so Test a URL shows exactly the hops a visitor gets. As on the site, only the newest Redirect Config counts.",
+  },
+  {
+    title: "A check on every rule",
+    body: "Loops, chains (point A at C directly), duplicates that never fire, rules that point at themselves, destinations that 404 on the site, rules that hide a published page, and rules saved in the CMS that the site's /api/redirects doesn't serve yet.",
+  },
+  {
+    title: "Per page, in the sidebar",
+    body: "The redirects that end on the open page (/x and /en/x count as one page, as the catch-all does), a warning when a rule makes the page's own URL unreachable, and older URL segments of the page that nothing redirects - one click adds the redirect.",
+  },
+  {
+    title: "Writes that keep everything else",
+    body: "Adding a rule creates a Redirect Rule block in the config's own folder and publishes a new Redirect Config version with every property of the published one plus the new reference. It refuses while someone else has unpublished changes, and leaves drafts for a reviewer on an approval instance. The CMS history shows the API client, not the editor.",
+  },
+];
+
+const TRANSLATION_FACTS = [
+  {
+    title: "Field by field",
+    body: "Each language's newest version is compared with the published version of the language the item was created in: fields that are empty, fields still word for word the source, and whether it was last changed before the source. Only fields their content type marks isLocalized count, inline Visual Builder blocks included.",
+  },
+  {
+    title: "The instance's languages, from Graph",
+    body: "The Locales enum, the same source as the site's getSupportedLocales(), so a language with no version yet still shows, as not translated. The enum spells ja_JP where the CMS API and _metadata.locale say ja-JP; the extension uses the hyphen.",
+  },
+  {
+    title: "Coverage across the site",
+    body: "The Translations view counts the published pages per language from Graph, flags those older than the source and lists pages with gaps first. The single key sees published versions only, so a draft-only language counts as missing there; the sidebar shows drafts too.",
+  },
+  {
+    title: "It catches an empty source too",
+    body: "When the source language's own localized fields are empty, there is nothing to translate - the sidebar says so. That is how a page whose properties were wiped by a blank version shows up.",
+  },
+];
+
+const TESTING_FACTS = [
+  {
+    title: "yarn validate in every repo",
+    body: "Lint, typecheck, unit tests, the build and ocp-app-sdk validate. The unit tests cover the pure parts: route matching, the traffic split, the share signature, the catalog mapping, hex parsing and contrast, link collection, redirect loops and chains, field comparison, and the settings forms.",
+  },
+  {
+    title: "Live suites against the real APIs",
+    body: "Every sidebar or view extension has a tests/live suite behind an env flag (FX_LIVE, PREVIEW_LIVE, PERF_LIVE, LINKS_LIVE, REDIRECTS_LIVE, TRANSLATIONS_LIVE). Only the FX one writes: it creates throwaway cms_ext_smoke_* and cms_ext_e2e_* flags and archives them afterwards. The others only read - the Redirects writes are tried by hand, on a throwaway rule.",
+  },
+  {
+    title: "Held to the site's own code",
+    body: "Where an extension repeats logic the site owns, it is kept in step with it: Share preview's test pins a signature produced by src/lib/preview/shareLink.ts, Page performance copies the middleware's routeMatches, Redirects copies matchRedirect() and getRedirectRules(), and the site's src/lib/color.ts mirrors the color picker's readableText.",
+  },
+  {
+    title: "Property editors need a real CMS",
+    body: "ocp dev renders sidebars and views but not property editors, so the two pickers are tried after publishing a dev version, on an instance where the property is bound.",
   },
 ];
 
@@ -358,6 +913,37 @@ function FactGrid({ facts }: { facts: Array<{ title: string; body: string }> }) 
           <h3 className="font-display font-semibold text-on-surface mb-2">{title}</h3>
           <p className="text-sm text-on-surface-variant leading-relaxed">{body}</p>
         </div>
+      ))}
+    </div>
+  );
+}
+
+function RepoLink({ repo }: { repo: string }) {
+  return (
+    <a
+      href={`${GITHUB}/${repo}`}
+      className="font-mono text-xs text-brand hover:underline"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {repo}
+    </a>
+  );
+}
+
+function SourceLine({ repo }: { repo: string }) {
+  return (
+    <p className="text-sm text-on-surface-variant mb-8">
+      Source on GitHub: <RepoLink repo={repo} />
+    </p>
+  );
+}
+
+function Excerpts({ items }: { items: Array<{ code: string; label: string; language: string }> }) {
+  return (
+    <div className="grid lg:grid-cols-2 gap-6 mb-8 [&>*]:min-w-0">
+      {items.map(({ code, label, language }) => (
+        <CodeBlock key={label} code={code} language={language} label={label} />
       ))}
     </div>
   );
@@ -520,6 +1106,81 @@ export default function CmsUiExtensionsDemoPage() {
           </div>
         </section>
 
+        <section id="examples">
+          <DemoSectionHeading id="examples">The example extensions</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            Each one below is its own OCP app and repo, so a CMS instance installs only what it
+            needs. Every one is installed per instance with {code("--scope")} and configured in that
+            install&apos;s settings in the OCP App Directory; a property editor is also bound to its
+            property by hand on each instance.
+          </p>
+          <div className="overflow-x-auto rounded-2xl border border-ghost-border">
+            <table className="w-full text-sm">
+              <TableHead columns={["Extension", "Surface", "Backend talks to", "Settings", "Per instance", "Source"]} />
+              <tbody className="divide-y divide-ghost-border">
+                {EXTENSIONS.map((row) => (
+                  <tr key={row.anchor} className="bg-surface-lowest hover:bg-surface-low transition-colors align-top">
+                    <td className="px-4 py-3 text-xs font-medium whitespace-nowrap">
+                      <a href={`#${row.anchor}`} className="text-brand hover:underline">
+                        {row.name}
+                      </a>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-on-surface-variant whitespace-nowrap">{row.surface}</td>
+                    <td className="px-4 py-3 text-xs text-on-surface-variant">{row.talksTo}</td>
+                    <td className="px-4 py-3 text-xs text-on-surface-variant">{row.settings}</td>
+                    <td className="px-4 py-3 text-xs text-on-surface-variant">{row.perInstance}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <RepoLink repo={row.repo} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="reuse">
+          <DemoSectionHeading id="reuse">Using them on another instance</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            None of these is installed from a store. Each is registered as a personal app with dev versions only, so its
+            developer installs it on the instances their login reaches. Anyone else runs their own copy: clone the repo,
+            give it an app id of their own, register, publish and install it - every repo&apos;s README has the commands.
+            Whether that copy needs code changes depends on how much of this site it relies on.
+          </p>
+          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
+            Two things hold for all of them: the CMS instance must have UI extensions enabled (still a beta), and the
+            install lands in the OCP account that manages that instance. To share a copy with the other developers in your
+            organization, register it without {code("--personal")}; anything wider needs a production version, which
+            Optimizely reviews.
+          </p>
+
+          <div className="overflow-x-auto rounded-2xl border border-ghost-border mb-8">
+            <table className="w-full text-sm">
+              <TableHead columns={["Extension", "Works elsewhere", "What it expects", "To use it on another site"]} />
+              <tbody className="divide-y divide-ghost-border">
+                {[...EXTENSIONS]
+                  .sort((a, b) => REUSE_ORDER.indexOf(a.reuse) - REUSE_ORDER.indexOf(b.reuse))
+                  .map((row) => (
+                    <tr key={row.anchor} className="bg-surface-lowest hover:bg-surface-low transition-colors align-top">
+                      <td className="px-4 py-3 text-xs font-medium whitespace-nowrap">
+                        <a href={`#${row.anchor}`} className="text-brand hover:underline">
+                          {row.name}
+                        </a>
+                      </td>
+                      <td className="px-4 py-3 text-xs font-medium text-on-surface whitespace-nowrap">
+                        {REUSE_LABELS[row.reuse]}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-on-surface-variant">{row.expects}</td>
+                      <td className="px-4 py-3 text-xs text-on-surface-variant">{row.elsewhere}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          <CodeBlock code={OWN_COPY} language="bash" label="Your own copy of one" />
+        </section>
+
         <section id="context">
           <DemoSectionHeading id="context">What the extension can see</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
@@ -595,7 +1256,13 @@ export default function CmsUiExtensionsDemoPage() {
                 Any framework works; the sample uses React 19 with{" "}
                 {code("@optiaxiom/react")}, Optimizely&apos;s Axiom design system, so the panel looks
                 native. Call {code("setReady()")} once mounted and always return the{" "}
-                {code("subscribe")} unsubscribe from your effect.
+                {code("subscribe")} unsubscribe from your effect. A property editor uses the same{" "}
+                {code("register()")} but reads and writes its field through {code("context.property")} -
+                the{" "}
+                <a href="#product-picker" className="text-brand hover:underline">
+                  Product picker
+                </a>{" "}
+                example shows the hook both pickers share.
               </p>
               <CodeBlock code={SIDEBAR_SNIPPET} language="tsx" label="FxExperiment.sidebar.tsx" />
             </SetupStep>
@@ -685,6 +1352,10 @@ export default function CmsUiExtensionsDemoPage() {
                 title: "Shared code stays neutral",
                 body: "src/shared is compiled into both the browser and the Node bundle, so it can use neither Node built-ins nor browser globals. Put the action contract and pure helpers there.",
               },
+              {
+                title: "prepare can upgrade the app SDK",
+                body: "ocp app prepare may bump @zaiusinc/app-sdk to its latest version even without --upgrade-deps. Re-run the tests afterwards and commit package.json and the lockfile with the release.",
+              },
             ].map(({ title, body }) => (
               <div key={title} className="bg-surface-lowest border border-ghost-border rounded-2xl p-6">
                 <h3 className="font-display font-semibold text-on-surface mb-2">{title}</h3>
@@ -718,14 +1389,13 @@ export default function CmsUiExtensionsDemoPage() {
 
         <section id="fx-experiments">
           <DemoSectionHeading id="fx-experiments">Example: Feature Experimentation</DemoSectionHeading>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            The first of five extensions built for this site, each its own OCP app and repo. This one
-            is in the sibling repo {code("fx-experiments-cms-extension")}. A{" "}
-            <strong>Feature Experimentation</strong> sidebar
+          <p className="text-sm text-on-surface-variant mb-3 max-w-3xl">
+            A <strong>Feature Experimentation</strong> sidebar
             turns the open page&apos;s CMS variations into an A/B test - start, pause, add variations
             later, edit metrics and jump to results - or links the page to a flag you already have.
             An <strong>Experiments</strong> view lists every linked page.
           </p>
+          <SourceLine repo="fx-experiments-cms-extension" />
 
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
             <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
@@ -743,6 +1413,13 @@ export default function CmsUiExtensionsDemoPage() {
           </div>
 
           <FactGrid facts={FX_FACTS} />
+
+          <Excerpts
+            items={[
+              { code: FX_FLAG_SNIPPET, language: "ts", label: "src/backend/lib/fx.ts (excerpt)" },
+              { code: FX_LINKS_SNIPPET, language: "ts", label: "src/backend/lib/links.ts (excerpt)" },
+            ]}
+          />
 
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-6">
             <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-2">
@@ -770,12 +1447,13 @@ export default function CmsUiExtensionsDemoPage() {
 
         <section id="share-preview">
           <DemoSectionHeading id="share-preview">Example: Share preview</DemoSectionHeading>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            In the sibling repo {code("preview-link-cms-extension")}. A <strong>Share preview</strong>{" "}
+          <p className="text-sm text-on-surface-variant mb-3 max-w-3xl">
+            A <strong>Share preview</strong>{" "}
             sidebar gives the editor a link to the exact version open in the editor - its content and
             its variation - that anyone can open without a CMS login and that never expires. It also
             lists a link to the newest version of the original page and of each variation.
           </p>
+          <SourceLine repo="preview-link-cms-extension" />
 
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
             <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
@@ -794,6 +1472,13 @@ export default function CmsUiExtensionsDemoPage() {
 
           <FactGrid facts={SHARE_FACTS} />
 
+          <Excerpts
+            items={[
+              { code: SHARE_SIGN_SNIPPET, language: "ts", label: "src/backend/lib/shareLink.ts (excerpt)" },
+              { code: SHARE_CHECK_SNIPPET, language: "ts", label: "src/backend/lib/links.ts (excerpt)" },
+            ]}
+          />
+
           <Callout variant="note">
             <strong>It needs the site&apos;s signed route.</strong>{" "}
             The CMS&apos;s {code("preview_token")} lasts about five minutes, no API issues a longer one,
@@ -808,23 +1493,47 @@ export default function CmsUiExtensionsDemoPage() {
 
         <section id="page-performance">
           <DemoSectionHeading id="page-performance">Example: Page performance</DemoSectionHeading>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            In the sibling repo {code("page-performance-cms-extension")}. A{" "}
-            <strong>Page performance</strong> sidebar shows how the open page performs: GA4 traffic for the
+          <p className="text-sm text-on-surface-variant mb-3 max-w-3xl">
+            A <strong>Page performance</strong> sidebar shows how the open page performs: GA4 traffic for the
             last 28 days against the 28 before, and every Feature Experimentation test that targets the
-            page, with its status, traffic, variations and primary-metric results.
+            page, with its status, traffic, variations and primary-metric results. It needs no API on the
+            site.
           </p>
+          <SourceLine repo="page-performance-cms-extension" />
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
+            <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
+              One sidebar load
+            </p>
+            <Pipeline
+              steps={[
+                { label: "Editor opens a page", sub: "publicUrl gives the path" },
+                { label: "OCP function", sub: "loads both sources independently", highlight: true },
+                { label: "GA4 Data API", sub: "28 days vs the 28 before" },
+                { label: "FX Flags API", sub: "rules whose cms_route covers the path" },
+                { label: "Sidebar", sub: "traffic + experiment results", highlight: true },
+              ]}
+            />
+          </div>
 
           <FactGrid facts={PERFORMANCE_FACTS} />
+
+          <Excerpts
+            items={[
+              { code: PERFORMANCE_ROUTE_SNIPPET, language: "ts", label: "src/shared/path.ts (excerpt)" },
+              { code: PERFORMANCE_RULES_SNIPPET, language: "ts", label: "src/backend/lib/fx.ts (excerpt)" },
+            ]}
+          />
         </section>
 
         <section id="product-picker">
           <DemoSectionHeading id="product-picker">Example: Product picker</DemoSectionHeading>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            In the sibling repo {code("product-picker-cms-extension")}. A <strong>property editor</strong>{" "}
+          <p className="text-sm text-on-surface-variant mb-3 max-w-3xl">
+            A <strong>property editor</strong>{" "}
             that turns the Product field of a <strong>Product Spotlight</strong> block into a dropdown of
             the bank&apos;s products, grouped by category with each product&apos;s rate.
           </p>
+          <SourceLine repo="product-picker-cms-extension" />
 
           <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
             <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
@@ -842,18 +1551,167 @@ export default function CmsUiExtensionsDemoPage() {
           </div>
 
           <FactGrid facts={PICKER_FACTS} />
+
+          <Excerpts
+            items={[
+              { code: PICKER_HOOK_SNIPPET, language: "ts", label: "src/cms-ui-extensions/common/useProperty.ts (excerpt)" },
+              { code: PICKER_SELECT_SNIPPET, language: "tsx", label: "src/cms-ui-extensions/picker/ProductPicker.tsx (excerpt)" },
+            ]}
+          />
+
+          <p className="text-sm text-on-surface-variant mb-4 max-w-3xl">
+            The catalog contract. The picker reads {code("id")}, {code("name")}, {code("category")} and{" "}
+            {code("rate")}; the site renders the rest from its own copy of{" "}
+            {code("src/lib/catalog/productCatalog.json")}.
+          </p>
+          <CodeBlock code={CATALOG_SNIPPET} language="json" label="GET /api/catalog/products (first product)" />
         </section>
 
         <section id="color-picker">
           <DemoSectionHeading id="color-picker">Example: Color picker</DemoSectionHeading>
-          <p className="text-sm text-on-surface-variant mb-8 max-w-3xl">
-            In the sibling repo {code("color-picker-cms-extension")}. A second <strong>property editor</strong>, with
+          <p className="text-sm text-on-surface-variant mb-3 max-w-3xl">
+            A second <strong>property editor</strong>, with
             no API behind its choices this time: it turns the Background color of a <strong>Campaign Banner</strong>{" "}
             into a color field. Both editors are offered on long strings; the Editor setting on each property decides
             which one, if any, it gets.
           </p>
+          <SourceLine repo="color-picker-cms-extension" />
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
+            <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
+              One bound property
+            </p>
+            <Pipeline
+              steps={[
+                { label: "Admin binds it", sub: "Background color > Editor" },
+                { label: "Color field", sub: "swatch, hex, palette", highlight: true },
+                { label: "OCP function", sub: "serves the palette setting" },
+                { label: "Stored value", sub: "#rrggbb or empty" },
+                { label: "Site renders", sub: "same contrast rule", highlight: true },
+              ]}
+            />
+          </div>
 
           <FactGrid facts={COLOR_FACTS} />
+
+          <Excerpts
+            items={[
+              { code: COLOR_RULE_SNIPPET, language: "ts", label: "src/shared/color.ts (excerpt)" },
+              { code: COLOR_INPUT_SNIPPET, language: "tsx", label: "src/cms-ui-extensions/color/ColorField.tsx (excerpt)" },
+            ]}
+          />
+        </section>
+
+        <section id="link-checker">
+          <DemoSectionHeading id="link-checker">Example: Link checker</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-3 max-w-3xl">
+            A <strong>Link checker</strong> sidebar opens every link on the version in the editor - on the page, in its
+            inline blocks and in the shared blocks it uses - and lists them broken first, each with where it sits and what
+            to do about it.
+          </p>
+          <SourceLine repo="link-checker-cms-extension" />
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
+            <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
+              One check
+            </p>
+            <Pipeline
+              steps={[
+                { label: "Editor opens a version", sub: "key + version + locale" },
+                { label: "OCP function", sub: "reads it and its shared blocks", highlight: true },
+                { label: "Graph", sub: "resolves cms://content links" },
+                { label: "This site", sub: "opens each path like a visitor" },
+                { label: "Sidebar", sub: "broken first", highlight: true },
+              ]}
+            />
+          </div>
+
+          <FactGrid facts={LINK_FACTS} />
+
+          <Excerpts
+            items={[
+              { code: LINKS_COLLECT_SNIPPET, language: "ts", label: "src/backend/lib/collect.ts (excerpt)" },
+              { code: LINKS_CONTENT_SNIPPET, language: "ts", label: "src/backend/lib/checker.ts (excerpt)" },
+            ]}
+          />
+        </section>
+
+        <section id="redirects">
+          <DemoSectionHeading id="redirects">Example: Redirects</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-3 max-w-3xl">
+            The first example that writes content. A <strong>Redirects</strong> view lists every rule in the{" "}
+            <Link href="/demo/redirects" className="text-brand hover:underline">
+              Redirect Config
+            </Link>{" "}
+            the middleware reads, checks each one and tests any URL; a <strong>Redirects</strong> sidebar shows the rules
+            about the open page. Both can add a redirect, and the view switches rules on and off.
+          </p>
+          <SourceLine repo="redirect-manager-cms-extension" />
+
+          <div className="bg-surface-lowest border border-ghost-border rounded-2xl p-6 mb-8">
+            <p className="text-xs font-mono text-on-surface-variant uppercase tracking-wider mb-4">
+              Add redirect
+            </p>
+            <Pipeline
+              steps={[
+                { label: "Editor fills in the rule", sub: "checked as they type" },
+                { label: "OCP function", sub: "checks again against the CMS", highlight: true },
+                { label: "Redirect Rule", sub: "new block, published" },
+                { label: "Redirect Config", sub: "new version, every property kept" },
+                { label: "This site", sub: "once its redirect cache refreshes", highlight: true },
+              ]}
+            />
+          </div>
+
+          <FactGrid facts={REDIRECT_FACTS} />
+
+          <Excerpts
+            items={[
+              { code: REDIRECTS_TRACE_SNIPPET, language: "ts", label: "src/shared/redirects.ts (excerpt)" },
+              { code: REDIRECTS_WRITE_SNIPPET, language: "ts", label: "src/backend/lib/writes.ts (excerpt)" },
+            ]}
+          />
+
+          <Callout variant="note">
+            <strong>When a change goes live.</strong>{" "}
+            The middleware reads {code("/api/redirects")}, which is cached: the CMS publish webhook refreshes it within a minute,
+            and without the webhook it waits for the 1-hour ceiling. Graph also refreshes its copy of a rule inside Redirect
+            Config minutes after the rule itself, so switching a rule publishes Redirect Config again too. The view shows both
+            states - &ldquo;Not live yet&rdquo; and &ldquo;Changed, not applied&rdquo; - until they settle.
+          </Callout>
+          <Callout variant="note" className="mt-4">
+            <strong>Re-seeding drops rules added here.</strong>{" "}
+            {code("scripts/seed-redirects.ts")} rebuilds Redirect Config from the seed&apos;s own list, so a rule added in the
+            editor falls out of it - its block stays in the Redirects folder. Add it again after a re-seed, or put it in the seed.
+          </Callout>
+        </section>
+
+        <section id="translations">
+          <DemoSectionHeading id="translations">Example: Translation status</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-3 max-w-3xl">
+            A <strong>Translations</strong> sidebar shows every language of the instance for the open item - published,
+            draft only or missing - and which of its localized fields are still empty or untranslated. A{" "}
+            <strong>Translations</strong> view shows how far each language covers the site. It pairs with the{" "}
+            <Link href="/demo/localization" className="text-brand hover:underline">
+              Localization
+            </Link>{" "}
+            demo.
+          </p>
+          <SourceLine repo="translation-status-cms-extension" />
+
+          <FactGrid facts={TRANSLATION_FACTS} />
+
+          <Excerpts
+            items={[
+              { code: TRANSLATIONS_COMPARE_SNIPPET, language: "ts", label: "src/backend/lib/fields.ts (excerpt)" },
+              { code: TRANSLATIONS_LOCALES_SNIPPET, language: "ts", label: "src/backend/lib/graph.ts (excerpt)" },
+            ]}
+          />
+        </section>
+
+        <section id="testing">
+          <DemoSectionHeading id="testing">How the examples are tested</DemoSectionHeading>
+          <FactGrid facts={TESTING_FACTS} />
         </section>
 
         <section id="related">
@@ -874,6 +1732,16 @@ export default function CmsUiExtensionsDemoPage() {
                 href: "/demo/management-api",
                 title: "Management API",
                 body: "The CMS REST API an extension's backend uses to read versions, variations and properties",
+              },
+              {
+                href: "/demo/redirects",
+                title: "URL Redirects",
+                body: "The Redirect Config and middleware the Redirects extension reads, checks and writes",
+              },
+              {
+                href: "/demo/localization",
+                title: "Localization",
+                body: "The language versions and supported locales the Translation status extension reports on",
               },
               {
                 href: "/demo/mcp-server",

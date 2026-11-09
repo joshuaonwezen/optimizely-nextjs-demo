@@ -37,6 +37,8 @@ function norm(p: string): string {
 
 const isAbsolute = (s: string) => /^https?:\/\//i.test(s);
 
+// Mirrored by the Redirects CMS UI extension (../redirect-manager-cms-extension,
+// src/shared/redirects.ts) so its checks match what visitors get - change both together.
 export function matchRedirect(
   pathname: string,
   rules: RedirectRule[]
