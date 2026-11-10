@@ -211,9 +211,9 @@ sections:
         label: Personal access token
         help: Leave blank to keep the saved one.   # every input needs help, or validate fails
       - type: text
-        key: projectId
-        label: Project ID
-        help: The FX project the site's SDK key belongs to.
+        key: sdkKey
+        label: Site SDK key
+        help: The project and environment are read from its datafile.
       - type: button
         label: Save
         action: saveFx       # -> Lifecycle.onSettingsForm("fx", "saveFx", formData)
@@ -258,11 +258,11 @@ const EXTENSIONS = [
     repo: "fx-experiments-cms-extension",
     surface: "Sidebar + view",
     talksTo: "FX Flags API, CMS REST API",
-    settings: "FX token with write access, project, environment, default audiences; a CMS API client",
+    settings: "FX token with write access and the site's SDK key; a CMS API client (write access to end tests); optional site convention",
     perInstance: "-",
     reuse: "convention",
-    expects: "A front end that serves CMS variations by FX decision: the CMS variation name is the FX variation key, middleware reads the cms_flag and cms_route flag variables, and the original page counts as the control arm.",
-    elsewhere: "Build that into the front end (the Feature Experimentation demo shows this site's version). The extension itself needs no change.",
+    expects: "A front end that serves CMS variations by FX decision: the CMS variation name is the FX variation key, a boolean marker and a route flag variable (cms_flag and cms_route here) say where, and the original page counts as the control arm.",
+    elsewhere: "Build that into the front end (the Feature Experimentation demo shows this site's version), then set the variable names, control key, reserved names and URL style in the app's Site convention settings. The repo's docs/site-contract.md lists the rest.",
   },
   {
     name: "Share preview",
@@ -372,43 +372,66 @@ ocp directory install acme_link_checker@0.0.1-dev.1 --scope <your-cms-instance-u
 const FX_FACTS = [
   {
     title: "CMS variations in, FX experiment out",
-    body: "The sidebar reads the open page's variations through the CMS REST API, then creates the FX flag, one FX variation per CMS variation plus control, and an A/B rule with traffic, audience and metrics.",
+    body: "The sidebar reads the open page's variations through the CMS REST API, then creates the FX flag, one FX variation per CMS variation plus control, and an A/B rule with traffic, audiences (picked by name) and metrics. Flag key, name and route are suggested and tucked under Advanced.",
   },
   {
-    title: "Variable defaults, not per-variation values",
-    body: "cms_flag and cms_route are set as flag variable defaults, so a variation added later in the FX UI is still picked up by the site's middleware.",
+    title: "Variable defaults, overrides read too",
+    body: "cms_flag and cms_route are set as flag variable defaults, so a variation added later in the FX UI is still picked up by the site's middleware. A flag that sets them per variation instead (savings_offer does) is read correctly, because the extension takes the effective value from each variation.",
+  },
+  {
+    title: "Routes for every URL of the page",
+    body: "The middleware compares the raw request path, and English pages answer at both /savings and /en/savings. The suggested route covers both forms, and the panel flags a route that misses one, with a one-click fix. That is how cms_personal_banking, created as /en/personal-banking, would have been caught.",
+  },
+  {
+    title: "A checklist before Start",
+    body: "The page and every variation in the test must be published: a draft arm would show visitors the original page while counting them as the variation. The backend refuses to start until they are. It also warns about a missing metric, a route that misses a URL, other tests or personalization on the page, and wx_ variations.",
   },
   {
     title: "control is the original page",
     body: "No CMS variation is named control, so Graph serves the base item - and the catch-all still fires the FX impression for it, so the baseline arm is counted.",
   },
   {
-    title: "Results link comes from FX",
-    body: "The rule's fetch_results_ui_url, which FX only creates the first time the experiment starts.",
+    title: "The site's datafile is the authority",
+    body: "The settings take the site's SDK key; project and environment are read from its datafile, so experiments land where the site decides. The same datafile tells the panel when a started test is live, which audiences exist, and which rules are serving CMS content right now.",
   },
   {
-    title: "A link is the extension's own record",
-    body: "One row per page and locale in the install's OCP key-value store: flag, rule, environment, route. Create experiment writes it after building the flag; Link existing flag adopts a flag that has a cms_flag variable and picks its first A/B rule, changing nothing in FX. The site never reads links - visitors are served from FX decisions alone, so unlinking changes nothing for them.",
+    title: "Personalization counts as a clash",
+    body: "The site buckets a visitor into every CMS flag whose route covers the page, but the page shows one variation. So a running test on an overlapping route and a targeted delivery both count: the homepage persona deliveries on / and /en would otherwise take control visitors away from a homepage test. The panel names them and the button becomes Start anyway.",
   },
   {
-    title: "It won't start a clashing experiment",
-    body: "The site buckets a visitor into every CMS flag whose cms_route covers the page, but the page shows one variation. So starting is refused while another CMS flag runs an A/B or bandit rule on an overlapping route - the panel names it and the button becomes Start anyway. Targeted deliveries don't count. One list-flags call covers the whole project.",
+    title: "Ending a test ships the winner",
+    body: "End experiment pauses the A/B rule and either adds a targeted delivery serving the winner to everyone, or publishes a new version of the page with the winner's content (an approval workflow is respected, and the step resumes once approved). Each step checks what is already done, so a retry picks up where it stopped.",
+  },
+  {
+    title: "Cleaning up the variations",
+    body: "After a test ends, the panel offers to delete its variations from the CMS - only when an admin has turned that on, after a typed confirmation, and never a winner FX still serves or a variation another live rule uses on the page. The CMS refuses to delete a published version, so those are listed for removal in the editor.",
   },
   {
     title: "Variation names it won't use",
-    body: "control is the original page, and off and on are the variations FX gives every new flag, so no CMS variation may carry those names. Adding a CMS variation to a running experiment asks first, because it re-splits the traffic.",
+    body: "control is the original page, and off and on are the variations FX gives every new flag, so no CMS variation may carry those names. wx_ variations belong to Web Experimentation and are never added. Adding or removing a variation on a running test asks first, and adding one keeps a custom split's proportions.",
   },
   {
-    title: "An Experiments view for the instance",
-    body: "The view lists every page linked on this CMS instance with its experiment's status, traffic split and primary metric, and links to the results and the flag.",
+    title: "A link is the extension's own record",
+    body: "One row per page and locale in the install's OCP key-value store: flag, rule, environment, route, and how the test ended. Link existing flag picks from the project's CMS flags and changes nothing in FX. The site never reads links - visitors are served from FX decisions alone, so unlinking changes nothing for them.",
+  },
+  {
+    title: "Checked input, logged changes",
+    body: "Every action's parameters are checked against allow-lists before they reach an FX or CMS URL or a JSON Patch path. The extension isn't told which editor is using it, so every change it makes is logged in the app logs without a name.",
   },
   {
     title: "Settings",
-    body: "An FX personal access token with write access to the project's flags and events, the project ID, the environment the rule goes in (production unless set) and optional default audience IDs for new rules. Plus a CMS API client to read the page's versions.",
+    body: "An FX personal access token with write access to flags and events, the site's SDK key and optional default audiences. A CMS API client, with write access for ending tests, and a switch that allows deleting variations. A Site convention section for sites whose variable names, control key, reserved names or URL style differ from this one.",
   },
 ];
 
-const FX_FLAG_SNIPPET = `public async createFlag(flagKey: string, name: string, description: string, route: string): Promise<FxFlag> {
+const FX_FLAG_SNIPPET = `public async createFlag(
+  flagKey: string,
+  name: string,
+  description: string,
+  route: string,
+  profile: SiteProfile,
+): Promise<FxFlag> {
+  const {markerVariable, routeVariable} = profile;
   const flag = await this.request<FxFlag>('Create flag', \`\${this.flagsBase}/flags\`, {
     method: 'POST',
     body: JSON.stringify({
@@ -416,8 +439,8 @@ const FX_FLAG_SNIPPET = `public async createFlag(flagKey: string, name: string, 
       name,
       description,
       variable_definitions: {
-        [CMS_FLAG_VARIABLE]: {key: CMS_FLAG_VARIABLE, type: 'boolean', default_value: 'true'},
-        [CMS_ROUTE_VARIABLE]: {key: CMS_ROUTE_VARIABLE, type: 'string', default_value: route},
+        [markerVariable]: {key: markerVariable, type: 'boolean', default_value: 'true'},
+        [routeVariable]: {key: routeVariable, type: 'string', default_value: route},
       },
     }),
   });
@@ -1391,9 +1414,10 @@ export default function CmsUiExtensionsDemoPage() {
           <DemoSectionHeading id="fx-experiments">Example: Feature Experimentation</DemoSectionHeading>
           <p className="text-sm text-on-surface-variant mb-3 max-w-3xl">
             A <strong>Feature Experimentation</strong> sidebar
-            turns the open page&apos;s CMS variations into an A/B test - start, pause, add variations
-            later, edit metrics and jump to results - or links the page to a flag you already have.
-            An <strong>Experiments</strong> view lists every linked page.
+            turns the open page&apos;s CMS variations into an A/B test - checks it is ready, starts and
+            pauses it, changes it while it runs and jumps to results - then ends it by shipping the
+            winner and cleaning up the variations. It can also link the page to a flag you already
+            have. An <strong>Experiments</strong> view lists every linked page.
           </p>
           <SourceLine repo="fx-experiments-cms-extension" />
 
@@ -1408,6 +1432,7 @@ export default function CmsUiExtensionsDemoPage() {
                 { label: "Variations", sub: "control + one per CMS variation", highlight: true },
                 { label: "A/B rule", sub: "traffic, audience, metrics" },
                 { label: "Results", sub: "fetch_results_ui_url" },
+                { label: "Winner", sub: "FX delivery or CMS publish" },
               ]}
             />
           </div>
@@ -1430,7 +1455,7 @@ export default function CmsUiExtensionsDemoPage() {
               so the panel never shows stale state.
             </p>
             <div className="flex flex-wrap gap-2">
-              {["getStatus", "createExperiment", "syncVariations", "setMetrics", "setRunning", "setRoute", "linkExisting", "unlink", "listEvents", "createEvent", "listExperiments"].map((a) => (
+              {["getStatus", "createExperiment", "syncVariations", "removeVariations", "setMetrics", "setTraffic", "setAudiences", "setRunning", "setRoute", "endExperiment", "deleteVariations", "archiveFlag", "linkExisting", "unlink", "listEvents", "createEvent", "listAudiences", "listCmsFlags", "listExperiments", "forgetLink"].map((a) => (
                 <Chip key={a}>{a}</Chip>
               ))}
             </div>
@@ -1439,7 +1464,8 @@ export default function CmsUiExtensionsDemoPage() {
           <Callout variant="note">
             <strong>The CMS API cannot create variations.</strong>{" "}
             So the direction is one way: create the variation in the Variations dropdown, named
-            exactly as the FX variation key, and the sidebar mirrors it to FX. The variation name
+            exactly as the FX variation key, and the sidebar mirrors it to FX. Deleting goes the
+            other way only after a test ends. The variation name
             rules, the {code("__v_")} URL segment and the {code("control")} impression are covered
             on the Feature Experimentation demo.
           </Callout>

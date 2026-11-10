@@ -497,9 +497,11 @@ Case-sensitive. If the FX flag has variation key `variation_1`, the CMS variatio
 **CMS experiments are created from the editor by the Feature Experimentation CMS UI extension**, an OCP app in the sibling repo `../fx-experiments-cms-extension`. From its sidebar it:
 - creates the flag with `cms_flag`/`cms_route` as variable **defaults**;
 - adds one FX variation per CMS variation, plus `control`;
-- adds an A/B rule with audience, traffic and metrics, and links to `fetch_results_ui_url`.
+- adds an A/B rule with audience, traffic and metrics, and links to `fetch_results_ui_url`;
+- refuses to start while the page or any arm is unpublished, and counts targeted deliveries (the `homepage` personas) as clashes;
+- ends a test by adding a targeted delivery of the winner, or by publishing the winner's composition as a new base version; then, if an admin enabled it, deletes the test's variations (never one another live rule serves).
 
-Prefer it over hand-building flags in the FX UI.
+It reads the site's datafile from its SDK key setting, and suggests routes for both `/page` and `/en/page`, because middleware matches the raw path. Its "Site convention" settings default to this site's names; `docs/site-contract.md` in that repo is the contract, so change both when `cms_flag`/`cms_route`, `control`, `wx_` or the `__v_` format change here. Prefer it over hand-building flags in the FX UI.
 
 Each CMS UI extension is its own OCP app and sibling repo (never bundle several into one app):
 - `../fx-experiments-cms-extension` - Feature Experimentation (above);
