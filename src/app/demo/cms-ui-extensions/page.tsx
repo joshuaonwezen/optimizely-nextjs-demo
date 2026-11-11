@@ -270,7 +270,7 @@ const EXTENSIONS = [
     repo: "preview-link-cms-extension",
     surface: "Sidebar",
     talksTo: "CMS REST API, this site's /preview/share",
-    settings: "Site URL and its preview secret; a CMS API client",
+    settings: "The site's preview secret; a CMS API client. Site URL optional - taken from the page's application in CMS Settings > Applications",
     perInstance: "-",
     reuse: "convention",
     expects: "A /preview/share route on the front end that checks the same signature (HMAC-SHA256 over key, version and locale) and renders the draft through Graph's App Key and secret.",
@@ -318,11 +318,11 @@ const EXTENSIONS = [
     repo: "link-checker-cms-extension",
     surface: "Sidebar",
     talksTo: "CMS REST API, Graph, this site and external URLs",
-    settings: "Site URL; Graph single key; a CMS API client (read)",
+    settings: "Graph single key; a CMS API client (read). Site URL optional - taken from the page's application in CMS Settings > Applications",
     perInstance: "-",
     reuse: "plug",
     expects: "Any SaaS CMS instance. Internal links are checked at the URLs Graph gives pages, so the front end should serve those paths, as a Graph-routed site does.",
-    elsewhere: "Nothing to change: fill in the site URL, Graph key and CMS client. A front end that rewrites page URLs (other domains per language, extra prefixes) would show false 404s.",
+    elsewhere: "Nothing to change: fill in the Graph key and CMS client; each page is checked on the site its CMS application lists. A front end that rewrites page URLs (other domains per language, extra prefixes) would show false 404s.",
   },
   {
     name: "Redirects",
@@ -330,7 +330,7 @@ const EXTENSIONS = [
     repo: "redirect-manager-cms-extension",
     surface: "View + sidebar",
     talksTo: "Graph, this site's /api/redirects, CMS REST API (writes)",
-    settings: "Site URL; Graph single key; a CMS API client with write access",
+    settings: "Graph single key; a CMS API client with write access. Site URL only when the CMS serves several sites",
     perInstance: "-",
     reuse: "convention",
     expects: "This site's content model: Redirect Config and Redirect Rule types with the same keys and properties, a front end that applies them the way this site's middleware does (including never following a destination that leaves the site), and optionally /api/redirects for the live check.",
@@ -478,7 +478,7 @@ const SHARE_FACTS = [
   },
   {
     title: "Settings",
-    body: "The site URL and that site's preview secret, plus a CMS API client to read the page's versions and which variation each belongs to.",
+    body: "The site's preview secret and a CMS API client to read the page's versions and which variation each belongs to. The site address comes from the page's application in CMS Settings > Applications - the editor's page URL counts only when its host is listed there - and a Site URL setting overrides it.",
   },
   {
     title: "Pages only",
@@ -871,7 +871,7 @@ const LINK_FACTS = [
   },
   {
     title: "Settings",
-    body: "The site URL, the instance's Graph single key (published content only - what visitors get) and a read-only CMS API client. Variation versions can't be read through the CMS API, so on one it offers to check the original page instead.",
+    body: "The instance's Graph single key (published content only - what visitors get) and a read-only CMS API client. Each page is checked on its own site, taken from its application in CMS Settings > Applications; a Site URL setting overrides that. Variation versions can't be read through the CMS API, so on one it offers to check the original page instead.",
   },
   {
     title: "Never fetches internal addresses",
