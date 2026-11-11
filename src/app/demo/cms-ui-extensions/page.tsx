@@ -399,6 +399,10 @@ const FX_FACTS = [
     body: "The site buckets a visitor into every CMS flag whose route covers the page, but the page shows one variation. So a running test on an overlapping route and a targeted delivery both count: the homepage persona deliveries on / and /en would otherwise take control visitors away from a homepage test. The panel names them and the button becomes Start anyway.",
   },
   {
+    title: "Results in the panel",
+    body: "The sidebar shows the primary metric per variation - visitors, conversion rate, lift - with significant lifts marked, read from GET /v2/experiments/{layer_experiment_id}/results. End experiment preselects a significant winner; the full FX results page is one click away.",
+  },
+  {
     title: "Ending a test ships the winner",
     body: "End experiment pauses the A/B rule and either adds a targeted delivery serving the winner to everyone, or publishes a new version of the page with the winner's content (an approval workflow is respected, and the step resumes once approved). Each step checks what is already done, so a retry picks up where it stopped.",
   },
@@ -1353,7 +1357,7 @@ export default function CmsUiExtensionsDemoPage() {
             {[
               {
                 title: "Popups and the clipboard can be blocked",
-                body: "The editor iframe may refuse window.open and the Clipboard API. Check what window.open returns and fall back to showing the URL with a copy button that uses execCommand.",
+                body: "The editor iframe may refuse window.open and the Clipboard API. Call window.open without the noopener feature - with it the call returns null even when the tab opened - then set opener to null on the new window, and fall back to the URL with an execCommand copy button only when it really returns null.",
               },
               {
                 title: "Inline the fonts",
