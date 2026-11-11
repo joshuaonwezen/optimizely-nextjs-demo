@@ -800,6 +800,8 @@ Both expose the same eight color choices; they differ only in which one sits at 
 
 Rule of thumb: if the block's `resolveStyleClasses(ds, { background: "transparent" })` code fallback is already `transparent`, spread `BACKGROUND_NONE_DEFAULT` so the CMS default agrees with the code. Both templates keep every color selectable — this only changes the untouched default. Changing which constant a block spreads is a display-template change → `opti:push` to every instance (see below).
 
+**Sections (`DefaultSectionTemplate`) default to "Default" vertical padding (`py-16`)** since 2026-11-11 - with "None" first, every section an editor added stamped `paddingY: "none"` and sat flush against the block above it (product cards touching the hero). Two deliberate exceptions keep existing pages unchanged: `BlankSection.tsx` still renders an **unset** `paddingY` as no padding (seeded pages store no settings), and `gridSection()` in `scripts/_shared.ts` writes `paddingY: "none"` explicitly so Visual Builder doesn't stamp the new default onto seeded sections (pass `"default"` for a section whose blocks bring no spacing of their own, like a card grid). Changing only a template's choice order doesn't need a full `opti:push`: a `PATCH /v1/displaytemplates/{key}` with `application/merge-patch+json` on each instance does it without resetting `mayContainTypes` or the DAM fields.
+
 ### Choosing which settings to include per block
 
 - Any block with a visible heading or title - add `HEADING_SIZE` and `FONT_STYLE`

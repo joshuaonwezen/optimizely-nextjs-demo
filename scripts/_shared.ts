@@ -96,7 +96,11 @@ export interface CompNode {
   component?: { contentType: string; properties: Record<string, unknown> };
   nodes?: CompNode[];
   layoutType?: string;
+  /** Write shape: values are strings. POST drops it; the composition PATCH keeps it. */
+  displaySettings?: { displayTemplate: string; settings: Record<string, string> };
 }
+
+export type SectionPadding = "none" | "compact" | "default" | "spacious";
 
 /** A single-column section wrapping one full-width element. */
 export function sectionComponent(
@@ -110,13 +114,17 @@ export function sectionComponent(
 }
 
 /** A section containing a row of element components in a grid layout. */
-export function gridSection(displayName: string, items: CompNode[]): CompNode {
+// The padding is written explicitly: the section template now lists "Default" first, which
+// Visual Builder stamps onto nodes that have no settings (a variation created from the
+// page, say). Seeded sections keep their flush look - their blocks bring their own spacing.
+export function gridSection(displayName: string, items: CompNode[], paddingY: SectionPadding = "none"): CompNode {
   return {
     id: uid(),
     displayName,
     nodeType: "section",
     layoutType: "grid",
     component: { contentType: "BlankSection", properties: {} },
+    displaySettings: { displayTemplate: "DefaultSectionTemplate", settings: { paddingY } },
     nodes: [
       {
         id: uid(),

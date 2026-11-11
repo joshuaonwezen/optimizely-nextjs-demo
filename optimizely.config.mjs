@@ -342,14 +342,17 @@ export const DefaultSectionTemplate = displayTemplate({
       },
     },
     ...TEXT_COLOR,
+    // "Default" first: the first choice is what the CMS stores for a section nobody set,
+    // and a new section should not sit flush against the block above it. Seeded sections
+    // state their padding explicitly (gridSection in scripts/_shared.ts).
     paddingY: {
       editor: "select",
       displayName: "Vertical Padding",
       sortOrder: 2,
       choices: {
-        none:     { displayName: "None",     sortOrder: 0 },
-        compact:  { displayName: "Compact",  sortOrder: 1 },
-        default:  { displayName: "Default",  sortOrder: 2 },
+        default:  { displayName: "Default",  sortOrder: 0 },
+        none:     { displayName: "None",     sortOrder: 1 },
+        compact:  { displayName: "Compact",  sortOrder: 2 },
         spacious: { displayName: "Spacious", sortOrder: 3 },
       },
     },
