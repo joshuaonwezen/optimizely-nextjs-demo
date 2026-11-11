@@ -82,7 +82,7 @@ const BATCH_DELAY_MS = 60;
 // ODP page URLs. It MUST match the audience that gates the live experiments
 // (the "Main demo site" audience keys on hostname containing this value) - send
 // any other host and every user fails the audience and buckets to "off".
-const HOSTNAME = "opti.joshuaonwezen.dev";
+const HOSTNAME = "optimizely-onboarding.vercel.app";
 const KNOWN_CUSTOMER_RATE = 0.2; // ~20% of visitors are identified as known customers
 const MOBILE_RATE = 0.55;
 

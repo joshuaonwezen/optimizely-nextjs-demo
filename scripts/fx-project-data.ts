@@ -72,8 +72,8 @@ const anyOf = (...conditions: Condition[]) => ["and", ["or", ["or", ...condition
 export const FX_AUDIENCES = {
   site: {
     name: "Main demo site",
-    description: "opti.joshuaonwezen.dev or localhost. Gates every rule, so the other CMS instances' sites, which share this project, stay out.",
-    conditions: anyOf(attr("hostname", "substring", "opti.joshuaonwezen.dev"), attr("hostname", "substring", "localhost")),
+    description: "optimizely-onboarding.vercel.app (and its preview deployments) or localhost. Gates every rule, so the other CMS instances' sites, which share this project, stay out.",
+    conditions: anyOf(attr("hostname", "substring", "optimizely-onboarding"), attr("hostname", "substring", "localhost")),
   },
   personal: { name: "Personal visitors", description: "persona = personal", conditions: anyOf(attr("persona", "exact", "personal")) },
   business: { name: "Business visitors", description: "persona = business", conditions: anyOf(attr("persona", "exact", "business")) },
