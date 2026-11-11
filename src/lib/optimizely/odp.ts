@@ -87,7 +87,7 @@ export async function queryAllQualifiedSegments(userId: string, fresh = false): 
 // "half-configured" state is intentional - create the audience in ODP and add its identifier
 // here to light it up.
 export const ODP_SEGMENT_TO_VARIATION: Record<string, string> = {
-  // Identity / lifecycle (cross-session). Qualifying on mb_customer_identified (has_email=true)
+  // Identity / lifecycle (cross-session). Qualifying on customer_identified (has_email=true)
   // means we recognise a known customer on a later visit - serve the welcome-back experience.
   known_customers: "returning",
   // Batch audiences (recompute on ODP's schedule - fine for returning-visitor personalization).

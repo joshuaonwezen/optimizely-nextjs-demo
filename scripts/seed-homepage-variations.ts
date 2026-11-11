@@ -345,7 +345,7 @@ async function buildBusinessVariation(): Promise<CompNode[]> {
 }
 
 // Welcome-back experience for a KNOWN customer (ODP audience `known_customers`, built on the
-// mb_customer_identified event). Account actions instead of acquisition copy - the payoff of
+// customer_identified event). Account actions instead of acquisition copy - the payoff of
 // ODP recognising a returning, identified visitor across sessions.
 async function buildReturningVariation(): Promise<CompNode[]> {
   const ctaRef = await pageRefForUrl("/en/personal/current-account");

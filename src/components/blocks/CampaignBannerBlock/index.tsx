@@ -113,7 +113,7 @@ export default async function CampaignBannerBlock(props: CampaignBannerProps) {
             pill
             fontClassName={style.font}
             className="bg-[var(--campaign-fg)] text-[var(--campaign-bg)] hover:opacity-90"
-            data-track-event="mb_campaign_banner_click"
+            data-track-event="campaign_banner_click"
             data-track-tags={JSON.stringify({ heading: data.heading ?? "", color: background })}
           >
             <span {...pa("ctaText")}>{data.ctaText || "Find out more"}</span>

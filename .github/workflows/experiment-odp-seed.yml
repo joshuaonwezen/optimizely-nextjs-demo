@@ -5,6 +5,10 @@ on:
     - cron: "27 6 * * *" # ~06:27 UTC daily (just after the GA4 job at 06:17)
   workflow_dispatch: # allows manual runs from the Actions tab
 
+# The job only reads the repo; the seeder talks to Optimizely with the secrets below.
+permissions:
+  contents: read
+
 jobs:
   seed:
     runs-on: ubuntu-latest
@@ -17,9 +21,11 @@ jobs:
       - name: Send a day of fake FX + ODP traffic
         run: npm run exp:seed -- --users=2026
         env:
-          # FX SDK key -> datafile for real impression bucketing. ODP key -> the
-          # /v3/events + /v3/profiles REST API. Add these as repo secrets; they are
-          # the same trust level as the GA4 secret and safe to run in CI.
+          # FX SDK key (production key of the "SaaS CMS ProServ" project) -> the
+          # datafile, which supplies the running experiments and their metrics. ODP
+          # key -> the /v3/events + /v3/profiles REST API. Add these as repo secrets;
+          # they are the same trust level as the GA4 secret and safe to run in CI.
+          # The FX REST API token is never needed here.
           OPTIMIZELY_FX_SDK_KEY: ${{ secrets.OPTIMIZELY_FX_SDK_KEY }}
           OPTIMIZELY_ODP_API_KEY: ${{ secrets.OPTIMIZELY_ODP_API_KEY }}
           OPTIMIZELY_ODP_API_HOST: ${{ secrets.OPTIMIZELY_ODP_API_HOST }}

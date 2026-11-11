@@ -80,7 +80,7 @@ function FormBody({ action, successMessage, steps, rules, children }) {
   const submitHandler = async (formData, context) => {
     const res = await fetch(action, { method: "POST", body: json(formData) });
     if (!res.ok) throw new Error(\`Submission failed with status \${res.status}\`);
-    trackEvent("mb_form_submit", { ... });
+    trackEvent("form_submit", { ... });
     identifyCustomer({ email: payload.email });
   };
 

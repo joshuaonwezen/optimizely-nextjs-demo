@@ -11,6 +11,5 @@ One-off repair, diagnostic and setup scripts. None of them run as part of
 | `set-default-application.ts` | Checks every instance in `seedInstances.ts` for a default application and sets the single one as default where there is none. Without a default, shared blocks in "For All Applications" preview as "Preview is not configured". Selects instances by suffixed credentials, not the base vars. Dry run; `--apply` to write. |
 | `template-usage.ts` | Counts display template usage in published experiences on every instance; `--removed=KeyA,KeyB` lists nodes still using those keys, `--settings` adds stored setting values. Read-only. |
 | `test-odp.ts` | Lists ODP audience names, or checks one visitor's audience membership by `vuid` and/or `fs_user_id`. Read-only. |
-| `seed-fx-flags.ts` | Creates the early homepage FX flags through the Flags REST API. Flags are normally managed through the Experimentation MCP server now; kept for reference. |
 
 Run with `npx tsx scripts/maintenance/<script>.ts`.

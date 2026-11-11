@@ -23,7 +23,7 @@ export function useFormTracking(formName: string): {
     function onFocusIn() {
       if (started.current) return;
       started.current = true;
-      trackEvent("mb_form_start", { form: formName });
+      trackEvent("form_start", { form: formName });
     }
     form.addEventListener("focusin", onFocusIn);
     return () => form.removeEventListener("focusin", onFocusIn);
@@ -33,7 +33,7 @@ export function useFormTracking(formName: string): {
     function onAbandon() {
       if (!started.current || submitted.current || abandoned.current) return;
       abandoned.current = true;
-      trackEvent("mb_form_abandon", { form: formName });
+      trackEvent("form_abandon", { form: formName });
     }
     // visibilitychange fires when the tab goes to background; beforeunload
     // fires on navigation away or tab close. Both are reasonable abandonment
@@ -55,7 +55,7 @@ export function useFormTracking(formName: string): {
     extra?: Record<string, string | number | boolean>
   ) {
     submitted.current = true;
-    trackEvent("mb_form_submit", { form: formName, fields, status, ...extra });
+    trackEvent("form_submit", { form: formName, fields, status, ...extra });
   }
 
   return { formRef, trackSubmit };

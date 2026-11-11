@@ -39,7 +39,7 @@ export function formatVariationSegment({ flagKey, variationKey }: FlagVariation)
  * A variation route is the SAME page as its clean path, so anything that treats a
  * pathname change as a new pageview has to compare these instead. Without it the WX
  * soft-nav swap looks like a navigation: measured, it made AutoTracker reset its
- * dedupe set and re-fire mb_feature_viewed, and made FxBucketingEvent remount and fire
+ * dedupe set and re-fire feature_viewed, and made FxBucketingEvent remount and fire
  * a second FX impression for every flag the page had already reported.
  */
 export function cleanPathname(pathname: string | null | undefined): string {

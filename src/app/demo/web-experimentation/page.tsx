@@ -618,7 +618,7 @@ html[data-cms-variation] [data-cms-variant="__base__"]    { display: none }
 
    Use display, not visibility. A visibility-hidden element still
    intersects the viewport, so AutoTracker's IntersectionObserver
-   would fire a second mb_feature_viewed for the hidden copy.
+   would fire a second feature_viewed for the hidden copy.
    display:none generates no boxes at all.
 
    Static, never a per-page <style> next to the content. That was
@@ -702,7 +702,7 @@ if (hit && revealable(hit.v)) {
 // Three components guard with it today:
 //   FxBucketingEvent        decide() fires a REAL impression, so a
 //                           duplicate permanently skews the experiment
-//   AutoTracker             would double-count mb_feature_viewed
+//   AutoTracker             would double-count feature_viewed
 //   RecommendationBlockClient  would fetch twice`} />
           </div>
 

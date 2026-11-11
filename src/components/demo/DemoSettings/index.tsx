@@ -150,7 +150,7 @@ export default function DemoSettings() {
     setOpen(false);
     if (key === "new_visitor") clearSegment();
     else writeSegment(key);
-    trackEvent("mb_audience_switch", { from, to: key });
+    trackEvent("audience_switch", { from, to: key });
     router.refresh();
   }
 
@@ -197,7 +197,7 @@ export default function DemoSettings() {
       return;
     }
     setWxMode(next);
-    trackEvent("mb_wx_mode_switch", { mode: next });
+    trackEvent("wx_mode_switch", { mode: next });
     window.location.reload();
   }
 

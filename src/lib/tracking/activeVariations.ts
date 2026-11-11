@@ -58,7 +58,7 @@ let clientReady: Promise<void> | null = null;
  * Resolves once FX decisions have had their chance to land.
  *
  * Needed because above-the-fold components race the network. Measured on the homepage:
- * HeroBlock's IntersectionObserver fires mb_feature_viewed at ~11ms, while the browser
+ * HeroBlock's IntersectionObserver fires feature_viewed at ~11ms, while the browser
  * SDK cannot decide until it has fetched the datafile (~229ms cold). So the hero
  * decision event, the one whose variation matters most, was the single event going out
  * unattributed.

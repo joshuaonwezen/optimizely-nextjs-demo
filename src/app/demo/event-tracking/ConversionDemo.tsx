@@ -58,7 +58,7 @@ export default function ConversionDemo() {
         {log.length === 0 ? (
           <p className="text-xs text-on-surface-variant italic">
             No events yet. Click the button above, or scroll the page to trigger{" "}
-            <code className="bg-surface px-1 rounded font-mono">mb_scroll_depth</code>.
+            <code className="bg-surface px-1 rounded font-mono">scroll_depth</code>.
           </p>
         ) : (
           <ul className="space-y-2">

@@ -55,7 +55,14 @@ export function ProductHeroCtaClient({ href, label, isEditMode, ctaUrlDisplay, p
 
   return (
     <div data-component="ProductHeroCtaClient">
-      <Button href={isEditMode ? undefined : (href ?? undefined)} variant="custom" size="large" className={ctaClass}>
+      <Button
+        href={isEditMode ? undefined : (href ?? undefined)}
+        variant="custom"
+        size="large"
+        className={ctaClass}
+        data-track-event="product_hero_cta_click"
+        data-track-tags={JSON.stringify({ label: label ?? "Learn More" })}
+      >
         <span {...paAttrs}>{label ?? "Learn More"}</span>
       </Button>
       {isEditMode && (

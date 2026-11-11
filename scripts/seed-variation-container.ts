@@ -9,8 +9,8 @@
  *       └── variations → VariationItemBlock × 3   (shared, Experiments folder)
  *           └── blocks → SectionHeadingBlock + CallToAction   (shared, Experiments folder)
  *
- * The variation keys (variation-container-data.ts) must match the `savings_offer` flag's variation keys in
- * scripts/maintenance/seed-fx-flags.ts exactly. That flag sets cms_flag + cms_route
+ * The variation keys (variation-container-data.ts) are also the `savings_offer` flag's variation keys in
+ * scripts/fx-project-data.ts. That flag sets cms_flag + cms_route
  * "/savings-offer", so middleware decides it there and the block renders the variation
  * server-side. /en/savings-offer is the same page outside cms_route: there the browser
  * decides instead - which is how the demo shows both paths on one page.

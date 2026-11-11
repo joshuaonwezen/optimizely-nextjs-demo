@@ -126,7 +126,7 @@ export function HeroBlockClient({
                   href={edit ? undefined : (ctaHref ?? undefined)}
                   variant="surface"
                   size="large"
-                  data-track-event="mb_hero_cta_click"
+                  data-track-event="hero_cta_click"
                   data-track-tags={JSON.stringify({ label: ctaText ?? "", placement: "primary" })}
                   {...paCtaLink}
                 >
@@ -139,7 +139,7 @@ export function HeroBlockClient({
                   variant="ghost"
                   size="large"
                   className={textClass}
-                  data-track-event="mb_hero_cta_click"
+                  data-track-event="hero_cta_click"
                   data-track-tags={JSON.stringify({ label: secondaryLabel, placement: "secondary" })}
                 >
                   {secondaryLabel}

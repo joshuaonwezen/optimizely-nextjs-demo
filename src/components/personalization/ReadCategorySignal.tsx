@@ -25,7 +25,7 @@ export default function ReadCategorySignal({ uris }: { uris: string[] }) {
     recordCategoryView(uris);
 
     const primary = keyFromTermUri(uris[0]) ?? uris[0];
-    void trackEvent("mb_content_viewed", {
+    void trackEvent("content_viewed", {
       categories: key,
       primary_category: primary,
     });

@@ -28,7 +28,7 @@ export const odpDestination: TrackingDestination = {
 /**
  * Write the visitor's content interests onto their ODP customer profile.
  *
- * The mb_content_viewed event already gives ODP a behavioural stream to build a
+ * The content_viewed event already gives ODP a behavioural stream to build a
  * realtime segment from. This does the other half: `top_category` as a customer
  * ATTRIBUTE means a marketer can build an audience on a CMS taxonomy term from a
  * dropdown, with no engineering ticket and no event-stream rule.

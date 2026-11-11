@@ -3,7 +3,7 @@ import { stableKey } from "./_shared";
 // The savings_offer Variation Container content, shared by seed-variation-container.ts
 // (which creates it) and seed-homepage-variation-container.ts (which places the same
 // container at the bottom of the homepage). The variation keys must match the
-// savings_offer flag's variation keys in scripts/maintenance/seed-fx-flags.ts exactly.
+// savings_offer flag in scripts/fx-project-data.ts takes its variation keys from VARIATIONS.
 
 export const NAMESPACE = "mb-experiments";
 export const FLAG_KEY = "savings_offer";

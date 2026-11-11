@@ -63,7 +63,7 @@ export default function AutoTracker() {
       if (anchor) {
         const href = anchor.getAttribute("href") ?? "";
         if (isOutbound(href)) {
-          trackEvent("mb_outbound_click", { href, label: anchor.textContent?.trim().slice(0, 120) ?? "" });
+          trackEvent("outbound_click", { href, label: anchor.textContent?.trim().slice(0, 120) ?? "" });
         }
 
         // Nav click tracking: delegate from NavItems wrapper without modifying
@@ -72,7 +72,7 @@ export default function AutoTracker() {
         if (navWrapper && !trackEl) {
           const label = anchor.textContent?.trim().slice(0, 100) ?? "";
           if (label && href && !href.startsWith("#")) {
-            trackEvent("mb_navigation_click", { nav_item: label, href });
+            trackEvent("nav_click", { nav_item: label, href });
           }
         }
       }
@@ -109,7 +109,7 @@ export default function AutoTracker() {
       for (const mark of [25, 50, 75, 100]) {
         if (pct >= mark && !scrollMarks.current.has(mark)) {
           scrollMarks.current.add(mark);
-          trackEvent("mb_scroll_depth", { depth: mark, path: cleanPathname(window.location.pathname) });
+          trackEvent("scroll_depth", { depth: mark, path: cleanPathname(window.location.pathname) });
         }
       }
     }
@@ -128,7 +128,7 @@ export default function AutoTracker() {
   }, []);
 
   // Component view tracking via IntersectionObserver on [data-track-view].
-  // Fires mb_feature_viewed at 50% and 100% visibility, at most once per
+  // Fires feature_viewed at 50% and 100% visibility, at most once per
   // threshold per element per page load. Uses a single observer with two
   // thresholds — the browser batches these natively with no scroll overhead.
   useEffect(() => {
@@ -153,11 +153,11 @@ export default function AutoTracker() {
 
           if (entry.intersectionRatio >= 0.5 && !marks.has(`${base}:50`)) {
             marks.add(`${base}:50`);
-            trackEvent("mb_feature_viewed", { component, label, depth: 50 });
+            trackEvent("feature_viewed", { component, label, depth: 50 });
           }
           if (entry.intersectionRatio >= 1.0 && !marks.has(`${base}:100`)) {
             marks.add(`${base}:100`);
-            trackEvent("mb_feature_viewed", { component, label, depth: 100 });
+            trackEvent("feature_viewed", { component, label, depth: 100 });
           }
         }
       },
@@ -177,7 +177,7 @@ export default function AutoTracker() {
     pageStart.current = Date.now();
 
     if (page.startsWith("/demo")) {
-      trackEvent("mb_demo_page_view", { path: page });
+      trackEvent("demo_page_view", { path: page });
     }
 
     // Realtime audience: qualify the visitor for a segment based on the section
@@ -186,14 +186,14 @@ export default function AutoTracker() {
     // next request. Only fire when the derived persona actually changed.
     const persona = personaFromPath(page);
     if (persona && persona !== readSegment() && writeSegment(persona)) {
-      trackEvent("mb_segment_qualified", { segment: persona });
+      trackEvent("segment_qualified", { segment: persona });
     }
 
     const timers = [30, 60, 180].map((secs) =>
       window.setTimeout(() => {
         if (timeMarks.current.has(secs)) return;
         timeMarks.current.add(secs);
-        trackEvent("mb_time_on_page", { seconds: secs, path: page });
+        trackEvent("time_on_page", { seconds: secs, path: page });
       }, secs * 1000)
     );
     return () => timers.forEach((t) => window.clearTimeout(t));

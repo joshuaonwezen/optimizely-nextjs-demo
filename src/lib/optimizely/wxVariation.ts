@@ -135,7 +135,7 @@ export const WX_VARIANT_TOKEN = "__variant__";
  *
  * `display`, not `visibility`: AutoTracker's IntersectionObserver has no visibility
  * check, and a `visibility:hidden` element still intersects, so a hidden duplicate
- * would fire mb_feature_viewed a second time. `display:none` generates no boxes.
+ * would fire feature_viewed a second time. `display:none` generates no boxes.
  */
 export const WX_REVEAL_STYLE = [
   `[${WX_VARIANT_ATTR}="${WX_VARIANT_TOKEN}"]{display:none}`,

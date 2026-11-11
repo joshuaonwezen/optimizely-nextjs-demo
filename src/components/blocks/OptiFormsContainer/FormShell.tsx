@@ -77,7 +77,7 @@ function FormBody({
         payload[key] = payload[key] ? `${payload[key]},${value}` : value;
       });
 
-      // Captured before the visitor id goes in, so mb_form_submit reports the
+      // Captured before the visitor id goes in, so form_submit reports the
       // fields the visitor actually filled rather than an internal identifier.
       const fields = Object.keys(payload).join(",");
 
@@ -99,7 +99,7 @@ function FormBody({
       }
 
       const response = await res.json().catch(() => ({}));
-      trackEvent("mb_form_submit", {
+      trackEvent("form_submit", {
         form: "opti_form",
         fields,
         status: "success",
@@ -128,7 +128,7 @@ function FormBody({
 }
 
 /**
- * mb_form_start / mb_form_abandon, scoped to this form. FormWrapper owns the
+ * form_start / form_abandon, scoped to this form. FormWrapper owns the
  * <form> and forwards no ref, so the listener is attached via closest("form").
  */
 function FormTracking() {
@@ -148,7 +148,7 @@ function FormTracking() {
     function onFocusIn() {
       if (started.current) return;
       started.current = true;
-      trackEvent("mb_form_start", { form: "opti_form" });
+      trackEvent("form_start", { form: "opti_form" });
     }
     form.addEventListener("focusin", onFocusIn);
     return () => form.removeEventListener("focusin", onFocusIn);
@@ -158,7 +158,7 @@ function FormTracking() {
     function onAbandon() {
       if (!started.current || succeeded.current || abandoned.current) return;
       abandoned.current = true;
-      trackEvent("mb_form_abandon", { form: "opti_form" });
+      trackEvent("form_abandon", { form: "opti_form" });
     }
     function onVisibility() {
       if (document.visibilityState === "hidden") onAbandon();

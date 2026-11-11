@@ -7,7 +7,7 @@ import { expandToUris } from "@/lib/taxonomy";
 
 // Articles chosen from what this visitor reads, resolved through Graph.
 //
-// The whole loop is: CMS taxonomy -> mb_content_viewed -> the mb_read_categories
+// The whole loop is: CMS taxonomy -> content_viewed -> the mb_read_categories
 // cookie -> this route -> the EXISTING getArticles({ category }) filter. No new Graph
 // query and no schema change.
 //

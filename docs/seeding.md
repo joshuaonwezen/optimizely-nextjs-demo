@@ -112,8 +112,13 @@ These are normal — they are not failures:
 
 - `register-webhook.mjs` — interactive prompt for public URL; run manually when needed
 
-FX flags and experiments are managed through the Optimizely Experimentation MCP server (`mcp__exp__*` tools), not via a local seed script.
-The exception is `scripts/maintenance/seed-fx-flags.ts`, which creates the handful of flags the app's own blocks depend on. Run it once per FX project (not per CMS instance), naming the flag to touch only that one: `npx tsx scripts/maintenance/seed-fx-flags.ts savings_offer`. Without arguments it re-checks every flag and re-adds any rule that was removed.
+### Feature Experimentation project - `seed-fx-project.ts`
+
+The site's FX project is **SaaS CMS ProServ** (`5152837204705280`; production SDK key in `OPTIMIZELY_FX_SDK_KEY`). It is one project for every CMS instance, not one per instance. `npx tsx scripts/seed-fx-project.ts` builds it from `scripts/fx-project-data.ts`: the attributes, the events the site fires, the audiences, and every flag the components decide, with its variations and production rules (metrics attached). It only creates what is missing, so re-running is safe and never overwrites a change made in the FX console. `--dry-run` reports what it would create; `--only=banner,homepage` limits the run to those flags, so a rule removed on purpose elsewhere is not re-added. Afterwards, run `npx tsx scripts/maintenance/sync-attribute-docs.ts --project=5152837204705280 --apply` for the attribute descriptions.
+
+Event keys carry no prefix (`cta_click`, `form_submit`). A new tracked event also needs an entry in `FX_EVENTS`, or FX ignores it.
+
+The daily **Seed Experimentation + ODP** GitHub Action (`npm run exp:seed`, 06:27 UTC) fills the project with fake traffic. It needs only the SDK key: it reads the running experiments and each one's metrics from the datafile, so a metric added in the console gets data from the next run.
 
 ### Contact form seed scripts — which one to use
 
@@ -133,7 +138,7 @@ All three run in the runner's optional phase in this order. If no Form Container
 
 Builds the **Savings Offer** DynamicExperience at `/savings-offer`: a section heading plus a `VariationContainerBlock` bound to the FX flag `savings_offer`, holding three shared `VariationItemBlock`s (`control`, `rate_led`, `bonus_led`), each with its own `SectionHeadingBlock` + `CallToAction`, all in the **Experiments** subfolder. Stable keys; existing blocks are re-patched in place and the page composition is re-published, so re-runs are an upsert. Optional runner step.
 
-The FX side is the `savings_offer` entry in `scripts/maintenance/seed-fx-flags.ts`; its variation keys must match the script's `VARIATIONS` exactly. Its `cms_route` covers `/savings-offer` only, so `/en/savings-offer` (the same page) shows the browser-decided path.
+The FX side is the `savings_offer` entry in `scripts/fx-project-data.ts`, which takes its variation keys from the same `VARIATIONS` (`scripts/variation-container-data.ts`). Its `cms_route` covers `/savings-offer` only, so `/en/savings-offer` (the same page) shows the browser-decided path.
 
 ### Instances
 

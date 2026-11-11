@@ -15,5 +15,5 @@ export function identifyCustomer(attrs: {
 }): void {
   if (typeof window === "undefined") return;
   odpIdentify(attrs);
-  trackEvent("mb_customer_identified", { has_email: attrs.email ? "true" : "false" });
+  trackEvent("customer_identified", { has_email: attrs.email ? "true" : "false" });
 }

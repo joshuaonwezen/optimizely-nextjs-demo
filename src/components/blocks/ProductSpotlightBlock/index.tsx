@@ -119,7 +119,7 @@ export default async function ProductSpotlightBlock(props: ProductSpotlightBlock
           href={href}
           size="compact"
           pill
-          data-track-event="mb_product_spotlight_click"
+          data-track-event="product_spotlight_click"
           data-track-tags={JSON.stringify({ product: product.id })}
         >
           <span {...pa("ctaText")}>{data.ctaText || `View ${product.name}`}</span>

@@ -18,14 +18,14 @@
  *
  * Attributes live per PROJECT, and Web Experimentation is a different project from
  * Feature Experimentation. Run it once per project you build audiences in:
- *   FX  23385830076   (OPTIMIZELY_FX_SDK_KEY's project)
+ *   FX  5152837204705280   (OPTIMIZELY_FX_SDK_KEY's project, SaaS CMS ProServ)
  *   WX  23338860169   (NEXT_PUBLIC_OPTIMIZELY_WEB_SNIPPET_ID's project)
  *
  * Dry run by default - it prints the diff and writes nothing. Pass --apply to write.
  *
  * Run:
- *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=23385830076
- *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=23385830076 --apply
+ *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=5152837204705280
+ *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=5152837204705280 --apply
  */
 
 import { config } from "dotenv";

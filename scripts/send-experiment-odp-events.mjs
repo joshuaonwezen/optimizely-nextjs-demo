@@ -6,14 +6,16 @@
  *
  * What it produces
  *   FX  - real impressions (via ctx.decide, so variation splits come from the
- *         live datafile's traffic allocation, not faked) plus conversion events
- *         (ctx.trackEvent). The set of experiments is DISCOVERED from the live
- *         datafile at runtime (every flag that has a running experiment), so the
- *         seeder never drifts from what is actually configured. Conversion rates
- *         are biased per variation to create a MIXED story: about half the
- *         experiments get a clear winning variation, the rest stay roughly flat.
+ *         live datafile's traffic allocation, not faked) plus the events a real
+ *         session fires (ctx.trackEvent), with the same keys and tags the site
+ *         sends. Everything is DISCOVERED from the live datafile at runtime: the
+ *         running experiments, and each experiment's metrics (the datafile lists,
+ *         per event, the experiments it is attached to). A metric added in the FX
+ *         console therefore gets data from the next run, with no code change.
+ *         About half the experiments get a designed winner whose variation lifts
+ *         that experiment's metrics; the rest stay flat - the "mixed" story.
  *   ODP - pageviews to business/personal sections (what realtime audiences key
- *         on), the matching mb_* conversion events, and - for a minority of
+ *         on), the same events the visitor fired in FX, and - for a minority of
  *         visitors - a known-customer identify so the business/personal audiences
  *         and homepage personalization populate.
  *
@@ -39,13 +41,12 @@
  *     at ingest time and cannot be meaningfully backdated, so history BUILDS
  *     FORWARD as the daily cron accumulates runs (no instant backfill).
  *   - Only flags with a RUNNING experiment in the live datafile get seeded. A
- *     flag that is only a rollout (no A/B experiment) is skipped - it would just
- *     bucket everyone to "off" with no result to show. The run prints which
- *     experiments it drove and which conversion event it used for each, so the
- *     FX console's per-experiment primary metric can be pointed at that event.
+ *     flag that is only a targeted delivery has no result to show, so it is
+ *     skipped. An event no experiment uses as a metric is still sent when it is
+ *     part of a normal session (scroll depth, time on page, ...).
  *   - Both endpoints accept writes and return success regardless of whether the
  *     key is correct, so a green run is not proof by itself; verify in the FX
- *     Results dashboard and via scripts/maintenance/test-odp.ts (see the plan's verification).
+ *     Results dashboard and via scripts/maintenance/test-odp.ts.
  */
 
 import { config } from "dotenv";
@@ -78,13 +79,15 @@ const SEED_ODP = ONLY !== "fx";
 const BATCH_DELAY_MS = 60;
 // The site hostname. It is passed as the FX `hostname` attribute and used in the
 // ODP page URLs. It MUST match the audience that gates the live experiments
-// (the "Personal - CMS" audience keys on hostname containing this value) - send
+// (the "Personal CMS site" audience keys on hostname containing this value) - send
 // any other host and every user fails the audience and buckets to "off".
 const HOSTNAME = "opti.joshuaonwezen.dev";
 const KNOWN_CUSTOMER_RATE = 0.2; // ~20% of visitors are identified as known customers
+const MOBILE_RATE = 0.55;
 
 const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const pick = (arr) => arr[rand(0, arr.length - 1)];
+const chance = (p) => Math.random() < p;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Weighted pick over items carrying a numeric `weight` field.
@@ -98,7 +101,7 @@ function pickWeighted(arr) {
   return arr[arr.length - 1];
 }
 
-// Stable string hash so the "winner vs flat" assignment and base rates are
+// Stable string hash so the "winner vs flat" assignment and lifts are
 // deterministic per flag (the demo story does not reshuffle between runs).
 function hash(s) {
   let h = 0;
@@ -108,52 +111,56 @@ function hash(s) {
 
 // Which part of the bank the visitor is interested in. `path` seeds the ODP
 // pageviews (business vs personal paths are what the realtime audiences key on);
-// `persona` is passed as an FX attribute; `accountType` tags identified customers.
+// `persona` is the FX attribute the persona audiences match (null = not sent, as
+// for a visitor the site has no persona for); `accountType` tags identified customers.
 const SECTIONS = [
-  { persona: "personal",    path: "/personal",                    weight: 40, accountType: "personal" },
-  { persona: "business",    path: "/business/business-banking",   weight: 20, accountType: "business" },
-  { persona: "mortgage",    path: "/mortgage",                    weight: 18, accountType: "personal" },
-  { persona: "investments", path: "/investments",                 weight: 12, accountType: "personal" },
-  { persona: "general",     path: "",                             weight: 10, accountType: "personal" },
+  { persona: "personal",    path: "/personal",                  weight: 40, accountType: "personal", category: "savings" },
+  { persona: "business",    path: "/business/business-banking", weight: 20, accountType: "business", category: "business-banking" },
+  { persona: "mortgages",   path: "/mortgage",                  weight: 18, accountType: "personal", category: "mortgages" },
+  { persona: "investments", path: "/investments",               weight: 12, accountType: "personal", category: "investing" },
+  { persona: null,          path: "",                           weight: 10, accountType: "personal", category: "news" },
 ];
 
 const FIRST_NAMES = ["Emma", "Liam", "Sophie", "Daan", "Noah", "Julia", "Lucas", "Mila", "James", "Sara", "Finn", "Ava"];
 const LAST_NAMES = ["de Vries", "Jansen", "Smith", "Bakker", "Visser", "Brown", "Meijer", "Jones", "Mulder", "Taylor"];
+const PRODUCTS = ["Everyday Checking", "Easy Saver", "Premier Account", "Business Checking", "Fixed Rate Mortgage", "Stocks & Shares ISA"];
+const FORMS = ["contact_form", "opti_form"];
 
-// Choose the conversion event that best fits a flag, restricted to events that
-// exist in the live datafile (so the FX console recognizes them). Falls back to
-// the generic mb_cta_click.
-function eventForFlag(flagKey, eventSet) {
-  const f = flagKey.toLowerCase();
-  const prefer =
-    f.includes("hero") ? "mb_hero_cta_click" :
-    f.includes("nav") || f.includes("mobile") ? "mb_nav_click" :
-    f.includes("product") ? "mb_product_card_click" :
-    f.includes("pricing") || f.includes("rate") ? "mb_pricing_tier_click" :
-    "mb_cta_click";
-  if (eventSet.has(prefer)) return prefer;
-  if (eventSet.has("mb_cta_click")) return "mb_cta_click";
-  return null;
-}
+// How often a session fires each event the site tracks, and the tags it carries
+// (same names as the site's data-track-tags / trackEvent calls). Rates are per
+// visitor before any experiment lift. Events missing here are not part of a normal
+// session (the demo-panel events); one that an experiment uses as a metric falls
+// back to DEFAULT_METRIC_RATE so its experiment still gets data.
+const EVENT_PROFILES = {
+  cta_click: { rate: 0.09, tags: () => ({ label: pick(["Open an account", "Get started", "Compare accounts", "Book an appointment", "Apply now"]), variant: pick(["primary", "ghost"]) }) },
+  hero_cta_click: { rate: 0.11, tags: () => ({ label: pick(["Open an account", "Find your mortgage", "Start investing", "See how it works"]), placement: pick(["primary", "primary", "secondary"]) }) },
+  product_card_click: { rate: 0.07, tags: () => ({ title: pick(PRODUCTS), featured: chance(0.3) }) },
+  product_spotlight_click: { rate: 0.03, tags: () => ({ product: pick(PRODUCTS) }) },
+  product_hero_cta_click: { rate: 0.06, tags: () => ({ label: pick(["Apply now", "Open an account", "Learn More"]) }) },
+  pricing_tier_click: { rate: 0.05, tags: () => { const tier = pick(["Essential", "Plus", "Premier"]); return { tier, label: "Choose plan", highlighted: tier === "Plus" }; } },
+  campaign_banner_click: { rate: 0.03, tags: () => ({ heading: pick(["Switch and get £150", "Mortgage rates from 3.9%", "Earn 5.10% AER"]), color: pick(["#0037ff", "#0b7a75", "#1a1a2e"]) }) },
+  nav_click: { rate: 0.32, tags: () => ({ source: pick(["header", "header", "footer"]) }) },
+  outbound_click: { rate: 0.04, tags: () => ({ href: pick(["https://apps.apple.com/app/mosey-bank", "https://play.google.com/store/apps/details?id=bank.mosey", "https://www.fdic.gov/"]), label: pick(["App Store", "Google Play", "FDIC"]) }) },
+  faq_expand: { rate: 0.12, tags: () => ({ label: pick(["How do I open an account?", "Is my money protected?", "What are your mortgage rates?", "How long does a transfer take?"]) }) },
+  feature_viewed: { rate: 0.6, tags: () => { const component = pick(["HeroBlock", "CallToActionBlock", "ProductHeroBlock", "CampaignBannerBlock", "SpotlightBlock"]); return { component, label: component, depth: pick([50, 100]) }; } },
+  content_viewed: { rate: 0.25, tags: (s) => ({ categories: s.category, primary_category: s.category }) },
+  segment_qualified: { rate: 0.1, tags: (s) => ({ segment: s.persona ?? "general" }) },
+};
+const DEFAULT_METRIC_RATE = 0.08;
+// Max probability after lifts, so stacked winners never make an event near-certain.
+const RATE_CAP = 0.85;
 
-// Turn a discovered experiment (flag + its variation keys) into a conversion
-// plan: a base rate, whether it has a designed winner, which variation wins, and
-// a per-variation conversion probability. About half of experiments (by hash)
-// get a clear winner; the rest stay flat / inconclusive - the "mixed" story.
-function buildPlan(flagKey, variationKeys, eventSet) {
+// Turn a running flag (its experiments' variations and metrics) into a plan: whether
+// it has a designed winner, which variation wins and by how much. About half of the
+// flags (by hash) get a winner; the rest stay flat / inconclusive. The baseline is
+// the experiment's first variation, so the winner is always a challenger.
+function buildPlan(flagKey, variationKeys, metrics) {
   const h = hash(flagKey);
-  const base = 0.08 + (h % 7) * 0.01; // 0.08 .. 0.14
-  const isWinner = h % 2 === 0;
-  const winner = variationKeys.includes("treatment")
-    ? "treatment"
-    : variationKeys.find((v) => !/^(off|control)$/i.test(v)) ?? variationKeys[0];
-  const rates = {};
-  for (const v of variationKeys) {
-    const jitter = ((hash(flagKey + v) % 5) - 2) * 0.002; // deterministic +/- 0.4pp
-    rates[v] = Math.max(0.02, base + jitter);
-    if (isWinner && v === winner) rates[v] = Math.min(base * (1.55 + (h % 4) * 0.1), 0.42);
-  }
-  return { flagKey, variationKeys, isWinner, winner, rates, event: eventForFlag(flagKey, eventSet) };
+  const challengers = variationKeys.slice(1);
+  const isWinner = h % 2 === 0 && challengers.length > 0;
+  const winner = isWinner ? challengers[h % challengers.length] : null;
+  const lift = 1.25 + (h % 4) * 0.1; // 1.25 .. 1.55
+  return { flagKey, variationKeys, metrics, isWinner, winner, lift };
 }
 
 // ── ODP REST helpers (same endpoint + auth as src/app/api/form-submit/route.ts) ──
@@ -198,7 +205,8 @@ async function buildFx() {
     process.exit(1);
   }
   const datafileText = await res.text();
-  const eventSet = new Set((JSON.parse(datafileText).events ?? []).map((e) => e.key));
+  const datafile = JSON.parse(datafileText);
+  const eventKeys = (datafile.events ?? []).map((e) => e.key);
   // Default (batch) event processor: the bulk loop enqueues thousands of
   // impression/conversion events; batching flushes them efficiently on close().
   const client = createInstance({
@@ -211,43 +219,46 @@ async function buildFx() {
   }
   await client.onReady();
 
-  // Discover every flag that has a running experiment; skip rollout-only flags
-  // (they would bucket everyone to "off" with no result to show).
-  const cfg = client.getOptimizelyConfig();
+  // A flag is seeded when it has a running experiment. Its metrics are the events
+  // the datafile attaches to any of those experiments.
+  const running = new Map((datafile.experiments ?? []).filter((e) => e.status === "Running").map((e) => [e.id, e]));
   const plans = [];
-  for (const [flagKey, feat] of Object.entries(cfg.featuresMap)) {
-    const expKeys = Object.keys(feat.experimentsMap ?? {});
-    if (expKeys.length === 0) continue;
-    const vset = new Set();
-    for (const ek of expKeys) for (const vk of Object.keys(feat.experimentsMap[ek].variationsMap)) vset.add(vk);
-    plans.push(buildPlan(flagKey, [...vset], eventSet));
+  for (const flag of datafile.featureFlags ?? []) {
+    const experiments = (flag.experimentIds ?? []).map((id) => running.get(id)).filter(Boolean);
+    if (experiments.length === 0) continue;
+    const ids = new Set(experiments.map((e) => e.id));
+    const variationKeys = [...new Set(experiments.flatMap((e) => e.variations.map((v) => v.key)))];
+    const metrics = (datafile.events ?? []).filter((e) => (e.experimentIds ?? []).some((id) => ids.has(id))).map((e) => e.key);
+    plans.push(buildPlan(flag.key, variationKeys, metrics));
   }
-  return { client, plans };
+  return { client, plans, eventKeys };
 }
 
 // ── Distribution tally for the dry-run / summary report ──
 
-// stats[flagKey] = { impressions: {variation: n}, conversions: {variation: n} }
+// stats[flagKey] = { impressions: {variation: n}, conversions: {variation: {event: n}} }
 const stats = {};
-function record(flagKey, variation, converted) {
-  const s = (stats[flagKey] ??= { impressions: {}, conversions: {} });
+function record(plan, variation, fired) {
+  const s = (stats[plan.flagKey] ??= { impressions: {}, conversions: {} });
   s.impressions[variation] = (s.impressions[variation] ?? 0) + 1;
-  if (converted) s.conversions[variation] = (s.conversions[variation] ?? 0) + 1;
+  const conv = (s.conversions[variation] ??= {});
+  for (const key of plan.metrics) if (fired.has(key)) conv[key] = (conv[key] ?? 0) + 1;
 }
 
 function printReport(plans) {
-  console.log("\nExperiment distribution:");
+  console.log("\nExperiment distribution (share of visitors who fired each metric):");
   for (const plan of plans) {
     const s = stats[plan.flagKey];
     if (!s) continue;
-    const tag = plan.isWinner ? `winner: ${plan.winner}` : "flat";
-    console.log(`\n  ${plan.flagKey}  (${tag}, metric=${plan.event ?? "none"})`);
+    const tag = plan.isWinner ? `winner: ${plan.winner} x${plan.lift.toFixed(2)}` : "flat";
+    console.log(`\n  ${plan.flagKey}  (${tag}, metrics: ${plan.metrics.join(", ") || "none"})`);
     for (const variation of Object.keys(s.impressions).sort()) {
       const imp = s.impressions[variation];
-      const conv = s.conversions[variation] ?? 0;
-      const rate = imp ? ((conv / imp) * 100).toFixed(1) : "0.0";
-      const star = plan.isWinner && variation === plan.winner ? " *" : "";
-      console.log(`    ${variation.padEnd(16)} ${String(imp).padStart(5)} imp  ${String(conv).padStart(5)} conv  ${rate.padStart(5)}%${star}`);
+      const rates = plan.metrics
+        .map((key) => `${key} ${(((s.conversions[variation]?.[key] ?? 0) / imp) * 100).toFixed(1)}%`)
+        .join("  ");
+      const star = plan.winner === variation ? " *" : "";
+      console.log(`    ${variation.padEnd(16)} ${String(imp).padStart(5)} imp  ${rates}${star}`);
     }
   }
 }
@@ -280,10 +291,63 @@ async function preflight(plans) {
   }
 }
 
+// ── One visitor's session ──
+
+// The events a session fires, as [key, tags] pairs. `lift(key)` is the combined
+// experiment lift for that event; `bannerVariation` is the banner the visitor was
+// served, if any (banner_click only happens when one is on screen).
+function sessionEvents(section, eventKeys, metricKeys, lift, bannerVariation) {
+  const path = section.path || "/";
+  const has = (key) => eventKeys.has(key);
+  const p = (key, base) => Math.min((base ?? EVENT_PROFILES[key]?.rate ?? DEFAULT_METRIC_RATE) * lift(key), RATE_CAP);
+  const events = [];
+
+  for (const [key, profile] of Object.entries(EVENT_PROFILES)) {
+    if (has(key) && chance(p(key))) events.push([key, profile.tags(section)]);
+  }
+  for (const key of metricKeys) {
+    if (!EVENT_PROFILES[key] && !/^(scroll_depth|time_on_page|form_|customer_identified|banner_click)/.test(key) && chance(p(key))) {
+      events.push([key, {}]);
+    }
+  }
+
+  // Scroll and dwell fire at increasing thresholds, each one less likely than the last.
+  if (has("scroll_depth") && chance(p("scroll_depth", 0.45))) {
+    for (const [depth, next] of [[25, 0.7], [50, 0.7], [75, 0.55], [100, 0]]) {
+      events.push(["scroll_depth", { depth, path }]);
+      if (!chance(next)) break;
+    }
+  }
+  if (has("time_on_page") && chance(p("time_on_page", 0.35))) {
+    for (const [seconds, next] of [[30, 0.6], [60, 0.4], [180, 0]]) {
+      events.push(["time_on_page", { seconds, path }]);
+      if (!chance(next)) break;
+    }
+  }
+
+  // Forms are a funnel: start, then submit (and sometimes identify) or abandon.
+  if (has("form_start") && chance(0.08)) {
+    const form = pick(FORMS);
+    events.push(["form_start", { form }]);
+    if (chance(Math.min(0.4 * lift("form_submit"), RATE_CAP))) {
+      if (has("form_submit")) events.push(["form_submit", { form, fields: rand(3, 6), status: "success" }]);
+      if (has("customer_identified") && chance(0.5)) events.push(["customer_identified", { has_email: true }]);
+    } else if (has("form_abandon") && chance(0.5)) {
+      events.push(["form_abandon", { form }]);
+    }
+  }
+
+  if (bannerVariation && has("banner_click") && chance(p("banner_click", 0.04))) {
+    events.push(["banner_click", { variation: bannerVariation }]);
+  }
+  return events;
+}
+
 // ── Per-visitor ODP payload ──
 
-function odpEventsForVisitor(visitorId, section, isKnown, email, conversions) {
+function odpEventsForVisitor(visitorId, section, isKnown, email, fired) {
   const identifiers = isKnown ? { fs_user_id: visitorId, email } : { fs_user_id: visitorId };
+  const persona = section.persona ?? "general";
   const events = [];
 
   // 1-3 pageviews: homepage then the section landing page. The section path is
@@ -294,19 +358,14 @@ function odpEventsForVisitor(visitorId, section, isKnown, email, conversions) {
       type: "pageview",
       action: "pageview",
       identifiers,
-      data: { page: `https://${HOSTNAME}/${p.replace(/^\//, "")}`, persona: section.persona },
+      data: { page: `https://${HOSTNAME}/${p.replace(/^\//, "")}`, persona },
     });
   }
 
-  // The mb_* conversions this visitor earned in FX, mirrored into ODP so the
-  // funnel lines up across the two systems.
-  for (const key of conversions) {
-    events.push({ type: "event", action: key, identifiers, data: { persona: section.persona } });
-  }
-
-  // A little engagement noise so profiles are not just a single pageview.
-  if (Math.random() < 0.4) {
-    events.push({ type: "event", action: "mb_scroll_depth", identifiers, data: { percent: pick([50, 75, 90]) } });
+  // The events this visitor fired in FX, mirrored into ODP so the funnel lines up
+  // across the two systems.
+  for (const [key, tags] of fired) {
+    events.push({ type: "event", action: key, identifiers, data: { ...tags, persona } });
   }
   return events;
 }
@@ -316,8 +375,12 @@ async function main() {
 
   const fx = SEED_FX ? await buildFx() : null;
   const plans = fx?.plans ?? [];
+  // Without FX there is no datafile, so the ODP-only run uses the profiled events.
+  const eventKeys = new Set(fx?.eventKeys ?? [...Object.keys(EVENT_PROFILES), "scroll_depth", "time_on_page", "form_start", "form_submit", "form_abandon", "customer_identified"]);
+  const metricKeys = [...new Set(plans.flatMap((p) => p.metrics))];
   await preflight(plans);
 
+  let fxEvents = 0;
   let odpVisitors = 0;
   let odpEvents = 0;
   let odpFailures = 0;
@@ -326,35 +389,50 @@ async function main() {
   for (let u = 0; u < NUM_USERS; u++) {
     const visitorId = crypto.randomUUID();
     const section = pickWeighted(SECTIONS);
-    const isKnown = Math.random() < KNOWN_CUSTOMER_RATE;
+    const isKnown = chance(KNOWN_CUSTOMER_RATE);
     const first = pick(FIRST_NAMES);
     const last = pick(LAST_NAMES);
     const email = `${first}.${last}`.toLowerCase().replace(/[^a-z]/g, "") + `${rand(1, 9999)}@example.com`;
 
-    // FX: decide each running experiment (fires an impression unless dry-run),
-    // then convert with the per-variation rate. Collect the earned mb_* events
-    // to mirror into ODP.
-    const conversions = [];
+    // FX: decide each running experiment (fires an impression unless dry-run), then
+    // play out a session whose metric rates are lifted for winning variations.
+    // Attributes mirror buildFxAttributes() in src/lib/optimizely/fxAttributes.ts.
+    const decided = [];
+    let bannerVariation = null;
+    let ctx = null;
     if (fx) {
-      const ctx = fx.client.createUserContext(visitorId, { hostname: HOSTNAME, persona: section.persona });
+      ctx = fx.client.createUserContext(visitorId, {
+        hostname: HOSTNAME,
+        device: chance(MOBILE_RATE) ? "mobile" : "desktop",
+        logged_in: isKnown,
+        page_views: 1 + Math.floor(Math.random() ** 2 * 12),
+        ...(section.persona ? { persona: section.persona } : {}),
+      });
       for (const plan of plans) {
         const d = DRY_RUN
           ? ctx?.decide(plan.flagKey, [OptimizelyDecideOption.DISABLE_DECISION_EVENT])
           : ctx?.decide(plan.flagKey);
         const variation = d?.variationKey ?? "off";
-        const rate = plan.rates[variation] ?? 0.08;
-        const converted = Math.random() < rate;
-        if (converted && plan.event) {
-          conversions.push(plan.event);
-          if (!DRY_RUN) ctx?.trackEvent(plan.event, { persona: section.persona });
-        }
-        record(plan.flagKey, variation, converted);
+        decided.push([plan, variation]);
+        if (plan.flagKey === "banner" && d?.enabled) bannerVariation = variation;
       }
     }
+    const lift = (key) =>
+      decided.reduce((m, [plan, variation]) => (plan.winner === variation && plan.metrics.includes(key) ? m * plan.lift : m), 1);
+    const fired = sessionEvents(section, eventKeys, metricKeys, lift, bannerVariation);
 
-    // ODP: pageviews + mirrored conversions + optional known-customer identify.
+    if (ctx) {
+      for (const [key, tags] of fired) {
+        if (!DRY_RUN) ctx.trackEvent(key, { ...tags, persona: section.persona ?? "general" });
+        fxEvents++;
+      }
+      const firedKeys = new Set(fired.map(([key]) => key));
+      for (const [plan, variation] of decided) record(plan, variation, firedKeys);
+    }
+
+    // ODP: pageviews + mirrored events + optional known-customer identify.
     if (SEED_ODP) {
-      const events = odpEventsForVisitor(visitorId, section, isKnown, email, conversions);
+      const events = odpEventsForVisitor(visitorId, section, isKnown, email, fired);
       if (DRY_RUN) {
         odpVisitors++;
         odpEvents += events.length;
@@ -387,10 +465,13 @@ async function main() {
     await fx.client.close();
   }
 
-  if (SEED_FX) printReport(plans);
+  if (SEED_FX) {
+    printReport(plans);
+    console.log(`\nFX: ${fxEvents} events${DRY_RUN ? " (dry-run, nothing sent)" : ""}`);
+  }
   if (SEED_ODP) {
     console.log(
-      `\nODP: ${odpVisitors} visitors, ${odpEvents} events` +
+      `ODP: ${odpVisitors} visitors, ${odpEvents} events` +
         (profilesSet ? `, ${profilesSet} known-customer profiles` : "") +
         (odpFailures ? `, ${odpFailures} failed` : "") +
         (DRY_RUN ? " (dry-run, nothing sent)" : "")

@@ -171,7 +171,7 @@ export default async function PricingTierBlock(props: PricingTierBlockProps) {
           fontClassName=""
           variant={ctaIsDarkChip ? "custom" : "primary"}
           className={ctaIsDarkChip ? "bg-on-brand text-brand hover:opacity-90" : undefined}
-          data-track-event="mb_pricing_tier_click"
+          data-track-event="pricing_tier_click"
           data-track-tags={JSON.stringify({ tier: data.name ?? "", label: data.ctaText ?? "", highlighted: !!data.highlighted })}
           {...pa("ctaLink")}
         >

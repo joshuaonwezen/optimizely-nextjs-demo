@@ -69,7 +69,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
 
   if (isFlat) {
     return (
-      <div data-component="FaqItemBlock" data-track-toggle="mb_faq_expand" className={pageContainer(props.placement, "max-w-3xl mx-auto px-8") || undefined}>
+      <div data-component="FaqItemBlock" data-track-toggle="faq_expand" className={pageContainer(props.placement, "max-w-3xl mx-auto px-8") || undefined}>
         <details className="group border-b border-outline-variant">
           <summary
             {...pa("question")}
@@ -100,7 +100,7 @@ export default function FaqItemBlock(props: FaqItemBlockProps) {
   }
 
   return (
-    <div data-component="FaqItemBlock" data-track-toggle="mb_faq_expand" className={`${pageContainer(props.placement, "max-w-3xl mx-auto px-8")} mb-2`}>
+    <div data-component="FaqItemBlock" data-track-toggle="faq_expand" className={`${pageContainer(props.placement, "max-w-3xl mx-auto px-8")} mb-2`}>
       <details className={`group rounded-xl overflow-hidden ${style.wrapper || "border border-ghost-border bg-surface-lowest"}`}>
         <summary
           {...pa("question")}

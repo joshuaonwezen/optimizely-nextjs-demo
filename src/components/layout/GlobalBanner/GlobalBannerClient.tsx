@@ -29,10 +29,16 @@ export function GlobalBannerClient({ fallback = null }: Props) {
   else if (variation === "banner4") variant = <Banner4 message={message} linkText={linkText} />;
   if (!variant) return fallback;
 
+  // The banners carry no link of their own, so a click anywhere on the bar is the
+  // conversion the banner experiment measures.
   return (
-    <>
+    <div
+      data-component="GlobalBannerClient"
+      data-track-event="banner_click"
+      data-track-tags={JSON.stringify({ variation })}
+    >
       {variant}
       <FxBucketingEvent flagKey="banner" />
-    </>
+    </div>
   );
 }

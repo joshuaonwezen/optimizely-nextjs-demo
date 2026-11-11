@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { getCurrentLocale, localizeHref } from "@/lib/localeUrl";
 
 // ODP cross-session personalization: if the visitor abandoned the contact form on an earlier
-// visit (ODP real-time audience `abandoned_contact_form`, built on mb_form_abandon), greet them
+// visit (ODP real-time audience `abandoned_contact_form`, built on form_abandon), greet them
 // with a "pick up where you left off" nudge. The membership check runs client-side against the
 // existing /api/demo/odp-segments endpoint so the rest of the site stays static/ISR - only the
 // homepage reads ODP server-side today.

@@ -103,7 +103,7 @@ export default async function Footer() {
   );
 
   return (
-    <footer data-component="Footer" data-track-event="mb_nav_click" data-track-tags={JSON.stringify({ source: "footer" })} className="bg-surface-low">
+    <footer data-component="Footer" data-track-event="nav_click" data-track-tags={JSON.stringify({ source: "footer" })} className="bg-surface-low">
       <FooterCtaClient />
       <div className="py-16">
         <div className="max-w-7xl mx-auto px-8">

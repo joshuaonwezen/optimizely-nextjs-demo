@@ -140,7 +140,7 @@ export default async function CallToActionBlock(props: CallToActionProps) {
           <a
             href={isEdit ? undefined : href}
             {...pa("link")}
-            data-track-event="mb_cta_click"
+            data-track-event="cta_click"
             data-track-tags={JSON.stringify({ label: data.label ?? "", variant: "ghost" })}
             className={`${style.font} inline-flex items-center gap-2 font-semibold ${style.text} hover:underline underline-offset-4 ${isLarge ? "text-lg" : "text-base"}`}
           >
@@ -163,7 +163,7 @@ export default async function CallToActionBlock(props: CallToActionProps) {
           size={isLarge ? "large" : "default"}
           fontClassName={style.font}
           className={customClass}
-          data-track-event="mb_cta_click"
+          data-track-event="cta_click"
           data-track-tags={JSON.stringify({ label: data.label ?? "", variant })}
           {...pa("link")}
         >
