@@ -282,10 +282,10 @@ const EXTENSIONS = [
     repo: "page-performance-cms-extension",
     surface: "Sidebar",
     talksTo: "GA4 Data API, FX Flags API and experiment results",
-    settings: "GA4 property ID and service account key; FX token (read), project, environment - each optional",
+    settings: "GA4 property ID and service account key; FX token (read) and the site's SDK key - each optional",
     perInstance: "-",
     reuse: "partial",
-    expects: "GA4 that records page paths - nothing site-specific. The experiments half finds FX flags by this site's cms_flag and cms_route variables.",
+    expects: "GA4 that records page paths - nothing site-specific. The experiments half reads the site's FX datafile and finds flags by this site's cms_flag and cms_route variables, per-variation values included.",
     elsewhere: "The GA4 half works as it is. For experiments, use the same flag variables, or change pageExperiments() to however your flags name their pages.",
   },
   {
@@ -333,7 +333,7 @@ const EXTENSIONS = [
     settings: "Site URL; Graph single key; a CMS API client with write access",
     perInstance: "-",
     reuse: "convention",
-    expects: "This site's content model: Redirect Config and Redirect Rule types with the same keys and properties, a front end that applies them the way this site's middleware does, and optionally /api/redirects for the live check.",
+    expects: "This site's content model: Redirect Config and Redirect Rule types with the same keys and properties, a front end that applies them the way this site's middleware does (including never following a destination that leaves the site), and optionally /api/redirects for the live check.",
     elsewhere: "Push those two types and port the middleware check (src/lib/redirects.ts), or change graph.ts and manager.ts to your own redirect model.",
   },
   {
@@ -342,7 +342,7 @@ const EXTENSIONS = [
     repo: "translation-status-cms-extension",
     surface: "Sidebar + view",
     talksTo: "CMS REST API, Graph",
-    settings: "Graph single key; a CMS API client (read)",
+    settings: "A CMS API client (read); a Graph single key for the view and the full language list",
     perInstance: "-",
     reuse: "plug",
     expects: "Any SaaS CMS instance: it only reads the CMS REST API and Graph.",
@@ -517,7 +517,7 @@ const SHARE_CHECK_SNIPPET = `export async function checkLink(deps: Deps, ref: Co
 const PERFORMANCE_FACTS = [
   {
     title: "Experiments without a site API",
-    body: "One FX list-flags call finds the A/B and bandit rules on flags with cms_flag on whose cms_route covers the page's path - the same matching the middleware uses. Results come from GET /v2/experiments/{layer_experiment_id}/results.",
+    body: "The site's FX datafile (read from the SDK key) gives the running rules on flags whose cms_flag and cms_route - defaults or per-variation values - make them serve the page, checked for both /page and /en/page like the middleware sees them; the Flags API list adds names and paused experiments. Results come from GET /v2/experiments/{layer_experiment_id}/results, shown with the FX extension's own results table.",
   },
   {
     title: "GA4 through a service account",
@@ -525,11 +525,11 @@ const PERFORMANCE_FACTS = [
   },
   {
     title: "What it shows",
-    body: "Page views, users, engagement rate, engagement time per user and key events, each against the previous 28 days, plus a daily views chart (with a table view) and the top traffic sources. Per experiment: status, traffic, variations and the primary metric's results, with links to the results page and the flag.",
+    body: "Up front: page views against the previous 28 days with a daily chart, and each experiment with its status, visitors, conversion rate, lift and a named winner, plus links to FX. Under More detail: users, engagement, key events, top sources and a table view.",
   },
   {
     title: "Each source is optional",
-    body: "GA4 and Feature Experimentation are separate settings sections, and the sidebar shows whichever is configured. The service account needs Viewer access on the GA4 property; a read-only FX token is enough, since it only lists flags and reads results.",
+    body: "GA4 and Feature Experimentation are separate settings sections, and the sidebar shows whichever is configured. The service account needs Viewer access on the GA4 property; a read-only FX token and the site's SDK key are enough, since it only reads the datafile, lists flags and reads results.",
   },
   {
     title: "Analytics can't split FX variations",
@@ -873,12 +873,16 @@ const LINK_FACTS = [
     title: "Settings",
     body: "The site URL, the instance's Graph single key (published content only - what visitors get) and a read-only CMS API client. Variation versions can't be read through the CMS API, so on one it offers to check the original page instead.",
   },
+  {
+    title: "Never fetches internal addresses",
+    body: "External URLs come from page content, so each check is screened before it runs: http(s) on ports 80 and 443, no internal host names or IP addresses, every address the host resolves to must be public, and redirects are followed by hand with each hop screened again. A refused link shows as not checked, with the reason.",
+  },
 ];
 
 const REDIRECT_FACTS = [
   {
     title: "The same rules as the middleware",
-    body: "src/shared/redirects.ts reproduces this site's normalizeRedirectPath(), the filter and sort in getRedirectRules() and matchRedirect(), and a test pins their behavior - so Test a URL shows exactly the hops a visitor gets. As on the site, only the newest Redirect Config counts.",
+    body: "src/shared/redirects.ts reproduces this site's normalizeRedirectPath(), the filter and sort in getRedirectRules() and matchRedirect(), and a test pins their behavior - so Test a URL shows exactly the hops a visitor gets. A rule the site ignores - a path a browser would read as another website, or an http destination - shows as ignored, never as fine. As on the site, only the newest Redirect Config counts.",
   },
   {
     title: "A check on every rule",
@@ -892,6 +896,10 @@ const REDIRECT_FACTS = [
     title: "Writes that keep everything else",
     body: "Adding a rule creates a Redirect Rule block in the config's own folder and publishes a new Redirect Config version with every property of the published one plus the new reference. It refuses while someone else has unpublished changes, and leaves drafts for a reviewer on an approval instance. The CMS history shows the API client, not the editor.",
   },
+  {
+    title: "Risky changes ask first",
+    body: "Adding a redirect to another website, to a page that doesn't exist, from a published page's own URL, or for a whole top-level section asks for confirmation before anything is written. Every change is written to the app log, since the CMS history only shows the API client.",
+  },
 ];
 
 const TRANSLATION_FACTS = [
@@ -901,7 +909,7 @@ const TRANSLATION_FACTS = [
   },
   {
     title: "The instance's languages, from Graph",
-    body: "The Locales enum, the same source as the site's getSupportedLocales(), so a language with no version yet still shows, as not translated. The enum spells ja_JP where the CMS API and _metadata.locale say ja-JP; the extension uses the hyphen.",
+    body: "The Locales enum, the same source as the site's getSupportedLocales(), so a language with no version yet still shows, as not translated. The enum spells ja_JP where the CMS API and _metadata.locale say ja-JP; the extension uses the hyphen. Without the Graph key the sidebar still compares the languages the item has, and says untranslated ones can't be listed.",
   },
   {
     title: "Coverage across the site",
