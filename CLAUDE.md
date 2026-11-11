@@ -166,7 +166,13 @@ Workflow:
 2. Find version numbers: `GET ${CONTENT_ENDPOINT}/${key}/versions`
 3. PATCH the version with the correct composition + `status: "published"` to set the content and publish
 
+**Only a draft can be PATCHed** (`Only versions in status 'draft' can be patched`). To rewrite a variation that is already published, `POST /content/{key}/versions` with `{ locale, variation }` creates its draft - but that draft starts as the BASE composition with no properties, and creating it **replaces the variation's live content at once**, before any publish. So never read-modify-write a variation: reading one returns the base structure without properties too. Write a complete composition into the draft and publish straight away. `seed-homepage-variations.ts --only=personal` does exactly that. On 2026-10-15 a read-modify-write (the old `seed-homepage-variation-container.ts`) published an empty copy of the base over joshCMS's `personal` variation, and it stayed broken until 2026-11-11.
+
 The `demo_persona` cookie bypass (injecting the variation key directly into Graph's filter) works today even without CMS variations — Graph returns the original page via `includeOriginal: true` as the fallback until real variations exist in the CMS.
+
+### One CMS can serve several sites - `url.default` is only unique per site
+
+joshCMS hosts other applications besides this one: "Dylan's Homepage" (`url.base` `https://dylan-cms.vercel.app`) is indexed at `/`, while this site's homepage, with the persona variations, is at `/en/`. The catch-all tries `/` first, so until 2026-11-11 the live site served the other site's start page and no persona ever applied. `ownSiteItems()` in the catch-all keeps only items whose `url.base` host is `getSiteUrl()`'s (falling back to every item when none match). Any query that resolves a page by URL alone (seed scripts included) must account for this.
 
 ### Geo search IS supported — use a single `GeoPoint` field, not two floats
 

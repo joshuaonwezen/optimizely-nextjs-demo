@@ -18,6 +18,7 @@
  *
  * Run:
  *   OPTIMIZELY_CMS_CLIENT_ID=xxx OPTIMIZELY_CMS_CLIENT_SECRET=yyy npx tsx scripts/seed-homepage-variations.ts
+ *   ... --only=personal          rebuild just the named variation(s), leaving the others alone
  *
  * If the Management API rejects the variation field, follow the fallback instructions
  * printed at the end of the run to create variations manually in the Visual Builder.
@@ -585,14 +586,19 @@ async function buildInvestmentsVariation(): Promise<CompNode[]> {
 
 // Graph - find homepage key
 
+// One CMS can serve several sites, each with a start page at one of these URLs (on
+// joshCMS another application's start page sits at "/" and this site's at "/en/"), so
+// the first item is not necessarily this site's homepage. The one that already carries
+// the persona variations is; with none anywhere yet, fall back to the first item.
 async function findHomepageKey(): Promise<string | null> {
   if (!SINGLE_KEY) return null;
   const query = `{
     _Page(
+      variation: { include: ALL }
       where: { _metadata: { url: { default: { in: ["/", "/en/", "/en/homepage/"] } } } }
-      limit: 3
+      limit: 50
     ) {
-      items { _metadata { key } }
+      items { _metadata { key variation } }
     }
   }`;
   try {
@@ -603,9 +609,11 @@ async function findHomepageKey(): Promise<string | null> {
     });
     if (!res.ok) return null;
     const { data } = await res.json() as {
-      data?: { _Page?: { items?: Array<{ _metadata?: { key?: string } }> } };
+      data?: { _Page?: { items?: Array<{ _metadata?: { key?: string; variation?: string | null } }> } };
     };
-    return data?._Page?.items?.[0]?._metadata?.key ?? null;
+    const items = data?._Page?.items ?? [];
+    const withVariations = items.find((i) => i._metadata?.variation);
+    return (withVariations ?? items[0])?._metadata?.key ?? null;
   } catch {
     return null;
   }
@@ -675,14 +683,37 @@ async function createVariation(
     ? ((await vRes.json() as { items?: VersionItem[] }).items ?? [])
     : [];
 
-  // Find a draft version whose variation field matches the target key.
-  const matched = versions.find((v) => v.variation === variation.variationKey && v.status !== "published")
-    ?? versions.find((v) => v.variation === variation.variationKey);
+  // Only a draft can be patched ("Only versions in status 'draft' can be patched").
+  let matched = versions.find((v) => v.variation === variation.variationKey && v.status === "draft");
+  if (!matched && versions.some((v) => v.variation === variation.variationKey)) {
+    // The variation exists but has no draft: create one. A new variation draft carries the
+    // BASE composition, and creating it replaces the variation's live content with that at
+    // once, before any publish (seen on joshCMS 2026-10-15) - so the PATCH and publish
+    // below must follow straight away, and a failure leaves the variation showing base.
+    const created = await apiFetch(`${CONTENT_ENDPOINT}/${homepageKey}/versions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ locale: "en", variation: variation.variationKey, displayName: variation.displayName }),
+    });
+    if (!created.ok) {
+      console.warn(`  [attempt 2 failed] could not create a draft: ${created.status} ${(await created.text()).slice(0, 150)}`);
+      return false;
+    }
+    // The locale listing lags a fresh draft by a moment.
+    for (let attempt = 0; attempt < 10 && !matched; attempt++) {
+      await new Promise((r) => setTimeout(r, 1500));
+      const listed = await apiFetch(`${CONTENT_ENDPOINT}/${homepageKey}/locales/en?pageSize=50`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const items: VersionItem[] = listed.ok ? ((await listed.json() as { items?: VersionItem[] }).items ?? []) : [];
+      matched = items.find((v) => v.variation === variation.variationKey && v.status === "draft");
+    }
+  }
 
   const versionId = matched?.version;
 
   if (!versionId) {
-    console.warn(`  [attempt 2 skipped] no version found with variation="${variation.variationKey}" for key=${homepageKey}`);
+    console.warn(`  [attempt 2 skipped] no draft of variation="${variation.variationKey}" for key=${homepageKey}`);
     console.warn(`  [hint] Create the variation in Visual Builder first, then re-run this script.`);
     return false;
   }
@@ -769,8 +800,16 @@ async function main() {
     },
   ];
 
+  // --only=personal[,business] rebuilds just those variations and leaves the rest alone.
+  const only = process.argv.find((a) => a.startsWith("--only="))?.slice("--only=".length).split(",").filter(Boolean);
+  const unknown = only?.filter((key) => !variations.some((v) => v.variationKey === key)) ?? [];
+  if (unknown.length > 0) {
+    console.error(`[ERROR] Unknown variation key(s): ${unknown.join(", ")}`);
+    process.exit(1);
+  }
+
   let allSucceeded = true;
-  for (const variation of variations) {
+  for (const variation of only ? variations.filter((v) => only.includes(v.variationKey)) : variations) {
     console.log(`[variation] Creating "${variation.displayName}" (key: ${variation.variationKey})…`);
     const ok = await createVariation(homepageKey, token, variation);
     if (!ok) {
