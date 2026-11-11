@@ -8,6 +8,7 @@ import { initComponentRegistry } from "@/lib/optimizely/componentRegistry";
 import { getAllPageRoutes } from "@/lib/graphql/queries/GetAllPagePaths";
 import type { SdkComponentContent } from "@/components/cms/sdkTypes";
 import { LOCALE_RE } from "@/lib/localeUrl";
+import { getSiteUrl } from "@/lib/siteUrl";
 import { cacheTag } from "next/cache";
 import { CACHE_TAGS, cachePublishedContent, cachedQueryFailed } from "@/lib/optimizely/cacheProfile";
 import { graphClient } from "@/lib/optimizely/graphClient";
@@ -48,8 +49,39 @@ interface PageParams {
 type KeyResult = {
   // Optional because the cached fetcher returns {} when the Graph query fails -
   // see fetchPageKeys. Every read below is already optional-chained.
-  _Page?: { items?: Array<{ _metadata: { key: string; version: string | number; variation: string | null } }> };
+  _Page?: {
+    items?: Array<{
+      _metadata: {
+        key: string;
+        version: string | number;
+        variation: string | null;
+        url?: { default?: string | null; base?: string | null } | null;
+      };
+    }>;
+  };
 };
+
+const hostOf = (url?: string | null): string | null => {
+  try {
+    return url ? new URL(url).host : null;
+  } catch {
+    return null;
+  }
+};
+
+// One CMS instance can serve several sites, and url.default is only unique within a
+// site: on joshCMS another application's start page is indexed at "/" while this
+// site's homepage (the one with the persona variations) is at "/en/", so the "/"
+// candidate served the other site's page. url.base names the site an item belongs to.
+// When Graph has items for this deployment's own origin, only those count; when none
+// match (no base configured, or a local origin), every item counts, as before.
+function ownSiteItems<T extends { _metadata?: { url?: { base?: string | null } | null } | null }>(
+  items: T[]
+): { items: T[]; matched: boolean } {
+  const host = hostOf(getSiteUrl());
+  const own = items.filter((item) => hostOf(item._metadata?.url?.base) === host);
+  return own.length > 0 ? { items: own, matched: true } : { items, matched: false };
+}
 
 // These Graph calls sit in module-level "use cache" functions rather than
 // inline, for two separate reasons. First, the SDK client does not forward
@@ -109,7 +141,7 @@ const KEY_QUERY = /* GraphQL */ `
       where: { _metadata: { url: { default: { in: $urls } } } }
       limit: 50
     ) {
-      items { _metadata { key version variation } }
+      items { _metadata { key version variation url { default base } } }
     }
   }
 `;
@@ -203,9 +235,16 @@ async function CmsPage({
   // cacheTag(CACHE_TAGS.page) and keyed on `urls`, so it costs one cold Graph request per
   // URL set per hour, shared by every visitor and by the variation route.
   let keyItems: NonNullable<NonNullable<KeyResult["_Page"]>["items"]> = [];
+  // The candidate URLs to fetch content from. Narrowed to this site's own items below.
+  let pageUrls = urls;
   try {
     const keyResult = await fetchPageKeys(urls);
-    keyItems = keyResult?._Page?.items ?? [];
+    const own = ownSiteItems(keyResult?._Page?.items ?? []);
+    keyItems = own.items;
+    if (own.matched) {
+      const ownUrls = new Set(keyItems.map((i) => i._metadata.url?.default));
+      pageUrls = urls.filter((url) => ownUrls.has(url));
+    }
   } catch (error) {
     // Graph unavailable - the fallback below degrades to notFound(), and the WX
     // allowlist degrades to empty, which means base content. Never an error page.
@@ -310,11 +349,11 @@ async function CmsPage({
   // which previously meant five sequential Graph round-trips before first byte.
   // Candidate order still decides the winner, so resolution is unchanged.
   let matchedItems: Awaited<ReturnType<typeof tryUrl>> = [];
-  const firstItems = await tryUrl(urls[0]);
+  const firstItems = await tryUrl(pageUrls[0]);
   if (firstItems.length > 0) {
     matchedItems = firstItems;
-  } else if (urls.length > 1) {
-    const rest = await Promise.all(urls.slice(1).map(tryUrl));
+  } else if (pageUrls.length > 1) {
+    const rest = await Promise.all(pageUrls.slice(1).map(tryUrl));
     matchedItems = rest.find((items) => items.length > 0) ?? [];
   }
   if (matchedItems.length > 0) page = pickMatch(matchedItems);
@@ -449,12 +488,12 @@ const GET_PAGE_META_QUERY = /* GraphQL */ `
   query GetPageMeta($urls: [String]) {
     _Page(
       where: { _metadata: { url: { default: { in: $urls } } } }
-      limit: 1
+      limit: 10
     ) {
       items {
         _metadata {
           displayName
-          url { default }
+          url { default base }
         }
         ... on DynamicExperience { ${SEO_FIELDS} }
         ... on BlogExperience { ${SEO_FIELDS} }
@@ -473,12 +512,12 @@ const GET_PAGE_META_FALLBACK_QUERY = /* GraphQL */ `
   query GetPageMetaFallback($urls: [String]) {
     _Page(
       where: { _metadata: { url: { default: { in: $urls } } } }
-      limit: 1
+      limit: 10
     ) {
       items {
         _metadata {
           displayName
-          url { default }
+          url { default base }
         }
       }
     }
@@ -486,7 +525,7 @@ const GET_PAGE_META_FALLBACK_QUERY = /* GraphQL */ `
 `;
 
 interface PageMetaItem {
-  _metadata?: { displayName?: string | null; url?: { default?: string | null } | null } | null;
+  _metadata?: { displayName?: string | null; url?: { default?: string | null; base?: string | null } | null } | null;
   metaTitle?: string | null;
   metaDescription?: string | null;
   ogImage?: { url?: { default?: string | null } | null } | null;
@@ -494,6 +533,16 @@ interface PageMetaItem {
 }
 
 type PageMetaResult = { _Page?: { items?: Array<PageMetaItem | null> | null } | null };
+
+/** This site's item for the first candidate URL that has one (see ownSiteItems). */
+function pickMetaItem(result: PageMetaResult | undefined, urls: string[]): PageMetaItem | null {
+  const { items } = ownSiteItems((result?._Page?.items ?? []).filter((i): i is PageMetaItem => !!i));
+  for (const url of urls) {
+    const hit = items.find((i) => i._metadata?.url?.default === url);
+    if (hit) return hit;
+  }
+  return items[0] ?? null;
+}
 
 export async function generateMetadata({
   params,
@@ -512,16 +561,14 @@ export async function generateMetadata({
   // A purely throw-driven fallback would silently stop firing in that case.
   let item: PageMetaItem | null = null;
   try {
-    const result = await fetchPageMeta("primary", urls);
-    item = result?._Page?.items?.[0] ?? null;
+    item = pickMetaItem(await fetchPageMeta("primary", urls), urls);
   } catch (error) {
     console.error("[generateMetadata] Primary meta query failed:", error);
   }
 
   if (!item) {
     try {
-      const result = await fetchPageMeta("fallback", urls);
-      item = result?._Page?.items?.[0] ?? null;
+      item = pickMetaItem(await fetchPageMeta("fallback", urls), urls);
     } catch (error) {
       // Graph unavailable — return fallback title
       console.error("[generateMetadata] Fallback meta query failed:", error);
