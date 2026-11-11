@@ -11,7 +11,8 @@
  *   npx tsx scripts/seed-fx-project.ts --dry-run            # report what would be created
  *   npx tsx scripts/seed-fx-project.ts --only=banner,homepage
  *
- * Reads OPTIMIZELY_FX_API_TOKEN and OPTIMIZELY_FX_PROJECT_ID from .env.local.
+ * Reads OPTIMIZELY_FX_API_TOKEN and OPTIMIZELY_FX_PROJECT_ID from .env.local. FX only
+ * archives a deleted attribute, so one removed from the spec stays in the datafile.
  */
 
 import { apiFetch } from "./_shared";
@@ -169,7 +170,8 @@ function ruleValue(flag: FxFlag, rule: FxRule, eventIds: Map<string, number>, au
 async function seedFlag(flag: FxFlag, eventIds: Map<string, number>, audienceIds: Map<AudienceRef, number>): Promise<void> {
   console.log(`\nFlag ${flag.key}`);
 
-  // The flag (its creation also creates the "off" and "on" variations from the defaults).
+  // The flag. Creating one also creates "off" and "on" variations from the defaults;
+  // "off" is required, but an "on" no rule serves would only clutter the dashboard.
   if (!(await find(flagUrl(`/flags/${flag.key}`)))) {
     if (!DRY_RUN) {
       await req(flagUrl("/flags"), "POST", {
@@ -178,6 +180,7 @@ async function seedFlag(flag: FxFlag, eventIds: Map<string, number>, audienceIds
         description: flag.description,
         variable_definitions: Object.fromEntries(flag.variables.map((v) => [v.key, v])),
       });
+      if (!flag.variations.some((v) => v.key === "on")) await req(flagUrl(`/flags/${flag.key}/variations/on`), "DELETE");
     }
     would("flag");
     if (DRY_RUN) {
@@ -222,7 +225,7 @@ async function seedFlag(flag: FxFlag, eventIds: Map<string, number>, audienceIds
     console.log(`  rule order set: ${wanted.join(" > ")}`);
   }
 
-  if (flag.enabled !== false && !ruleset.enabled) {
+  if (!ruleset.enabled) {
     await req(`${rulesetUrl}/enabled`, "POST");
     console.log(`  ruleset enabled in ${ENVIRONMENT}`);
   }

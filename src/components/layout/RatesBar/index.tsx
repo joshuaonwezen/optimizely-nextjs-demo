@@ -24,6 +24,8 @@ export default function RatesBar() {
           </p>
           <Link
             href="/personal/savings"
+            data-track-event="rates_bar_click"
+            data-track-tags={JSON.stringify({ product, apy })}
             className="text-sm font-semibold text-brand hover:underline flex-shrink-0"
           >
             Open a savings account &rarr;

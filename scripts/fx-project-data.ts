@@ -4,6 +4,10 @@ import { FLAG_KEY as SAVINGS_OFFER_FLAG, VARIATIONS as SAVINGS_OFFER_VARIATIONS 
 // scripts/seed-fx-project.ts. Event keys must match what the site fires (the
 // data-track-event attributes and trackEvent() calls); flag, variable and variation
 // keys must match what the components decide on.
+//
+// Names are written for the FX dashboard: a flag is "<where>: <what>", and a rule's
+// name and key start with its type (A/B test, A/B/C test, MAB, Targeted delivery,
+// Rollout), so the experiment list explains itself.
 
 export type EventCategory = "convert" | "sign_up" | "other";
 
@@ -17,6 +21,8 @@ export const FX_EVENTS = [
   { key: "pricing_tier_click", name: "Pricing Tier Click", category: "convert", description: "Click on a pricing tier's button. Tags: tier, label, highlighted." },
   { key: "campaign_banner_click", name: "Campaign Banner Click", category: "convert", description: "Click on a campaign banner block. Tags: heading, color." },
   { key: "banner_click", name: "Site Banner Click", category: "convert", description: "Click on the site-wide banner served by the banner flag. Tags: variation." },
+  { key: "rates_bar_click", name: "Rates Bar Click", category: "convert", description: "Click on the rates bar's open-a-savings-account link. Tags: product, apy." },
+  { key: "offer_bar_click", name: "Offer Bar Click", category: "convert", description: "Click on the sticky offer bar's button. Tags: offer, label." },
   { key: "form_submit", name: "Form Submitted", category: "sign_up", description: "A contact or native Optimizely form was submitted. Tags: form, fields, status." },
   { key: "customer_identified", name: "Customer Identified", category: "sign_up", description: "A form submission gave us the visitor's email. Tags: has_email." },
   // Engagement
@@ -39,18 +45,14 @@ export const FX_EVENTS = [
 
 export type EventKey = (typeof FX_EVENTS)[number]["key"];
 
-// The attributes buildFxAttributes() sends, plus the personalization ones the app pushes.
-// sync-attribute-docs.ts later rewrites the descriptions of the last four and persona.
+// Exactly the attributes buildFxAttributes() sends. top_category, odp_segment and
+// fx_variation go to Web Experimentation only (WxProfileBridge), so they are not here.
 export const FX_ATTRIBUTES = [
-  { key: "hostname", name: "Hostname", description: "The site's hostname, without port. The Personal CMS site audience keys on it." },
+  { key: "hostname", name: "Hostname", description: "The site's hostname, without port. The Main demo site audience keys on it." },
   { key: "device", name: "Device", description: "mobile or desktop, from the User-Agent." },
   { key: "logged_in", name: "Logged in", description: "true when the visitor has a demo bucketing ID (signed in via the demo Settings panel)." },
-  { key: "persona", name: "Persona", description: "personal, business, mortgages or investments, from the demo_persona cookie." },
-  { key: "page_views", name: "Page views", description: "Pages viewed this session, from the demo page-view cookie." },
-  { key: "top_category", name: "Top category", description: "Most-read CMS category." },
-  { key: "read_categories", name: "Read categories", description: "CMS categories the visitor has read." },
-  { key: "odp_segment", name: "ODP segment", description: "The visitor's ODP segment." },
-  { key: "fx_variation", name: "FX variation", description: "Variations on screen." },
+  { key: "persona", name: "Persona", description: "personal, business, mortgages or investments: the site section the visitor is browsing (the demo_persona cookie)." },
+  { key: "page_views", name: "Page views", description: "Set to 5 by the Frequent Customer switch in the demo Settings panel; unset otherwise." },
 ] as const;
 
 type AttributeKey = (typeof FX_ATTRIBUTES)[number]["key"];
@@ -69,18 +71,18 @@ const anyOf = (...conditions: Condition[]) => ["and", ["or", ["or", ...condition
 // Audiences have no key in FX, so they are matched by name.
 export const FX_AUDIENCES = {
   site: {
-    name: "Personal CMS site",
-    description: "Visitors to the personal CMS site (or localhost). Gates every experiment so other instances' traffic stays out.",
+    name: "Main demo site",
+    description: "opti.joshuaonwezen.dev or localhost. Gates every rule, so the other CMS instances' sites, which share this project, stay out.",
     conditions: anyOf(attr("hostname", "substring", "opti.joshuaonwezen.dev"), attr("hostname", "substring", "localhost")),
   },
   personal: { name: "Personal visitors", description: "persona = personal", conditions: anyOf(attr("persona", "exact", "personal")) },
   business: { name: "Business visitors", description: "persona = business", conditions: anyOf(attr("persona", "exact", "business")) },
   mortgages: { name: "Mortgage visitors", description: "persona = mortgages", conditions: anyOf(attr("persona", "exact", "mortgages")) },
   investments: { name: "Investment visitors", description: "persona = investments", conditions: anyOf(attr("persona", "exact", "investments")) },
-  loggedIn: { name: "Logged-in visitors", description: "logged_in = true", conditions: anyOf(attr("logged_in", "exact", true)) },
-  mobile: { name: "Mobile", description: "device = mobile", conditions: anyOf(attr("device", "exact", "mobile")) },
-  desktop: { name: "Desktop", description: "device = desktop", conditions: anyOf(attr("device", "exact", "desktop")) },
-  frequent: { name: "Frequent visitors", description: "Five or more page views this session.", conditions: anyOf(attr("page_views", "ge", 5)) },
+  loggedIn: { name: "Logged-in visitors", description: "logged_in = true (Auth State in the demo Settings panel)", conditions: anyOf(attr("logged_in", "exact", true)) },
+  mobile: { name: "Mobile visitors", description: "device = mobile", conditions: anyOf(attr("device", "exact", "mobile")) },
+  desktop: { name: "Desktop visitors", description: "device = desktop", conditions: anyOf(attr("device", "exact", "desktop")) },
+  frequent: { name: "Frequent customers", description: "page_views >= 5 (the Frequent Customer switch in the demo Settings panel).", conditions: anyOf(attr("page_views", "ge", 5)) },
 } as const;
 
 export type AudienceRef = keyof typeof FX_AUDIENCES;
@@ -94,14 +96,14 @@ export interface FxVariable {
 export interface FxVariation {
   key: string;
   name: string;
-  /** Values that differ from the defaults. The auto-created on/off use the defaults. */
+  /** Values that differ from the defaults. */
   variables?: Record<string, string>;
 }
 
 export interface FxRule {
   key: string;
   name: string;
-  type: "a/b" | "targeted_delivery" | "feature_rollout";
+  type: "a/b" | "multi_armed_bandit" | "targeted_delivery" | "feature_rollout";
   /** All must match (combined with AND). Empty = everyone. */
   audiences: AudienceRef[];
   /** Variation key -> share of traffic in basis points (sums to 10000). */
@@ -118,74 +120,80 @@ export interface FxFlag {
   variations: FxVariation[];
   /** In priority order (the first matching rule wins). */
   rules: FxRule[];
-  /** Production ruleset switched on. hero_copy stays off: its control overrides the CMS hero headline. */
-  enabled?: boolean;
 }
 
 const SAVINGS_OFFER_ROUTE = "/savings-offer";
 const HOMEPAGE_PERSONAS = ["business", "personal", "mortgages", "investments"] as const;
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-/** A 50/50 A/B test on the personal CMS site - the shape of most experiments here. */
-function abTest(key: string, name: string, [a, b]: [string, string], metrics: EventKey[]): FxRule {
-  return { key, name, type: "a/b", audiences: ["site"], variations: { [a]: 5000, [b]: 5000 }, metrics };
+/** An even traffic split in basis points; the first variation absorbs the rounding. */
+function evenSplit(keys: string[]): Record<string, number> {
+  const share = Math.floor(10000 / keys.length);
+  return Object.fromEntries(keys.map((k, i) => [k, i === 0 ? 10000 - share * (keys.length - 1) : share]));
+}
+
+/** An even A/B(/C...) test on the main demo site - the shape of most experiments here. */
+function experiment(key: string, name: string, variations: string[], metrics: EventKey[], audiences: AudienceRef[] = ["site"]): FxRule {
+  return { key, name, type: "a/b", audiences, variations: evenSplit(variations), metrics };
 }
 
 export const FX_FLAGS: FxFlag[] = [
   {
+    // An empty headline falls back to the CMS copy, so control is the page as authored.
     key: "hero_copy",
-    name: "Hero Copy",
-    description: "A/B test different headline and subheadline copy in the homepage hero section.",
+    name: "Hero: headline copy",
+    description: "The hero headline and subheadline. Control shows the CMS copy; the variations replace it.",
     variables: [
       { key: "headline", type: "string", default_value: "" },
       { key: "subheadline", type: "string", default_value: "" },
     ],
     variations: [
-      { key: "control", name: "Control - Product-led", variables: { headline: "Banking made simple", subheadline: "Everything you need to manage your money - personal accounts, business banking, and mortgages in one place." } },
-      { key: "challenger", name: "Challenger - Benefit-led", variables: { headline: "Earn more. Pay less. Bank smarter.", subheadline: "High-yield savings, zero-fee checking, and mortgage rates that beat the market. Switch in minutes." } },
+      { key: "control", name: "Control: CMS headline" },
+      { key: "benefit_led", name: "Benefit-led headline", variables: { headline: "Earn more. Pay less. Bank smarter.", subheadline: "High-yield savings, zero-fee checking, and mortgage rates that beat the market. Switch in minutes." } },
+      { key: "rate_led", name: "Rate-led headline", variables: { headline: "4.75% APY. No fees. No catch.", subheadline: "Our best savings rate, fee-free checking and mortgages from 3.9% - open an account in five minutes." } },
     ],
-    rules: [abTest("hero_copy_ab_test", "Hero copy: product-led vs benefit-led", ["control", "challenger"], ["hero_cta_click", "scroll_depth"])],
-    enabled: false,
+    rules: [experiment("hero_copy_abc_test", "A/B/C test: hero headline (CMS vs benefit-led vs rate-led)", ["control", "benefit_led", "rate_led"], ["hero_cta_click", "scroll_depth"])],
   },
   {
     key: "hero_layout",
-    name: "Hero Layout",
-    description: "A/B test split left-text/right-image layout vs. centered full-bleed hero with overlaid text.",
+    name: "Hero: layout",
+    description: "Split text-and-image hero vs a centered full-bleed hero with the text over the image.",
     variables: [{ key: "layout", type: "string", default_value: "split" }],
     variations: [
-      { key: "split", name: "Split (control)", variables: { layout: "split" } },
-      { key: "centered", name: "Centered Full-bleed", variables: { layout: "centered" } },
+      { key: "split", name: "Control: split layout" },
+      { key: "centered", name: "Centered full-bleed", variables: { layout: "centered" } },
     ],
-    rules: [abTest("hero_layout_experiment", "Hero layout: split vs centered", ["split", "centered"], ["hero_cta_click", "scroll_depth", "time_on_page"])],
+    rules: [experiment("hero_layout_ab_test", "A/B test: hero layout (split vs centered)", ["split", "centered"], ["hero_cta_click", "scroll_depth", "time_on_page"])],
   },
   {
     key: "hero_dual_cta",
-    name: "Hero Dual CTA",
-    description: "A/B test adding a secondary ghost CTA button next to the primary hero CTA.",
+    name: "Hero: secondary button",
+    description: "Adds a secondary ghost button next to the hero's primary button.",
     variables: [
       { key: "secondaryLabel", type: "string", default_value: "" },
       { key: "secondaryUrl", type: "string", default_value: "" },
     ],
     variations: [
-      { key: "control", name: "Single CTA (control)" },
-      { key: "treatment", name: "Dual CTA", variables: { secondaryLabel: "See how it works", secondaryUrl: "/demo" } },
+      { key: "control", name: "Control: one button" },
+      { key: "treatment", name: "Two buttons", variables: { secondaryLabel: "See how it works", secondaryUrl: "/demo" } },
     ],
-    rules: [abTest("hero_dual_cta_experiment", "Hero: single vs dual CTA", ["control", "treatment"], ["hero_cta_click", "scroll_depth"])],
+    rules: [experiment("hero_dual_cta_ab_test", "A/B test: hero buttons (one vs two)", ["control", "treatment"], ["hero_cta_click", "scroll_depth"])],
   },
   {
     key: "hero_social_proof",
-    name: "Hero Social Proof",
-    description: "A/B test adding a trust strip below the hero CTA: Trusted by 2M+ customers - 4.9 star rated.",
+    name: "Hero: social proof strip",
+    description: "Adds a trust strip under the hero button: Trusted by 2M+ customers - 4.9 star rated.",
     variables: [],
     variations: [
-      { key: "control", name: "No Social Proof (control)" },
-      { key: "treatment", name: "With Social Proof" },
+      { key: "control", name: "Control: no strip" },
+      { key: "treatment", name: "With social proof strip" },
     ],
-    rules: [abTest("hero_social_proof_experiment", "Hero: with vs without social proof", ["control", "treatment"], ["hero_cta_click", "scroll_depth"])],
+    rules: [experiment("hero_social_proof_ab_test", "A/B test: hero social proof (without vs with)", ["control", "treatment"], ["hero_cta_click", "scroll_depth"])],
   },
   {
     key: "banner",
-    name: "Site Banner",
-    description: "Site-wide promotional banner: a rollout for frequent visitors plus targeted deliveries by login state and device.",
+    name: "Site banner",
+    description: "The site-wide promotional banner, chosen per visitor by the rollout and targeted deliveries below.",
     variables: [
       { key: "title", type: "string", default_value: "" },
       { key: "description", type: "string", default_value: "" },
@@ -196,131 +204,146 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "cache", type: "boolean", default_value: "true" },
     ],
     variations: [
-      { key: "banner1", name: "High-yield savings", variables: { title: "Earn 4.50% APY with a Mosey high-yield savings account", description: "No fees, no minimum balance, and your money stays FDIC-insured.", image: "https://picsum.photos/800", imageText: "main image description", linkText: "Open an account" } },
-      { key: "banner2", name: "0% balance transfer", variables: { title: "0% intro APR for 18 months on balance transfers", description: "Move your balances to a Mosey credit card and pay less interest.", image: "https://picsum.photos/800", imageText: "image description", linkText: "Check your rate", cache: "false" } },
-      { key: "banner3", name: "Mosey Premier", variables: { title: "Introducing Mosey Premier - banking with a dedicated advisor", description: "Priority support, wealth planning, and exclusive rates for Premier members.", image: "https://picsum.photos/800", imageText: "Image text", linkText: "Explore Premier" } },
-      { key: "banner4", name: "Mobile app", variables: { title: "Bank on the go with the new Mosey mobile app", description: "Deposit checks, send money, and track spending from anywhere.", linkText: "Get the app" } },
+      { key: "banner1", name: "Savings banner", variables: { title: "Earn 4.50% APY with a Mosey high-yield savings account", description: "No fees, no minimum balance, and your money stays FDIC-insured.", image: "https://picsum.photos/800", imageText: "main image description", linkText: "Open an account" } },
+      { key: "banner2", name: "Balance transfer banner", variables: { title: "0% intro APR for 18 months on balance transfers", description: "Move your balances to a Mosey credit card and pay less interest.", image: "https://picsum.photos/800", imageText: "image description", linkText: "Check your rate", cache: "false" } },
+      { key: "banner3", name: "Premier banner", variables: { title: "Introducing Mosey Premier - banking with a dedicated advisor", description: "Priority support, wealth planning, and exclusive rates for Premier members.", image: "https://picsum.photos/800", imageText: "Image text", linkText: "Explore Premier" } },
+      { key: "banner4", name: "Mobile app banner", variables: { title: "Bank on the go with the new Mosey mobile app", description: "Deposit checks, send money, and track spending from anywhere.", linkText: "Get the app" } },
     ],
     rules: [
-      { key: "banner_feature_rollout", name: "Premier banner for frequent visitors", type: "feature_rollout", audiences: ["site", "frequent"], variations: { banner3: 10000 }, metrics: ["banner_click"] },
-      { key: "banner_logged_in", name: "Mobile app banner for logged-in visitors", type: "targeted_delivery", audiences: ["site", "loggedIn"], variations: { banner4: 10000 } },
-      { key: "banner_mobile", name: "Savings banner on mobile", type: "targeted_delivery", audiences: ["site", "mobile"], variations: { banner1: 10000 } },
-      { key: "banner_desktop", name: "Balance transfer banner on desktop", type: "targeted_delivery", audiences: ["site", "desktop"], variations: { banner2: 10000 } },
+      { key: "banner_frequent_customers_rollout", name: "Rollout: Premier banner for frequent customers", type: "feature_rollout", audiences: ["site", "frequent"], variations: { banner3: 10000 }, metrics: ["banner_click"] },
+      { key: "banner_logged_in_delivery", name: "Targeted delivery: app banner for logged-in visitors", type: "targeted_delivery", audiences: ["site", "loggedIn"], variations: { banner4: 10000 } },
+      { key: "banner_mobile_delivery", name: "Targeted delivery: savings banner on mobile", type: "targeted_delivery", audiences: ["site", "mobile"], variations: { banner1: 10000 } },
+      { key: "banner_desktop_delivery", name: "Targeted delivery: balance transfer banner on desktop", type: "targeted_delivery", audiences: ["site", "desktop"], variations: { banner2: 10000 } },
     ],
   },
   {
     key: "rates_bar",
-    name: "Rates Bar",
-    description: "A/B test injecting a full-width today's rate bar above product cards (e.g. 4.75% APY on savings).",
+    name: "Rates bar",
+    description: "A full-width bar above the product cards with today's savings rate.",
     variables: [
       { key: "apy", type: "string", default_value: "4.75%" },
       { key: "product", type: "string", default_value: "savings" },
     ],
     variations: [
-      { key: "control", name: "No Rates Bar (control)", variables: { apy: "", product: "" } },
-      { key: "treatment", name: "With Rates Bar" },
+      { key: "control", name: "Control: no rates bar", variables: { apy: "", product: "" } },
+      { key: "treatment", name: "Rates bar shown" },
     ],
-    rules: [abTest("rates_bar_experiment", "Rates bar above product cards", ["control", "treatment"], ["pricing_tier_click", "cta_click"])],
+    rules: [experiment("rates_bar_ab_test", "A/B test: rates bar (hidden vs shown)", ["control", "treatment"], ["rates_bar_click", "product_card_click"])],
   },
   {
     key: "footer_cta",
-    name: "Footer CTA",
-    description: "A/B test app download banner vs. open account copy strip in the footer.",
+    name: "Footer: call-to-action strip",
+    description: "The strip at the top of the footer: an app download prompt or an open-an-account prompt.",
     variables: [{ key: "style", type: "string", default_value: "app_download" }],
     variations: [
-      { key: "app_download", name: "App Download (control)" },
-      { key: "open_account", name: "Open Account Strip", variables: { style: "open_account" } },
+      { key: "app_download", name: "Control: app download" },
+      { key: "open_account", name: "Open an account", variables: { style: "open_account" } },
     ],
-    rules: [abTest("footer_cta_experiment", "Footer: app download vs open account", ["app_download", "open_account"], ["cta_click", "outbound_click"])],
+    rules: [experiment("footer_cta_ab_test", "A/B test: footer strip (app download vs open account)", ["app_download", "open_account"], ["cta_click", "outbound_click"])],
   },
   {
     key: "trust_section_style",
-    name: "Trust Section Style",
-    description: "A/B test animated stats counter vs. customer quote cards in the homepage trust section.",
+    name: "Trust section: style",
+    description: "The homepage trust section as an animated stats counter or as customer quote cards.",
     variables: [{ key: "style", type: "string", default_value: "stats" }],
     variations: [
-      { key: "stats", name: "Stats Counter (control)" },
-      { key: "testimonials", name: "Testimonials", variables: { style: "testimonials" } },
+      { key: "stats", name: "Control: stats counter" },
+      { key: "testimonials", name: "Customer testimonials", variables: { style: "testimonials" } },
     ],
-    rules: [abTest("trust_section_style_experiment", "Trust section: stats vs testimonials", ["stats", "testimonials"], ["cta_click", "scroll_depth", "faq_expand"])],
+    rules: [experiment("trust_section_ab_test", "A/B test: trust section (stats vs testimonials)", ["stats", "testimonials"], ["cta_click", "scroll_depth", "faq_expand"])],
   },
   {
     key: "sticky_offer_bar",
-    name: "Sticky Offer Bar",
-    description: "A/B test a fixed bottom promotional bar with a dismissible limited-time offer.",
+    name: "Sticky offer bar",
+    description: "A dismissible limited-time offer fixed to the bottom of the screen.",
     variables: [
-      { key: "message", type: "string", default_value: "Limited offer: 0% APR for 12 months on balance transfers." },
-      { key: "linkText", type: "string", default_value: "Learn more" },
-      { key: "linkUrl", type: "string", default_value: "/personal/credit-cards" },
-      { key: "expiryLabel", type: "string", default_value: "Ends Friday" },
+      { key: "message", type: "string", default_value: "" },
+      { key: "linkText", type: "string", default_value: "" },
+      { key: "linkUrl", type: "string", default_value: "" },
+      { key: "expiryLabel", type: "string", default_value: "" },
     ],
     variations: [
-      { key: "control", name: "No Offer Bar (control)", variables: { message: "", linkText: "", linkUrl: "", expiryLabel: "" } },
-      { key: "treatment", name: "With Offer Bar" },
+      { key: "control", name: "Control: no offer bar" },
+      { key: "balance_transfer", name: "Balance transfer offer", variables: { message: "Limited offer: 0% APR for 12 months on balance transfers.", linkText: "Learn more", linkUrl: "/personal/credit-cards", expiryLabel: "Ends Friday" } },
+      { key: "savings_rate", name: "Savings rate offer", variables: { message: "New customers earn 5.10% AER on our Easy Saver for 12 months.", linkText: "Open an Easy Saver", linkUrl: "/personal/savings", expiryLabel: "This week only" } },
     ],
-    rules: [abTest("sticky_offer_bar_experiment", "Sticky balance transfer offer bar", ["control", "treatment"], ["pricing_tier_click", "cta_click"])],
+    rules: [experiment("sticky_offer_abc_test", "A/B/C test: sticky offer (none vs balance transfer vs savings rate)", ["control", "balance_transfer", "savings_rate"], ["offer_bar_click", "cta_click"])],
   },
   {
+    // Only mobile visitors ever see the tab bar, so only they are in the test.
     key: "mobile_nav",
-    name: "Mobile Nav",
-    description: "A/B test replacing the hamburger menu with a persistent bottom tab bar on mobile.",
+    name: "Mobile nav: bottom tab bar",
+    description: "Replaces the mobile hamburger menu with a persistent bottom tab bar.",
     variables: [],
     variations: [
-      { key: "hamburger", name: "Hamburger (control)" },
-      { key: "bottom_tabs", name: "Bottom Tab Bar" },
+      { key: "hamburger", name: "Control: hamburger menu" },
+      { key: "bottom_tabs", name: "Bottom tab bar" },
     ],
-    rules: [abTest("mobile_nav_experiment", "Mobile nav: hamburger vs bottom tabs", ["hamburger", "bottom_tabs"], ["nav_click", "cta_click"])],
+    rules: [experiment("mobile_nav_ab_test", "A/B test: mobile nav (hamburger vs bottom tabs)", ["hamburger", "bottom_tabs"], ["nav_click", "cta_click"], ["site", "mobile"])],
   },
   {
     key: "nav_search_style",
-    name: "Nav Search Style",
-    description: "A/B test icon-only search vs. expanded pill search input in the navigation bar.",
+    name: "Nav: search field style",
+    description: "The header search as an icon button or as an expanded search field.",
     variables: [{ key: "style", type: "string", default_value: "icon" }],
     variations: [
-      { key: "icon", name: "Icon Only (control)" },
-      { key: "expanded", name: "Expanded Pill", variables: { style: "expanded" } },
+      { key: "icon", name: "Control: search icon" },
+      { key: "expanded", name: "Expanded search field", variables: { style: "expanded" } },
     ],
-    rules: [abTest("nav_search_style_experiment", "Nav search: icon vs expanded", ["icon", "expanded"], ["nav_click", "cta_click"])],
+    rules: [experiment("nav_search_ab_test", "A/B test: nav search (icon vs expanded field)", ["icon", "expanded"], ["nav_click", "cta_click"])],
   },
   {
-    // ProductHeroCtaClient maps button_color/button_style through COLOR_CLASSES and
-    // STYLE_MODIFIERS; an empty value falls back to the default button look.
+    // A multi-armed bandit: FX shifts traffic toward the color that converts best, so it
+    // optimizes rather than reports a winner. ProductHeroCtaClient maps button_color /
+    // button_style through COLOR_CLASSES and STYLE_MODIFIERS; empty values keep the
+    // default button.
     key: "add_to_cart",
-    name: "Product Hero Button",
-    description: "A/B test the color of the product hero's call-to-action button.",
+    name: "Product hero: button color",
+    description: "The color of the product hero's call-to-action button.",
     variables: [
       { key: "button_color", type: "string", default_value: "" },
       { key: "button_style", type: "string", default_value: "" },
     ],
     variations: [
-      { key: "control", name: "Default button (control)" },
+      { key: "control", name: "Default button" },
       { key: "solid_blue", name: "Solid blue", variables: { button_color: "blue", button_style: "filled" } },
+      { key: "solid_green", name: "Solid green", variables: { button_color: "green", button_style: "filled" } },
+      { key: "amber_outline", name: "Amber outline", variables: { button_color: "amber", button_style: "outline" } },
     ],
-    rules: [abTest("add_to_cart_experiment", "Product hero: default vs solid blue button", ["control", "solid_blue"], ["product_hero_cta_click"])],
+    rules: [
+      {
+        key: "product_hero_button_mab",
+        name: "MAB: product hero button color",
+        type: "multi_armed_bandit",
+        audiences: ["site"],
+        variations: evenSplit(["control", "solid_blue", "solid_green", "amber_outline"]),
+        metrics: ["product_hero_cta_click"],
+      },
+    ],
   },
   {
     // Drives the VariationContainerBlock seeded by scripts/seed-variation-container.ts.
     // cms_flag + cms_route make middleware decide the flag on /savings-offer, so the
     // block picks its variation server-side there.
     key: SAVINGS_OFFER_FLAG,
-    name: "Savings Offer (Variation Container)",
-    description: "A/B/C test of the savings promotion built as a Variation Container block on /savings-offer.",
+    name: "Savings offer page: promotion",
+    description: "The savings promotion on /savings-offer, built as a Variation Container block in the CMS.",
     variables: [
       { key: "cms_flag", type: "boolean", default_value: "false" },
       { key: "cms_route", type: "string", default_value: "" },
     ],
     variations: SAVINGS_OFFER_VARIATIONS.map((v) => ({
       key: v.key,
-      name: v.key === "control" ? "Control" : v.key === "rate_led" ? "Rate-led" : "Bonus-led",
+      name: v.key === "control" ? "Control: standard offer" : v.key === "rate_led" ? "Rate-led offer" : "Bonus-led offer",
       variables: { cms_flag: "true", cms_route: SAVINGS_OFFER_ROUTE },
     })),
     rules: [
       {
-        key: "savings_offer_experiment",
-        name: "Savings offer: control vs rate-led vs bonus-led",
+        key: "savings_offer_abc_test",
+        name: "A/B/C test: savings offer (standard vs rate-led vs bonus-led)",
         type: "a/b",
         audiences: [],
-        variations: { control: 3334, rate_led: 3333, bonus_led: 3333 },
+        variations: evenSplit(SAVINGS_OFFER_VARIATIONS.map((v) => v.key)),
         metrics: ["cta_click", "form_submit"],
       },
     ],
@@ -329,16 +352,16 @@ export const FX_FLAGS: FxFlag[] = [
     // The persona variations of the homepage. Each variation key must match a CMS
     // variation name on the homepage exactly.
     key: "homepage",
-    name: "Homepage Personalization",
-    description: "Personalizes the homepage for each persona via targeted deliveries.",
+    name: "Homepage: persona personalization",
+    description: "Serves the homepage CMS variation for the visitor's persona, through one targeted delivery per persona.",
     variables: [
       { key: "cms_flag", type: "boolean", default_value: "true" },
       { key: "cms_route", type: "string", default_value: "/, /en" },
     ],
-    variations: HOMEPAGE_PERSONAS.map((p) => ({ key: p, name: p.charAt(0).toUpperCase() + p.slice(1) })),
+    variations: HOMEPAGE_PERSONAS.map((p) => ({ key: p, name: `${capitalize(p)} homepage` })),
     rules: HOMEPAGE_PERSONAS.map((p) => ({
-      key: p,
-      name: `${p.charAt(0).toUpperCase() + p.slice(1)} homepage`,
+      key: `homepage_${p}_delivery`,
+      name: `Targeted delivery: ${p} homepage`,
       type: "targeted_delivery" as const,
       audiences: [p, "site"] as AudienceRef[],
       variations: { [p]: 10000 },

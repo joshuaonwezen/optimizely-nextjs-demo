@@ -472,6 +472,9 @@ Since 2026-11-11 the site uses the FX project **SaaS CMS ProServ** (`51528372047
 
 - **Event keys have no prefix** (`cta_click`, not `mb_cta_click`). FX ignores a `trackEvent` key that isn't defined in the project, so a new tracked event needs an `FX_EVENTS` entry and a re-run. The four `mb_*` names left in `src/` are cookie/storage keys, not events - leave them.
 - **A new flag the components decide goes in `FX_FLAGS`**, with its metrics on the rule. Change rules that already exist in the FX console; the script never updates them.
+- **Names are written for the dashboard.** A flag is "<where>: <what>" ("Hero: headline copy"); a rule's name and key start with its type ("A/B/C test: ...", `hero_copy_abc_test`; "MAB: ...", `product_hero_button_mab`; "Targeted delivery: ...", `homepage_business_delivery`); a control variation's name starts with "Control:". The project deliberately shows every rule type: A/B, A/B/C (`hero_copy`, `sticky_offer_bar`, `savings_offer`), one MAB (`add_to_cart`), a feature rollout and targeted deliveries (`banner`, `homepage`).
+- **A metric must be something the variation can cause.** A click on an element only some variations render (rates bar, offer bar, banner) needs its own `data-track-event`, and the seeder's `SHOWN_BY` keeps control visitors from firing it.
+- **The browser client and `exp:seed` need an explicit event processor** (`createBatchEventProcessor()`). SDK 6.4.0 creates none by default and silently drops every impression and conversion; the only trace is `No event processor is provided`, and you see it only with a logger.
 - **The daily `exp:seed` job needs no code change for new experiments or metrics.** It reads the running experiments and their metrics from the datafile (each event lists the experiments it's attached to). Its visitor attributes mirror `buildFxAttributes()`; keep them in step, or the persona/device audiences stop matching.
 
 ### Primary API: `getOptimizelyUser()`

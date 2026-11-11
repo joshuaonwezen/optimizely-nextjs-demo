@@ -10,6 +10,7 @@ import { DEFAULT_SITE_SETTINGS, type SiteSettingsStrings } from "@/lib/siteSetti
 import dynamic from "next/dynamic";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useFxDecision } from "@/lib/optimizely/useFxDecision";
+import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 import { getCurrentLocale, localizeHref } from "@/lib/localeUrl";
 import { readCookie } from "@/lib/tracking/cookies";
 import { DEMO_BUCKETING_ID_COOKIE } from "@/lib/optimizely/cookieNames";
@@ -178,6 +179,8 @@ export default function NavItems({ tree: baseTree, localizedTrees, demoCategorie
       </div>
 
       {showBottomTabs && <BottomTabs currentLocale={currentLocale} />}
+      {searchStyle?.enabled && <FxBucketingEvent flagKey="nav_search_style" />}
+      {mobileNav?.enabled && <FxBucketingEvent flagKey="mobile_nav" />}
     </>
   );
 }

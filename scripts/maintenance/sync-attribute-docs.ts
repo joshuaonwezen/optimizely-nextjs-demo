@@ -16,16 +16,17 @@
  * all. FX tolerates unregistered attributes at decision time; the UI does not offer
  * them.
  *
- * Attributes live per PROJECT, and Web Experimentation is a different project from
- * Feature Experimentation. Run it once per project you build audiences in:
- *   FX  5152837204705280   (OPTIMIZELY_FX_SDK_KEY's project, SaaS CMS ProServ)
+ * Attributes live per PROJECT. These are Web Experimentation attributes
+ * (WxProfileBridge pushes them), so run it against the WX project only:
  *   WX  23338860169   (NEXT_PUBLIC_OPTIMIZELY_WEB_SNIPPET_ID's project)
+ * The FX project receives none of them except persona, and its attribute
+ * descriptions come from scripts/fx-project-data.ts.
  *
  * Dry run by default - it prints the diff and writes nothing. Pass --apply to write.
  *
  * Run:
- *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=5152837204705280
- *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=5152837204705280 --apply
+ *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=23338860169
+ *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=23338860169 --apply
  */
 
 import { config } from "dotenv";
@@ -43,7 +44,8 @@ const APPLY = args.includes("--apply");
 // reviewing the generated vocabulary without holding an API token.
 const PRINT_ONLY = args.includes("--print");
 const projectArg = args.find((a) => a.startsWith("--project="));
-const PROJECT_ID = projectArg?.slice("--project=".length) || process.env.OPTIMIZELY_FX_PROJECT_ID;
+// No fallback to OPTIMIZELY_FX_PROJECT_ID: that is the FX project, which must not get these attributes.
+const PROJECT_ID = projectArg?.slice("--project=".length);
 
 if (!TOKEN && !PRINT_ONLY) {
   console.error(
@@ -54,7 +56,7 @@ if (!TOKEN && !PRINT_ONLY) {
   process.exit(1);
 }
 if (!PROJECT_ID && !PRINT_ONLY) {
-  console.error("Missing --project=<id> (or OPTIMIZELY_FX_PROJECT_ID).");
+  console.error("Missing --project=<id> (the Web Experimentation project).");
   process.exit(1);
 }
 

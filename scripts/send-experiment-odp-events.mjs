@@ -51,6 +51,7 @@
 
 import { config } from "dotenv";
 import {
+  createBatchEventProcessor,
   createInstance,
   createStaticProjectConfigManager,
   createLogger,
@@ -79,7 +80,7 @@ const SEED_ODP = ONLY !== "fx";
 const BATCH_DELAY_MS = 60;
 // The site hostname. It is passed as the FX `hostname` attribute and used in the
 // ODP page URLs. It MUST match the audience that gates the live experiments
-// (the "Personal CMS site" audience keys on hostname containing this value) - send
+// (the "Main demo site" audience keys on hostname containing this value) - send
 // any other host and every user fails the audience and buckets to "off".
 const HOSTNAME = "opti.joshuaonwezen.dev";
 const KNOWN_CUSTOMER_RATE = 0.2; // ~20% of visitors are identified as known customers
@@ -145,6 +146,17 @@ const EVENT_PROFILES = {
   feature_viewed: { rate: 0.6, tags: () => { const component = pick(["HeroBlock", "CallToActionBlock", "ProductHeroBlock", "CampaignBannerBlock", "SpotlightBlock"]); return { component, label: component, depth: pick([50, 100]) }; } },
   content_viewed: { rate: 0.25, tags: (s) => ({ categories: s.category, primary_category: s.category }) },
   segment_qualified: { rate: 0.1, tags: (s) => ({ segment: s.persona ?? "general" }) },
+  // Clicks on something only some variations render (see SHOWN_BY).
+  banner_click: { rate: 0.04, tags: (s, served) => ({ variation: served.get("banner") }) },
+  rates_bar_click: { rate: 0.12, tags: () => ({ product: "savings", apy: "4.75%" }) },
+  offer_bar_click: { rate: 0.1, tags: (s, served) => ({ offer: served.get("sticky_offer_bar"), label: served.get("sticky_offer_bar") === "savings_rate" ? "Open an Easy Saver" : "Learn more" }) },
+};
+// Events that can only happen when the visitor was served a variation that renders
+// the element, so a control visitor never "clicks" a bar they were not shown.
+const SHOWN_BY = {
+  banner_click: { flag: "banner", shown: (v) => !!v && v !== "off" },
+  rates_bar_click: { flag: "rates_bar", shown: (v) => v === "treatment" },
+  offer_bar_click: { flag: "sticky_offer_bar", shown: (v) => !!v && v !== "off" && v !== "control" },
 };
 const DEFAULT_METRIC_RATE = 0.08;
 // Max probability after lifts, so stacked winners never make an event near-certain.
@@ -207,11 +219,13 @@ async function buildFx() {
   const datafileText = await res.text();
   const datafile = JSON.parse(datafileText);
   const eventKeys = (datafile.events ?? []).map((e) => e.key);
-  // Default (batch) event processor: the bulk loop enqueues thousands of
-  // impression/conversion events; batching flushes them efficiently on close().
+  // The SDK has no event processor unless one is passed, and without it every
+  // impression and conversion is silently dropped. The bulk loop enqueues tens of
+  // thousands of events, so batch them; close() flushes the rest.
   const client = createInstance({
     projectConfigManager: createStaticProjectConfigManager({ datafile: datafileText }),
     logger: createLogger({ level: ERROR }),
+    eventProcessor: createBatchEventProcessor({ batchSize: 100, flushInterval: 2000 }),
   });
   if (!client) {
     console.error("Failed to create the FX SDK client from the datafile.");
@@ -294,19 +308,20 @@ async function preflight(plans) {
 // ── One visitor's session ──
 
 // The events a session fires, as [key, tags] pairs. `lift(key)` is the combined
-// experiment lift for that event; `bannerVariation` is the banner the visitor was
-// served, if any (banner_click only happens when one is on screen).
-function sessionEvents(section, eventKeys, metricKeys, lift, bannerVariation) {
+// experiment lift for that event; `served` maps flag key -> the variation the
+// visitor was served.
+function sessionEvents(section, eventKeys, metricKeys, lift, served) {
   const path = section.path || "/";
   const has = (key) => eventKeys.has(key);
   const p = (key, base) => Math.min((base ?? EVENT_PROFILES[key]?.rate ?? DEFAULT_METRIC_RATE) * lift(key), RATE_CAP);
   const events = [];
 
+  const visible = (key) => !SHOWN_BY[key] || SHOWN_BY[key].shown(served.get(SHOWN_BY[key].flag));
   for (const [key, profile] of Object.entries(EVENT_PROFILES)) {
-    if (has(key) && chance(p(key))) events.push([key, profile.tags(section)]);
+    if (has(key) && visible(key) && chance(p(key))) events.push([key, profile.tags(section, served)]);
   }
   for (const key of metricKeys) {
-    if (!EVENT_PROFILES[key] && !/^(scroll_depth|time_on_page|form_|customer_identified|banner_click)/.test(key) && chance(p(key))) {
+    if (!EVENT_PROFILES[key] && !/^(scroll_depth|time_on_page|form_|customer_identified)/.test(key) && chance(p(key))) {
       events.push([key, {}]);
     }
   }
@@ -337,9 +352,6 @@ function sessionEvents(section, eventKeys, metricKeys, lift, bannerVariation) {
     }
   }
 
-  if (bannerVariation && has("banner_click") && chance(p("banner_click", 0.04))) {
-    events.push(["banner_click", { variation: bannerVariation }]);
-  }
   return events;
 }
 
@@ -398,7 +410,6 @@ async function main() {
     // play out a session whose metric rates are lifted for winning variations.
     // Attributes mirror buildFxAttributes() in src/lib/optimizely/fxAttributes.ts.
     const decided = [];
-    let bannerVariation = null;
     let ctx = null;
     if (fx) {
       ctx = fx.client.createUserContext(visitorId, {
@@ -414,12 +425,12 @@ async function main() {
           : ctx?.decide(plan.flagKey);
         const variation = d?.variationKey ?? "off";
         decided.push([plan, variation]);
-        if (plan.flagKey === "banner" && d?.enabled) bannerVariation = variation;
       }
     }
     const lift = (key) =>
       decided.reduce((m, [plan, variation]) => (plan.winner === variation && plan.metrics.includes(key) ? m * plan.lift : m), 1);
-    const fired = sessionEvents(section, eventKeys, metricKeys, lift, bannerVariation);
+    const served = new Map(decided.map(([plan, variation]) => [plan.flagKey, variation]));
+    const fired = sessionEvents(section, eventKeys, metricKeys, lift, served);
 
     if (ctx) {
       for (const [key, tags] of fired) {

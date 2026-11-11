@@ -1,4 +1,4 @@
-import { createInstance, createStaticProjectConfigManager } from "@optimizely/optimizely-sdk";
+import { createBatchEventProcessor, createInstance, createStaticProjectConfigManager } from "@optimizely/optimizely-sdk";
 
 const DATAFILE_URL = `https://cdn.optimizely.com/datafiles/${process.env.NEXT_PUBLIC_OPTIMIZELY_FX_SDK_KEY}.json`;
 
@@ -17,6 +17,10 @@ export function getOptimizelyBrowserClient(): Promise<OptimizelyClient | null> {
       .then((datafile) =>
         createInstance({
           projectConfigManager: createStaticProjectConfigManager({ datafile }),
+          // Required: without an event processor the SDK silently drops every
+          // impression and trackEvent() ("No event processor is provided").
+          // The browser default flushes every second and uses sendBeacon on close.
+          eventProcessor: createBatchEventProcessor(),
         })
       )
       .catch(() => null);

@@ -50,6 +50,8 @@ export function StickyOfferBarClient() {
         {linkText && linkUrl && (
           <Link
             href={linkUrl}
+            data-track-event="offer_bar_click"
+            data-track-tags={JSON.stringify({ offer: decision.variationKey ?? "", label: linkText })}
             className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold bg-surface-lowest text-brand hover:opacity-90 transition-opacity"
           >
             {linkText}
