@@ -125,10 +125,11 @@ export async function middleware(request: NextRequest) {
   try {
     const rules = await loadRedirectRules(request.nextUrl.origin);
     const hit = rules.length ? matchRedirect(pathname, rules) : null;
-    if (hit) {
-      const dest = /^https?:\/\//i.test(hit.toPath)
-        ? new URL(hit.toPath)
-        : new URL(hit.toPath, request.nextUrl.origin);
+    const absolute = hit ? /^https?:\/\//i.test(hit.toPath) : false;
+    const dest = hit ? (absolute ? new URL(hit.toPath) : new URL(hit.toPath, request.nextUrl.origin)) : null;
+    // A relative destination must stay on this site; a path a browser reads as another
+    // host (e.g. "/\evil.example") is ignored rather than followed.
+    if (hit && dest && (absolute || dest.origin === request.nextUrl.origin)) {
       if (!dest.search && request.nextUrl.search) dest.search = request.nextUrl.search;
       const redirect = NextResponse.redirect(dest, hit.status);
       appendVisitorCookie(redirect.headers, userId, host);

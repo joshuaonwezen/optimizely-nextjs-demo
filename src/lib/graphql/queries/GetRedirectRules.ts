@@ -45,14 +45,23 @@ const GET_REDIRECT_RULES_QUERY = /* GraphQL */ `
   }
 `;
 
+const UNSAFE_PATH_CHARS = /[\\\s\u0000-\u001f\u007f]/;
+
 // Leading slash, collapse repeated slashes, drop the trailing slash (except
-// root). Absolute http(s) destinations are left untouched.
+// root). Absolute https destinations are left untouched. Anything a browser could
+// resolve off-site is dropped ("" is filtered out below): a backslash, whitespace or a
+// control character turns "/\evil.example" or "/<TAB>/evil.example" into another
+// host once it goes through new URL(path, origin).
 // This and the filter/sort in getRedirectRules() are mirrored by the Redirects CMS UI
 // extension (../redirect-manager-cms-extension, src/shared/redirects.ts) - change both together.
 function normalizeRedirectPath(input: string): string {
   let s = (input ?? "").trim();
   if (!s) return "";
-  if (/^https?:\/\//i.test(s)) return s;
+  if (/^https?:\/\//i.test(s)) {
+    if (!/^https:\/\//i.test(s) || UNSAFE_PATH_CHARS.test(s)) return "";
+    return s;
+  }
+  if (UNSAFE_PATH_CHARS.test(s)) return "";
   if (!s.startsWith("/")) s = "/" + s;
   s = s.replace(/\/{2,}/g, "/");
   if (s.length > 1) s = s.replace(/\/+$/, "");
