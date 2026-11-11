@@ -258,11 +258,11 @@ const EXTENSIONS = [
     repo: "fx-experiments-cms-extension",
     surface: "Sidebar + view",
     talksTo: "FX Flags API, CMS REST API",
-    settings: "FX token with write access and the site's SDK key; a CMS API client (write access to end tests); optional site convention",
+    settings: "FX token with write access and the site's SDK key; a CMS API client (write access to end tests)",
     perInstance: "-",
     reuse: "convention",
-    expects: "A front end that serves CMS variations by FX decision: the CMS variation name is the FX variation key, a boolean marker and a route flag variable (cms_flag and cms_route here) say where, and the original page counts as the control arm.",
-    elsewhere: "Build that into the front end (the Feature Experimentation demo shows this site's version), then set the variable names, control key, reserved names and URL style in the app's Site convention settings. The repo's docs/site-contract.md lists the rest.",
+    expects: "A front end that serves CMS variations by FX decision: the CMS variation name is the FX variation key, the cms_flag and cms_route flag variables say where, and the original page counts as the control arm.",
+    elsewhere: "Build that into the front end (the Feature Experimentation demo shows this site's version); the repo's docs/site-contract.md lists every rule. The extension needs only credentials, and a site with different variable names changes one object in its code.",
   },
   {
     name: "Share preview",
@@ -420,7 +420,7 @@ const FX_FACTS = [
   },
   {
     title: "Settings",
-    body: "An FX personal access token with write access to flags and events, the site's SDK key and optional default audiences. A CMS API client, with write access for ending tests, and a switch that allows deleting variations. A Site convention section for sites whose variable names, control key, reserved names or URL style differ from this one.",
+    body: "Credentials only: an FX personal access token with write access to flags and events, the site's SDK key, a CMS API client (write access for ending tests) and a switch that allows deleting variations. Nothing about the site is configured - the convention is fixed in the extension, and URL forms are worked out per page.",
   },
 ];
 
