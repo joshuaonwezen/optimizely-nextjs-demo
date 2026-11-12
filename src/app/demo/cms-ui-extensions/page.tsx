@@ -348,6 +348,18 @@ const EXTENSIONS = [
     expects: "Any SaaS CMS instance: it only reads the CMS REST API and Graph.",
     elsewhere: "Nothing to change: fill in the Graph key and CMS client.",
   },
+  {
+    name: "Publish children",
+    anchor: "publish-children",
+    repo: "publish-children-cms-extension",
+    surface: "Sidebar",
+    talksTo: "CMS REST API (publishes)",
+    settings: "A CMS API client with publish rights",
+    perInstance: "-",
+    reuse: "plug",
+    expects: "Any SaaS CMS instance: it only reads and publishes through the CMS REST API.",
+    elsewhere: "Nothing to change: fill in a CMS client that may publish content.",
+  },
 ];
 
 const REUSE_LABELS: Record<string, string> = {
@@ -921,6 +933,56 @@ const TRANSLATION_FACTS = [
   },
 ];
 
+const PUBLISH_STATE_SNIPPET = `/** One child's state in one language, from its versions there. */
+export function describeChild(item: CmsItem, {base, variations}: LocaleVersions): ChildRow {
+  const newest = base[0];                                  // base versions only, newest first
+  const published = base.find((v) => v.status === 'published');
+  let state: ChildRow['state'];
+  if (!newest) state = 'missing';
+  else if (newest === published || newest.status === 'previous') state = 'published';
+  else if (PENDING.has(newest.status)) state = published ? 'changes' : 'new';   // draft or ready
+  else state = 'other';                                    // inReview, scheduled... left alone
+  // ...
+}`;
+
+const PUBLISH_CHECK_SNIPPET = `/** Re-checks one pick against the CMS as it is now; null when it may be published. */
+async function checkPick(cms: CmsReader, parentKey: string, locale: string, pick: PublishPick) {
+  if (pick.key === parentKey) return refused(pick, 'not_a_child', 'This is the open item itself, ...');
+  const item = await cms.getItem(pick.key);
+  if (!item) return refused(pick, 'not_found', 'This item no longer exists.');
+  if (normalizeKey(item.container) !== parentKey) return refused(pick, 'not_a_child', 'Not a child item ...');
+
+  const versions = await localeVersions(cms, pick.key, locale);
+  if (versions.variations.some((v) => v.version === pick.version)) {
+    return refused(pick, 'variation', 'That is a variation version. Publish variations in Visual Builder.');
+  }
+  const row = describeChild(item, versions);
+  // ... published, missing and other are refused with their reason
+  if (row.version !== pick.version) {
+    return refused(pick, 'stale_version', \`It changed after the list loaded (its newest version is now \${row.version}). ...\`);
+  }
+  return null;
+}`;
+
+const PUBLISH_FACTS = [
+  {
+    title: "Direct children, one language",
+    body: "GET /v1/content/{key}/items lists the open item's children (the CMS leaves system folders out), and each child's versions in the chosen language come from the locale-scoped list, never the global /versions list. Unpublished changes and not-yet-live drafts can be ticked; Select all changes never ticks a first publish.",
+  },
+  {
+    title: "Checked again at the moment of publishing",
+    body: "The list can be minutes old, so every pick is re-read first: still a child of the open item (its container), still the newest base draft, and not a variation version. Anything that changed is skipped with the reason. One failure never stops the batch, except a client without publish rights, which would fail every item.",
+  },
+  {
+    title: "Only :publish, never a new version",
+    body: "The backend never creates, patches or deletes: it publishes drafts that already exist, so the blank-properties trap of POST /versions and the variation overwrite can't happen. Variation drafts are counted on the row and left to Visual Builder.",
+  },
+  {
+    title: "The CMS reads lag behind a publish",
+    body: "Measured on joshCMS: straight after :publish, reading the version back or listing the language can still say draft for a moment. The status is read back up to five times over five seconds, a publish still showing as a draft is reported as accepted rather than as sent for approval, and the sidebar reloads its list two seconds later.",
+  },
+];
+
 const TESTING_FACTS = [
   {
     title: "yarn validate in every repo",
@@ -928,7 +990,7 @@ const TESTING_FACTS = [
   },
   {
     title: "Live suites against the real APIs",
-    body: "Every sidebar or view extension has a tests/live suite behind an env flag (FX_LIVE, PREVIEW_LIVE, PERF_LIVE, LINKS_LIVE, REDIRECTS_LIVE, TRANSLATIONS_LIVE). Only the FX one writes: it creates throwaway cms_ext_smoke_* and cms_ext_e2e_* flags and archives them afterwards. The others only read - the Redirects writes are tried by hand, on a throwaway rule.",
+    body: "Every sidebar or view extension has a tests/live suite behind an env flag (FX_LIVE, PREVIEW_LIVE, PERF_LIVE, LINKS_LIVE, REDIRECTS_LIVE, TRANSLATIONS_LIVE, PUBLISH_CHILDREN_LIVE). Only the FX one writes: it creates throwaway cms_ext_smoke_* and cms_ext_e2e_* flags and archives them afterwards. The others only read - the Redirects writes are tried by hand, on a throwaway rule, and Publish children was tried on throwaway pages, deleted afterwards.",
   },
   {
     title: "Held to the site's own code",
@@ -1747,6 +1809,30 @@ export default function CmsUiExtensionsDemoPage() {
           />
         </section>
 
+        <section id="publish-children">
+          <DemoSectionHeading id="publish-children">Example: Publish children</DemoSectionHeading>
+          <p className="text-sm text-on-surface-variant mb-3 max-w-3xl">
+            A <strong>Publish children</strong> sidebar lists the open item&apos;s direct child items in one language -
+            unpublished changes, not yet live, published - and publishes the drafts an editor ticks in one go, instead
+            of opening each one. Publishes are made as the app&apos;s API client, so the CMS history shows that client
+            and an approval workflow still applies. It uses the same CMS REST API as the{" "}
+            <Link href="/demo/management-api" className="text-brand hover:underline">
+              Management API
+            </Link>{" "}
+            demo.
+          </p>
+          <SourceLine repo="publish-children-cms-extension" />
+
+          <FactGrid facts={PUBLISH_FACTS} />
+
+          <Excerpts
+            items={[
+              { code: PUBLISH_STATE_SNIPPET, language: "ts", label: "src/backend/lib/children.ts (excerpt)" },
+              { code: PUBLISH_CHECK_SNIPPET, language: "ts", label: "src/backend/lib/children.ts (excerpt)" },
+            ]}
+          />
+        </section>
+
         <section id="testing">
           <DemoSectionHeading id="testing">How the examples are tested</DemoSectionHeading>
           <FactGrid facts={TESTING_FACTS} />
@@ -1769,7 +1855,7 @@ export default function CmsUiExtensionsDemoPage() {
               {
                 href: "/demo/management-api",
                 title: "Management API",
-                body: "The CMS REST API an extension's backend uses to read versions, variations and properties",
+                body: "The CMS REST API an extension's backend uses to read versions, variations and properties, and to publish",
               },
               {
                 href: "/demo/redirects",
