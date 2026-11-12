@@ -62,13 +62,19 @@ const nextConfig: NextConfig = {
    * filter param is rewritten to the dynamic filtered/ twin. A page that awaits
    * searchParams renders per request for every URL, so the CDN never caches it.
    * beforeFiles, because afterFiles rewrites never fire on a path that already
-   * matches a page. The query string passes through to the destination.
+   * matches a page.
+   *
+   * The `value` is load-bearing. A key-only `has` makes Vercel capture the param
+   * and append it to the destination as `?category=$category`, a single value
+   * that replaces the original, so ?category=a&category=b reached the page as
+   * just b (multi-select broke on Vercel only; next dev/start were fine). A value
+   * with no named group captures nothing, and the query passes through intact.
    */
   async rewrites() {
     const toFiltered = (path: string, params: string[]) =>
       params.map((key) => ({
         source: path,
-        has: [{ type: "query" as const, key }],
+        has: [{ type: "query" as const, key, value: "(?:.*)" }],
         destination: `${path}/filtered`,
       }));
     return {
