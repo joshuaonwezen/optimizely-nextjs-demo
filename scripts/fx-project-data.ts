@@ -11,6 +11,10 @@ import { FLAG_KEY as SAVINGS_OFFER_FLAG, VARIATIONS as SAVINGS_OFFER_VARIATIONS 
 
 export type EventCategory = "convert" | "sign_up" | "other";
 
+// Only events a test could use as a metric. The site also fires analytics-only events
+// (feature_viewed, segment_qualified, customer_identified, demo_page_view,
+// audience_switch, wx_mode_switch) for ODP and GA4; they are archived in FX, which
+// drops their trackEvent() calls silently, so the metric picker stays short.
 export const FX_EVENTS = [
   // Conversions
   { key: "cta_click", name: "CTA Click", category: "convert", description: "Click on a Call To Action block button. Tags: label, variant." },
@@ -24,7 +28,6 @@ export const FX_EVENTS = [
   { key: "rates_bar_click", name: "Rates Bar Click", category: "convert", description: "Click on the rates bar's open-a-savings-account link. Tags: product, apy." },
   { key: "offer_bar_click", name: "Offer Bar Click", category: "convert", description: "Click on the sticky offer bar's button. Tags: offer, label." },
   { key: "form_submit", name: "Form Submitted", category: "sign_up", description: "A contact or native Optimizely form was submitted. Tags: form, fields, status." },
-  { key: "customer_identified", name: "Customer Identified", category: "sign_up", description: "A form submission gave us the visitor's email. Tags: has_email." },
   // Engagement
   { key: "form_start", name: "Form Started", category: "other", description: "First focus on a form field. Tags: form." },
   { key: "form_abandon", name: "Form Abandoned", category: "other", description: "Left the page or tab after starting a form without submitting. Tags: form." },
@@ -33,14 +36,7 @@ export const FX_EVENTS = [
   { key: "faq_expand", name: "FAQ Expanded", category: "other", description: "An FAQ question was opened. Tags: label." },
   { key: "scroll_depth", name: "Scroll Depth", category: "other", description: "Scrolled past 25, 50, 75 or 100% of a page. Tags: depth, path." },
   { key: "time_on_page", name: "Time on Page", category: "other", description: "Stayed 30, 60 or 180 seconds on a page. Tags: seconds, path." },
-  { key: "feature_viewed", name: "Feature Viewed", category: "other", description: "A tracked block was 50% or 100% in view. Tags: component, label, depth." },
   { key: "content_viewed", name: "Content Viewed", category: "other", description: "Viewed a page with CMS categories. Tags: categories, primary_category." },
-  { key: "segment_qualified", name: "Segment Qualified", category: "other", description: "Browsing moved the visitor into a different segment. Tags: segment." },
-  // Demo pages and the demo Settings panel
-  { key: "demo_page_view", name: "Demo Page View", category: "other", description: "Visited a /demo page. Tags: path." },
-  { key: "demo_cta_click", name: "Demo CTA Click", category: "convert", description: "The button on /demo/event-tracking. Tags: source, clickNumber." },
-  { key: "audience_switch", name: "Audience Switched", category: "other", description: "Changed audience in the demo Settings panel. Tags: from, to." },
-  { key: "wx_mode_switch", name: "WX Mode Switched", category: "other", description: "Changed the Web Experimentation delivery mode in the demo Settings panel. Tags: mode." },
 ] as const satisfies ReadonlyArray<{ key: string; name: string; category: EventCategory; description: string }>;
 
 export type EventKey = (typeof FX_EVENTS)[number]["key"];

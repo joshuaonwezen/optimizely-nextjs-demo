@@ -32,7 +32,7 @@ export default function ConversionDemo() {
           type="button"
           onClick={() => {
             setClicks((c) => c + 1);
-            void trackEvent("demo_cta_click", { source: "demo-page", clickNumber: clicks + 1 });
+            void trackEvent("cta_click", { source: "demo-page", clickNumber: clicks + 1 });
           }}
           className="bg-gradient-brand text-on-brand text-sm font-semibold px-6 py-3 rounded-xl hover-lift transition-all"
         >
@@ -51,9 +51,8 @@ export default function ConversionDemo() {
 
       <div>
         <p className="text-xs font-medium text-on-surface-variant mb-2">
-          Live dispatch log - every trackEvent() call on this page, including the automatic{" "}
-          <code className="bg-surface px-1 rounded font-mono">mb_*</code> events fired by AutoTracker
-          as you scroll and navigate.
+          Live dispatch log - every trackEvent() call on this page, including the automatic
+          events AutoTracker fires as you scroll and navigate.
         </p>
         {log.length === 0 ? (
           <p className="text-xs text-on-surface-variant italic">

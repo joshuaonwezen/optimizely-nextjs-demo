@@ -23,7 +23,8 @@
  *         scripts/seed-wx-project.ts); an experiment counts as running when the public
  *         snippet holds it, since the project excludes paused ones from the snippet.
  *   ODP - pageviews to business/personal sections (what realtime audiences key
- *         on), the same events the visitor fired in FX, and - for a minority of
+ *         on), every event the visitor fired (the FX ones plus the analytics-only
+ *         ones FX does not define, such as customer_identified), and - for a minority of
  *         visitors - a known-customer identify so the business/personal audiences
  *         and homepage personalization populate.
  *
@@ -520,8 +521,8 @@ function odpEventsForVisitor(visitorId, section, isKnown, email, fired) {
     });
   }
 
-  // The events this visitor fired in FX, mirrored into ODP so the funnel lines up
-  // across the two systems.
+  // The events this visitor fired, mirrored into ODP so the funnel lines up across
+  // the two systems (plus the analytics-only events FX does not define).
   for (const [key, tags] of fired) {
     events.push({ type: "event", action: key, identifiers, data: { ...tags, persona } });
   }
@@ -533,8 +534,11 @@ async function main() {
 
   const fx = SEED_FX ? await buildFx() : null;
   const plans = fx?.plans ?? [];
-  // Without FX there is no datafile, so the ODP-only run uses the profiled events.
-  const eventKeys = new Set(fx?.eventKeys ?? [...Object.keys(EVENT_PROFILES), "scroll_depth", "time_on_page", "form_start", "form_submit", "form_abandon", "customer_identified"]);
+  // A session fires every profiled event, like the site does. Only the keys the FX
+  // datafile defines go to FX; the analytics-only ones (feature_viewed,
+  // segment_qualified, customer_identified) are archived there and go to ODP only.
+  const fxKeys = new Set(fx?.eventKeys ?? []);
+  const eventKeys = new Set([...fxKeys, ...Object.keys(EVENT_PROFILES), "scroll_depth", "time_on_page", "form_start", "form_submit", "form_abandon", "customer_identified"]);
   const wx = SEED_WX ? await loadWx() : null;
   const wxPlans = wx?.plans ?? [];
   const wxCampaigns = wx?.campaigns ?? [];
@@ -637,6 +641,7 @@ async function main() {
 
     if (ctx) {
       for (const [key, tags] of fired) {
+        if (!fxKeys.has(key)) continue;
         if (!DRY_RUN) ctx.trackEvent(key, { ...tags, persona: section.persona ?? "general" });
         fxEvents++;
       }
