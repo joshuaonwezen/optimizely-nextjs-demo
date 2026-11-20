@@ -62,7 +62,9 @@ const GET_ARTICLES_QUERY = /* GraphQL */ `
       }
       facets @include(if: $withFacets) {
         _itemMetadata {
-          categories(orderType: COUNT, orderBy: DESC, limit: 30) { name count }
+          # Up to the whole taxonomy (GetTaxonomyTerms reads 100): a bucket cut
+          # off here goes missing from every parent's rolled-up count.
+          categories(orderType: COUNT, orderBy: DESC, limit: 100) { name count }
         }
       }
     }

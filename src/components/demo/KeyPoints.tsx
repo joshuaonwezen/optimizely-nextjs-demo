@@ -1,11 +1,26 @@
-export default function KeyPoints({ points }: { points: React.ReactNode[] }) {
+export default function KeyPoints({
+  points,
+  inline = false,
+}: {
+  points: React.ReactNode[];
+  // A callout inside another section. It gets no id, so it stays out of the
+  // table of contents, which keys its entries on section ids: two key-points
+  // sections on one page would collide.
+  inline?: boolean;
+}) {
   return (
-    <section data-component="KeyPoints" id="key-points" className="bg-surface-lowest border border-ghost-border rounded-2xl p-8">
+    <section
+      data-component="KeyPoints"
+      id={inline ? undefined : "key-points"}
+      className="bg-surface-lowest border border-ghost-border rounded-2xl p-8"
+    >
       <h2 className="font-display text-lg font-bold text-on-surface mb-4">
         Key Things to Know
-        <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">
-          #
-        </a>
+        {!inline && (
+          <a href="#key-points" className="ml-1 text-brand/30 hover:text-brand transition-colors font-normal text-base">
+            #
+          </a>
+        )}
       </h2>
       <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
         {points.map((point, i) => (

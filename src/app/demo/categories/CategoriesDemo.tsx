@@ -6,10 +6,12 @@ import { cacheLife, cacheTag } from "next/cache";
 import { CACHE_TTL } from "@/lib/optimizely/client";
 import { graphClient } from "@/lib/optimizely/graphClient";
 import { getTaxonomyTerms } from "@/lib/graphql/queries/GetTaxonomyTerms";
+import { getCategoryTotals } from "@/lib/graphql/queries/GetCategoryTotals";
 import {
   buildTermTree,
   expandToUris,
   flattenTree,
+  overlappingBranches,
   rollUpCounts,
   termLabel,
   type TermNode,
@@ -20,6 +22,7 @@ import SectionAnchor from "@/components/demo/SectionAnchor";
 import LiveDemoShell from "@/components/demo/LiveDemoShell";
 import KeyPoints from "@/components/demo/KeyPoints";
 import SourcePanel from "@/components/demo/SourcePanel";
+import FacetList from "./FacetList";
 
 export const metadata: Metadata = {
   title: "Categories & Taxonomy",
@@ -31,6 +34,10 @@ const taxonomyLibTs = fs.readFileSync(
 );
 const taxonomyQueryTs = fs.readFileSync(
   path.join(process.cwd(), "src/lib/graphql/queries/GetTaxonomyTerms.ts"),
+  "utf8"
+);
+const categoryTotalsTs = fs.readFileSync(
+  path.join(process.cwd(), "src/lib/graphql/queries/GetCategoryTotals.ts"),
   "utf8"
 );
 const taxonomyClientTs = fs.readFileSync(
@@ -64,7 +71,9 @@ const BROWSE_QUERY = /* GraphQL */ `
       }
       facets {
         _itemMetadata {
-          categories(orderType: COUNT, orderBy: DESC, limit: 40) { name count }
+          # Up to the whole taxonomy (GetTaxonomyTerms reads 100): a bucket cut
+          # off here goes missing from every parent's rolled-up count.
+          categories(orderType: COUNT, orderBy: DESC, limit: 100) { name count }
         }
       }
     }
@@ -172,7 +181,7 @@ query CategoryFacets {
     total
     facets {
       _itemMetadata {
-        categories(orderType: COUNT, orderBy: DESC, limit: 40) {
+        categories(orderType: COUNT, orderBy: DESC, limit: 100) {
           name    # "cms://taxonomy/categories/mortgages"
           count   # 11
         }
@@ -348,9 +357,12 @@ export default async function CategoriesDemoPage({
   // Facet counts come from the UNFILTERED result so buckets do not vanish as
   // soon as a filter is applied. Rolling them up through the tree is what lets
   // grouping nodes appear at all: with leaf-only tagging, Graph never returns a
-  // bucket for a parent like "Loans and Overdrafts".
+  // bucket for a parent like "Loans and Overdrafts". Where two terms in a branch
+  // are in use, the sum would count an item carrying both twice, so those
+  // branches take Graph's distinct total instead.
   const buckets = unfiltered?._Content?.facets?._itemMetadata?.categories ?? [];
-  const rows = rollUpCounts(terms, buckets).filter((row) => row.totalCount > 0);
+  const totals = await getCategoryTotals("content", overlappingBranches(terms, buckets));
+  const rows = rollUpCounts(terms, buckets, totals).filter((row) => row.totalCount > 0);
   const hasTaxonomy = terms.length > 0;
 
   return (
@@ -384,6 +396,7 @@ export default async function CategoriesDemoPage({
             content type can point at.
           </p>
           <KeyPoints
+            inline
             points={[
               <>
                 <strong>Cross-type.</strong> One category applies to articles, case studies and
@@ -475,7 +488,7 @@ export default async function CategoriesDemoPage({
             single page type, so one filter returns articles, case studies and marketing pages
             together. Counts come from the unfiltered result so buckets stay visible after you
             narrow, and they are rolled up through the tree, so a parent shows everything beneath
-            it. Pick a grouping row like <strong>Borrowing</strong> and you get every mortgage,
+            it, each item counted once. Pick a grouping row like <strong>Borrowing</strong> and you get every mortgage,
             loan and credit card page at once.
           </p>
           <CodeBlock code={FACETS_SNIPPET} label="Facet counts across every type" language="graphql" />
@@ -493,6 +506,7 @@ export default async function CategoriesDemoPage({
                     href="?#browse"
                     rel="nofollow"
                     prefetch={false}
+                    scroll={false}
                     className="text-xs text-brand/60 hover:text-brand transition-colors"
                   >
                     Clear filters
@@ -506,7 +520,7 @@ export default async function CategoriesDemoPage({
                     <p className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-3">
                       Category
                     </p>
-                    <ul className="space-y-0.5 max-h-[30rem] overflow-y-auto pr-1">
+                    <FacetList className="space-y-0.5 max-h-[30rem] overflow-y-auto pr-1">
                       {rows.map((row) => {
                         const isActive = active.includes(row.key);
                         // A grouping node cannot be assigned to content, but it
@@ -517,11 +531,13 @@ export default async function CategoriesDemoPage({
                           <li key={row.key}>
                             {/* nofollow + no prefetch: every row is a new
                                 filter combination (see DEMO_PATH in
-                                robots.ts). */}
+                                robots.ts). scroll={false} keeps the page in
+                                place; #browse only applies to a full load. */}
                             <Link
                               href={buildHref(active, row.key)}
                               rel="nofollow"
                               prefetch={false}
+                              scroll={false}
                               style={{ paddingLeft: `${8 + row.depth * 14}px` }}
                               className={`flex items-center justify-between pr-3 py-1.5 rounded-lg text-xs transition-colors ${
                                 isActive
@@ -543,7 +559,7 @@ export default async function CategoriesDemoPage({
                           </li>
                         );
                       })}
-                    </ul>
+                    </FacetList>
                   </nav>
 
                   <div>
@@ -612,6 +628,7 @@ export default async function CategoriesDemoPage({
           />
           <div className="mt-6">
             <KeyPoints
+              inline
               points={[
                 <>
                   <strong>The alternative is denormalizing.</strong> You could tag every page with
@@ -624,7 +641,10 @@ export default async function CategoriesDemoPage({
                   <strong>Grouping nodes never appear in facets.</strong> Nothing can be tagged with
                   Borrowing, so Graph returns no bucket for it. The sidebar sums each term with its
                   descendants locally, which is what lets it render a tree instead of a flat list of
-                  leaves.
+                  leaves. A sum counts an item once per tag, though, so where two terms in one branch
+                  are in use, that parent&apos;s count comes from Graph instead: one query with an
+                  aliased <code className="bg-surface-low px-1 rounded font-mono text-xs">total</code>{" "}
+                  per branch.
                 </>,
                 <>
                   <strong>Cash ISA is in the tree but not in the facets.</strong> It is a real,
@@ -699,6 +719,7 @@ query PublicTerms {
           <CodeBlock code={REST_API_SNIPPET} label="Taxonomy REST API" language="bash" />
           <div className="mt-6">
             <KeyPoints
+              inline
               points={[
                 <>
                   <strong>Keys cannot contain hyphens.</strong> The pattern is{" "}
@@ -741,6 +762,11 @@ query PublicTerms {
               label: "GetTaxonomyTerms.ts",
               path: "src/lib/graphql/queries/GetTaxonomyTerms.ts",
               content: taxonomyQueryTs,
+            },
+            {
+              label: "GetCategoryTotals.ts",
+              path: "src/lib/graphql/queries/GetCategoryTotals.ts",
+              content: categoryTotalsTs,
             },
             { label: "_taxonomy.ts", path: "scripts/_taxonomy.ts", content: taxonomyClientTs },
             {

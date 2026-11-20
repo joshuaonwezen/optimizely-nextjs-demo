@@ -157,24 +157,50 @@ export interface RolledUpTerm extends TermNode {
  * Graph returns one bucket per term actually in use, which with leaf-only
  * tagging means grouping nodes never appear. Rolling up locally is what lets a
  * sidebar render the tree rather than a flat list of leaves.
+ *
+ * The sum counts an item once per tag, so an item tagged with two terms in one
+ * branch counts twice for that branch's parent. Pass `totals` (from
+ * getCategoryTotals() over overlappingBranches()) to replace those sums with
+ * Graph's own count of distinct items.
  */
 export function rollUpCounts(
   terms: TaxonomyTermMeta[],
-  buckets: FacetBucket[]
+  buckets: FacetBucket[],
+  totals: Record<string, number> = {}
 ): RolledUpTerm[] {
-  const own = new Map<string, number>();
-  for (const bucket of buckets) {
-    own.set(toTermKey(bucket.name), bucket.count);
-  }
+  const own = ownCounts(buckets);
 
   return flattenTree(buildTermTree(terms)).map((node) => ({
     ...node,
     ownCount: own.get(node.key) ?? 0,
-    totalCount: descendantKeys(terms, node.key).reduce(
-      (sum, key) => sum + (own.get(key) ?? 0),
-      0
-    ),
+    totalCount:
+      totals[node.key] ??
+      descendantKeys(terms, node.key).reduce((sum, key) => sum + (own.get(key) ?? 0), 0),
   }));
+}
+
+export interface CategoryBranch {
+  key: string;
+  /** The branch expanded exactly as a click on it expands, see expandToUris(). */
+  uris: string[];
+}
+
+/**
+ * The terms whose rolled-up sum can overcount: two or more terms in the branch
+ * are in use, so one item may carry both. Every other row's sum is exact.
+ */
+export function overlappingBranches(
+  terms: TaxonomyTermMeta[],
+  buckets: FacetBucket[]
+): CategoryBranch[] {
+  const own = ownCounts(buckets);
+  return flattenTree(buildTermTree(terms))
+    .filter((node) => descendantKeys(terms, node.key).filter((key) => own.get(key)).length > 1)
+    .map((node) => ({ key: node.key, uris: expandToUris(terms, [node.key]) }));
+}
+
+function ownCounts(buckets: FacetBucket[]): Map<string, number> {
+  return new Map(buckets.map((bucket) => [toTermKey(bucket.name), bucket.count]));
 }
 
 /**

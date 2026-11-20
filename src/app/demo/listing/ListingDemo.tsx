@@ -12,7 +12,14 @@ import SourcePanel from "@/components/demo/SourcePanel";
 import FacetedSearchDemo from "./FacetedSearchDemo";
 import ArticleCard from "@/components/articles/ArticleCard";
 import { getTaxonomyTerms } from "@/lib/graphql/queries/GetTaxonomyTerms";
-import { expandToUris, rollUpCounts, termLabel, type TaxonomyTermMeta } from "@/lib/taxonomy";
+import { getCategoryTotals } from "@/lib/graphql/queries/GetCategoryTotals";
+import {
+  expandToUris,
+  overlappingBranches,
+  rollUpCounts,
+  termLabel,
+  type TaxonomyTermMeta,
+} from "@/lib/taxonomy";
 
 export const metadata: Metadata = {
   title: "Content Listing & Discovery",
@@ -391,18 +398,21 @@ function buildFacetHref(
 
 function FacetSidebarLive({
   facets,
+  totals,
   activeCategories,
   terms,
 }: {
   facets: ArticleListResult["facets"];
+  totals: Record<string, number>;
   activeCategories: string[];
   terms: TaxonomyTermMeta[];
 }) {
   if (facets.category.length === 0) return null;
   // Articles are tagged leaf-only, so Graph never returns a bucket for a parent
   // term. Rolling the counts up through the tree is what lets this render as a
-  // hierarchy rather than a flat list of leaves.
-  const rows = rollUpCounts(terms, facets.category as ArticleFacetBucket[]).filter(
+  // hierarchy rather than a flat list of leaves; `totals` corrects the parents
+  // whose sum would count an article tagged twice in one branch.
+  const rows = rollUpCounts(terms, facets.category as ArticleFacetBucket[], totals).filter(
     (row) => row.totalCount > 0
   );
   return (
@@ -540,6 +550,10 @@ export default async function ListingDemoPage({
       category: activeCategories.length ? expandToUris(terms, activeCategories) : null,
     }),
   ]);
+  const categoryTotals = await getCategoryTotals(
+    "articles",
+    overlappingBranches(terms, listResult.facets.category)
+  );
 
   const clearHref = `?#facets-demo`;
 
@@ -668,6 +682,7 @@ export default async function ListingDemoPage({
                 <div className="grid md:grid-cols-[180px_1fr] gap-6">
                   <FacetSidebarLive
                     facets={listResult.facets}
+                    totals={categoryTotals}
                     activeCategories={activeCategories}
                     terms={terms}
                   />
