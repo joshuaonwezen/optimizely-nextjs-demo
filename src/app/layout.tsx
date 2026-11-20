@@ -70,10 +70,11 @@ export const metadata: Metadata = {
 
 const themeScript = `(function(){var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');})();`;
 
-// Optimizely Web Experimentation snippet. Falls back to the Mosey Bank demo
-// project so a checkout with no env config still loads the snippet.
+// Optimizely Web Experimentation snippet. Falls back to the site's WX project,
+// "SaaS CMS ProServ - Web" (built by scripts/seed-wx-project.ts), so a checkout with
+// no env config still loads the snippet.
 const webSnippetId =
-  process.env.NEXT_PUBLIC_OPTIMIZELY_WEB_SNIPPET_ID ?? "23338860169";
+  process.env.NEXT_PUBLIC_OPTIMIZELY_WEB_SNIPPET_ID ?? "5018738125176832";
 
 const odpTrackerId =
   process.env.NEXT_PUBLIC_OPTIMIZELY_ODP_TRACKER_ID ?? "dWs2ejwWekVGmZj9JoOIcA";

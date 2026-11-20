@@ -1,7 +1,7 @@
 /**
- * Sends fake traffic to Optimizely Feature Experimentation (FX) and the
- * Optimizely Data Platform (ODP) so both dashboards look like a real, busy bank
- * site for demos. It is the FX/ODP sibling of scripts/send-ga4-events.mjs and is
+ * Sends fake traffic to Optimizely Feature Experimentation (FX), Web
+ * Experimentation (WX) and the Optimizely Data Platform (ODP) so the dashboards look
+ * like a real, busy bank site for demos. It is the FX/ODP sibling of scripts/send-ga4-events.mjs and is
  * meant to run on the same daily schedule (see .github/workflows/experiment-odp-seed.yml).
  *
  * What it produces
@@ -14,12 +14,20 @@
  *         console therefore gets data from the next run, with no code change.
  *         About half the experiments get a designed winner whose variation lifts
  *         that experiment's metrics; the rest stay flat - the "mixed" story.
+ *   WX  - a decision (impression) for each running WX experiment the visitor's
+ *         pages put them in, and for each personalization campaign the experience
+ *         of the first audience they match (or its holdback), sent to the Event API. WX experiments measure FX events
+ *         (cross-project events, same account and same visitor id), so their
+ *         conversions are the FX events above; a WX winner lifts them the same way.
+ *         Experiment ids come from scripts/wx-project-ids.json (written by
+ *         scripts/seed-wx-project.ts); an experiment counts as running when the public
+ *         snippet holds it, since the project excludes paused ones from the snippet.
  *   ODP - pageviews to business/personal sections (what realtime audiences key
  *         on), the same events the visitor fired in FX, and - for a minority of
  *         visitors - a known-customer identify so the business/personal audiences
  *         and homepage personalization populate.
  *
- * The same synthetic visitor feeds BOTH sinks, so the datasets stay consistent
+ * The same synthetic visitor feeds every sink, so the datasets stay consistent
  * (whoever converts in FX shows the matching funnel in ODP) - this mirrors how
  * the app's trackEvent() fans out to fx + odp at runtime.
  *
@@ -29,7 +37,8 @@
  *                                    variation + conversion distribution, send
  *                                    nothing (also accepts --debug)
  *   npm run exp:seed -- --users=100  override the number of synthetic visitors
- *   npm run exp:seed -- --only=fx    seed only FX (or --only=odp)
+ *   npm run exp:seed -- --only=fx    seed only FX + WX (or --only=odp)
+ *   npm run exp:seed -- --no-wx      leave the WX decisions out
  *
  * Credentials are read from .env.local (or GitHub Actions secrets in CI):
  *   OPTIMIZELY_FX_SDK_KEY   datafile at cdn.optimizely.com/datafiles/<key>.json
@@ -44,11 +53,16 @@
  *     flag that is only a targeted delivery has no result to show, so it is
  *     skipped. An event no experiment uses as a metric is still sent when it is
  *     part of a normal session (scroll depth, time on page, ...).
- *   - Both endpoints accept writes and return success regardless of whether the
- *     key is correct, so a green run is not proof by itself; verify in the FX
- *     Results dashboard and via scripts/maintenance/test-odp.ts.
+ *   - The endpoints accept writes and return success regardless of whether the
+ *     key is correct, so a green run is not proof by itself; verify in the FX and
+ *     WX Results dashboards and via scripts/maintenance/test-odp.ts.
+ *   - FX events go through a fetch dispatcher, not the SDK's default. SDK 6.4.0's
+ *     Node request sets content-length to the body's character count, so any batch
+ *     holding a non-ASCII tag ("Switch and get £150") was cut short and rejected
+ *     with a 400 - about 17 batches a day.
  */
 
+import { readFileSync } from "node:fs";
 import { config } from "dotenv";
 import {
   createBatchEventProcessor,
@@ -76,6 +90,11 @@ const NUM_USERS = Number(getArg("users", 400));
 const ONLY = getArg("only", "both");
 const SEED_FX = ONLY !== "odp";
 const SEED_ODP = ONLY !== "fx";
+// WX decisions only mean something next to the FX conversions they are measured by.
+const SEED_WX = SEED_FX && !args.includes("--no-wx");
+const WX_IDS_FILE = "scripts/wx-project-ids.json";
+const LOGX_URL = "https://logx.optimizely.com/v1/events";
+const WX_BATCH_VISITORS = 50;
 
 const BATCH_DELAY_MS = 60;
 // The site hostname. It is passed as the FX `hostname` attribute and used in the
@@ -166,13 +185,21 @@ const RATE_CAP = 0.85;
 // it has a designed winner, which variation wins and by how much. About half of the
 // flags (by hash) get a winner; the rest stay flat / inconclusive. The baseline is
 // the experiment's first variation, so the winner is always a challenger.
-function buildPlan(flagKey, variationKeys, metrics) {
+// `decreasing` lists the metrics where lower is better: the winner lowers those.
+function buildPlan(flagKey, variationKeys, metrics, decreasing = []) {
   const h = hash(flagKey);
   const challengers = variationKeys.slice(1);
   const isWinner = h % 2 === 0 && challengers.length > 0;
   const winner = isWinner ? challengers[h % challengers.length] : null;
   const lift = 1.25 + (h % 4) * 0.1; // 1.25 .. 1.55
-  return { flagKey, variationKeys, metrics, isWinner, winner, lift };
+  return { flagKey, variationKeys, metrics, decreasing: new Set(decreasing), isWinner, winner, lift };
+}
+
+/** A plan's effect on one event for a visitor served `variation`. */
+function planLift(plan, variation, key) {
+  const wins = plan.winners ? plan.winners.has(variation) : plan.winner === variation;
+  if (!wins || !plan.metrics.includes(key)) return 1;
+  return plan.decreasing.has(key) ? 1 / plan.lift : plan.lift;
 }
 
 // ── ODP REST helpers (same endpoint + auth as src/app/api/form-submit/route.ts) ──
@@ -210,6 +237,41 @@ async function upsertOdpProfile(identifiers, attributes) {
 
 // ── FX client (same datafile source as src/lib/optimizely/experimentation.ts) ──
 
+// Replaces the SDK's default dispatcher, whose content-length is the body's character
+// count rather than its byte count (see the header). fetch sizes the body itself.
+const fxDispatch = { batches: 0, failed: 0, lastError: "", inFlight: new Set() };
+const fxEventDispatcher = {
+  dispatchEvent(event) {
+    const p = dispatch(event).finally(() => fxDispatch.inFlight.delete(p));
+    fxDispatch.inFlight.add(p);
+    return p;
+  },
+};
+async function dispatch({ url, httpVerb, params }) {
+  fxDispatch.batches++;
+  try {
+    const res = await fetch(url, { method: httpVerb, headers: { "Content-Type": "application/json" }, body: JSON.stringify(params) });
+    if (!res.ok) {
+      fxDispatch.failed++;
+      fxDispatch.lastError = `HTTP ${res.status} ${(await res.text().catch(() => "")).slice(0, 200)}`;
+    }
+    return { statusCode: res.status };
+  } catch (err) {
+    fxDispatch.failed++;
+    fxDispatch.lastError = String(err);
+    return {};
+  }
+}
+
+// close() resolves before the processor's last batches are dispatched, so wait until
+// no dispatch has been in flight for a couple of seconds.
+async function settleFxDispatches() {
+  for (let idle = 0; idle < 4; ) {
+    await sleep(500);
+    idle = fxDispatch.inFlight.size === 0 ? idle + 1 : 0;
+  }
+}
+
 async function buildFx() {
   const res = await fetch(`https://cdn.optimizely.com/datafiles/${FX_SDK_KEY}.json`, { cache: "no-store" });
   if (!res.ok) {
@@ -225,7 +287,7 @@ async function buildFx() {
   const client = createInstance({
     projectConfigManager: createStaticProjectConfigManager({ datafile: datafileText }),
     logger: createLogger({ level: ERROR }),
-    eventProcessor: createBatchEventProcessor({ batchSize: 100, flushInterval: 2000 }),
+    eventProcessor: createBatchEventProcessor({ batchSize: 100, flushInterval: 2000, eventDispatcher: fxEventDispatcher }),
   });
   if (!client) {
     console.error("Failed to create the FX SDK client from the datafile.");
@@ -248,6 +310,80 @@ async function buildFx() {
   return { client, plans, eventKeys };
 }
 
+// ── WX experiments (ids from scripts/wx-project-ids.json, running = in the snippet) ──
+
+async function loadWx() {
+  let ids;
+  try {
+    ids = JSON.parse(readFileSync(WX_IDS_FILE, "utf8"));
+  } catch {
+    console.warn(`⚠ ${WX_IDS_FILE} not found - run scripts/seed-wx-project.ts. Skipping WX.`);
+    return null;
+  }
+  const res = await fetch(`https://cdn.optimizely.com/js/${ids.projectId}.js`, { cache: "no-store" });
+  if (!res.ok) {
+    console.warn(`⚠ Could not fetch the WX snippet (HTTP ${res.status}). Skipping WX.`);
+    return null;
+  }
+  const snippet = await res.text();
+  const decreasing = (metrics) => metrics.filter((m) => m.direction === "decreasing").map((m) => m.key);
+  const plans = ids.experiments
+    .filter((e) => snippet.includes(`"${e.experimentId}"`))
+    .map((e) => ({ ...buildPlan(e.key, e.variations.map((v) => v.key), e.metrics.map((m) => m.key), decreasing(e.metrics)), wx: e }));
+  // Personalization: every experience beats the holdback (personalizing works), so
+  // the story is in how much each one lifts, not in which one wins.
+  const campaigns = (ids.campaigns ?? [])
+    .filter((c) => snippet.includes(`"${c.campaignId}"`))
+    .map((c) => {
+      const keys = c.experiences.map((x) => x.key);
+      return { ...buildPlan(c.key, ["holdback", ...keys], c.metrics.map((m) => m.key), decreasing(c.metrics)), winners: new Set(keys), campaign: c };
+    });
+  return { ids, plans, campaigns };
+}
+
+// Which audiences a synthetic visitor is in, by the spec's audience keys.
+function inAudience(audience, visitor) {
+  if (audience === "mobile") return visitor.device === "mobile";
+  if (audience === "loggedIn") return visitor.loggedIn;
+  if (audience === "mortgages") return visitor.persona === "mortgages";
+  return false;
+}
+
+// One visitor's decisions as an Event API visitor. The attributes let WX results be
+// segmented the way WxProfileBridge sends them.
+function wxVisitor(ids, visitorId, decisions, attrs, timestamp) {
+  const attributes = Object.entries(attrs)
+    .filter(([key, value]) => ids.attributes[key] && value !== undefined && value !== null)
+    .map(([key, value]) => ({ entity_id: ids.attributes[key], key, type: "custom", value: String(value) }));
+  return {
+    visitor_id: visitorId,
+    attributes,
+    snapshots: [
+      {
+        decisions: decisions.map((d) => ({ campaign_id: d.campaignId, experiment_id: d.experimentId, variation_id: d.variationId, is_campaign_holdback: !!d.holdback })),
+        events: decisions.map((d) => ({ entity_id: d.campaignId, type: "campaign_activated", timestamp, uuid: crypto.randomUUID() })),
+      },
+    ],
+  };
+}
+
+async function sendWx(ids, visitors) {
+  const res = await fetch(LOGX_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      account_id: ids.accountId,
+      project_id: ids.projectId,
+      visitors,
+      anonymize_ip: true,
+      client_name: "mosey-demo-seeder",
+      client_version: "1.0.0",
+      enrich_decisions: true,
+    }),
+  });
+  return res.ok ? { ok: true } : { ok: false, status: res.status, text: await res.text().catch(() => "") };
+}
+
 // ── Distribution tally for the dry-run / summary report ──
 
 // stats[flagKey] = { impressions: {variation: n}, conversions: {variation: {event: n}} }
@@ -264,14 +400,19 @@ function printReport(plans) {
   for (const plan of plans) {
     const s = stats[plan.flagKey];
     if (!s) continue;
-    const tag = plan.isWinner ? `winner: ${plan.winner} x${plan.lift.toFixed(2)}` : "flat";
-    console.log(`\n  ${plan.flagKey}  (${tag}, metrics: ${plan.metrics.join(", ") || "none"})`);
+    const tag = plan.winners
+      ? `every experience beats holdback x${plan.lift.toFixed(2)}`
+      : plan.isWinner
+        ? `winner: ${plan.winner} x${plan.lift.toFixed(2)}`
+        : "flat";
+    const metrics = plan.metrics.map((key) => (plan.decreasing.has(key) ? `${key} (lower is better)` : key));
+    console.log(`\n  ${plan.campaign ? "WX personalization " : plan.wx ? "WX " : ""}${plan.flagKey}  (${tag}, metrics: ${metrics.join(", ") || "none"})`);
     for (const variation of Object.keys(s.impressions).sort()) {
       const imp = s.impressions[variation];
       const rates = plan.metrics
         .map((key) => `${key} ${(((s.conversions[variation]?.[key] ?? 0) / imp) * 100).toFixed(1)}%`)
         .join("  ");
-      const star = plan.winner === variation ? " *" : "";
+      const star = (plan.winners ? plan.winners.has(variation) : plan.winner === variation) ? " *" : "";
       console.log(`    ${variation.padEnd(16)} ${String(imp).padStart(5)} imp  ${rates}${star}`);
     }
   }
@@ -279,7 +420,7 @@ function printReport(plans) {
 
 // ── Preflight: fail loudly on bad credentials before the main loop ──
 
-async function preflight(plans) {
+async function preflight(plans, wx) {
   if (SEED_FX) {
     if (!plans || plans.length === 0) {
       console.warn(
@@ -289,6 +430,11 @@ async function preflight(plans) {
     } else {
       console.log(`FX: driving ${plans.length} running experiment(s): ${plans.map((p) => p.flagKey).join(", ")}`);
     }
+  }
+  if (SEED_WX && wx) {
+    if (wx.plans.length === 0) console.warn("⚠ No running WX experiments in the snippet - nothing to seed for WX.");
+    else console.log(`WX: driving ${wx.plans.length} running experiment(s): ${wx.plans.map((p) => p.flagKey).join(", ")}`);
+    if (wx.campaigns.length > 0) console.log(`WX: driving ${wx.campaigns.length} personalization campaign(s): ${wx.campaigns.map((p) => p.flagKey).join(", ")}`);
   }
   if (SEED_ODP) {
     if (!ODP_API_KEY) {
@@ -341,7 +487,7 @@ function sessionEvents(section, eventKeys, metricKeys, lift, served) {
   }
 
   // Forms are a funnel: start, then submit (and sometimes identify) or abandon.
-  if (has("form_start") && chance(0.08)) {
+  if (has("form_start") && chance(Math.min(0.08 * lift("form_start"), RATE_CAP))) {
     const form = pick(FORMS);
     events.push(["form_start", { form }]);
     if (chance(Math.min(0.4 * lift("form_submit"), RATE_CAP))) {
@@ -389,14 +535,34 @@ async function main() {
   const plans = fx?.plans ?? [];
   // Without FX there is no datafile, so the ODP-only run uses the profiled events.
   const eventKeys = new Set(fx?.eventKeys ?? [...Object.keys(EVENT_PROFILES), "scroll_depth", "time_on_page", "form_start", "form_submit", "form_abandon", "customer_identified"]);
-  const metricKeys = [...new Set(plans.flatMap((p) => p.metrics))];
-  await preflight(plans);
+  const wx = SEED_WX ? await loadWx() : null;
+  const wxPlans = wx?.plans ?? [];
+  const wxCampaigns = wx?.campaigns ?? [];
+  const metricKeys = [...new Set([...plans, ...wxPlans, ...wxCampaigns].flatMap((p) => p.metrics))];
+  await preflight(plans, wx);
 
   let fxEvents = 0;
   let odpVisitors = 0;
   let odpEvents = 0;
   let odpFailures = 0;
   let profilesSet = 0;
+  let wxDecisions = 0;
+  let wxFailures = 0;
+  let wxQueue = [];
+  const flushWx = async () => {
+    if (wxQueue.length === 0) return;
+    const visitors = wxQueue;
+    wxQueue = [];
+    if (DRY_RUN) return;
+    const res = await sendWx(wx.ids, visitors);
+    if (!res.ok) {
+      wxFailures += visitors.length;
+      if (res.status >= 400 && res.status < 500) {
+        console.error(`Fatal WX Event API error HTTP ${res.status} ${res.text.slice(0, 300)}. Stopping.`);
+        process.exit(1);
+      }
+    }
+  };
 
   for (let u = 0; u < NUM_USERS; u++) {
     const visitorId = crypto.randomUUID();
@@ -409,12 +575,13 @@ async function main() {
     // FX: decide each running experiment (fires an impression unless dry-run), then
     // play out a session whose metric rates are lifted for winning variations.
     // Attributes mirror buildFxAttributes() in src/lib/optimizely/fxAttributes.ts.
+    const device = chance(MOBILE_RATE) ? "mobile" : "desktop";
     const decided = [];
     let ctx = null;
     if (fx) {
       ctx = fx.client.createUserContext(visitorId, {
         hostname: HOSTNAME,
-        device: chance(MOBILE_RATE) ? "mobile" : "desktop",
+        device,
         logged_in: isKnown,
         page_views: 1 + Math.floor(Math.random() ** 2 * 12),
         ...(section.persona ? { persona: section.persona } : {}),
@@ -427,8 +594,44 @@ async function main() {
         decided.push([plan, variation]);
       }
     }
-    const lift = (key) =>
-      decided.reduce((m, [plan, variation]) => (plan.winner === variation && plan.metrics.includes(key) ? m * plan.lift : m), 1);
+    // WX: the experiments this visitor's pages reach (by persona; an audience-gated one
+    // only for visitors who match it), bucketed by the experiment's own weights.
+    const visitor = { device, loggedIn: isKnown, persona: section.persona };
+    const wxDecided = [];
+    const wxDecisionList = [];
+    for (const plan of wxPlans) {
+      const { exposure, audience } = plan.wx;
+      if (audience && !inAudience(audience, visitor)) continue;
+      if (!chance(exposure[section.persona] ?? exposure.default ?? 0)) continue;
+      const v = pickWeighted(plan.wx.variations);
+      wxDecided.push([plan, v.key]);
+      wxDecisionList.push({ campaignId: plan.wx.campaignId, experimentId: plan.wx.experimentId, variationId: v.id });
+    }
+    for (const plan of wxCampaigns) {
+      const { exposure, experiences, holdback, campaignId } = plan.campaign;
+      if (!chance(exposure[section.persona] ?? exposure.default ?? 0)) continue;
+      const x = experiences.find((e) => inAudience(e.audience, visitor));
+      if (!x) continue; // "Everyone else": no experience, no decision
+      const held = chance(holdback / 10000);
+      wxDecided.push([plan, held ? "holdback" : x.key]);
+      wxDecisionList.push({ campaignId, experimentId: x.experimentId, variationId: x.variationId, holdback: held });
+    }
+    if (wxDecisionList.length > 0) {
+      // A second before this visitor's FX events, so every conversion follows its decision.
+      wxQueue.push(
+        wxVisitor(
+          wx.ids,
+          visitorId,
+          wxDecisionList,
+          { persona: section.persona ?? "new_visitor", device, logged_in: isKnown },
+          Date.now() - 1000
+        )
+      );
+      wxDecisions += wxDecisionList.length;
+      if (wxQueue.length >= WX_BATCH_VISITORS) await flushWx();
+    }
+    const allDecided = [...decided, ...wxDecided];
+    const lift = (key) => allDecided.reduce((m, [plan, variation]) => m * planLift(plan, variation, key), 1);
     const served = new Map(decided.map(([plan, variation]) => [plan.flagKey, variation]));
     const fired = sessionEvents(section, eventKeys, metricKeys, lift, served);
 
@@ -438,7 +641,7 @@ async function main() {
         fxEvents++;
       }
       const firedKeys = new Set(fired.map(([key]) => key));
-      for (const [plan, variation] of decided) record(plan, variation, firedKeys);
+      for (const [plan, variation] of allDecided) record(plan, variation, firedKeys);
     }
 
     // ODP: pageviews + mirrored events + optional known-customer identify.
@@ -471,14 +674,22 @@ async function main() {
     }
   }
 
+  await flushWx();
   if (fx && !DRY_RUN) {
     // Flush batched impression/conversion events before the process exits.
     await fx.client.close();
+    await settleFxDispatches();
   }
 
   if (SEED_FX) {
-    printReport(plans);
-    console.log(`\nFX: ${fxEvents} events${DRY_RUN ? " (dry-run, nothing sent)" : ""}`);
+    printReport([...plans, ...wxPlans, ...wxCampaigns]);
+    console.log(
+      `\nFX: ${fxEvents} events${DRY_RUN ? " (dry-run, nothing sent)" : `, ${fxDispatch.batches} batches`}` +
+        (fxDispatch.failed ? `, ${fxDispatch.failed} FAILED (last: ${fxDispatch.lastError})` : "")
+    );
+  }
+  if (SEED_WX && wx) {
+    console.log(`WX: ${wxDecisions} decisions${DRY_RUN ? " (dry-run, nothing sent)" : ""}${wxFailures ? `, ${wxFailures} visitors failed` : ""}`);
   }
   if (SEED_ODP) {
     console.log(
@@ -491,7 +702,7 @@ async function main() {
   if (DRY_RUN) {
     console.log("\nDry run: nothing was ingested. Re-run without --dry-run to send.");
   } else {
-    console.log("\nCheck the FX Results dashboard and run scripts/maintenance/test-odp.ts on a seeded id to verify.");
+    console.log("\nCheck the FX and WX Results dashboards and run scripts/maintenance/test-odp.ts on a seeded id to verify.");
   }
 }
 

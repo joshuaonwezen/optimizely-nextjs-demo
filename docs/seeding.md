@@ -122,6 +122,28 @@ The project holds 14 flags, one per thing the site decides, covering every rule 
 
 The daily **Seed Experimentation + ODP** GitHub Action (`npm run exp:seed`, 06:27 UTC) fills the project with fake traffic. It needs only the SDK key: it reads the running experiments and each one's metrics from the datafile, so a metric added in the console gets data from the next run.
 
+### Web Experimentation project - `seed-wx-project.ts`
+
+The site's WX project is **SaaS CMS ProServ - Web** (`5018738125176832`), in the same account as the FX project, and the snippet `layout.tsx` loads by default. `npx tsx scripts/seed-wx-project.ts` builds it from `scripts/wx-project-data.ts`:
+
+- the snippet settings, the WX attributes `WxProfileBridge` pushes that `sync-attribute-docs.ts` does not own (`device`, `logged_in`), and the audiences;
+- one page per surface it tests;
+- seven experiments, EXP-1 to EXP-7, and one personalization campaign, EXP-8 (three experiences, first matching audience wins, 5% holdback).
+
+Every metric is an FX event (cross-project), so the project defines no events of its own. The script only creates what is missing and starts it, then rewrites `scripts/wx-project-ids.json`, which is committed. `--dry-run` reports, `--only=<key>` limits the run, `--no-start` leaves new tests unstarted, and `--sync-code` pushes the spec's variation code to tests that already exist (this overwrites changes edited in the WX console).
+
+It needs a personal access token for the account that owns both projects, passed inline like the FX script:
+
+```bash
+OPTIMIZELY_FX_API_TOKEN=<pat> OPTIMIZELY_WX_PROJECT_ID=5018738125176832 OPTIMIZELY_FX_PROJECT_ID=5152837204705280 \
+  npx tsx scripts/seed-wx-project.ts
+OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=5018738125176832 --apply
+```
+
+The daily `exp:seed` job fills the WX results too. For each synthetic visitor it sends the decisions of the running WX tests their pages reach, plus the campaign experience of the first audience they match, to the Event API, and the FX events it already sends are the conversions. It reads the ids from the committed file and treats a test as running when the public snippet contains it, so CI needs no token. A paused test simply gets no more decisions.
+
+EXP-7 serves a CMS variation: create a variation named exactly `wx_goal_led` on the Investments page in Visual Builder. Until it exists, that arm shows the base page.
+
 ### Contact form seed scripts — which one to use
 
 Three scripts cover the contact-form demos; they are complementary, not alternatives:

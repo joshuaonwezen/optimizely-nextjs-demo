@@ -18,15 +18,16 @@
  *
  * Attributes live per PROJECT. These are Web Experimentation attributes
  * (WxProfileBridge pushes them), so run it against the WX project only:
- *   WX  23338860169   (NEXT_PUBLIC_OPTIMIZELY_WEB_SNIPPET_ID's project)
+ *   WX  5018738125176832   ("SaaS CMS ProServ - Web", the snippet layout.tsx loads)
  * The FX project receives none of them except persona, and its attribute
- * descriptions come from scripts/fx-project-data.ts.
+ * descriptions come from scripts/fx-project-data.ts. The other two WxProfileBridge
+ * attributes (device, logged_in) come from scripts/wx-project-data.ts.
  *
  * Dry run by default - it prints the diff and writes nothing. Pass --apply to write.
  *
  * Run:
- *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=23338860169
- *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=23338860169 --apply
+ *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=5018738125176832
+ *   OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts --project=5018738125176832 --apply
  */
 
 import { config } from "dotenv";

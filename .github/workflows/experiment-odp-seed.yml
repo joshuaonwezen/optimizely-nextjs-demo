@@ -18,14 +18,16 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - name: Send a day of fake FX + ODP traffic
+      - name: Send a day of fake FX + WX + ODP traffic
         run: npm run exp:seed -- --users=2026
         env:
           # FX SDK key (production key of the "SaaS CMS ProServ" project) -> the
           # datafile, which supplies the running experiments and their metrics. ODP
           # key -> the /v3/events + /v3/profiles REST API. Add these as repo secrets;
           # they are the same trust level as the GA4 secret and safe to run in CI.
-          # The FX REST API token is never needed here.
+          # The WX decisions need no secret: their ids come from the committed
+          # scripts/wx-project-ids.json and the Event API takes no key. The
+          # Experimentation REST API token is never needed here.
           OPTIMIZELY_FX_SDK_KEY: ${{ secrets.OPTIMIZELY_FX_SDK_KEY }}
           OPTIMIZELY_ODP_API_KEY: ${{ secrets.OPTIMIZELY_ODP_API_KEY }}
           OPTIMIZELY_ODP_API_HOST: ${{ secrets.OPTIMIZELY_ODP_API_HOST }}

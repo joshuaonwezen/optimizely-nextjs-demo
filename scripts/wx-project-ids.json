@@ -1,0 +1,313 @@
+{
+  "accountId": "4871554132082688",
+  "projectId": "5018738125176832",
+  "attributes": {
+    "read_categories": "5033878421766144",
+    "top_category": "5324789240299520",
+    "device": "5616386582511616",
+    "fx_variation": "6013271323443200",
+    "odp_segment": "6159778328608768",
+    "logged_in": "6364360505819136",
+    "persona": "6401347086450688"
+  },
+  "experiments": [
+    {
+      "key": "homepage_product_cards_ab_test",
+      "name": "EXP-1: Homepage product cards (as authored vs Most popular badge)",
+      "campaignId": "6283853357121536",
+      "experimentId": "6566206587535360",
+      "audience": null,
+      "exposure": {
+        "default": 0.7
+      },
+      "metrics": [
+        {
+          "key": "product_card_click",
+          "direction": "increasing"
+        },
+        {
+          "key": "cta_click",
+          "direction": "increasing"
+        }
+      ],
+      "variations": [
+        {
+          "id": "5354175674974208",
+          "key": "control",
+          "name": "Control: as authored",
+          "weight": 5000
+        },
+        {
+          "id": "6563449117868032",
+          "key": "popular_badge",
+          "name": "Most popular badge on Savings",
+          "weight": 5000
+        }
+      ]
+    },
+    {
+      "key": "business_pricing_abc_test",
+      "name": "EXP-2: Business pricing (as authored vs social proof vs annual billing note)",
+      "campaignId": "6083640067620864",
+      "experimentId": "5074339295395840",
+      "audience": null,
+      "exposure": {
+        "business": 0.45,
+        "default": 0.04
+      },
+      "metrics": [
+        {
+          "key": "pricing_tier_click",
+          "direction": "increasing"
+        },
+        {
+          "key": "form_start",
+          "direction": "increasing"
+        }
+      ],
+      "variations": [
+        {
+          "id": "6668104418197504",
+          "key": "control",
+          "name": "Control: as authored",
+          "weight": 3334
+        },
+        {
+          "id": "4627410837045248",
+          "key": "social_proof",
+          "name": "Social proof on the recommended tier",
+          "weight": 3333
+        },
+        {
+          "id": "6296716431851520",
+          "key": "annual_note",
+          "name": "Annual billing note on every tier",
+          "weight": 3333
+        }
+      ]
+    },
+    {
+      "key": "cta_copy_multipage_ab_test",
+      "name": "EXP-3: CTA copy on three pages (as authored vs speed-led)",
+      "campaignId": "5748049878712320",
+      "experimentId": "4707413662629888",
+      "audience": null,
+      "exposure": {
+        "personal": 0.8,
+        "default": 0.7
+      },
+      "metrics": [
+        {
+          "key": "cta_click",
+          "direction": "increasing"
+        },
+        {
+          "key": "form_submit",
+          "direction": "increasing"
+        }
+      ],
+      "variations": [
+        {
+          "id": "6537001011249152",
+          "key": "control",
+          "name": "Control: as authored",
+          "weight": 5000
+        },
+        {
+          "id": "5342378238672896",
+          "key": "speed_led",
+          "name": "Speed-led labels (in 5 minutes)",
+          "weight": 5000
+        }
+      ]
+    },
+    {
+      "key": "business_cta_color_mab",
+      "name": "EXP-4: Business landing CTA color (brand vs green vs amber)",
+      "campaignId": "5708423973568512",
+      "experimentId": "4902576775233536",
+      "audience": null,
+      "exposure": {
+        "business": 0.7,
+        "default": 0.06
+      },
+      "metrics": [
+        {
+          "key": "cta_click",
+          "direction": "increasing"
+        }
+      ],
+      "variations": [
+        {
+          "id": "4853234714542080",
+          "key": "brand",
+          "name": "Control: brand blue",
+          "weight": 3334
+        },
+        {
+          "id": "6074988829081600",
+          "key": "green",
+          "name": "Green",
+          "weight": 3333
+        },
+        {
+          "id": "6309951658786816",
+          "key": "amber",
+          "name": "Amber",
+          "weight": 3333
+        }
+      ]
+    },
+    {
+      "key": "help_faq_open_ab_test",
+      "name": "EXP-5: Help FAQs (all closed vs first answer open)",
+      "campaignId": "5751394584494080",
+      "experimentId": "4611665956700160",
+      "audience": null,
+      "exposure": {
+        "default": 0.12
+      },
+      "metrics": [
+        {
+          "key": "cta_click",
+          "direction": "decreasing"
+        },
+        {
+          "key": "time_on_page",
+          "direction": "increasing"
+        }
+      ],
+      "variations": [
+        {
+          "id": "6738751127289856",
+          "key": "control",
+          "name": "Control: all closed",
+          "weight": 5000
+        },
+        {
+          "id": "5354878304780288",
+          "key": "first_open",
+          "name": "First answer open",
+          "weight": 5000
+        }
+      ]
+    },
+    {
+      "key": "help_product_cards_mobile_ab_test",
+      "name": "EXP-6: Help cards on mobile (stacked vs swipeable row)",
+      "campaignId": "5416184667963392",
+      "experimentId": "5188444631072768",
+      "audience": "mobile",
+      "exposure": {
+        "default": 0.12
+      },
+      "metrics": [
+        {
+          "key": "product_card_click",
+          "direction": "increasing"
+        },
+        {
+          "key": "scroll_depth",
+          "direction": "increasing"
+        }
+      ],
+      "variations": [
+        {
+          "id": "6029524855422976",
+          "key": "control",
+          "name": "Control: stacked cards",
+          "weight": 5000
+        },
+        {
+          "id": "5578286699380736",
+          "key": "swipe_row",
+          "name": "Swipeable row",
+          "weight": 5000
+        }
+      ]
+    },
+    {
+      "key": "investments_cms_variation_ab_test",
+      "name": "EXP-7: Investments page (base vs wx_goal_led CMS variation)",
+      "campaignId": "6591426635497472",
+      "experimentId": "6178300240855040",
+      "audience": null,
+      "exposure": {
+        "investments": 0.75,
+        "default": 0.06
+      },
+      "metrics": [
+        {
+          "key": "hero_cta_click",
+          "direction": "increasing"
+        },
+        {
+          "key": "cta_click",
+          "direction": "increasing"
+        },
+        {
+          "key": "product_card_click",
+          "direction": "increasing"
+        }
+      ],
+      "variations": [
+        {
+          "id": "5456090886832128",
+          "key": "control",
+          "name": "Control: base page",
+          "weight": 5000
+        },
+        {
+          "id": "6581990793674752",
+          "key": "wx_goal_led",
+          "name": "wx_goal_led",
+          "weight": 5000
+        }
+      ]
+    }
+  ],
+  "campaigns": [
+    {
+      "key": "homepage_welcome_personalization",
+      "name": "EXP-8: Homepage welcome card personalized by audience",
+      "campaignId": "6088832985071616",
+      "holdback": 500,
+      "exposure": {
+        "default": 0.7
+      },
+      "metrics": [
+        {
+          "key": "cta_click",
+          "direction": "increasing"
+        },
+        {
+          "key": "product_card_click",
+          "direction": "increasing"
+        }
+      ],
+      "experiences": [
+        {
+          "key": "logged_in",
+          "name": "Logged in: welcome back, savings rate",
+          "audience": "loggedIn",
+          "experimentId": "6744661002289152",
+          "variationId": "5129066104225792"
+        },
+        {
+          "key": "mortgages",
+          "name": "Mortgage browser: today's rates",
+          "audience": "mortgages",
+          "experimentId": "6651782938492928",
+          "variationId": "5668518895550464"
+        },
+        {
+          "key": "mobile",
+          "name": "Mobile: get the app",
+          "audience": "mobile",
+          "experimentId": "5132323367157760",
+          "variationId": "5079666866782208"
+        }
+      ]
+    }
+  ]
+}
