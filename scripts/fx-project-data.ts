@@ -5,9 +5,10 @@ import { FLAG_KEY as SAVINGS_OFFER_FLAG, VARIATIONS as SAVINGS_OFFER_VARIATIONS 
 // data-track-event attributes and trackEvent() calls); flag, variable and variation
 // keys must match what the components decide on.
 //
-// Names are written for the FX dashboard: a flag is "<where>: <what>", and a rule's
-// name and key start with its type (A/B test, A/B/C test, MAB, Targeted delivery,
-// Rollout), so the experiment list explains itself.
+// Names are written for the FX dashboard: a flag is "<where>: <what>". An experiment
+// rule is "EXP-<n>: <what> (<arm> vs <arm>)", numbered in one sequence shared with,
+// and mixed with, the WX project; a delivery or rollout is "<audience>: <what they
+// get>". Names carry no test type; rule keys still start with it.
 
 export type EventCategory = "convert" | "sign_up" | "other";
 
@@ -148,7 +149,7 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "benefit_led", name: "Benefit-led headline", variables: { headline: "Earn more. Pay less. Bank smarter.", subheadline: "High-yield savings, zero-fee checking, and mortgage rates that beat the market. Switch in minutes." } },
       { key: "rate_led", name: "Rate-led headline", variables: { headline: "4.75% APY. No fees. No catch.", subheadline: "Our best savings rate, fee-free checking and mortgages from 3.9% - open an account in five minutes." } },
     ],
-    rules: [experiment("hero_copy_abc_test", "A/B/C test: hero headline (CMS vs benefit-led vs rate-led)", ["control", "benefit_led", "rate_led"], ["hero_cta_click", "scroll_depth"])],
+    rules: [experiment("hero_copy_abc_test", "EXP-1: Hero headline (CMS vs benefit-led vs rate-led)", ["control", "benefit_led", "rate_led"], ["hero_cta_click", "scroll_depth"])],
   },
   {
     key: "hero_layout",
@@ -159,7 +160,7 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "split", name: "Control: split layout" },
       { key: "centered", name: "Centered full-bleed", variables: { layout: "centered" } },
     ],
-    rules: [experiment("hero_layout_ab_test", "A/B test: hero layout (split vs centered)", ["split", "centered"], ["hero_cta_click", "scroll_depth", "time_on_page"])],
+    rules: [experiment("hero_layout_ab_test", "EXP-3: Hero layout (split vs centered)", ["split", "centered"], ["hero_cta_click", "scroll_depth", "time_on_page"])],
   },
   {
     key: "hero_dual_cta",
@@ -173,7 +174,7 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "control", name: "Control: one button" },
       { key: "treatment", name: "Two buttons", variables: { secondaryLabel: "See how it works", secondaryUrl: "/demo" } },
     ],
-    rules: [experiment("hero_dual_cta_ab_test", "A/B test: hero buttons (one vs two)", ["control", "treatment"], ["hero_cta_click", "scroll_depth"])],
+    rules: [experiment("hero_dual_cta_ab_test", "EXP-6: Hero buttons (one vs two)", ["control", "treatment"], ["hero_cta_click", "scroll_depth"])],
   },
   {
     key: "hero_social_proof",
@@ -184,7 +185,7 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "control", name: "Control: no strip" },
       { key: "treatment", name: "With social proof strip" },
     ],
-    rules: [experiment("hero_social_proof_ab_test", "A/B test: hero social proof (without vs with)", ["control", "treatment"], ["hero_cta_click", "scroll_depth"])],
+    rules: [experiment("hero_social_proof_ab_test", "EXP-9: Hero social proof (without vs with)", ["control", "treatment"], ["hero_cta_click", "scroll_depth"])],
   },
   {
     key: "banner",
@@ -206,10 +207,10 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "banner4", name: "Mobile app banner", variables: { title: "Bank on the go with the new Mosey mobile app", description: "Deposit checks, send money, and track spending from anywhere.", linkText: "Get the app" } },
     ],
     rules: [
-      { key: "banner_frequent_customers_rollout", name: "Rollout: Premier banner for frequent customers", type: "feature_rollout", audiences: ["site", "frequent"], variations: { banner3: 10000 }, metrics: ["banner_click"] },
-      { key: "banner_logged_in_delivery", name: "Targeted delivery: app banner for logged-in visitors", type: "targeted_delivery", audiences: ["site", "loggedIn"], variations: { banner4: 10000 } },
-      { key: "banner_mobile_delivery", name: "Targeted delivery: savings banner on mobile", type: "targeted_delivery", audiences: ["site", "mobile"], variations: { banner1: 10000 } },
-      { key: "banner_desktop_delivery", name: "Targeted delivery: balance transfer banner on desktop", type: "targeted_delivery", audiences: ["site", "desktop"], variations: { banner2: 10000 } },
+      { key: "banner_frequent_customers_rollout", name: "Frequent customers: Premier banner", type: "feature_rollout", audiences: ["site", "frequent"], variations: { banner3: 10000 }, metrics: ["banner_click"] },
+      { key: "banner_logged_in_delivery", name: "Logged-in visitors: app banner", type: "targeted_delivery", audiences: ["site", "loggedIn"], variations: { banner4: 10000 } },
+      { key: "banner_mobile_delivery", name: "Mobile visitors: savings banner", type: "targeted_delivery", audiences: ["site", "mobile"], variations: { banner1: 10000 } },
+      { key: "banner_desktop_delivery", name: "Desktop visitors: balance transfer banner", type: "targeted_delivery", audiences: ["site", "desktop"], variations: { banner2: 10000 } },
     ],
   },
   {
@@ -224,7 +225,7 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "control", name: "Control: no rates bar", variables: { apy: "", product: "" } },
       { key: "treatment", name: "Rates bar shown" },
     ],
-    rules: [experiment("rates_bar_ab_test", "A/B test: rates bar (hidden vs shown)", ["control", "treatment"], ["rates_bar_click", "product_card_click"])],
+    rules: [experiment("rates_bar_ab_test", "EXP-4: Rates bar (hidden vs shown)", ["control", "treatment"], ["rates_bar_click", "product_card_click"])],
   },
   {
     key: "footer_cta",
@@ -235,7 +236,7 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "app_download", name: "Control: app download" },
       { key: "open_account", name: "Open an account", variables: { style: "open_account" } },
     ],
-    rules: [experiment("footer_cta_ab_test", "A/B test: footer strip (app download vs open account)", ["app_download", "open_account"], ["cta_click", "outbound_click"])],
+    rules: [experiment("footer_cta_ab_test", "EXP-12: Footer strip (app download vs open account)", ["app_download", "open_account"], ["cta_click", "outbound_click"])],
   },
   {
     key: "trust_section_style",
@@ -246,7 +247,7 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "stats", name: "Control: stats counter" },
       { key: "testimonials", name: "Customer testimonials", variables: { style: "testimonials" } },
     ],
-    rules: [experiment("trust_section_ab_test", "A/B test: trust section (stats vs testimonials)", ["stats", "testimonials"], ["cta_click", "scroll_depth", "faq_expand"])],
+    rules: [experiment("trust_section_ab_test", "EXP-10: Trust section (stats vs testimonials)", ["stats", "testimonials"], ["cta_click", "scroll_depth", "faq_expand"])],
   },
   {
     key: "sticky_offer_bar",
@@ -263,7 +264,7 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "balance_transfer", name: "Balance transfer offer", variables: { message: "Limited offer: 0% APR for 12 months on balance transfers.", linkText: "Learn more", linkUrl: "/personal/credit-cards", expiryLabel: "Ends Friday" } },
       { key: "savings_rate", name: "Savings rate offer", variables: { message: "New customers earn 5.10% AER on our Easy Saver for 12 months.", linkText: "Open an Easy Saver", linkUrl: "/personal/savings", expiryLabel: "This week only" } },
     ],
-    rules: [experiment("sticky_offer_abc_test", "A/B/C test: sticky offer (none vs balance transfer vs savings rate)", ["control", "balance_transfer", "savings_rate"], ["offer_bar_click", "cta_click"])],
+    rules: [experiment("sticky_offer_abc_test", "EXP-8: Sticky offer bar (none vs balance transfer vs savings rate)", ["control", "balance_transfer", "savings_rate"], ["offer_bar_click", "cta_click"])],
   },
   {
     // Only mobile visitors ever see the tab bar, so only they are in the test.
@@ -275,7 +276,7 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "hamburger", name: "Control: hamburger menu" },
       { key: "bottom_tabs", name: "Bottom tab bar" },
     ],
-    rules: [experiment("mobile_nav_ab_test", "A/B test: mobile nav (hamburger vs bottom tabs)", ["hamburger", "bottom_tabs"], ["nav_click", "cta_click"], ["site", "mobile"])],
+    rules: [experiment("mobile_nav_ab_test", "EXP-14: Mobile nav (hamburger vs bottom tabs)", ["hamburger", "bottom_tabs"], ["nav_click", "cta_click"], ["site", "mobile"])],
   },
   {
     key: "nav_search_style",
@@ -286,7 +287,7 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "icon", name: "Control: search icon" },
       { key: "expanded", name: "Expanded search field", variables: { style: "expanded" } },
     ],
-    rules: [experiment("nav_search_ab_test", "A/B test: nav search (icon vs expanded field)", ["icon", "expanded"], ["nav_click", "cta_click"])],
+    rules: [experiment("nav_search_ab_test", "EXP-15: Nav search (icon vs expanded field)", ["icon", "expanded"], ["nav_click", "cta_click"])],
   },
   {
     // A multi-armed bandit: FX shifts traffic toward the color that converts best, so it
@@ -301,7 +302,7 @@ export const FX_FLAGS: FxFlag[] = [
       { key: "button_style", type: "string", default_value: "" },
     ],
     variations: [
-      { key: "control", name: "Default button" },
+      { key: "control", name: "Control: default button" },
       { key: "solid_blue", name: "Solid blue", variables: { button_color: "blue", button_style: "filled" } },
       { key: "solid_green", name: "Solid green", variables: { button_color: "green", button_style: "filled" } },
       { key: "amber_outline", name: "Amber outline", variables: { button_color: "amber", button_style: "outline" } },
@@ -309,7 +310,7 @@ export const FX_FLAGS: FxFlag[] = [
     rules: [
       {
         key: "product_hero_button_mab",
-        name: "MAB: product hero button color",
+        name: "EXP-17: Product hero button color (default vs blue vs green vs amber outline)",
         type: "multi_armed_bandit",
         audiences: ["site"],
         variations: evenSplit(["control", "solid_blue", "solid_green", "amber_outline"]),
@@ -336,7 +337,7 @@ export const FX_FLAGS: FxFlag[] = [
     rules: [
       {
         key: "savings_offer_abc_test",
-        name: "A/B/C test: savings offer (standard vs rate-led vs bonus-led)",
+        name: "EXP-18: Savings offer (standard vs rate-led vs bonus-led)",
         type: "a/b",
         audiences: [],
         variations: evenSplit(SAVINGS_OFFER_VARIATIONS.map((v) => v.key)),
@@ -357,7 +358,7 @@ export const FX_FLAGS: FxFlag[] = [
     variations: HOMEPAGE_PERSONAS.map((p) => ({ key: p, name: `${capitalize(p)} homepage` })),
     rules: HOMEPAGE_PERSONAS.map((p) => ({
       key: `homepage_${p}_delivery`,
-      name: `Targeted delivery: ${p} homepage`,
+      name: `${FX_AUDIENCES[p].name}: ${p} homepage`,
       type: "targeted_delivery" as const,
       audiences: [p, "site"] as AudienceRef[],
       variations: { [p]: 10000 },

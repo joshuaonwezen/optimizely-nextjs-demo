@@ -118,7 +118,7 @@ The site's FX project is **SaaS CMS ProServ** (`5152837204705280`; production SD
 
 Event keys carry no prefix (`cta_click`, `form_submit`). A new event that a test should measure needs an entry in `FX_EVENTS`, or FX ignores it. Analytics-only events (`feature_viewed`, `customer_identified`, ...) stay out of FX on purpose, so the metric picker only lists real metrics; they still reach ODP and GA4.
 
-The project holds 14 flags, one per thing the site decides, covering every rule type: eight A/B tests, three A/B/C tests (`hero_copy`, `sticky_offer_bar`, `savings_offer`), a multi-armed bandit on the product hero button color (`add_to_cart`), a feature rollout plus three targeted deliveries on `banner`, and one targeted delivery per persona on `homepage`. Flag names read "<where>: <what>"; rule names and keys start with the rule type, so the FX experiment list explains itself. The script deletes the auto-created `on` variation of each new flag, since no rule serves it.
+The project holds 14 flags, one per thing the site decides, covering every rule type: eight A/B tests, three A/B/C tests (`hero_copy`, `sticky_offer_bar`, `savings_offer`), a multi-armed bandit on the product hero button color (`add_to_cart`), a feature rollout plus three targeted deliveries on `banner`, and one targeted delivery per persona on `homepage`. Flag names read "<where>: <what>". Experiment rules are numbered "EXP-<n>: <what> (<arm> vs <arm>)", in one sequence shared with the WX project and mixed with it, and deliveries read "<audience>: <what they get>". Rule keys still start with the rule type. The script deletes the auto-created `on` variation of each new flag, since no rule serves it.
 
 The daily **Seed Experimentation + ODP** GitHub Action (`npm run exp:seed`, 06:27 UTC) fills the project with fake traffic. It needs only the SDK key: it reads the running experiments and each one's metrics from the datafile, so a metric added in the console gets data from the next run.
 
@@ -128,7 +128,7 @@ The site's WX project is **SaaS CMS ProServ - Web** (`5018738125176832`), in the
 
 - the snippet settings, the WX attributes `WxProfileBridge` pushes that `sync-attribute-docs.ts` does not own (`device`, `logged_in`), and the audiences;
 - one page per surface it tests;
-- seven experiments, EXP-1 to EXP-7, and one personalization campaign, EXP-8 (three experiences, first matching audience wins, 5% holdback).
+- seven experiments (EXP-2, 5, 7, 11, 13, 16 and 19; the numbers in between are FX rules), and one personalization campaign, PERS-1 (three experiences, first matching audience wins, 5% holdback).
 
 Every metric is an FX event (cross-project), so the project defines no events of its own. The script only creates what is missing and starts it, then rewrites `scripts/wx-project-ids.json`, which is committed. `--dry-run` reports, `--only=<key>` limits the run, `--no-start` leaves new tests unstarted, and `--sync-code` pushes the spec's variation code to tests that already exist (this overwrites changes edited in the WX console).
 
@@ -142,7 +142,7 @@ OPTIMIZELY_FX_API_TOKEN=<pat> npx tsx scripts/maintenance/sync-attribute-docs.ts
 
 The daily `exp:seed` job fills the WX results too. For each synthetic visitor it sends the decisions of the running WX tests their pages reach, plus the campaign experience of the first audience they match, to the Event API, and the FX events it already sends are the conversions. It reads the ids from the committed file and treats a test as running when the public snippet contains it, so CI needs no token. A paused test simply gets no more decisions.
 
-EXP-7 serves a CMS variation: create a variation named exactly `wx_goal_led` on the Investments page in Visual Builder. Until it exists, that arm shows the base page.
+EXP-19 serves a CMS variation: create a variation named exactly `wx_goal_led` on the Investments page in Visual Builder. Until it exists, that arm shows the base page.
 
 ### Contact form seed scripts — which one to use
 

@@ -263,7 +263,7 @@ const CARD_GRID = '[data-component="BlankSection"] > .grid:has(> div > a[data-co
 export const WX_EXPERIMENTS: WxExperiment[] = [
   {
     key: "homepage_product_cards_ab_test",
-    name: "EXP-1: Homepage product cards (as authored vs Most popular badge)",
+    name: "EXP-2: Homepage product cards (as authored vs Most popular badge)",
     description: "Hypothesis: flagging Savings as the most popular product draws more product card clicks. Metrics are FX events (cross-project).",
     type: "a/b",
     pages: ["homepage"],
@@ -283,7 +283,7 @@ export const WX_EXPERIMENTS: WxExperiment[] = [
   },
   {
     key: "business_pricing_abc_test",
-    name: "EXP-2: Business pricing (as authored vs social proof vs annual billing note)",
+    name: "EXP-7: Business pricing (as authored vs social proof vs annual billing note)",
     description: "Hypothesis: a social proof line on the recommended tier, or an annual-billing saving on every tier, lifts plan clicks. Metrics are FX events (cross-project).",
     type: "a/b",
     pages: ["business_pricing"],
@@ -305,7 +305,7 @@ export const WX_EXPERIMENTS: WxExperiment[] = [
   },
   {
     key: "cta_copy_multipage_ab_test",
-    name: "EXP-3: CTA copy on three pages (as authored vs speed-led)",
+    name: "EXP-5: CTA copy on three pages (as authored vs speed-led)",
     description: "Hypothesis: saying how quick it is to open an account lifts CTA clicks across the homepage, personal banking and about pages. Metrics are FX events (cross-project).",
     type: "a/b",
     pages: ["homepage", "personal_banking", "about"],
@@ -319,7 +319,7 @@ export const WX_EXPERIMENTS: WxExperiment[] = [
   {
     // A multi-armed bandit shifts traffic to the best arm instead of reporting a winner.
     key: "business_cta_color_mab",
-    name: "EXP-4: Business landing CTA color (brand vs green vs amber)",
+    name: "EXP-11: Business landing CTA color (brand vs green vs amber)",
     description: "Multi-armed bandit: optimizes the color of the business landing page's call-to-action button. Metric is an FX event (cross-project).",
     type: "multiarmed_bandit",
     pages: ["business"],
@@ -333,7 +333,7 @@ export const WX_EXPERIMENTS: WxExperiment[] = [
   },
   {
     key: "help_faq_open_ab_test",
-    name: "EXP-5: Help FAQs (all closed vs first answer open)",
+    name: "EXP-13: Help FAQs (all closed vs first answer open)",
     description: "Hypothesis: showing the first answer up front means fewer visitors need to contact us (Contact us is the CTA, so lower is better). Metrics are FX events (cross-project).",
     type: "a/b",
     pages: ["help"],
@@ -346,7 +346,7 @@ export const WX_EXPERIMENTS: WxExperiment[] = [
   },
   {
     key: "help_product_cards_mobile_ab_test",
-    name: "EXP-6: Help cards on mobile (stacked vs swipeable row)",
+    name: "EXP-16: Help cards on mobile (stacked vs swipeable row)",
     description: "Hypothesis: on a phone, a swipeable row keeps all four help options above the FAQs and gets more of them tapped. Mobile visitors only. Metrics are FX events (cross-project).",
     type: "a/b",
     pages: ["help"],
@@ -370,7 +370,7 @@ export const WX_EXPERIMENTS: WxExperiment[] = [
     // (src/lib/optimizely/wxVariation.ts). The CMS variation is created in Visual
     // Builder (the API cannot create one); until it exists this arm shows the base page.
     key: "investments_cms_variation_ab_test",
-    name: "EXP-7: Investments page (base vs wx_goal_led CMS variation)",
+    name: "EXP-19: Investments page (base vs wx_goal_led CMS variation)",
     description: "Serves the Investments page's wx_goal_led CMS variation (made in Visual Builder) to half the visitors through the site's WX -> CMS bridge. Metrics are FX events (cross-project).",
     type: "a/b",
     pages: ["investments"],
@@ -429,7 +429,7 @@ function welcomeCard(heading: string, text: string, label: string, href: string)
 export const WX_CAMPAIGNS: WxPersonalization[] = [
   {
     key: "homepage_welcome_personalization",
-    name: "EXP-8: Homepage welcome card personalized by audience",
+    name: "PERS-1: Homepage welcome card personalized by audience",
     description:
       "Personalization campaign: a welcome card on the homepage, worded for the first audience the visitor matches (logged in, then mortgage browser, then mobile). " +
       "A 5% holdback sees no card, which is what each experience's lift is measured against. Metrics are FX events (cross-project).",

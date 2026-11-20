@@ -13,7 +13,7 @@
   "experiments": [
     {
       "key": "homepage_product_cards_ab_test",
-      "name": "EXP-1: Homepage product cards (as authored vs Most popular badge)",
+      "name": "EXP-2: Homepage product cards (as authored vs Most popular badge)",
       "campaignId": "6283853357121536",
       "experimentId": "6566206587535360",
       "audience": null,
@@ -47,7 +47,7 @@
     },
     {
       "key": "business_pricing_abc_test",
-      "name": "EXP-2: Business pricing (as authored vs social proof vs annual billing note)",
+      "name": "EXP-7: Business pricing (as authored vs social proof vs annual billing note)",
       "campaignId": "6083640067620864",
       "experimentId": "5074339295395840",
       "audience": null,
@@ -88,7 +88,7 @@
     },
     {
       "key": "cta_copy_multipage_ab_test",
-      "name": "EXP-3: CTA copy on three pages (as authored vs speed-led)",
+      "name": "EXP-5: CTA copy on three pages (as authored vs speed-led)",
       "campaignId": "5748049878712320",
       "experimentId": "4707413662629888",
       "audience": null,
@@ -123,7 +123,7 @@
     },
     {
       "key": "business_cta_color_mab",
-      "name": "EXP-4: Business landing CTA color (brand vs green vs amber)",
+      "name": "EXP-11: Business landing CTA color (brand vs green vs amber)",
       "campaignId": "5708423973568512",
       "experimentId": "4902576775233536",
       "audience": null,
@@ -160,7 +160,7 @@
     },
     {
       "key": "help_faq_open_ab_test",
-      "name": "EXP-5: Help FAQs (all closed vs first answer open)",
+      "name": "EXP-13: Help FAQs (all closed vs first answer open)",
       "campaignId": "5751394584494080",
       "experimentId": "4611665956700160",
       "audience": null,
@@ -194,7 +194,7 @@
     },
     {
       "key": "help_product_cards_mobile_ab_test",
-      "name": "EXP-6: Help cards on mobile (stacked vs swipeable row)",
+      "name": "EXP-16: Help cards on mobile (stacked vs swipeable row)",
       "campaignId": "5416184667963392",
       "experimentId": "5188444631072768",
       "audience": "mobile",
@@ -228,7 +228,7 @@
     },
     {
       "key": "investments_cms_variation_ab_test",
-      "name": "EXP-7: Investments page (base vs wx_goal_led CMS variation)",
+      "name": "EXP-19: Investments page (base vs wx_goal_led CMS variation)",
       "campaignId": "6591426635497472",
       "experimentId": "6178300240855040",
       "audience": null,
@@ -269,7 +269,7 @@
   "campaigns": [
     {
       "key": "homepage_welcome_personalization",
-      "name": "EXP-8: Homepage welcome card personalized by audience",
+      "name": "PERS-1: Homepage welcome card personalized by audience",
       "campaignId": "6088832985071616",
       "holdback": 500,
       "exposure": {
