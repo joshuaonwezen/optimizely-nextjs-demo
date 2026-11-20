@@ -86,8 +86,7 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
   const headingClass = HEADING_CLASSES[(ds?.headingSize as string) || "lg"];
   const alignClass = TEXT_ALIGN_CLASSES[(ds?.textAlign as string) || "left"];
 
-  // Card surface goes on an absolute `.squircle-bg` layer so the mask shapes the
-  // card without clipping the heading/button above it.
+  // Card surface goes on an absolute `.squircle-bg` layer behind the content.
   const surfaceClass = style.wrapper;
   const innerClass   = onColor ? "max-w-2xl" : "insight-rail max-w-2xl";
 
@@ -109,7 +108,7 @@ export default function FeaturedContentBlock(props: FeaturedContentBlockProps) {
             href={data.__context?.edit ? "#" : (pageUrl ?? "#")}
             size="compact"
             variant={onColor ? "custom" : "primary"}
-            className={onColor ? "bg-on-brand text-brand hover:opacity-90" : undefined}
+            className={onColor ? "bg-on-brand text-brand-fill hover:opacity-90" : undefined}
           >
             <span>Read More</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

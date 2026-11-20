@@ -90,8 +90,7 @@ export default async function PricingTierBlock(props: PricingTierBlockProps) {
   // would otherwise silently override the highlight and flatten the recommended tier.
   const bg = !data.highlighted && bgKey ? resolveStyleClasses(ds, { background: bgKey }) : null;
 
-  // Surface classes live on an absolute background layer (`.squircle-bg`) so the
-  // superellipse mask shapes the card without clipping the content above it.
+  // Surface classes live on an absolute `.squircle-bg` layer behind the content.
   let surfaceClass: string;
   if (bg) {
     surfaceClass = `border transition-shadow ${bg.wrapper}`;
@@ -170,7 +169,7 @@ export default async function PricingTierBlock(props: PricingTierBlockProps) {
           size="compact"
           fontClassName=""
           variant={ctaIsDarkChip ? "custom" : "primary"}
-          className={ctaIsDarkChip ? "bg-on-brand text-brand hover:opacity-90" : undefined}
+          className={ctaIsDarkChip ? "bg-on-brand text-brand-fill hover:opacity-90" : undefined}
           data-track-event="pricing_tier_click"
           data-track-tags={JSON.stringify({ tier: data.name ?? "", label: data.ctaText ?? "", highlighted: !!data.highlighted })}
           {...pa("ctaLink")}

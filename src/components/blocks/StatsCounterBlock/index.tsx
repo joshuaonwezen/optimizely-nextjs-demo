@@ -133,7 +133,7 @@ export default function StatsCounterBlock(props: StatsCounterBlockProps) {
   return (
     <div data-component="StatsCounterBlock" className="relative">
       {isHighlight && (
-        // Squircle surface sits on a background layer so it can't clip the content.
+        // Squircle surface sits on a background layer behind the content.
         <div aria-hidden className={`squircle-bg absolute inset-0 ${bg.wrapper}`} />
       )}
       <div className={`relative p-8 ${alignClass}`}>
