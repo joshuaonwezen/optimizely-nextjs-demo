@@ -78,6 +78,7 @@ export function getDemoCategories(): DemoCategory[] {
         { href: "/demo/optimizely-one",  label: "Optimizely One Platform",      description: "How Graph, ODP, FX, Web Exp, CMS, DAM, Recs and Mark AI compose in one app" },
         { href: "/demo/architecture",    label: "Architecture & CMS Editions",  description: "How CMS, Graph, and Next.js fit together - plus SaaS CMS vs CMS 13" },
         { href: "/demo/error-handling",  label: "Error Handling",   description: "notFound vs 500, error boundaries, fallbacks" },
+        { href: "/demo/security",        label: "Security & Trust", description: "CSP and security headers, secrets, preview and webhooks" },
       ],
     },
     {

@@ -60,10 +60,12 @@ const REVALIDATE_SNIPPET = `// POST /api/revalidate
 // Body:   { "path": "/about/" }   - or omit path for full-site bust
 
 import { revalidatePath } from "next/cache";
+import { isValidRevalidateSecret } from "@/lib/security/verifySecret";
 
 export async function POST(request: NextRequest) {
-  const secret = request.headers.get("x-revalidate-secret");
-  if (secret !== process.env.OPTIMIZELY_REVALIDATE_SECRET) {
+  // Constant-time compare (a plain !== can leak, through response timing, how
+  // much of a guess matched), failing closed when the env var is unset.
+  if (!isValidRevalidateSecret(request.headers.get("x-revalidate-secret"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { path } = await request.json();
@@ -91,7 +93,7 @@ export async function POST(request: NextRequest) {
   const secret =
     request.nextUrl.searchParams.get("secret") ??
     request.headers.get("x-revalidate-secret");
-  if (secret !== process.env.OPTIMIZELY_REVALIDATE_SECRET) {
+  if (!isValidRevalidateSecret(secret)) {     // src/lib/security/verifySecret.ts
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
