@@ -146,7 +146,7 @@ function buildPersonalPage(): CompNode[] {
         icon: "savings",
         title: "Savings",
         description:
-          "Easy-access and fixed-rate accounts with rates up to 5.1% AER. FSCS protected up to £85,000.",
+          "Easy-access and fixed-rate accounts with rates up to 5.1% AER. FSCS protected up to £120,000.",
         linkUrl: `cms://content/${PAGE_KEYS.savings}`,
         linkText: "View savings rates →",
       }),
@@ -732,6 +732,8 @@ interface ExtraPageDef {
   description: string;
   features: Array<{ title: string; description: string }>;
   bodyText: string;
+  /** Appended after "Key features", as buildTraditionalProduct's extraHtml. */
+  extraHtml?: string;
 }
 
 const EXTRA_TRADITIONAL_PAGES: ExtraPageDef[] = [
@@ -925,15 +927,25 @@ const EXTRA_TRADITIONAL_PAGES: ExtraPageDef[] = [
   {
     displayName: "Security & Fraud", routeSegment: "security", container: PAGE_KEYS.help,
     metaTitle: "Security & Fraud | Mosey Bank",
-    metaDescription: "How Mosey protects your money, how to spot a scam, and what to do if something looks wrong.",
+    metaDescription: "How Mosey keeps your money and your data safe, how to spot a scam, and what to do if something looks wrong.",
     title: "Security & Fraud",
-    description: "How we protect your money, how to spot a scam, and what to do if something looks wrong.",
+    description: "How we keep your money and your data safe, how to spot a scam, and what to do if something looks wrong.",
     features: [
+      { title: "Encrypted every step of the way", description: "Everything between your device and Mosey travels over an encrypted connection, and your browser is told never to reach us any other way." },
       { title: "Protected around the clock", description: "We monitor your account 24/7 for unusual activity and alert you the moment something looks off." },
       { title: "Freeze your card instantly", description: "Lost your card or spotted a payment you do not recognise? Freeze it in one tap and unfreeze it just as fast." },
+      { title: "Your data stays yours", description: "We use your data to run your accounts and keep them safe, never to sell. Ask us what we hold about you at any time." },
+      { title: "Protected by the FSCS", description: "Eligible deposits are protected by the Financial Services Compensation Scheme up to £120,000 per person." },
       { title: "Spot and report scams", description: "Learn the warning signs of the most common scams and report anything suspicious straight from the app." },
     ],
-    bodyText: "Mosey will never call, text, or email asking for your PIN, password, or one-time passcode. If in doubt, hang up and contact us using the number on the back of your card.",
+    bodyText: "Mosey will never call, text, or email asking for your PIN, password, or one-time passcode. If anyone does, it is not us: hang up and call the number on the back of your card.",
+    extraHtml:
+      "<h2>If something looks wrong</h2><ul>" +
+      "<li><strong>A payment you do not recognise.</strong> Freeze your card in the app, then call the number on the back of it.</li>" +
+      "<li><strong>A suspicious email.</strong> Forward it to report@phishing.gov.uk, then delete it.</li>" +
+      "<li><strong>A suspicious text message.</strong> Forward it to 7726. It is free.</li>" +
+      "<li><strong>A security flaw in our website or app.</strong> Tell our security team. You will find the contact in /.well-known/security.txt.</li>" +
+      "</ul>",
   },
   {
     displayName: "Accessibility", routeSegment: "accessibility", container: PAGE_KEYS.help,
@@ -1009,7 +1021,7 @@ const extraPages: PageDef[] = EXTRA_TRADITIONAL_PAGES.map((p) => ({
   routeSegment: p.routeSegment,
   container: p.container,
   properties: { metaTitle: p.metaTitle, metaDescription: p.metaDescription },
-  traditional: buildTraditionalProduct("", p.title, p.description, "", "", p.features, p.bodyText, ""),
+  traditional: buildTraditionalProduct("", p.title, p.description, "", "", p.features, p.bodyText, "", p.extraHtml),
 }));
 
 const pages: PageDef[] = [
@@ -1157,23 +1169,23 @@ const pages: PageDef[] = [
     container: PAGE_KEYS.personal,
     properties: {
       metaTitle: "Savings Accounts up to 5.1% AER | Mosey Bank",
-      metaDescription: "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £85,000.",
+      metaDescription: "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £120,000.",
     },
     traditional: buildTraditionalProduct(
       "Save Smarter",
       "Savings",
-      "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £85,000.",
+      "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £120,000.",
       "View Savings Rates",
       "/en/personal/savings",
       [
         { title: "Easy-access at 4.6% AER", description: "Withdraw whenever you need to with no penalty. Your rate is competitive and reviewed monthly to stay near the top of the market." },
         { title: "1-year fixed rate at 5.1% AER", description: "Lock in our best rate for 12 months and know exactly what you'll earn. Minimum deposit £500, maximum £250,000." },
-        { title: "FSCS protected", description: "Every penny you save with Mosey is protected by the Financial Services Compensation Scheme up to £85,000 per person." },
+        { title: "FSCS protected", description: "Every penny you save with Mosey is protected by the Financial Services Compensation Scheme up to £120,000 per person." },
         { title: "Open in minutes", description: "Link any UK current account. Transfer funds instantly and start earning interest from the next business day." },
       ],
       "Whether you're building an emergency fund, saving for a home, or making idle cash work harder, Mosey savings accounts give you competitive rates without the complexity.",
       "Open a Savings Account",
-      "<h2>Savings at a glance</h2><ul><li><strong>5.1% AER</strong> fixed rate</li><li><strong>4.6% AER</strong> easy access</li><li><strong>£85,000</strong> FSCS protection per person</li><li><strong>10 minutes</strong> to open an account</li></ul>" +
+      "<h2>Savings at a glance</h2><ul><li><strong>5.1% AER</strong> fixed rate</li><li><strong>4.6% AER</strong> easy access</li><li><strong>£120,000</strong> FSCS protection per person</li><li><strong>10 minutes</strong> to open an account</li></ul>" +
         "<h2>What our customers say</h2><blockquote><p>I moved my savings to Mosey after seeing the 5.1% fixed rate. The transfer took less than a day and the app makes it easy to watch my interest grow.</p></blockquote><p><strong>Sarah Chen</strong>, Mosey customer</p>"
     ),
   },
@@ -1357,7 +1369,7 @@ const pages: PageDef[] = [
         { title: "4.6% AER variable", description: "One of the highest easy-access rates available to UK savers. Rate is reviewed monthly and remains near the top of the market." },
         { title: "Unlimited withdrawals", description: "Withdraw any amount, any time, with no penalty and no notice period. Funds are in your current account the same working day." },
         { title: "No minimum balance", description: "Start saving from as little as £1. There's no minimum balance to earn interest." },
-        { title: "FSCS protected", description: "Your savings are protected by the Financial Services Compensation Scheme up to £85,000 per person." },
+        { title: "FSCS protected", description: "Your savings are protected by the Financial Services Compensation Scheme up to £120,000 per person." },
       ],
       "The Mosey Easy Access Savings Account is for people who want their money to work harder without giving up flexibility. There's no fixed term, no notice period, and no limit on how many times you can dip into your savings.",
       "Open an Easy Access Account"
@@ -1379,7 +1391,7 @@ const pages: PageDef[] = [
         { title: "5.1% AER fixed for 12 months", description: "Our best savings rate, guaranteed for the full 12-month term. You'll know exactly what you'll earn before you open the account." },
         { title: "Open from £500", description: "Start earning our top rate with a minimum deposit of £500. Maximum balance £250,000 per person." },
         { title: "Guaranteed return", description: "Unlike easy-access accounts, your rate won't change during your term. Plan your finances with certainty." },
-        { title: "FSCS protected", description: "Your savings are protected by the Financial Services Compensation Scheme up to £85,000 per person." },
+        { title: "FSCS protected", description: "Your savings are protected by the Financial Services Compensation Scheme up to £120,000 per person." },
       ],
       "Our fixed-rate savings account is for people who don't need immediate access to their money and want to earn as much interest as possible. Lock in 5.1% AER for 12 months and watch a £10,000 deposit grow to £10,510 by maturity.",
       "Open a Fixed Rate Account"

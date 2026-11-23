@@ -5,8 +5,8 @@ import { FxBucketingEvent } from "@/components/FxBucketingEvent";
 const STATS = [
   { value: "4.9★",  label: "App store rating" },
   { value: "2M+",   label: "Active customers" },
-  { value: "$0",    label: "Monthly fees" },
-  { value: "FDIC",  label: "Insured deposits" },
+  { value: "£0",    label: "Monthly fees" },
+  { value: "£120k", label: "FSCS-protected deposits" },
 ];
 
 const TESTIMONIALS = [

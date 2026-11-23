@@ -62,8 +62,8 @@ export const NL: Record<string, string> = {
   "App uptime": "App-uptime",
   "UK branches": "Filialen in het VK",
   "Our best rate": "Onze beste rente",
-  "Our fixed-rate savings account now offers 5.1% AER. Lock in your rate today and watch your money grow - FSCS protected up to £85,000.":
-    "Onze spaarrekening met vaste rente biedt nu 5,1% AER. Leg je rente vandaag vast en zie je geld groeien - FSCS-beschermd tot £85.000.",
+  "Our fixed-rate savings account now offers 5.1% AER. Lock in your rate today and watch your money grow - FSCS protected up to £120,000.":
+    "Onze spaarrekening met vaste rente biedt nu 5,1% AER. Leg je rente vandaag vast en zie je geld groeien - FSCS-beschermd tot £120.000.",
   "See savings rates": "Bekijk spaarrentes",
   "Frequently asked questions": "Veelgestelde vragen",
   "Quick answers to the things we hear most.": "Snelle antwoorden op de vragen die we het vaakst horen.",
@@ -122,8 +122,8 @@ export const NL: Record<string, string> = {
 
   // Savings page
   "Save Smarter": "Slimmer sparen",
-  "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £85,000.":
-    "Direct opneembare en vaste spaarrekeningen met toonaangevende rentes. FSCS-beschermd tot £85.000.",
+  "Easy-access and fixed-rate savings accounts with market-leading rates. FSCS protected up to £120,000.":
+    "Direct opneembare en vaste spaarrekeningen met toonaangevende rentes. FSCS-beschermd tot £120.000.",
   "View Savings Rates": "Bekijk spaarrentes",
   "What makes Savings work for you.": "Waarom sparen bij Mosey bij je past.",
   "Easy-access at 4.6% AER": "Direct opneembaar tegen 4,6% AER",
@@ -133,8 +133,8 @@ export const NL: Record<string, string> = {
   "Lock in our best rate for 12 months and know exactly what you'll earn. Minimum deposit £500, maximum £250,000.":
     "Leg onze beste rente 12 maanden vast en weet precies wat je verdient. Minimale inleg £500, maximaal £250.000.",
   "FSCS protected": "FSCS-beschermd",
-  "Every penny you save with Mosey is protected by the Financial Services Compensation Scheme up to £85,000 per person.":
-    "Elke cent die je bij Mosey spaart is beschermd door het Financial Services Compensation Scheme, tot £85.000 per persoon.",
+  "Every penny you save with Mosey is protected by the Financial Services Compensation Scheme up to £120,000 per person.":
+    "Elke cent die je bij Mosey spaart is beschermd door het Financial Services Compensation Scheme, tot £120.000 per persoon.",
   "Open in minutes": "In enkele minuten geopend",
   "Link any UK current account. Transfer funds instantly and start earning interest from the next business day.":
     "Koppel elke Britse betaalrekening. Maak direct geld over en ontvang al vanaf de volgende werkdag rente.",
@@ -315,8 +315,8 @@ export const NL: Record<string, string> = {
   "No minimum balance": "Geen minimumsaldo",
   "Start saving from as little as £1. There's no minimum balance to earn interest.":
     "Begin met sparen vanaf slechts £1. Er is geen minimumsaldo om rente te verdienen.",
-  "Your savings are protected by the Financial Services Compensation Scheme up to £85,000 per person.":
-    "Je spaargeld is beschermd door het Financial Services Compensation Scheme, tot £85.000 per persoon.",
+  "Your savings are protected by the Financial Services Compensation Scheme up to £120,000 per person.":
+    "Je spaargeld is beschermd door het Financial Services Compensation Scheme, tot £120.000 per persoon.",
   "The Mosey Easy Access Savings Account is for people who want their money to work harder without giving up flexibility. There's no fixed term, no notice period, and no limit on how many times you can dip into your savings.":
     "De direct opneembare spaarrekening van Mosey is voor mensen die hun geld harder willen laten werken zonder flexibiliteit op te geven. Geen vaste looptijd, geen opzegtermijn en geen limiet op hoe vaak je je spaargeld aanspreekt.",
 
@@ -382,6 +382,46 @@ export const NL: Record<string, string> = {
   "Growing a business often means needing capital before revenue catches up. Mosey's business lending products are designed to give you the flexibility to invest, hire, and expand.":
     "Een bedrijf laten groeien betekent vaak kapitaal nodig hebben voordat de omzet volgt. De zakelijke kredietproducten van Mosey geven je de flexibiliteit om te investeren, aan te nemen en uit te breiden.",
 
+  // Security & Fraud page (seed-content EXTRA_TRADITIONAL_PAGES)
+  "Security & Fraud": "Veiligheid & fraude",
+  "Security & Fraud | Mosey Bank": "Veiligheid & fraude | Mosey Bank",
+  "How Mosey keeps your money and your data safe, how to spot a scam, and what to do if something looks wrong.":
+    "Hoe Mosey je geld en je gegevens veilig houdt, hoe je oplichting herkent en wat je doet als er iets niet klopt.",
+  "How we keep your money and your data safe, how to spot a scam, and what to do if something looks wrong.":
+    "Hoe we je geld en je gegevens veilig houden, hoe je oplichting herkent en wat je doet als er iets niet klopt.",
+  "Encrypted every step of the way": "Bij elke stap versleuteld",
+  "Everything between your device and Mosey travels over an encrypted connection, and your browser is told never to reach us any other way.":
+    "Alles tussen je apparaat en Mosey gaat over een versleutelde verbinding, en je browser krijgt de opdracht ons nooit op een andere manier te benaderen.",
+  "Protected around the clock": "Dag en nacht beschermd",
+  "We monitor your account 24/7 for unusual activity and alert you the moment something looks off.":
+    "We houden je rekening 24/7 in de gaten op ongebruikelijke activiteit en waarschuwen je zodra er iets niet lijkt te kloppen.",
+  "Freeze your card instantly": "Blokkeer je pas direct",
+  "Lost your card or spotted a payment you do not recognise? Freeze it in one tap and unfreeze it just as fast.":
+    "Pas kwijt of een betaling gezien die je niet herkent? Blokkeer hem met één tik en deblokkeer hem net zo snel.",
+  "Your data stays yours": "Jouw gegevens blijven van jou",
+  "We use your data to run your accounts and keep them safe, never to sell. Ask us what we hold about you at any time.":
+    "We gebruiken je gegevens om je rekeningen te beheren en veilig te houden, nooit om ze te verkopen. Vraag ons op elk moment welke gegevens we over je hebben.",
+  "Protected by the FSCS": "Beschermd door het FSCS",
+  "Eligible deposits are protected by the Financial Services Compensation Scheme up to £120,000 per person.":
+    "In aanmerking komende tegoeden zijn beschermd door het Financial Services Compensation Scheme, tot £120.000 per persoon.",
+  "Spot and report scams": "Herken en meld oplichting",
+  "Learn the warning signs of the most common scams and report anything suspicious straight from the app.":
+    "Leer de waarschuwingssignalen van de meest voorkomende oplichting kennen en meld alles wat verdacht is direct vanuit de app.",
+  "Mosey will never call, text, or email asking for your PIN, password, or one-time passcode. If anyone does, it is not us: hang up and call the number on the back of your card.":
+    "Mosey zal je nooit bellen, sms'en of mailen om je pincode, wachtwoord of eenmalige code te vragen. Doet iemand dat wel, dan zijn wij het niet: hang op en bel het nummer op de achterkant van je pas.",
+  "If something looks wrong": "Als er iets niet klopt",
+  "A payment you do not recognise.": "Een betaling die je niet herkent.",
+  "Freeze your card in the app, then call the number on the back of it.":
+    "Blokkeer je pas in de app en bel daarna het nummer op de achterkant.",
+  "A suspicious email.": "Een verdachte e-mail.",
+  "Forward it to report@phishing.gov.uk, then delete it.":
+    "Stuur hem door naar report@phishing.gov.uk en verwijder hem daarna.",
+  "A suspicious text message.": "Een verdacht sms-bericht.",
+  "Forward it to 7726. It is free.": "Stuur het door naar 7726. Dat is gratis.",
+  "A security flaw in our website or app.": "Een beveiligingslek in onze website of app.",
+  "Tell our security team. You will find the contact in /.well-known/security.txt.":
+    "Laat het ons beveiligingsteam weten. Het contactadres staat in /.well-known/security.txt.",
+
   // Navigation labels (seed-nav)
   "Personal": "Particulier",
   "Easy Access": "Direct opneembaar",
@@ -446,8 +486,8 @@ export const NL: Record<string, string> = {
   "Start by getting a decision in principle online - it takes around 10 minutes and won't affect your credit score. One of our advisors will then call you to discuss your options and guide you through the full application.":
     "Begin met een voorlopig akkoord online - het duurt ongeveer 10 minuten en beïnvloedt je kredietscore niet. Een van onze adviseurs belt je daarna om je opties te bespreken en je door de volledige aanvraag te begeleiden.",
   "Is my money protected?": "Is mijn geld beschermd?",
-  "Yes. Mosey Bank is authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority. Eligible deposits are protected by the FSCS up to £85,000 per person.":
-    "Ja. Mosey Bank heeft een vergunning van de Prudential Regulation Authority en staat onder toezicht van de Financial Conduct Authority. In aanmerking komende tegoeden zijn beschermd door het FSCS tot £85.000 per persoon.",
+  "Yes. Mosey Bank is authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority. Eligible deposits are protected by the FSCS up to £120,000 per person.":
+    "Ja. Mosey Bank heeft een vergunning van de Prudential Regulation Authority en staat onder toezicht van de Financial Conduct Authority. In aanmerking komende tegoeden zijn beschermd door het FSCS tot £120.000 per persoon.",
   "How do I switch banks to Mosey?": "Hoe stap ik over naar Mosey?",
   "We use the Current Account Switch Service (CASS), which moves all your direct debits and standing orders automatically within 7 working days. Your old account closes on the switch date and any payments to or from your old account are forwarded for 3 years.":
     "We gebruiken de Current Account Switch Service (CASS), die al je incasso's en periodieke overboekingen automatisch binnen 7 werkdagen verhuist. Je oude rekening sluit op de overstapdatum en betalingen van of naar je oude rekening worden 3 jaar lang doorgestuurd.",

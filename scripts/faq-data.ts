@@ -51,7 +51,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     displayName: "FAQ: Is my money protected?",
     question: "Is my money protected?",
     answer:
-      "Yes. Mosey Bank is authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority. Eligible deposits are protected by the FSCS up to £85,000 per person.",
+      "Yes. Mosey Bank is authorised by the Prudential Regulation Authority and regulated by the Financial Conduct Authority. Eligible deposits are protected by the FSCS up to £120,000 per person.",
   },
   {
     key: "fb900000000000000000000000000005",
