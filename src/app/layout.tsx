@@ -15,6 +15,7 @@ import StickyOfferBar from "@/components/layout/StickyOfferBar";
 import RatesBar from "@/components/layout/RatesBar";
 import TrustSection from "@/components/layout/TrustSection";
 import { WX_HOLD_STYLE, WX_REVEAL_STYLE } from "@/lib/optimizely/wxVariation";
+import { GA_MEASUREMENT_ID, GTM_CONTAINER_ID, HEAD_SCRIPTS } from "@/lib/headScripts";
 import "./globals.css";
 
 // Each family is ONE localFont() call with a src array, so font-weight resolves
@@ -68,43 +69,11 @@ export const metadata: Metadata = {
     "Personal, business, and mortgage banking — built around you.",
 };
 
-const themeScript = `(function(){var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');})();`;
-
 // Optimizely Web Experimentation snippet. Falls back to the site's WX project,
 // "SaaS CMS ProServ - Web" (built by scripts/seed-wx-project.ts), so a checkout with
 // no env config still loads the snippet.
 const webSnippetId =
   process.env.NEXT_PUBLIC_OPTIMIZELY_WEB_SNIPPET_ID ?? "5018738125176832";
-
-const odpTrackerId =
-  process.env.NEXT_PUBLIC_OPTIMIZELY_ODP_TRACKER_ID ?? "dWs2ejwWekVGmZj9JoOIcA";
-
-// Inlined in <head> so the zaius queue exists synchronously during HTML
-// parsing — before React hydration, before any useEffect fires.
-const odpInitScript = [
-  "var zaius=window['zaius']||(window['zaius']=[]);",
-  "zaius.methods=['initialize','onload','customer','entity','event','subscribe','unsubscribe','consent','identify','anonymize','dispatch'];",
-  "zaius.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);zaius.push(t);return zaius}};",
-  "(function(){",
-  "for(var i=0;i<zaius.methods.length;i++){var method=zaius.methods[i];zaius[method]=zaius.factory(method)}",
-  `var e=document.createElement('script');e.type='text/javascript';e.async=true;e.src=('https:'===document.location.protocol?'https://':'http://')+'d1igp3oop3iho5.cloudfront.net/v2/${odpTrackerId}/zaius-min.js';`,
-  "var t=document.getElementsByTagName('script')[0];t.parentNode.insertBefore(e,t);",
-  "})();",
-].join("");
-
-const gtagInitScript = [
-  "window.dataLayer = window.dataLayer || [];",
-  "function gtag(){dataLayer.push(arguments);}",
-  "gtag('js', new Date());",
-  "gtag('config', 'G-2MTP98PSWL');",
-].join("");
-
-const gtmInitScript =
-  "(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':" +
-  "new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0]," +
-  "j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=" +
-  "'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);" +
-  "})(window,document,'script','dataLayer','GTM-5SVM6NH');";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -123,13 +92,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script src={`https://cdn.optimizely.com/js/${webSnippetId}.js`} />
         {/* gtag + GTM bootstraps stay inline in <head>: both share this dataLayer and
-            must exist before any tracking call. */}
-        {/* eslint-disable-next-line @next/next/next-script-for-ga */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-2MTP98PSWL" />
-        <script dangerouslySetInnerHTML={{ __html: gtagInitScript }} />
-        <script dangerouslySetInnerHTML={{ __html: gtmInitScript }} />
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <script dangerouslySetInnerHTML={{ __html: odpInitScript }} />
+            must exist before any tracking call. The strict CSP demo route allows these
+            four by hash, so their text lives in headScripts.ts. */}
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} />
+        <script dangerouslySetInnerHTML={{ __html: HEAD_SCRIPTS.gtag }} />
+        <script dangerouslySetInnerHTML={{ __html: HEAD_SCRIPTS.gtm }} />
+        <script dangerouslySetInnerHTML={{ __html: HEAD_SCRIPTS.theme }} />
+        <script dangerouslySetInnerHTML={{ __html: HEAD_SCRIPTS.odp }} />
         {/* Web Experimentation variation delivery, both modes (wxVariation.ts). The hold
             rule covers soft-nav: `visibility` rather than `display` so layout stays
             reserved and the hold cannot shift content. The reveal rules cover pre-paint,
@@ -148,7 +117,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <noscript>
           <iframe
             title="Google Tag Manager"
-            src="https://www.googletagmanager.com/ns.html?id=GTM-5SVM6NH"
+            src={`https://www.googletagmanager.com/ns.html?id=${GTM_CONTAINER_ID}`}
             height="0"
             width="0"
             style={{ display: "none", visibility: "hidden" }}

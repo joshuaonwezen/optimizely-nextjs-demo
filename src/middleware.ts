@@ -18,6 +18,7 @@ import {
   VARIATION_MARKER,
 } from "@/lib/optimizely/variationPath";
 import { isWxVariation, WX_FLAG_KEY } from "@/lib/optimizely/wxVariation";
+import { buildStrictCsp, STRICT_CSP_DEMO_PATH } from "@/lib/security/csp";
 
 // Safety backstop against a pathological config that scopes many CMS experiments
 // to the same route. Route-scoping (cms_route) is the primary control; this only
@@ -72,6 +73,21 @@ export async function middleware(request: NextRequest) {
   // API routes get the forwarded id but no Set-Cookie: /api/demo/reset-visitor-id
   // writes a NEW id, and a second Set-Cookie carrying the old one could undo it.
   if (pathname.startsWith("/api/")) return response;
+
+  // The strict CSP demo gets a fresh nonce on every request (src/lib/security/csp.ts).
+  // Next reads the nonce back out of the REQUEST's CSP header and stamps it on its own
+  // scripts, so the policy goes on the forwarded request as well as on the response.
+  if (pathname === STRICT_CSP_DEMO_PATH) {
+    const nonce = btoa(crypto.randomUUID());
+    const csp = await buildStrictCsp(nonce);
+    const headers = new Headers(request.headers);
+    headers.set("x-nonce", nonce);
+    headers.set("Content-Security-Policy", csp);
+    const strict = NextResponse.next({ request: { headers } });
+    strict.headers.set("Content-Security-Policy", csp);
+    appendVisitorCookie(strict.headers, userId, host);
+    return strict;
+  }
 
   // Always (re)write the visitor id domain-wide and purge any legacy host-only
   // duplicate, so it stays a single cookie shared with the Optimizely Web snippet and
@@ -197,6 +213,7 @@ export async function middleware(request: NextRequest) {
   }
 }
 
+// .well-known/ (security.txt) is not a CMS page, so it must never get a __v_ rewrite.
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|sitemap.xml|robots.txt).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|sitemap.xml|robots.txt|\\.well-known/).*)"],
 };

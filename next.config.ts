@@ -1,14 +1,12 @@
 import type { NextConfig } from "next";
 import bundleAnalyzer from "@next/bundle-analyzer";
 import { CACHE_TTL } from "./src/lib/optimizely/client";
-import { getCmsUrl } from "./src/lib/optimizely/cmsUrl";
+import { cspHeaders, SECURITY_HEADERS, STRICT_CSP_DEMO_PATH } from "./src/lib/security/csp";
 
 // `npm run analyze` opens the treemap; a normal build is unaffected.
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "1",
 });
-
-const cmsUrl = getCmsUrl();
 
 const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
@@ -37,21 +35,32 @@ const nextConfig: NextConfig = {
       process.env.NODE_ENV === "production" ? { exclude: ["error"] } : false,
   },
 
+  // No `x-powered-by: Next.js` on every response.
+  poweredByHeader: false,
+
   /**
-   * Allow the Optimizely CMS to embed this site in an iframe for Visual Builder.
-   * Without the Content-Security-Policy frame-ancestors directive, the on-page
-   * editor iframe will be blocked by the browser.
+   * Security headers, all built in src/lib/security/csp.ts (the policy, why each
+   * source is there, and the report-only rollout). The CSP keeps frame-ancestors
+   * for the CMS origin, without which the Visual Builder iframe is blocked.
+   *
+   * The CSP entry skips STRICT_CSP_DEMO_PATH, which gets a per-request nonce
+   * policy from the middleware instead. Two CSP headers on one response are both
+   * enforced, so the allowlist one must not reach that route.
    */
   async headers() {
     return [
       {
         source: "/:path*",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: `frame-ancestors 'self' ${cmsUrl}`,
-          },
-        ],
+        headers: SECURITY_HEADERS.map(({ key, value }) => ({ key, value })),
+      },
+      {
+        source: `/:path((?!${STRICT_CSP_DEMO_PATH.slice(1)}$).*)`,
+        headers: cspHeaders(),
+      },
+      {
+        // Share links are meant to be passed around, so keep drafts out of search.
+        source: "/preview/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
     ];
   },

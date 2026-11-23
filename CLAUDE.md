@@ -547,6 +547,7 @@ if (pathname.startsWith("/preview")) return response;
 if (/^\/demo(\/|$)/.test(pathname)) return response;
 if (pathname.includes(".segments/")) return response;
 ```
+`/.well-known/` (security.txt) is excluded in the `matcher` itself. `/demo/security/strict-csp` returns early too, before the `/demo` check, with its own nonce CSP (see the security section below).
 
 A path that already contains `__v_` was requested directly (middleware never sees its own rewrites). Segments are 307-redirected away unless they validate, so visitors cannot mint arbitrary ISR entries - but the two sources validate against different authorities: an FX segment against the FX datafile, and a `__v_wx--*` segment against the CMS's own variation names (`/api/cms-variations`, read over HTTP because middleware has no Data Cache, same as `/api/redirects`). Segment parsing/formatting lives in `src/lib/optimizely/variationPath.ts`, shared by middleware and the catch-all page.
 
@@ -654,6 +655,17 @@ const { pa, src } = getPreviewUtils(content);
 ## External Content Sources (Content Source API)
 
 See [docs/content-source-api.md](docs/content-source-api.md). Key traps: data indexing needs account activation (200 + journalId while nothing indexes); a 200-but-0-indexed source with activation means a corrupted mapping - delete the source (`id` REQUIRED, an empty id deletes all sources) and re-register; `_rbac` is the string `"r:Everyone:Read"`; auth needs app key AND secret.
+
+## Security headers and CSP
+
+Documented for visitors of the demo on `/demo/security`. Rules for changing it:
+
+- **Every CSP source lives in `CSP_SOURCES` in `src/lib/security/csp.ts`**, with the product that needs it and why. `next.config.ts` (site-wide header), the middleware (strict route) and the `/demo/security` table are all built from it, so a new third-party origin is one entry there and nowhere else. Name hosts exactly: no `'strict-dynamic'`, no `'unsafe-eval'` outside `next dev`, no `https:` or broad wildcards on `script-src`. Together they stop a third-party script that goes bad from loading more code or sending data to a host the policy does not name.
+- **The policy ships as `Content-Security-Policy-Report-Only`** until `CSP_MODE=enforce` is set on a Vercel project (headers are baked in at build time, so it needs a redeploy). `frame-ancestors`, `object-src` and `base-uri` stay in an always-enforced header: browsers IGNORE `frame-ancestors` in a report-only policy, so moving it there would drop clickjacking protection and still let Visual Builder frame the site, which hides the mistake. `upgrade-insecure-requests` goes only into a whole enforced policy (ignored with a console warning in report-only, and it breaks http://localhost).
+- **Reports use `report-uri` only.** With `report-to` present, Chrome suppresses `report-uri`, and in testing it never delivered a `report-to` report (relative or absolute endpoint). `/api/csp-report` logs one `[csp]` line per violation via `console.error` (the only console method `removeConsole` keeps), with query strings cut so preview tokens and signed links never reach the logs. Read them in Vercel's runtime logs.
+- **The root layout's four inline `<head>` scripts live in `src/lib/headScripts.ts`.** The strict route allows them by SHA-256 hash, so never inline a new script in `layout.tsx` or edit one there: add it to `HEAD_SCRIPTS` and the hash follows. The layout must never read `headers()` for a nonce - that turns every route dynamic.
+- **`import "server-only"` cannot go in a module reachable from `src/components/**`** (cms-cli bundles every component with esbuild to read content types, and `server-only` does not resolve outside Next, so `opti:push` would fail) **or from `scripts/`** (it throws under `tsx`). That is why `adminPreviewClient.ts` (reached by Footer and NavigationItemBlock) and `auth.ts` (seed scripts) have no guard while `odp.ts`, `shareLink.ts` and `verifySecret.ts` do.
+- **Testing CSP with CDP: pass `allowUnsafeEvalBlockedByCSP: false` to `Runtime.evaluate`.** It defaults to true, and the exemption covers everything the evaluate call triggers, including a button click, so `eval()` looks allowed when it is not.
 
 ## Project Structure
 

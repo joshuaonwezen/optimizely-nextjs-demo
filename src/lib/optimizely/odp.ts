@@ -1,3 +1,4 @@
+import "server-only";
 export const ODP_API_HOST = process.env.OPTIMIZELY_ODP_API_HOST ?? "https://api.zaius.com";
 export const ODP_API_KEY  = process.env.OPTIMIZELY_ODP_API_KEY  ?? "";
 

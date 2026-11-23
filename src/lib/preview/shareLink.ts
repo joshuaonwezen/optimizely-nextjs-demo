@@ -1,3 +1,4 @@
+import "server-only";
 import { createHmac, timingSafeEqual } from "crypto";
 
 // External preview links let anyone (no CMS login) open a draft in the front end.
