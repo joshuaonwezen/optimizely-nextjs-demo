@@ -169,13 +169,18 @@ export const MARK_TOOLS: MarkTool[] = [
       },
     ],
     async run(parameters) {
-      const { pages, siteBase } = await listPublishedPages();
+      const { pages, siteBase, notInCms } = await listPublishedPages();
       const result = auditSite(pages, {
         staleAfterDays: integer(parameters, "stale_after_days", DEFAULT_STALE_DAYS),
         worstPages: Math.min(integer(parameters, "worst_pages", 10), 50),
       });
       return {
         site: siteBase ?? "every site in this CMS",
+        ...(notInCms === null
+          ? { note: "Could not check each page against the CMS. Blueprints and pages deleted from the CMS may be listed; they cannot be edited." }
+          : notInCms > 0
+            ? { leftOut: `${notInCms} page(s) in the search index are not pages in the CMS (deleted items and blueprints).` }
+            : {}),
         ...result,
         pagesMissingCategoriesCount: result.pagesMissingCategories.length,
         pagesMissingCategories: result.pagesMissingCategories.slice(0, MAX_LISTED),

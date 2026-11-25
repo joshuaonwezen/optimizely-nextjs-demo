@@ -2,6 +2,7 @@ import "server-only";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { keyFromTermUri } from "@/lib/taxonomy";
 import type { PageFacts, PendingDraft } from "./audit";
+import { keysMissingFromCms } from "./cms";
 import { markGraph } from "./graph";
 import { imagesWithoutAlt, stripHtml, visibleText, wordCount } from "./text";
 
@@ -192,16 +193,26 @@ async function listByStatus(statuses: string[], base: string | null): Promise<Pa
   return out;
 }
 
+export interface PublishedPages {
+  pages: PageFacts[];
+  siteBase: string | null;
+  /** Rows Graph listed that the CMS does not have. Null: the CMS could not be asked. */
+  notInCms: number | null;
+}
+
 // Every published page of this site, one row per locale, with its pending draft.
 // Rows are limited to this site's `url.base`. A CMS whose pages carry another
 // base (local development against a deployed instance) falls back to every page.
-export async function listPublishedPages(): Promise<{ pages: PageFacts[]; siteBase: string | null }> {
+export async function listPublishedPages(): Promise<PublishedPages> {
   let siteBase: string | null = getSiteUrl();
-  let published = await listByStatus(["Published"], siteBase);
-  if (published.length === 0) {
+  let listed = await listByStatus(["Published"], siteBase);
+  if (listed.length === 0) {
     siteBase = null;
-    published = await listByStatus(["Published"], siteBase);
+    listed = await listByStatus(["Published"], siteBase);
   }
+
+  const gone = await keysMissingFromCms(listed.map((page) => page.facts.contentKey));
+  const published = gone ? listed.filter((page) => !gone.has(page.facts.contentKey)) : listed;
 
   const drafts = await listByStatus(UNPUBLISHED, siteBase);
   const draftsByPage = new Map<string, PageVersion[]>();
@@ -214,7 +225,7 @@ export async function listPublishedPages(): Promise<{ pages: PageFacts[]; siteBa
     ...page.facts,
     pendingDraft: pendingDraftFor(page, draftsByPage.get(`${page.facts.contentKey}:${page.facts.locale}`) ?? []),
   }));
-  return { pages, siteBase };
+  return { pages, siteBase, notInCms: gone ? listed.length - published.length : null };
 }
 
 // Every base version of one item (optionally one locale) that is published or
@@ -296,6 +307,13 @@ export async function loadPage(ref: PageRef, version?: string): Promise<LoadedPa
   }
   if (!target.isPage) {
     return { error: `'${target.facts.name}' (${target.facts.contentType}) is not a page.` };
+  }
+  if ((await keysMissingFromCms([ref.contentKey]))?.has(ref.contentKey)) {
+    return {
+      error:
+        `'${target.facts.name}' is still in the search index but is not a page in the CMS, so it cannot be edited. ` +
+        "It was deleted from the CMS, or it is a blueprint (a page template).",
+    };
   }
 
   const document = await getPageDocument(target);

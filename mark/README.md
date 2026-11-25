@@ -41,9 +41,10 @@ How sure each part is:
 - **From Optimizely's docs, not exercised here:** the system tool names `cms_update_content_item`,
   `cms_get_content_data`, `cms_publish_content_item`, `cms_search_graph` and the taxonomy tools. Mark
   can't be called from outside its UI, so confirm the names in the agent's tool picker.
-- **Not verified:** that `cms_update_content_item` accepts the built-in `categories` property. The REST
-  API underneath does (`docs/categories.md`). Check it once in chat before building the workflows; see
-  [First-run checks](#first-run-checks).
+- **Verified in Mark chat** (2026-11-25, joshCMS): `mosey_audit_site` answers through the Tool
+  Registry, and `cms_update_content_item` saved a draft with `metaDescription` and the built-in
+  `categories` property. The draft was saved under the chatting user's own sign-in, the published
+  version stayed as it was, and every other property was carried over.
 
 ## How a run starts
 
@@ -119,7 +120,7 @@ connected to **joshCMS**: a colleague's CMS webhook there posts to it. So the si
 Do these in Mark chat before building the workflows. Open Mark from the joshCMS editor, so its
 `cms_*` tools act on joshCMS.
 
-1. **The site's tools answer.** "Call mosey_audit_site." You should get about 100 pages and an average
+1. **The site's tools answer.** "Call mosey_audit_site." You should get about 90 pages and an average
    score. "Call mosey_list_categories" should list 44 categories.
 2. **Mark can save a draft with categories.** On a page nobody minds (for example *Hello World*):
    "Using cms_update_content_item, save a draft of content `<key>` (en) that sets `metaDescription` to
@@ -169,9 +170,23 @@ All server-side. None is needed for the site to build or run.
 | `MARK_DEBOUNCE_MINUTES` | Minimum gap between publish runs for one page. Default 2. |
 | `MARK_FRESH_MINUTES` | How recent a version must be to count as just published or submitted. Default 10. |
 | `MARK_REVIEW_STATUSES` | Graph statuses that start a review. Default `InReview`; add `Ready` for pages with no approval sequence. |
-| `OPTIMIZELY_CMS_CLIENT_ID`, `OPTIMIZELY_CMS_CLIENT_SECRET` | Optional here. With them, `mosey_list_categories` asks the CMS which terms are selectable. Without them it assumes every term below a root is, and says so. |
+| `OPTIMIZELY_CMS_CLIENT_ID`, `OPTIMIZELY_CMS_CLIENT_SECRET` | The Management API client of this site's CMS. The tools still answer without it, but they then can't ask the CMS two things, and say so in their output: whether each page Graph lists still exists (see below), and which category terms are selectable. Set them. |
 
 On Vercel a changed variable only reaches the site with the next deployment.
+
+### Why the tools ask the CMS which pages exist
+
+Graph is what the tools read, but it is not the authority on which pages exist. On joshCMS, 11 of the
+99 pages Graph lists as published cannot be opened in the CMS:
+- **Blueprints.** Page templates are indexed as published pages under `/blueprints/`. They are not
+  content items (`GET /v1/content/{key}` is 404, `GET /v1/blueprints/{key}` is 200).
+- **Deleted items whose Graph documents were never removed.** Six old seed pages under
+  `/articles-demo/` and `/blogs/`.
+
+Nothing in a Graph document tells either kind from a real page, and Mark's `cms_update_content_item`
+answers "Content item not found" for them. So `keysMissingFromCms()` (`src/lib/mark/cms.ts`) asks the
+CMS for each key once (cached for five minutes), `mosey_audit_site` leaves those pages out and says
+how many, and the single-page tools return an error that names the reason.
 
 ## Troubleshooting
 
@@ -187,6 +202,8 @@ every 10 minutes, because the CMS autosaves and each save re-sends the event.
 | A tool call returns 401 or 503 | 401: the registry entry's bearer token isn't `MARK_TOOLS_BEARER`. 503: the variable isn't set on this deployment. |
 | A tool call returns 403 or 429 with `x-vercel-mitigated: challenge` | Vercel's Attack Mode is challenging the host. It blocks Mark and the Graph webhook alike. |
 | Mark says a category is not selectable | `mosey_list_categories` could not reach the CMS and guessed. Set the Management API credentials. |
+| The save fails with "Content item not found" | The page is a blueprint or was deleted from the CMS, and the tools could not check: `mosey_audit_site` then carries a `note` saying so. Set the Management API credentials. |
+| A real page is missing from the audit | The Management API client can't read it, so the CMS answered 404 for its key. Give the client read access. |
 | No review run | The version never reached `InReview`: no approval sequence covers the page. See step 3 of the demo script. |
 | Two runs for one publish | Two server instances each saw the event before either remembered it. The tagger stops at its first step when a draft is already pending. If both runs got past that at once there are two drafts; keep the newer. |
 
@@ -215,7 +232,8 @@ side can be tested without it:
    and read the `[mark]` line in the dev server's output.
 
 Observed on 2026-11-25:
-- `mosey_audit_site` covered 103 page/locale rows of joshCMS in 1.5 s.
+- `mosey_audit_site` covered 92 page/locale rows of joshCMS and left out 11 that the CMS does not
+  have, in 1.3 s once the CMS answers were cached (3.7 s the first time).
 - `mosey_list_categories` returned 44 of the 55 terms: no roots, no grouping terms, no lifecycle branch.
 - `mosey_get_review_context` on toddCMS's *Personal Loans* (version 1726, in review) returned
   `changedFields: ["heading"]` with the text before and after.
