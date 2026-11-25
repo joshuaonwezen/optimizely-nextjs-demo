@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Mosey Bank page published, translation wanted",
+  "description": "Sent by the site (src/lib/mark/triggers.ts) when a person publishes the source-language version of a page that has no version yet in one of the translation languages.",
+  "type": "object",
+  "required": ["event", "contentKey", "locale", "targetLocales"],
+  "properties": {
+    "event": { "type": "string", "enum": ["published"] },
+    "contentKey": { "type": "string", "description": "The page's content key, 32 hex characters; pass it to the translator as content_key." },
+    "version": { "type": "string", "description": "Version number of the published version." },
+    "locale": { "type": "string", "description": "The language that was published and is translated from, e.g. en." },
+    "name": { "type": "string" },
+    "contentType": { "type": "string" },
+    "url": { "type": "string", "description": "Public URL of the page." },
+    "triggeredBy": { "type": "string", "description": "The CMS user who published." },
+    "targetLocales": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "The languages the page has no version in yet, e.g. [\"nl\"]."
+    },
+    "docId": { "type": "string", "description": "The Graph document id the event carried: {guid}_{locale}_Published." }
+  }
+}

@@ -2,8 +2,9 @@ import "server-only";
 import { getCmsUrl } from "@/lib/optimizely/cmsUrl";
 import { auditPage, auditSite, missingFields } from "./audit";
 import { categoryLabels, listAssignableCategories } from "./categories";
-import { listPublishedPages, loadPage, resolvePage } from "./pages";
+import { listPublishedPages, loadPage, resolvePage, type PageRef } from "./pages";
 import { getReviewContext } from "./review";
+import { getTranslationPlan } from "./translation";
 
 interface ToolParameter {
   name: string;
@@ -61,12 +62,19 @@ function clip(value: string): string {
   return value.length > MAX_TEXT ? `${value.slice(0, MAX_TEXT)}...` : value;
 }
 
-async function pageFor(parameters: Record<string, unknown>) {
+async function refFor(
+  parameters: Record<string, unknown>,
+  localeParameter = "locale"
+): Promise<PageRef | { error: string }> {
   const page = text(parameters, "page");
   if (!page) return { error: "The 'page' parameter is required: a content key or a page address." };
-  const ref = await resolvePage(page, text(parameters, "locale"));
-  if (!ref) return { error: `No published page found at '${page}'. Pass the content key instead.` };
-  return loadPage(ref, text(parameters, "version"));
+  const ref = await resolvePage(page, text(parameters, localeParameter));
+  return ref ?? { error: `No published page found at '${page}'. Pass the content key instead.` };
+}
+
+async function pageFor(parameters: Record<string, unknown>) {
+  const ref = await refFor(parameters);
+  return "error" in ref ? ref : loadPage(ref, text(parameters, "version"));
 }
 
 export const MARK_TOOLS: MarkTool[] = [
@@ -207,11 +215,41 @@ export const MARK_TOOLS: MarkTool[] = [
       LOCALE,
     ],
     async run(parameters) {
-      const page = text(parameters, "page");
-      if (!page) return { error: "The 'page' parameter is required: a content key or a page address." };
-      const ref = await resolvePage(page, text(parameters, "locale"));
-      if (!ref) return { error: `No published page found at '${page}'. Pass the content key instead.` };
-      return getReviewContext(ref, text(parameters, "version"));
+      const ref = await refFor(parameters);
+      return "error" in ref ? ref : getReviewContext(ref, text(parameters, "version"));
+    },
+  },
+  {
+    name: "mosey_get_translation_plan",
+    description:
+      "Lists everything that must be translated for one Mosey Bank page to show in full in another " +
+      "language: the page itself, and every shared block it uses (in a content area, in the Visual " +
+      "Builder composition, referenced from a property, or nested inside another block). A shared " +
+      "block is a content item with language versions of its own, and one with no version in the " +
+      "target language is missing from the page in that language. Each entry has its content key, " +
+      "name, type, where it is used, `targetVersion` (what the target language already has, or null) " +
+      "and `translate` (true when it needs a first translation). Also returns the page's categories " +
+      "and the pages it references that have no published version in the target language. Read-only.",
+    parameters: [
+      PAGE,
+      {
+        name: "target_locale",
+        type: "string",
+        required: true,
+        description: "The language to translate into, e.g. nl.",
+      },
+      {
+        name: "source_locale",
+        type: "string",
+        required: false,
+        description: "The language to translate from. Defaults to en.",
+      },
+    ],
+    async run(parameters) {
+      const target = text(parameters, "target_locale");
+      if (!target) return { error: "The 'target_locale' parameter is required, e.g. nl." };
+      const ref = await refFor(parameters, "source_locale");
+      return "error" in ref ? ref : getTranslationPlan(ref, target);
     },
   },
 ];

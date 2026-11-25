@@ -36,6 +36,7 @@ function list(value: string | undefined): string[] {
 // anyone who can POST to them. Read on every call so a test can swap them.
 export function markWorkflowConfig() {
   const reviewStatuses = list(process.env.MARK_REVIEW_STATUSES);
+  const translateLocales = list(process.env.MARK_TRANSLATE_LOCALES);
   return {
     enabled: process.env.MARK_WORKFLOWS_ENABLED !== "false",
     onPublish: target(
@@ -48,6 +49,15 @@ export function markWorkflowConfig() {
       process.env.MARK_ON_REVIEW_AUTH,
       process.env.MARK_ON_REVIEW_AUTH_HEADER
     ),
+    onTranslate: target(
+      process.env.MARK_ON_TRANSLATE_URL,
+      process.env.MARK_ON_TRANSLATE_AUTH,
+      process.env.MARK_ON_TRANSLATE_AUTH_HEADER
+    ),
+    // A page is translated from its source locale into each of these it has no
+    // version in yet. `en` is the primary locale on every instance.
+    translateSourceLocale: process.env.MARK_TRANSLATE_SOURCE_LOCALE || "en",
+    translateLocales: translateLocales.length > 0 ? translateLocales : ["nl"],
     // Graph's status names. "Ready" adds pages marked ready to publish on an
     // instance (or branch of the tree) that has no approval sequence.
     reviewStatuses: reviewStatuses.length > 0 ? reviewStatuses : ["InReview"],

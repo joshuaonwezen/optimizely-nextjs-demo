@@ -242,7 +242,12 @@ export async function getPageVersions(contentKey: string, locale?: string): Prom
   return data._Content.items.map(toVersion).filter((version) => !version.variation);
 }
 
-export async function getPageDocument({ facts }: PageVersion): Promise<unknown> {
+// Also reads a shared block's document: only the version's identity is used.
+export async function getPageDocument({
+  facts,
+}: {
+  facts: Pick<PageFacts, "contentKey" | "version" | "locale" | "status">;
+}): Promise<unknown> {
   const where = {
     _metadata: {
       key: { eq: facts.contentKey },

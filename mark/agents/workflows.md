@@ -5,10 +5,11 @@ exist, or import them from `mark/agents/*.json` once those exports are in the re
 `mark/README.md`). Webhook and scheduled runs execute **as the workflow's owner** and use the owner's
 credits.
 
-The `cms_*` system tools must act on the CMS (SaaS) instance this site runs on (joshCMS). Where a
-trigger or agent offers a **Product Instance**, pick that one. How a background run chooses an
-instance when the Mark instance is connected to several is not verified here: the first run of each
-workflow is the check, and a wrong instance shows up as "content not found" on the save.
+**Every trigger needs its Product Instance set** to the CMS (SaaS) instance this site runs on
+(joshCMS). The field is optional in the form, but a background run has no CMS open, so without it
+`cms_update_content_item` fails with "Authorization failed: A CMS product must be selected when using
+this tool" (seen on the first live run, 2026-11-25). The site's own tools are not affected: the run
+read the page and chose categories before it stopped at the save.
 
 ## `mosey_on_publish_enrich`
 
@@ -21,6 +22,30 @@ workflow is the check, and a wrong instance shows up as "content not found" on t
 
 After saving, copy the trigger's URL into `MARK_ON_PUBLISH_URL` and the header value with the key
 filled in (`Bearer <key>`) into `MARK_ON_PUBLISH_AUTH` on the Vercel project, then redeploy.
+
+## `mosey_on_publish_translate`
+
+| Field | Value |
+|---|---|
+| Name | Mosey: translate on publish |
+| Description | When an editor publishes the English version of a Mosey Bank page that has no Dutch version yet, translate it and save the translation as a draft. |
+| Trigger | **Webhook**, as above, with `mark/payloads/on-translate.schema.json`. Its own Auth Key. |
+| Step 1 | `mosey_page_translator`. `content_key` Automatic (payload `contentKey`), `source_locale` Automatic (payload `locale`), `target_locale` Fixed `nl`. |
+
+Copy its URL and header value into `MARK_ON_TRANSLATE_URL` and `MARK_ON_TRANSLATE_AUTH`.
+
+- **Languages** are `MARK_TRANSLATE_LOCALES` on the site (default `nl`). The payload's `targetLocales`
+  lists the ones the page has no version in. For more than one language, replace step 1 with a
+  **Loop** over `targetLocales` and set `target_locale` to Automatic (the loop item).
+- **It runs after tagging, not beside it.** While "tag on publish" is configured, an incomplete page
+  is not translated: the tagger's draft comes first, and the publish of that draft starts the
+  translation, so the Dutch version carries the categories and metadata.
+- **One translation per language.** A language the page already has a version in, even a draft, never
+  starts a run.
+- **The page and its shared blocks.** The agent asks `mosey_get_translation_plan` which shared blocks
+  the page uses and saves a Dutch draft of each one that has none, then of the page. A shared block
+  with no Dutch version is missing from the Dutch page. An editor publishes the blocks' drafts, then
+  the page's.
 
 ## `mosey_on_review_compliance`
 
