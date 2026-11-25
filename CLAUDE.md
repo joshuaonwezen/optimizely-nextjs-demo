@@ -656,6 +656,24 @@ const { pa, src } = getPreviewUtils(content);
 
 See [docs/content-source-api.md](docs/content-source-api.md). Key traps: data indexing needs account activation (200 + journalId while nothing indexes); a 200-but-0-indexed source with activation means a corrupted mapping - delete the source (`id` REQUIRED, an empty id deletes all sources) and re-register; `_rbac` is the string `"r:Everyone:Read"`; auth needs app key AND secret.
 
+## Mark workflows (Agent Platform)
+
+Mark is Optimizely's Agent Platform, formerly Opal (packages and many docs URLs still say Opal). Four workflows tag pages, fill in metadata, audit the site and review submissions. Runbook, agent specs, skill and payload schemas: [mark/README.md](mark/README.md). It is the SaaS port of `../AlloyCms13/mark/`. Rules for changing it:
+
+- **There is no API for creating agents.** They are built in the Mark UI from `mark/agents/*.md`, or imported from JSON exports committed there. Importing gives every webhook trigger a new URL.
+- **The site's tools are read-only, and writes go through Mark's own `cms_update_content_item`.** `MARK_TOOLS` in `src/lib/mark/tools.ts` is the whole list (`mosey_get_page_profile`, `mosey_list_categories`, `mosey_audit_page`, `mosey_audit_site`, `mosey_get_review_context`), served by `GET /api/mark/discovery` and `POST /api/mark/tools/{tool}`. A new tool is one entry there plus a sync of the Tool Registry entry in Mark. **Do not add a tool that changes content without asking**: it would put a content-writing endpoint on a public demo site.
+- **Every tool call needs `Authorization: Bearer $MARK_TOOLS_BEARER`** and answers 503 while that is unset. The tools return unpublished content (a version in review, pending drafts), so there is no anonymous mode. Discovery is public, like the Opal Tools SDKs'.
+- **Tools read through `markGraph()`** (`src/lib/mark/graph.ts`): Graph with App Key + Secret, which returns every status, never cached. Filter on `_metadata.status` in every query, or drafts and previous versions come back as well. Pages are the Graph type `SEO` (every routable type extends that contract), limited to this site's `url.base`.
+- **The triggers hang off the Graph webhook** (`after()` in `/api/webhooks` calls `forwardGraphEventToMark`). Nothing else is registered. A docId says what happened: `{guid}_{locale}_Published`, `{guid}_{version}_{locale}_{Status}`, with `_{variationKey}` appended for a variation.
+  - **Graph re-sends a page's Published document on every draft save**, including the draft Mark writes. The freshness, "something is missing" and "no newer draft" guards in `src/lib/mark/triggers.ts` are what keep that from starting a run or a loop. Read them before changing any.
+  - **A person is an email address in `lastModifiedBy`; an API client is a client id.** Seed runs and extensions never start a run.
+  - The in-memory once-per-version memory is per server instance. Don't lean on it for correctness.
+  - Outcomes are logged as `[mark] started|skipped|failed ...` with `console.error`.
+- **The trigger URLs and their auth values are secrets** (a POST starts a paid run): Vercel environment variables only. With no URL set no run starts. `MARK_WORKFLOWS_ENABLED=false` is the kill switch.
+- **CMS (SaaS) has webhooks of its own** (`/v1/experimental/webhooks`), which can post straight to Mark. They are not used: no guards, and no "sent for review" event (`/v1/experimental/webhookdefinitions` lists `published`, `scheduled` and `localeDeleted`). joshCMS has one a colleague made; leave it alone.
+- **`src/lib/mark/audit.ts` and `text.ts` are pure**; the other modules import `server-only`, so they can't be reached from `src/components/**` or `scripts/`.
+- **Local testing:** Mark can't reach localhost. Point the trigger URLs at a local listener, set `MARK_FRESH_MINUTES` very high and post Graph events by hand; see "Local testing" in the runbook.
+
 ## Security headers and CSP
 
 Documented for visitors of the demo on `/demo/security`. Rules for changing it:
@@ -688,11 +706,13 @@ src/
     componentRegistry.ts — registers all content types + React components (derived from BLOCK_MODULES)
   lib/graphql/
     queries/           — named Graph queries with fallback data
+  lib/mark/            — Mark (Agent Platform): read-only tools, audit rules, webhook-to-workflow triggers
 scripts/
   seed-*.ts            — Management API content creation scripts
   seed-quotes.ts       — Content Source API (external data, not Management API)
   maintenance/         — one-off repair / diagnostic scripts (not run by the seed runner)
 docs/                  — seeding runbook, Management API, categories, Content Source API references
+mark/                  — Mark runbook, agent and workflow specs, skill, webhook payload schemas
 ```
 
 ---

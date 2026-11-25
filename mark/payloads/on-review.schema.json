@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Mosey Bank page sent for review",
+  "description": "Sent by the site (src/lib/mark/triggers.ts) once per submission, when a person sends a page for review.",
+  "type": "object",
+  "required": ["event", "contentKey", "version", "locale"],
+  "properties": {
+    "event": { "type": "string", "enum": ["submittedForReview"] },
+    "contentKey": { "type": "string", "description": "The page's content key; pass it to mosey_get_review_context as page." },
+    "version": { "type": "string", "description": "Version number of the submitted version; pass it to mosey_get_review_context as version." },
+    "locale": { "type": "string" },
+    "name": { "type": "string" },
+    "contentType": { "type": "string" },
+    "url": { "type": "string", "description": "Public URL of the page (the submitted version is not live yet)." },
+    "previewUrl": { "type": ["string", "null"], "description": "Signed link that shows the submitted version without a CMS sign-in." },
+    "triggeredBy": { "type": "string", "description": "The CMS user who submitted it." },
+    "status": { "type": "string", "description": "Graph status of the version: InReview, or Ready when MARK_REVIEW_STATUSES includes it." },
+    "docId": { "type": "string", "description": "The Graph document id the event carried: {guid}_{version}_{locale}_InReview." }
+  }
+}

@@ -1,5 +1,6 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse, after } from "next/server";
 import { revalidatePath, revalidateTag as _revalidateTag } from "next/cache";
+import { forwardGraphEventToMark } from "@/lib/mark/triggers";
 import { CACHE_TAGS } from "@/lib/optimizely/cacheProfile";
 import { isValidRevalidateSecret } from "@/lib/security/verifySecret";
 
@@ -40,6 +41,11 @@ export async function POST(request: NextRequest) {
 
     revalidatePath("/", "layout");
     for (const tag of Object.values(CACHE_TAGS)) revalidateTag(tag);
+
+    // The same event can start a Mark workflow (a publish, or a page submitted
+    // for review). It runs after the response: Graph only needs the 200, and the
+    // forwarder does its own Graph lookup first. It never throws.
+    after(() => forwardGraphEventToMark(body));
 
     return NextResponse.json({ received: true, timestamp: Date.now() });
   } catch (error) {

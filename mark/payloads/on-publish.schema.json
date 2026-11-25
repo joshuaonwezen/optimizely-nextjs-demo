@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Mosey Bank page published",
+  "description": "Sent by the site (src/lib/mark/triggers.ts) when a person publishes a page that has no categories, meta title or meta description.",
+  "type": "object",
+  "required": ["event", "contentKey", "locale"],
+  "properties": {
+    "event": { "type": "string", "enum": ["published"] },
+    "contentKey": { "type": "string", "description": "The page's content key, 32 hex characters; pass it to the mosey_* tools as page and to cms_update_content_item as the content key." },
+    "version": { "type": "string", "description": "Version number of the published version." },
+    "locale": { "type": "string", "description": "Locale that was published, e.g. en or nl." },
+    "name": { "type": "string" },
+    "contentType": { "type": "string" },
+    "url": { "type": "string", "description": "Public URL of the page." },
+    "triggeredBy": { "type": "string", "description": "The CMS user who published." },
+    "missing": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["categories", "metaTitle", "metaDescription"] }
+    },
+    "docId": { "type": "string", "description": "The Graph document id the event carried: {guid}_{locale}_Published." }
+  }
+}
