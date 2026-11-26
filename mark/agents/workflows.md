@@ -76,28 +76,42 @@ version list in the CMS.
 
 ## `mosey_experiment_rounds`
 
+The demo runs it for one page, Personal Banking, with one step:
+
 | Field | Value |
 |---|---|
 | Name | Mosey: test rounds |
-| Description | Every day, read the results of every content test, report where each stands, and revise or write the variation of up to three pages that the results call for. |
-| Trigger | **Scheduler**, recurring, cron `0 7 * * *` (daily 07:00 UTC). Use **Run now** for the demo. |
+| Description | Every week, read the results of the Personal Banking content test and, when its variation is not winning, rewrite the variation and publish it. |
+| Trigger | **Scheduler**, recurring, cron `0 7 * * 1` (Monday 07:00 UTC). Message: "Run the weekly test round for the Personal Banking page." Use **Run now** for the demo. |
+| Step 1 | `mosey_variation_writer`. `page` Fixed `/personal-banking`, `locale` Fixed `en`, `publish` Fixed `yes`, `revise_after_days` Fixed `6`, `idea` and `audience` empty. |
+
+- **Six days, not seven.** A weekly run starts a few minutes short of seven days after the last
+  one published, and a variation younger than `revise_after_days` is left alone. With 7 every second
+  week would be skipped.
+- **Another page is another step** with its own `page`. Each page needs a test started from the
+  Feature Experimentation panel first.
+- **Nothing changes in Feature Experimentation.** The tests are made and started from the panel in
+  the CMS (the FX Experiments extension), as before. This workflow reads their results and writes
+  the variation.
+- **A revision keeps the test going.** The variation's key stays the same, so the running rule serves
+  the new content as soon as it is published.
+- **`publish` set to `yes` means no editor sees the change first.** Leave it empty for a draft.
+- **Reading results needs `OPTIMIZELY_FX_API_TOKEN`** on the Vercel project. Without it the tool
+  lists the running tests and says that results could not be read, and every page's action is `wait`.
+- **From chat:** `mosey_variation_writer` has Trigger from Chat on. "Improve the test on
+  /personal-banking" or "write a variation of this page for first-time buyers" runs the same steps,
+  and is how a page gets its first variation.
+
+To cover every tested page instead of naming them, put the monitor in front:
+
+| Field | Value |
+|---|---|
+| Trigger | **Scheduler**, cron `0 7 * * *` (daily 07:00 UTC). |
 | Step 1 | `mosey_experiment_monitor`. `revise_after_days` Fixed 7, `max_pages` Fixed 3. |
 | Step 2 | **Loop** over step 1's `pagesToContinue`. |
-| Step 2.1 | `mosey_variation_writer` inside the loop. `page` Automatic (item `contentKey`), `locale` Automatic (item `locale`), `idea` and `audience` empty. |
+| Step 2.1 | `mosey_variation_writer` inside the loop. `page` Automatic (item `contentKey`), `locale` Automatic (item `locale`), `publish` as wanted, `idea` and `audience` empty. |
 
-The report is step 1's `report` field. Each loop run ends with the draft it saved and what an editor
-does next.
-
-- **Nothing changes in Feature Experimentation.** The tests are made and started from the Feature
-  Experimentation panel in the CMS (the FX Experiments extension), as before. This workflow reads
-  their results and writes CMS drafts.
-- **A revision keeps the test going.** The variation's key stays the same, so the running rule serves
-  the new wording as soon as an editor publishes the draft.
-- **Reading results needs `OPTIMIZELY_FX_API_TOKEN`** on the Vercel project. Without it the tools
-  list the running tests and say that results could not be read, and every page's action is `wait`.
-- **One page from chat:** `mosey_variation_writer` has Trigger from Chat on. "Improve the test on
-  /consultants/sarah-chen" or "write a variation of this page for first-time buyers" runs the same
-  steps for one page, and is how a page gets its first variation.
+The report is step 1's `report` field, and each loop run ends with what it saved.
 
 The site's own tools authenticate with the registry entry's bearer token, so they work in a
 scheduled run. Whether `cms_update_content_item` gets the owner's sign-in in a **scheduled** run is
