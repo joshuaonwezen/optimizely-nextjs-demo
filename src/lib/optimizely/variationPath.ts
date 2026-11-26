@@ -48,6 +48,32 @@ export function cleanPathname(pathname: string | null | undefined): string {
   return kept.join("/") || "/";
 }
 
+// A CMS experiment declares which route(s) its variation targets via the
+// `cms_route` variation variable in FX. `pathname` is the clean request path
+// (middleware runs before any __v_ rewrite). Matching rules per comma-entry:
+//   - "/*"            → matches every route
+//   - "/products/*"   → prefix match (also matches "/products" exactly)
+//   - "/product-x"    → exact match
+//   - "/"             → root only
+// An absent/empty cms_route matches all routes (backward-compatible: flags that
+// predate cms_route keep working until the variable is added).
+// Here rather than in middleware so the Mark tools can ask the same question
+// without importing the middleware module.
+export function routeMatches(pathname: string, cmsRoute?: string): boolean {
+  if (!cmsRoute || !cmsRoute.trim()) return true;
+  const path = pathname.replace(/\/$/, "") || "/";
+  return cmsRoute.split(",").some((raw) => {
+    const entry = raw.trim();
+    if (!entry) return false;
+    if (entry === "/*") return true;
+    if (entry.endsWith("/*")) {
+      const prefix = entry.slice(0, -2).replace(/\/$/, "") || "/";
+      return path === prefix || path.startsWith(prefix + "/");
+    }
+    return path === (entry.replace(/\/$/, "") || "/");
+  });
+}
+
 interface DatafileVariations {
   featureFlags?: Array<{ key: string; experimentIds?: string[]; rolloutId?: string }>;
   experiments?: Array<{ id: string; variations?: Array<{ key: string }> }>;

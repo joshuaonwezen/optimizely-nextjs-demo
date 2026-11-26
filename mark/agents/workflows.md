@@ -74,6 +74,31 @@ that reaches the status In review starts a run, which needs an approval sequence
 The report is step 1's `report` field in the run output. The tagging drafts appear in each page's
 version list in the CMS.
 
+## `mosey_experiment_rounds`
+
+| Field | Value |
+|---|---|
+| Name | Mosey: test rounds |
+| Description | Every day, read the results of every content test, report where each stands, and revise or write the variation of up to three pages that the results call for. |
+| Trigger | **Scheduler**, recurring, cron `0 7 * * *` (daily 07:00 UTC). Use **Run now** for the demo. |
+| Step 1 | `mosey_experiment_monitor`. `revise_after_days` Fixed 7, `max_pages` Fixed 3. |
+| Step 2 | **Loop** over step 1's `pagesToContinue`. |
+| Step 2.1 | `mosey_variation_writer` inside the loop. `page` Automatic (item `contentKey`), `locale` Automatic (item `locale`), `idea` and `audience` empty. |
+
+The report is step 1's `report` field. Each loop run ends with the draft it saved and what an editor
+does next.
+
+- **Nothing changes in Feature Experimentation.** The tests are made and started from the Feature
+  Experimentation panel in the CMS (the FX Experiments extension), as before. This workflow reads
+  their results and writes CMS drafts.
+- **A revision keeps the test going.** The variation's key stays the same, so the running rule serves
+  the new wording as soon as an editor publishes the draft.
+- **Reading results needs `OPTIMIZELY_FX_API_TOKEN`** on the Vercel project. Without it the tools
+  list the running tests and say that results could not be read, and every page's action is `wait`.
+- **One page from chat:** `mosey_variation_writer` has Trigger from Chat on. "Improve the test on
+  /consultants/sarah-chen" or "write a variation of this page for first-time buyers" runs the same
+  steps for one page, and is how a page gets its first variation.
+
 The site's own tools authenticate with the registry entry's bearer token, so they work in a
 scheduled run. Whether `cms_update_content_item` gets the owner's sign-in in a **scheduled** run is
 not verified; webhook runs did on the CMS 13 build. *Run now* once and look for the drafts.

@@ -2,6 +2,7 @@ import "server-only";
 import { getCmsUrl } from "@/lib/optimizely/cmsUrl";
 import { auditPage, auditSite, missingFields } from "./audit";
 import { categoryLabels, listAssignableCategories } from "./categories";
+import { getExperimentBrief, listExperiments } from "./experiments";
 import { listPublishedPages, loadPage, resolvePage, type PageRef } from "./pages";
 import { getReviewContext } from "./review";
 import { getTranslationPlan } from "./translation";
@@ -21,6 +22,7 @@ interface MarkTool {
 }
 
 const DEFAULT_STALE_DAYS = 180;
+const DEFAULT_REVISE_DAYS = 7;
 const MAX_TEXT = 8_000;
 const MAX_LISTED = 25;
 
@@ -44,6 +46,15 @@ const STALE_AFTER_DAYS: ToolParameter = {
   type: "integer",
   required: false,
   description: `Days without a change before a page counts as stale. Defaults to ${DEFAULT_STALE_DAYS}.`,
+};
+
+const REVISE_AFTER_DAYS: ToolParameter = {
+  name: "revise_after_days",
+  type: "integer",
+  required: false,
+  description:
+    "Days a test may run without a significant result before its variation should be revised, and days a " +
+    `revised variation is left alone before it is revised again. Defaults to ${DEFAULT_REVISE_DAYS}.`,
 };
 
 // Mark fills parameters from model output, so a number can arrive as "180".
@@ -250,6 +261,52 @@ export const MARK_TOOLS: MarkTool[] = [
       if (!target) return { error: "The 'target_locale' parameter is required, e.g. nl." };
       const ref = await refFor(parameters, "source_locale");
       return "error" in ref ? ref : getTranslationPlan(ref, target);
+    },
+  },
+  {
+    name: "mosey_get_experiment_brief",
+    description:
+      "Reads the Feature Experimentation results of one Mosey Bank page and says what to write next. " +
+      "Returns `action`: wait (nothing to write now), revise_variation (a variation in a running test " +
+      "is not winning: change it, `variationToRevise` names it and the version to base the draft on) " +
+      "or write_new_variation (no test is in progress); `reason`, why; `tests`, every test that " +
+      "serves this page with its status, audiences and results (visitors, conversion rate, lift and " +
+      "significance per variation, and a conclusion); `personalization`, the rules that serve a " +
+      "variation to an audience without measuring; `variations`, each CMS variation of the page with " +
+      "its status, the fields and the lines of copy it changes against the original, what serves " +
+      "it, and `problems` (a URL of its own, several drafts, no changes, not published); `naming`, " +
+      "the rules for a variation name and the names already taken; and the original page's visible " +
+      "copy. Read-only.",
+    parameters: [PAGE, LOCALE, REVISE_AFTER_DAYS],
+    async run(parameters) {
+      const ref = await refFor(parameters);
+      if ("error" in ref) return ref;
+      return getExperimentBrief(ref, { reviseAfterDays: integer(parameters, "revise_after_days", DEFAULT_REVISE_DAYS) });
+    },
+  },
+  {
+    name: "mosey_list_experiments",
+    description:
+      "Lists every Feature Experimentation test that serves a CMS variation of a Mosey Bank page: the " +
+      "page, the test's status, days running, audiences, primary metric, conclusion (running, winner, " +
+      "original_wins, flat or no_results) and a one-sentence summary. Also returns `pagesToContinue`, " +
+      "the pages where a variation should be revised or a new one written now, each with its " +
+      "`action`, and `pagesWithProblems`, variations that would not be served as they are. Use it " +
+      "instead of reading pages one at a time. Read-only.",
+    parameters: [
+      REVISE_AFTER_DAYS,
+      {
+        name: "max_pages",
+        type: "integer",
+        required: false,
+        description: "How many tested pages to read at most. Defaults to 10.",
+      },
+    ],
+    async run(parameters) {
+      return listExperiments({
+        reviseAfterDays: integer(parameters, "revise_after_days", DEFAULT_REVISE_DAYS),
+        maxPages: Math.min(integer(parameters, "max_pages", 10), 25),
+      });
     },
   },
 ];

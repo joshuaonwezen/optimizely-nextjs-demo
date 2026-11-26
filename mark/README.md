@@ -17,6 +17,7 @@ What changed on the way is in [SaaS CMS compared with the CMS 13 build](#saas-cm
 | Compliance review | An editor sends a page for review (an approval sequence covers it) | Reviews the submitted version against the content standards | Nothing: the verdict is in the Mark run |
 | Weekly audit | Monday 07:00 UTC, or Run now | Audits every page, writes a content-health report, tags up to 5 untagged pages | Up to 5 tagging drafts |
 | Audit this page | An editor asks in the Mark sidebar | Audits the open page and offers fixes | Drafts, only after the editor says yes |
+| Test rounds | Daily 07:00 UTC, Run now, or an editor asks for one page | Reads the Feature Experimentation results of every content test, then revises the variation that is not winning, or writes a new one where no test is in progress | A **draft** of the variation. Nothing changes in Feature Experimentation |
 
 Mark never publishes. The agents have no publish tool attached, and every write is a draft saved
 under the workflow owner's (or the chatting editor's) own sign-in.
@@ -24,7 +25,7 @@ under the workflow owner's (or the chatting editor's) own sign-in.
 ## What is out of the box, and what this site adds
 
 Mark ships system tools for CMS (SaaS), so less is custom here than on CMS 13. Writes are fully out
-of the box. The reads that carry this site's own logic are six small read-only tools.
+of the box. The reads that carry this site's own logic are eight small read-only tools.
 
 | Need | CMS 13 build | Here |
 |---|---|---|
@@ -34,6 +35,8 @@ of the box. The reads that carry this site's own logic are six small read-only t
 | Audit a page, audit the site | custom | Custom `mosey_audit_page`, `mosey_audit_site`. The rules are this site's, and one deterministic call for the whole site costs far less than a model reading each page. |
 | Read a submitted version | custom `alloy_get_review_context` | Custom `mosey_get_review_context`: the version in review, and each field that differs from the published page. |
 | Find what a translation has to cover | not in the CMS 13 build | Custom `mosey_get_translation_plan`: the page and every shared block it uses, each with what the target language already has. See [Translating a page means translating its shared blocks](#translating-a-page-means-translating-its-shared-blocks). |
+| Read a test's results and decide what to write | not in the CMS 13 build | Custom `mosey_get_experiment_brief` and `mosey_list_experiments`. Mark's own Feature Experimentation tools rank experiments across a program and cannot read one test's results. See [Test rounds](#test-rounds-what-the-site-reads-and-what-mark-writes). |
+| Create a page variation | not in the CMS 13 build | Out of the box: `cms_create_content_variation`, then `cms_update_content_item`. |
 | Who approves a page | custom `alloy_get_page_approvers` | **Not available.** The CMS (SaaS) REST API has `:approve` and `:reject` but nothing that reads an approval sequence. The review report ends with a preview link instead. |
 | Start a run on publish | in-process `PublishedContent` event | The Graph webhook the site already receives, plus guards (below). |
 | Start a run on submit | in-process `IApprovalEngineEvents.Started` | The same Graph webhook. CMS (SaaS) webhooks have no review event. |
@@ -112,14 +115,14 @@ connected to **joshCMS**: a colleague's CMS webhook there posts to it. So the si
    `OPTIMIZELY_APP_SECRET`) are already there for `/preview/share`.
 3. **Tool Registry.** In Mark, add a registry entry with discovery URL
    `https://optimizely-onboarding.vercel.app/api/mark/discovery` and the bearer token from step 2.
-   It should list six tools. Check the site side first:
+   It should list eight tools. Check the site side first:
    `curl -s https://optimizely-onboarding.vercel.app/api/mark/discovery | jq '.functions[].name'`.
    - **One deployment per Mark instance.** Function names are unique per instance, so registering a
      second copy of this site there fails with "Function name ... already exists in another service".
    - **New or renamed tools only appear after a sync** of the entry.
 4. **Skill.** Import `skills/mosey-bank-content-standards.md` as an organisation skill.
 5. **Run the [first-run checks](#first-run-checks)** in Mark chat.
-6. **Agents.** Create the five specialized agents in `agents/*.md`, then the four workflows in
+6. **Agents.** Create the seven specialized agents in `agents/*.md`, then the five workflows in
    `agents/workflows.md`. Mark has no API for this. Set each trigger's **Product Instance** to this
    site's CMS, or the agents cannot save.
    - **First time:** build them by hand, then *Download Agent* and commit each export here as
@@ -148,6 +151,12 @@ Do these in Mark chat before building the workflows. Open Mark from the joshCMS 
 3. **The draft keeps the other properties.** Compare the draft with the published version. A draft
    that lost its heading or body means the tool created a blank version (`POST /versions` does that);
    don't use it for this workflow.
+4. **Mark can revise a variation** (for the test rounds). On a page with a published variation nobody
+   minds: "Call mosey_get_experiment_brief for `<page>`. Then, using cms_update_content_item with
+   ContentVersion set to that variation's publishedVersion, save a draft that changes only
+   `<one text property>`. Do not publish." Call the brief again: the variation should show one draft
+   with your line under `copyChanges`, and `page.pendingDraftOfOriginal` should be unchanged. If the
+   draft landed on the original page instead, the revise step cannot be used as written.
 
 ## Demo script
 
@@ -176,6 +185,15 @@ Do these in Mark chat before building the workflows. Open Mark from the joshCMS 
      *Ready to publish* instead; the run starts on that status too.
 5. **Weekly audit.** Open "Mosey: weekly content audit" and click *Run now*. Show the report, then
    show that the loop tagged up to five pages.
+6. **Test rounds.**
+   - Open "Mosey: test rounds" and click *Run now*. The report lists every content test with its
+     conclusion, the winners to ship and the pages it will write for.
+   - For a page whose test has gone a week without a result, the run saves a draft of the variation
+     with new wording, and says which lines changed and why.
+   - Publish that draft. The test keeps running with the new wording; nothing was touched in Feature
+     Experimentation. The Feature Experimentation panel on the page shows the results as before.
+   - From chat, for one page: "Write a variation of /consultants/sarah-chen for first-time buyers."
+     Publish the draft, then add the variation to a test in the panel.
 
 ## Environment variables
 
@@ -196,6 +214,7 @@ All server-side. None is needed for the site to build or run.
 | `MARK_DEBOUNCE_MINUTES` | Minimum gap between publish runs for one page. Default 2. |
 | `MARK_FRESH_MINUTES` | How recent a version must be to count as just published or submitted. Default 10. |
 | `MARK_REVIEW_STATUSES` | Graph statuses that start a review. Default `InReview`; add `Ready` for pages with no approval sequence. |
+| `OPTIMIZELY_FX_API_TOKEN` | An Optimizely API token that can read the Feature Experimentation project. **A secret.** The two experiment tools read rules, ended tests and results with it. Unset: they list the running tests from the public datafile, say that results could not be read, and never ask for a variation to be written. The project and environment come from `OPTIMIZELY_FX_SDK_KEY`'s datafile. |
 | `OPTIMIZELY_CMS_CLIENT_ID`, `OPTIMIZELY_CMS_CLIENT_SECRET` | The Management API client of this site's CMS. The tools still answer without it, but they then can't ask the CMS two things, and say so in their output: whether each page Graph lists still exists (see below), and which category terms are selectable. Set them. |
 
 On Vercel a changed variable only reaches the site with the next deployment.
@@ -228,6 +247,46 @@ The agent saves a draft for every block with `translate: true`, then for the pag
   localized on joshCMS and shared on the others. A localized one holds its own list per language, so
   the translation must carry the list over or the area is empty. The agent therefore goes by
   `cms_get_content_type_details`, never by the code definition.
+
+### Test rounds: what the site reads and what Mark writes
+
+The tests themselves are unchanged. An editor makes and starts one from the Feature Experimentation
+panel on a page (the FX Experiments CMS extension): a flag whose variation keys are the page's CMS
+variation names, a rule, a metric. The site serves the variation Feature Experimentation decides.
+This workflow adds the two halves around that:
+
+- **Reading.** `mosey_get_experiment_brief` (one page) and `mosey_list_experiments` (the site) read
+  the rules that serve CMS variations and each test's results, and reduce them to a conclusion and an
+  action (`src/lib/mark/experiments.ts`, `experimentResults.ts`).
+  - A rule counts when its flag has the boolean `cms_flag` variable with default `true`; its
+    `cms_route` default says which page. That is the FX Experiments extension's contract.
+  - Results come from `GET /v2/experiments/{id}/results`, the numbers behind the Results page. The
+    first metric is the primary one. `winner` and `original_wins` need significance; `flat` is none
+    after `revise_after_days`.
+  - That endpoint can answer with a calculation that is days old and only then start a new one, so a
+    stale answer for a running test is asked for a second time.
+  - The page's variations come from Graph with `variation: { include: ALL }`, each compared with the
+    original: changed fields, changed lines of copy, and problems.
+- **Writing.** `mosey_variation_writer` follows the action. `revise_variation` saves a new draft of
+  the variation in the test; `write_new_variation` creates a variation and fills it in. Both are
+  drafts, both through Mark's own CMS tools.
+
+What the brief checks on every variation, because each has happened on joshCMS:
+- **A URL of its own.** A variation made with a display name other than the page's gets its own URL
+  segment, Graph indexes it there, and the site, which looks variations up at the page's URL, serves
+  the original to visitors the test counts in the variation.
+- **Several drafts.** Mark's create and update calls can leave two; the CMS editor opened and
+  published the empty one.
+- **Published and identical to the original.** A test of it measures nothing.
+
+Known limits:
+- **The demo's results do not react to wording.** `npm run exp:seed` sends the visitors and
+  conversions behind every result, and it fixes each test's outcome from the flag key. A revised
+  variation gets the same seeded conversion rate as before. With real visitors the numbers are real.
+- **Pages built in Visual Builder** keep their wording in the layout, which `cms_update_content_item`
+  documents no way to save. The writer checks before it saves and stops if it cannot.
+- **A revision blurs the test.** Results are cumulative, so they mix visitors of the old and the new
+  wording. A clean read needs a new variation in a new test.
 
 ### Why the tools ask the CMS which pages exist
 
@@ -263,6 +322,9 @@ every 10 minutes, because the CMS autosaves and each save re-sends the event.
 | No review run | The version never reached `InReview`: no approval sequence covers the page. See step 4 of the demo script. |
 | No translation after a publish | `[mark] skipped translate ...` names the reason. The usual two: the page is not complete yet, so tagging goes first; or it already has a version in that language, which may be an old draft. |
 | Blocks are missing on a translated page | A shared block there has no published version in that language. Call `mosey_get_translation_plan` for the page: `translate: true` means no version at all, a `targetVersion` with status `Draft` means it was translated and is waiting to be published. Running `mosey_page_translator` on the page again fills the gaps and changes nothing else. An empty content area with all its blocks translated is a localized content area that the page's translation was saved without. |
+| The test tools say results could not be read | `OPTIMIZELY_FX_API_TOKEN` is not set on the deployment, or its token cannot read the project. |
+| A test round writes nothing | Each page's `reason` says why. The usual three: a draft is already waiting for an editor, the test is younger than `revise_after_days`, or the variation was revised less than that long ago. |
+| A variation is published but visitors get the original | Call `mosey_get_experiment_brief` for the page and read the variation's `problems`. A URL of its own is the usual cause: set its "Name in URL" to the page's and publish again. |
 | Two runs for one publish | Two server instances each saw the event before either remembered it. The tagger stops at its first step when a draft is already pending. If both runs got past that at once there are two drafts; keep the newer. |
 
 ## Local testing
@@ -307,6 +369,21 @@ Observed on 2026-11-25:
 - A block, a variation, another site's page and `bulk.completed` were ignored silently.
 - A submission by a user outside `MARK_TRIGGER_USERS` sent nothing; a 401 from the listener was logged
   as `failed`.
+
+Observed on 2026-11-26, the two experiment tools against joshCMS and the live Feature
+Experimentation project (2 to 4 s a call):
+- *Help & Support*: one running test, 5 days, "test" at +2.1% on CTA Click and not significant, so
+  `wait`. Its variation's `copyChanges` named the one changed line.
+- *Personal Banking*: 13 days without a significant result, so `revise_variation` for "invest".
+- *Sarah Chen*: a variation with an unpublished draft, so `wait`, with the problem that the published
+  version is identical to the original.
+- The homepage: no test, four personalization rules by audience, and `wait` for an editor's old draft.
+- A page with no test: `write_new_variation`.
+- `mosey_list_experiments` returned both tests and Personal Banking under `pagesToContinue`.
+- Without `OPTIMIZELY_FX_API_TOKEN`: the running tests, the note that results could not be read, and
+  `wait` everywhere. A call without the bearer token got 401.
+- **Not exercised:** the Mark side. The agents have to be built in the Mark UI, and the first-run
+  check for revising a variation has not been run.
 
 A real publish through Graph to a real Mark run needs the deployment; see "Verified end to end"
 under [What is out of the box](#what-is-out-of-the-box-and-what-this-site-adds).
