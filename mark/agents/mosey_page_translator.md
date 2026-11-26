@@ -160,10 +160,15 @@ Never do any of these:
   described as translating text, files and URLs; nothing in its description says it saves a language
   version in the CMS, so this agent does both. Nothing on the site translates: the site only decides
   when to start the run and lists what to translate.
-- **Test it in chat before wiring the workflow.** Whether `cms_update_content_item` creates a new
-  language version the way the prompt asks is not verified from the site's side, and neither is a
-  version with no properties (step 2e). The existing German, French and Japanese drafts on joshCMS
-  show both are possible in the CMS.
+- **Verified live** (joshCMS, 2026-11-25): a publish of *Credit Cards* in English gave three Dutch
+  drafts within a minute, the two shared blocks first and the page last.
+  - `cms_update_content_item` created each new language version. Properties that are not localized
+    (`featuredBlock`, a block's `variant` and `link`) were left out.
+  - The page's draft carries the localized `mainContent` list with the same reference, and the
+    copied categories. As a draft it resolves both blocks to their Dutch drafts.
+  - No English version changed, and the page name stayed *Credit Cards* (the heading is translated).
+- **Not verified yet:** a version with no properties (step 2e), and a Visual Builder composition.
+  The older German, French and Japanese drafts on joshCMS show the CMS allows both.
 - **A first translation only.** Later changes to the English page or block are not translated again.
   The Translation status extension shows which fields have changed since.
 - **Categories are copied, not chosen.** They are stored per language version in CMS (SaaS).

@@ -44,6 +44,9 @@ How sure each part is:
 - **From Optimizely's docs, not exercised here:** the system tool names `cms_update_content_item`,
   `cms_get_content_data`, `cms_publish_content_item`, `cms_search_graph` and the taxonomy tools. Mark
   can't be called from outside its UI, so confirm the names in the agent's tool picker.
+- **Verified end to end** (2026-11-25, joshCMS): a real publish started "tag on publish" and Mark's
+  draft appeared 20 seconds later. A publish of *Credit Cards* started "translate on publish" and
+  three Dutch drafts (two shared blocks, then the page) appeared within a minute.
 - **Verified in Mark chat** (2026-11-25, joshCMS): `mosey_audit_site` answers through the Tool
   Registry, and `cms_update_content_item` saved a draft with `metaDescription` and the built-in
   `categories` property. The draft was saved under the chatting user's own sign-in, the published
@@ -305,7 +308,8 @@ Observed on 2026-11-25:
 - A submission by a user outside `MARK_TRIGGER_USERS` sent nothing; a 401 from the listener was logged
   as `failed`.
 
-Not tested end to end: a real publish through Graph to a real Mark run. That needs the deployment.
+A real publish through Graph to a real Mark run needs the deployment; see "Verified end to end"
+under [What is out of the box](#what-is-out-of-the-box-and-what-this-site-adds).
 
 ## SaaS CMS compared with the CMS 13 build
 
