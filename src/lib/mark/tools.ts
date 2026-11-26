@@ -289,7 +289,8 @@ export const MARK_TOOLS: MarkTool[] = [
     description:
       "Lists every Feature Experimentation test that serves a CMS variation of a Mosey Bank page: the " +
       "page, the test's status, days running, audiences, primary metric, conclusion (running, winner, " +
-      "original_wins, flat or no_results) and a one-sentence summary. Also returns `pagesToContinue`, " +
+      "original_wins, flat or no_results), a one-sentence summary, and for each variation in the test " +
+      "the version that is live and how many versions have been. Also returns `pagesToContinue`, " +
       "the pages where a variation should be revised or a new one written now, each with its " +
       "`action`, and `pagesWithProblems`, variations that would not be served as they are. Use it " +
       "instead of reading pages one at a time. Read-only.",

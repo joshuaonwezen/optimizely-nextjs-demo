@@ -17,10 +17,12 @@ What changed on the way is in [SaaS CMS compared with the CMS 13 build](#saas-cm
 | Compliance review | An editor sends a page for review (an approval sequence covers it) | Reviews the submitted version against the content standards | Nothing: the verdict is in the Mark run |
 | Weekly audit | Monday 07:00 UTC, or Run now | Audits every page, writes a content-health report, tags up to 5 untagged pages | Up to 5 tagging drafts |
 | Audit this page | An editor asks in the Mark sidebar | Audits the open page and offers fixes | Drafts, only after the editor says yes |
-| Test rounds | Daily 07:00 UTC, Run now, or an editor asks for one page | Reads the Feature Experimentation results of every content test, then revises the variation that is not winning, or writes a new one where no test is in progress | A **draft** of the variation. Nothing changes in Feature Experimentation |
+| Test rounds | Monday 07:00 UTC, Run now, or an editor asks for a page | Reads the Feature Experimentation results of the Personal Banking content test, then rewrites the variation when it is not winning | A new version of the variation, **published** by the run. Nothing changes in Feature Experimentation |
 
-Mark never publishes. The agents have no publish tool attached, and every write is a draft saved
-under the workflow owner's (or the chatting editor's) own sign-in.
+With one exception Mark never publishes: the agents have no publish tool attached, and every write
+is a draft saved under the workflow owner's (or the chatting editor's) own sign-in. The exception is
+`mosey_variation_writer`, which publishes the variation it rewrote when its `publish` input is `yes`,
+after checking its own work. It never publishes an original page.
 
 ## What is out of the box, and what this site adds
 
@@ -186,14 +188,15 @@ Do these in Mark chat before building the workflows. Open Mark from the joshCMS 
 5. **Weekly audit.** Open "Mosey: weekly content audit" and click *Run now*. Show the report, then
    show that the loop tagged up to five pages.
 6. **Test rounds.**
-   - Open "Mosey: test rounds" and click *Run now*. The report lists every content test with its
-     conclusion, the winners to ship and the pages it will write for.
-   - For a page whose test has gone a week without a result, the run saves a draft of the variation
-     with new wording, and says which lines changed and why.
-   - Publish that draft. The test keeps running with the new wording; nothing was touched in Feature
-     Experimentation. The Feature Experimentation panel on the page shows the results as before.
-   - From chat, for one page: "Write a variation of /consultants/sarah-chen for first-time buyers."
-     Publish the draft, then add the variation to a test in the panel.
+   - Open "Mosey: test rounds" and click *Run now*. It reads the Personal Banking test: the
+     variation has gone more than a week without a significant result.
+   - The run rewrites the variation, checks its own work and publishes it, then says which lines
+     changed and why. Open `/personal-banking` in the variation's group to see the new wording.
+   - Nothing was touched in Feature Experimentation: the test keeps running, and the panel on the
+     page shows the results as before.
+   - Run it again: it now waits, because the variation changed today.
+   - From chat, for any page: "Write a variation of /mortgage for first-time buyers." Then add
+     the variation to a test in the panel.
 
 ## Environment variables
 
@@ -267,9 +270,10 @@ This workflow adds the two halves around that:
     stale answer for a running test is asked for a second time.
   - The page's variations come from Graph with `variation: { include: ALL }`, each compared with the
     original: changed fields, changed lines of copy, and problems.
-- **Writing.** `mosey_variation_writer` follows the action. `revise_variation` saves a new draft of
-  the variation in the test; `write_new_variation` creates a variation and fills it in. Both are
-  drafts, both through Mark's own CMS tools.
+- **Writing.** `mosey_variation_writer` follows the action. `revise_variation` saves a new version of
+  the variation in the test; `write_new_variation` creates a variation and fills it in. Both go
+  through Mark's own CMS tools: the site has no tool that writes. With `publish` set to `yes` the
+  agent publishes the version after checking it against the brief; otherwise it stays a draft.
 
 What the brief checks on every variation, because each has happened on joshCMS:
 - **A URL of its own.** A variation made with a display name other than the page's gets its own URL
@@ -280,11 +284,23 @@ What the brief checks on every variation, because each has happened on joshCMS:
 - **Published and identical to the original.** A test of it measures nothing.
 
 Known limits:
-- **The demo's results do not react to wording.** `npm run exp:seed` sends the visitors and
-  conversions behind every result, and it fixes each test's outcome from the flag key. A revised
-  variation gets the same seeded conversion rate as before. With real visitors the numbers are real.
-- **Pages built in Visual Builder** keep their wording in the layout, which `cms_update_content_item`
-  documents no way to save. The writer checks before it saves and stops if it cannot.
+- **The demo's results are seeded, and the seed follows the rewrite, not the wording.**
+  `npm run exp:seed` sends the visitors and conversions behind every result. For a content test it
+  asks `mosey_list_experiments` which version of the variation is live and gives each published
+  version an effect of its own, fixed until the next rewrite:
+  - a variation's first version trails the original, which is what gets the first rewrite written;
+  - after that, three rewrites in four beat the original and one in four trails it;
+  - the size is scaled to the test's rarest metric (about 30% for a 3% click, about 17% for a 9%
+    one), so that a week or two of seeded traffic can tell versions apart.
+
+  It cannot judge what a rewrite says, and results are cumulative, so the verdict follows a rewrite
+  with a delay. It needs `MARK_TOOLS_BEARER` as a GitHub Actions secret; without it, or when the
+  site cannot be reached, a content test keeps one fixed outcome from its flag key. With real
+  visitors the numbers are real.
+- **Pages built in Visual Builder** keep their wording in the layout, so the writer sends the whole
+  layout back with a few lines changed. `cms_update_content_item` documents properties only; that
+  it takes a layout rests on Mark's own page building and has not been run here yet. The writer's
+  check refuses to publish when lines went missing.
 - **A revision blurs the test.** Results are cumulative, so they mix visitors of the old and the new
   wording. A clean read needs a new variation in a new test.
 

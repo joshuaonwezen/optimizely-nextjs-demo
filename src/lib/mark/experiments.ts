@@ -15,7 +15,10 @@ import { changedFields, visibleText, type FieldChange } from "./text";
 const FX_API = "https://api.optimizely.com";
 const PAGE_TYPE = "SEO";
 const EXPERIENCE_TYPE = "_Experience";
-const LIVE_OR_WAITING = ["Published", "Draft", "Ready", "InReview"];
+const WAITING = ["Draft", "Ready", "InReview"];
+// "Previous" is a version that was live and has been replaced. Only counted, to say
+// how many times a variation has been published.
+const LISTED = ["Published", ...WAITING, "Previous"];
 const MARKER_VARIABLE = "cms_flag";
 const ROUTE_VARIABLE = "cms_route";
 const CACHE_MS = 60_000;
@@ -365,7 +368,7 @@ interface GraphVersion {
 // original's and each variation's. Without the variation argument Graph returns
 // the original's only.
 async function listVersions(contentKey: string, locale: string): Promise<VersionRow[]> {
-  const where = { _metadata: { key: { eq: contentKey }, locale: { eq: locale }, status: { in: LIVE_OR_WAITING } } };
+  const where = { _metadata: { key: { eq: contentKey }, locale: { eq: locale }, status: { in: LISTED } } };
   const data = await markGraph<{ _Content: { items: GraphVersion[] } }>(VARIATION_VERSIONS_QUERY, { where });
   return data._Content.items.map(({ _metadata: meta }) => ({
     version: meta.version,
@@ -425,6 +428,8 @@ interface VariationState {
   name: string;
   status: string;
   publishedVersion: string | null;
+  /** How many versions of it have been live, the current one included. */
+  timesPublished: number;
   /** Unpublished versions, newest first. The CMS editor opens one of them. */
   drafts: Array<{ version: string; status: string; lastModified: string | null; lastModifiedBy: string | null; changes: number }>;
   /** When the published version was last saved: how long visitors have seen this wording. */
@@ -448,7 +453,7 @@ async function describeVariation(
 ): Promise<VariationState> {
   const published = rows.find((row) => row.status === "Published") ?? null;
   const drafts = rows
-    .filter((row) => row.status !== "Published" && (!published || Number(row.version) > Number(published.version)))
+    .filter((row) => WAITING.includes(row.status) && (!published || Number(row.version) > Number(published.version)))
     .sort(byNewest);
   const [publishedDocument, ...draftDocuments] = await Promise.all(
     [published, ...drafts.slice(0, MAX_DRAFTS_COMPARED)].map((row) =>
@@ -496,6 +501,7 @@ async function describeVariation(
     name,
     status: published ? "Published" : (drafts[0]?.status ?? "Draft"),
     publishedVersion: published?.version ?? null,
+    timesPublished: rows.filter((row) => row.status === "Published" || row.status === "Previous").length,
     drafts: drafts.map((row, index) => ({
       version: row.version,
       status: row.status,
@@ -650,7 +656,9 @@ export async function getExperimentBrief(ref: PageRef, options: BriefOptions) {
   ]);
   const original = { row: originalRow, document: originalDocument };
 
-  const names = [...new Set(rows.map((row) => row.variation).filter((name): name is string => Boolean(name)))].sort();
+  // A variation that only has replaced versions left is gone, not waiting.
+  const current = rows.filter((row) => row.status !== "Previous");
+  const names = [...new Set(current.map((row) => row.variation).filter((name): name is string => Boolean(name)))].sort();
   const [variations, results] = await Promise.all([
     Promise.all(
       names.map((name) =>
@@ -675,7 +683,7 @@ export async function getExperimentBrief(ref: PageRef, options: BriefOptions) {
     results: results[index],
   }));
   const tests = described.filter((rule) => rule.kind === "experiment");
-  const pendingOriginal = rows.filter((row) => !row.variation && row.status !== "Published").sort(byNewest)[0];
+  const pendingOriginal = rows.filter((row) => !row.variation && WAITING.includes(row.status)).sort(byNewest)[0];
   const text = visibleText(originalDocument);
   const taken = [...new Set([...names, ...loaded.rules.flatMap((rule) => rule.variations.map((v) => v.key))])].sort();
 
@@ -734,20 +742,30 @@ export async function listExperiments(options: ListOptions) {
     ...(unresolved.length > 0 ? { routesWithoutOnePage: unresolved } : {}),
     tests: pages.flatMap((brief) =>
       brief.tests.map((test) => ({
-          page: brief.page.name,
-          contentKey: brief.page.contentKey,
-          locale: brief.page.locale,
-          url: brief.page.url,
-          test: test.name,
-          status: test.status,
-          daysRunning: test.daysRunning,
-          audiences: test.audiences,
-          primaryMetric: test.results?.primary?.metric ?? null,
-          conclusion: test.results?.conclusion ?? "no_results",
-          winner: test.results?.winner ?? null,
-          summary: test.results?.summary ?? "Results could not be read.",
-          resultsUrl: test.resultsUrl,
-        }))
+        page: brief.page.name,
+        contentKey: brief.page.contentKey,
+        locale: brief.page.locale,
+        url: brief.page.url,
+        test: test.name,
+        flagKey: test.flagKey,
+        status: test.status,
+        daysRunning: test.daysRunning,
+        audiences: test.audiences,
+        primaryMetric: test.results?.primary?.metric ?? null,
+        conclusion: test.results?.conclusion ?? "no_results",
+        winner: test.results?.winner ?? null,
+        summary: test.results?.summary ?? "Results could not be read.",
+        resultsUrl: test.resultsUrl,
+        // Which version of each variation visitors get. The fake-data seeder gives each
+        // published version its own effect, so a rewrite changes the numbers.
+        variations: brief.variations
+          .filter((variation) => test.variations.includes(variation.name))
+          .map((variation) => ({
+            name: variation.name,
+            publishedVersion: variation.publishedVersion,
+            timesPublished: variation.timesPublished,
+          })),
+      }))
     ),
     pagesWithProblems: pages
       .filter((brief) => brief.variations.some((variation) => variation.problems.length > 0))

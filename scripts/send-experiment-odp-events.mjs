@@ -14,6 +14,10 @@
  *         console therefore gets data from the next run, with no code change.
  *         About half the experiments get a designed winner whose variation lifts
  *         that experiment's metrics; the rest stay flat - the "mixed" story.
+ *         A CONTENT TEST (a page against a CMS variation of it, made by the FX
+ *         Experiments CMS extension) is different: each published version of its
+ *         variation gets an effect of its own, so the numbers move when Mark
+ *         rewrites the variation. See "Content tests" below.
  *   WX  - a decision (impression) for each running WX experiment the visitor's
  *         pages put them in, and for each personalization campaign the experience
  *         of the first audience they match (or its holdback), sent to the Event API. WX experiments measure FX events
@@ -45,6 +49,11 @@
  *   OPTIMIZELY_FX_SDK_KEY   datafile at cdn.optimizely.com/datafiles/<key>.json
  *   OPTIMIZELY_ODP_API_KEY  x-api-key for the ODP REST event API
  *   OPTIMIZELY_ODP_API_HOST defaults to https://api.zaius.com
+ *   MARK_TOOLS_BEARER       optional: the site's Mark tools token. With it the seeder
+ *                           asks the site which version of each content test's
+ *                           variation is live. Without it, or when the site cannot be
+ *                           reached, content tests keep the fixed per-flag story.
+ *   MARK_TOOLS_URL          the site to ask. Defaults to the live site.
  *
  * Notes / limits
  *   - Unlike GA4's Measurement Protocol, FX SDK events and ODP events are stamped
@@ -105,6 +114,11 @@ const BATCH_DELAY_MS = 60;
 const HOSTNAME = "optimizely-onboarding.vercel.app";
 const KNOWN_CUSTOMER_RATE = 0.2; // ~20% of visitors are identified as known customers
 const MOBILE_RATE = 0.55;
+const MARK_TOOLS_URL = (process.env.MARK_TOOLS_URL ?? `https://${HOSTNAME}`).replace(/\/+$/, "");
+const MARK_TOOLS_BEARER = process.env.MARK_TOOLS_BEARER ?? "";
+// Visitors per variation that a content test's effect should be readable at: a little
+// over a week of this job's traffic for one test.
+const VISITORS_TO_READ = 9000;
 
 const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const pick = (arr) => arr[rand(0, arr.length - 1)];
@@ -196,8 +210,85 @@ function buildPlan(flagKey, variationKeys, metrics, decreasing = []) {
   return { flagKey, variationKeys, metrics, decreasing: new Set(decreasing), isWinner, winner, lift };
 }
 
+// ── Content tests: each published version of a variation gets its own effect ──
+//
+// A content test compares a page with a CMS variation of it, and Mark rewrites the
+// variation when it is not winning. An outcome fixed per flag would look the same
+// whatever the variation says, so here the effect belongs to the VERSION of the
+// variation that is live: stable from run to run, and drawn again after a rewrite.
+//   - A variation's first version trails the original. That is what gets the first
+//     rewrite written.
+//   - After that, three rewrites in four beat the original and one in four trails it.
+// Results are cumulative, so a test's verdict follows a rewrite with a delay.
+
+// How big a relative change has to be for about a week of this job's traffic to tell
+// two versions apart, taken from the test's rarest metric: a 3% click needs a far
+// bigger change than a 30% one at the same visitor count. About 3.5 standard errors.
+function readableEffect(metrics) {
+  const rates = metrics.map((key) => EVENT_PROFILES[key]?.rate ?? DEFAULT_METRIC_RATE);
+  const rate = rates.length > 0 ? Math.min(...rates) : DEFAULT_METRIC_RATE;
+  const size = 3.5 * Math.sqrt((2 * (1 - rate)) / (rate * VISITORS_TO_READ));
+  return Math.min(0.45, Math.max(0.08, size));
+}
+
+function versionEffect(flagKey, variation, version, timesPublished, size) {
+  const h = hash(`${flagKey}:${variation}:${version}`);
+  const spread = 0.8 + (h % 9) * 0.1; // 0.8 .. 1.6 of the readable size
+  const trails = timesPublished <= 1 || (h >>> 4) % 4 === 0;
+  return trails ? 1 - size * Math.min(spread, 1.1) : 1 + size * spread;
+}
+
+// The site's list of content tests (the Mark tool mosey_list_experiments): for each
+// flag, the live version of each variation. Empty when it cannot be read, which
+// leaves those flags to buildPlan().
+async function loadContentTests() {
+  const none = new Map();
+  if (!MARK_TOOLS_BEARER) {
+    console.warn("⚠ MARK_TOOLS_BEARER is not set - content tests keep their fixed per-flag story.");
+    return none;
+  }
+  try {
+    const res = await fetch(`${MARK_TOOLS_URL}/api/mark/tools/mosey-list-experiments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${MARK_TOOLS_BEARER}` },
+      body: JSON.stringify({ parameters: { max_pages: 25 } }),
+      signal: AbortSignal.timeout(60_000),
+    });
+    const body = res.ok ? await res.json() : null;
+    if (!Array.isArray(body?.tests)) {
+      console.warn(`⚠ Could not read the content tests from ${MARK_TOOLS_URL} (HTTP ${res.status}${body?.error ? `: ${body.error}` : ""}). They keep their fixed per-flag story.`);
+      return none;
+    }
+    const byFlag = new Map();
+    for (const test of body.tests) {
+      const live = (test.variations ?? []).filter((v) => v.publishedVersion);
+      if (test.status === "running" && test.flagKey && live.length > 0) {
+        byFlag.set(test.flagKey, new Map(live.map((v) => [v.name, v])));
+      }
+    }
+    return byFlag;
+  } catch (error) {
+    console.warn(`⚠ Could not reach ${MARK_TOOLS_URL} for the content tests (${error?.message ?? error}). They keep their fixed per-flag story.`);
+    return none;
+  }
+}
+
+function buildVersionPlan(flagKey, variationKeys, metrics, versions) {
+  const size = readableEffect(metrics);
+  const effects = new Map();
+  for (const [variation, { publishedVersion, timesPublished }] of versions) {
+    if (!variationKeys.includes(variation)) continue;
+    effects.set(variation, {
+      version: publishedVersion,
+      factor: versionEffect(flagKey, variation, publishedVersion, timesPublished ?? 1, size),
+    });
+  }
+  return { flagKey, variationKeys, metrics, decreasing: new Set(), isWinner: false, winner: null, lift: 1, effects };
+}
+
 /** A plan's effect on one event for a visitor served `variation`. */
 function planLift(plan, variation, key) {
+  if (plan.effects) return plan.metrics.includes(key) ? (plan.effects.get(variation)?.factor ?? 1) : 1;
   const wins = plan.winners ? plan.winners.has(variation) : plan.winner === variation;
   if (!wins || !plan.metrics.includes(key)) return 1;
   return plan.decreasing.has(key) ? 1 / plan.lift : plan.lift;
@@ -273,7 +364,7 @@ async function settleFxDispatches() {
   }
 }
 
-async function buildFx() {
+async function buildFx(contentTests) {
   const res = await fetch(`https://cdn.optimizely.com/datafiles/${FX_SDK_KEY}.json`, { cache: "no-store" });
   if (!res.ok) {
     console.error(`Could not fetch the FX datafile (HTTP ${res.status}). Check OPTIMIZELY_FX_SDK_KEY.`);
@@ -306,7 +397,8 @@ async function buildFx() {
     const ids = new Set(experiments.map((e) => e.id));
     const variationKeys = [...new Set(experiments.flatMap((e) => e.variations.map((v) => v.key)))];
     const metrics = (datafile.events ?? []).filter((e) => (e.experimentIds ?? []).some((id) => ids.has(id))).map((e) => e.key);
-    plans.push(buildPlan(flag.key, variationKeys, metrics));
+    const versions = contentTests.get(flag.key);
+    plans.push(versions ? buildVersionPlan(flag.key, variationKeys, metrics, versions) : buildPlan(flag.key, variationKeys, metrics));
   }
   return { client, plans, eventKeys };
 }
@@ -401,7 +493,9 @@ function printReport(plans) {
   for (const plan of plans) {
     const s = stats[plan.flagKey];
     if (!s) continue;
-    const tag = plan.winners
+    const tag = plan.effects
+      ? `content test: ${[...plan.effects].map(([v, e]) => `${v} v${e.version} x${e.factor.toFixed(2)}`).join(", ") || "no live variation"}`
+      : plan.winners
       ? `every experience beats holdback x${plan.lift.toFixed(2)}`
       : plan.isWinner
         ? `winner: ${plan.winner} x${plan.lift.toFixed(2)}`
@@ -532,8 +626,12 @@ function odpEventsForVisitor(visitorId, section, isKnown, email, fired) {
 async function main() {
   console.log(`${DRY_RUN ? "[dry-run] building" : "Seeding"} FX + ODP fake traffic (${NUM_USERS} visitors, only=${ONLY})...`);
 
-  const fx = SEED_FX ? await buildFx() : null;
+  const fx = SEED_FX ? await buildFx(await loadContentTests()) : null;
   const plans = fx?.plans ?? [];
+  for (const plan of plans.filter((p) => p.effects)) {
+    const versions = [...plan.effects].map(([v, e]) => `${v} v${e.version} x${e.factor.toFixed(2)}`).join(", ");
+    console.log(`FX content test ${plan.flagKey}: ${versions || "no live variation"}`);
+  }
   // A session fires every profiled event, like the site does. Only the keys the FX
   // datafile defines go to FX; the analytics-only ones (feature_viewed,
   // segment_qualified, customer_identified) are archived there and go to ODP only.

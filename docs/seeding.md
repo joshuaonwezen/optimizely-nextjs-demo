@@ -120,7 +120,7 @@ Event keys carry no prefix (`cta_click`, `form_submit`). A new event that a test
 
 The project holds 14 flags, one per thing the site decides, covering every rule type: eight A/B tests, three A/B/C tests (`hero_copy`, `sticky_offer_bar`, `savings_offer`), a multi-armed bandit on the product hero button color (`add_to_cart`), a feature rollout plus three targeted deliveries on `banner`, and one targeted delivery per persona on `homepage`. Flag names read "<where>: <what>". Experiment rules are numbered "EXP-<n>: <what> (<arm> vs <arm>)", in one sequence shared with the WX project and mixed with it, and deliveries read "<audience>: <what they get>". Rule keys still start with the rule type. The script deletes the auto-created `on` variation of each new flag, since no rule serves it.
 
-The daily **Seed Experimentation + ODP** GitHub Action (`npm run exp:seed`, 06:27 UTC) fills the project with fake traffic. It needs only the SDK key: it reads the running experiments and each one's metrics from the datafile, so a metric added in the console gets data from the next run.
+The daily **Seed Experimentation + ODP** GitHub Action (`npm run exp:seed`, 06:27 UTC) fills the project with fake traffic. It needs only the SDK key: it reads the running experiments and each one's metrics from the datafile, so a metric added in the console gets data from the next run. With the optional `MARK_TOOLS_BEARER` secret it also asks the site which version of each content test's variation is live, and gives every published version its own effect, so the results move after Mark rewrites a variation (`mark/README.md`, "Test rounds").
 
 ### Web Experimentation project - `seed-wx-project.ts`
 

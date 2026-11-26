@@ -28,6 +28,12 @@ jobs:
           # The WX decisions need no secret: their ids come from the committed
           # scripts/wx-project-ids.json and the Event API takes no key. The
           # Experimentation REST API token is never needed here.
+          # MARK_TOOLS_BEARER is the site's Mark tools token (the same value as on the
+          # Vercel project). With it the seeder asks the site which version of each
+          # content test's variation is live and gives every version its own effect,
+          # so a rewritten variation changes the results. Unset, or when the site
+          # cannot be reached, content tests keep their fixed per-flag outcome.
+          MARK_TOOLS_BEARER: ${{ secrets.MARK_TOOLS_BEARER }}
           OPTIMIZELY_FX_SDK_KEY: ${{ secrets.OPTIMIZELY_FX_SDK_KEY }}
           OPTIMIZELY_ODP_API_KEY: ${{ secrets.OPTIMIZELY_ODP_API_KEY }}
           OPTIMIZELY_ODP_API_HOST: ${{ secrets.OPTIMIZELY_ODP_API_HOST }}
